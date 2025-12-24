@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import pureWheyImg from "@assets/generated_images/pure_vanilla_protein_shake_in_glass.png";
 import chocolateBananaImg from "@assets/generated_images/chocolate_banana_protein_shake.png";
 import premiumDateImg from "@assets/generated_images/premium_date_banana_shake.png";
-import creamyVanillaImg from "@assets/generated_images/creamy_milk_based_vanilla_shake.png";
+import creamyVanillaImg from "@assets/generated_images/creamy_milk-based_vanilla_shake.png";
 import darkChocolateImg from "@assets/generated_images/premium_dark_chocolate_shake.png";
 import tropicalBananaImg from "@assets/generated_images/fresh_tropical_banana_shake.png";
 
