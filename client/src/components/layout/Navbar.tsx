@@ -20,27 +20,27 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
-            <a className="flex items-center gap-2 group cursor-pointer">
+            <span className="flex items-center gap-2 group cursor-pointer">
               <div className="p-2 bg-primary rounded-lg group-hover:bg-primary/90 transition-colors">
                 <Dumbbell className="h-6 w-6 text-background" />
               </div>
               <span className="font-display text-xl tracking-wider text-white group-hover:text-primary transition-colors">
                 MUSCLE BOX<span className="text-primary">PRO</span>
               </span>
-            </a>
+            </span>
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link key={link.path} href={link.path}>
-                <a
-                  className={`text-sm font-medium tracking-wide transition-colors hover:text-primary ${
+                <span
+                  className={`text-sm font-medium tracking-wide transition-colors hover:text-primary cursor-pointer ${
                     location === link.path ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
                   {link.name.toUpperCase()}
-                </a>
+                </span>
               </Link>
             ))}
             <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
@@ -60,14 +60,14 @@ export default function Navbar() {
                 <div className="flex flex-col gap-6 mt-10">
                   {navLinks.map((link) => (
                     <Link key={link.path} href={link.path}>
-                      <a
-                        className={`text-lg font-display tracking-wider transition-colors hover:text-primary ${
+                      <span
+                        className={`text-lg font-display tracking-wider transition-colors hover:text-primary cursor-pointer block ${
                           location === link.path ? "text-primary" : "text-muted-foreground"
                         }`}
                         onClick={() => setIsOpen(false)}
                       >
                         {link.name.toUpperCase()}
-                      </a>
+                      </span>
                     </Link>
                   ))}
                 </div>

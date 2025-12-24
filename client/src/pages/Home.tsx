@@ -1,6 +1,7 @@
 import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/home/Hero";
 import Features from "@/components/home/Features";
+import ShakeVariants from "@/components/home/ShakeVariants";
 
 export default function Home() {
   return (
@@ -9,6 +10,7 @@ export default function Home() {
       <main>
         <Hero />
         <Features />
+        <ShakeVariants />
       </main>
       <footer className="bg-black py-10 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm font-mono">
