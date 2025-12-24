@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import GymDemo from "@/pages/GymDemo";
 import Account from "@/pages/Account";
 import Advertiser from "@/pages/Advertiser";
+import Login from "@/pages/Login";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/gym-demo" component={GymDemo} />
       <Route path="/account" component={Account} />
       <Route path="/advertise" component={Advertiser} />
+      <Route path="/login" component={Login} />
       <Route component={NotFound} />
     </Switch>
   );
