@@ -2,15 +2,82 @@ import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, History, Plus, User } from "lucide-react";
+import { CreditCard, History, Plus, User, LogIn } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Account() {
+  const { toast } = useToast();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   const transactions = [
     { id: 1, item: "Banana Blast", date: "Oct 24, 2024", amount: -5.00, location: "Gold's Gym Main" },
     { id: 2, item: "Date Delight", date: "Oct 22, 2024", amount: -5.50, location: "Iron Paradise" },
     { id: 3, item: "Wallet Reload", date: "Oct 20, 2024", amount: +20.00, location: "App" },
     { id: 4, item: "Choco Whey", date: "Oct 18, 2024", amount: -4.50, location: "Downtown Fit" },
   ];
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggedIn(true);
+    toast({
+      title: "Successfully logged in",
+      description: "Welcome to your Muscle Box Pro dashboard.",
+    });
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-32 pb-20 px-4 flex items-center justify-center">
+          <Card className="bg-card border-white/10 w-full max-w-md p-8 text-center">
+            <User className="h-16 w-16 text-primary mx-auto mb-6" />
+            <h1 className="text-3xl font-display font-bold text-white mb-4">ACCOUNT ACCESS</h1>
+            <p className="text-gray-400 mb-8">Sign in to manage your balance and view order history.</p>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90 h-12">
+                  <LogIn className="mr-2 h-5 w-5" /> SIGN IN TO DASHBOARD
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-white/10 text-white">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-display font-bold">USER LOGIN</DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Enter your credentials to access your protein wallet.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-400 font-mono">EMAIL</label>
+                    <Input className="bg-background border-white/10 focus:border-primary" placeholder="athlete@musclebox.pro" type="email" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-400 font-mono">PASSWORD</label>
+                    <Input className="bg-background border-white/10 focus:border-primary" type="password" required />
+                  </div>
+                  <Button type="submit" className="w-full bg-primary text-background font-bold mt-4">
+                    ACCESS ACCOUNT
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,9 +91,14 @@ export default function Account() {
             </h1>
             <p className="text-gray-400">Manage your balance and view order history</p>
           </div>
-          <Button className="bg-accent text-background font-bold hover:bg-accent/90">
-            <Plus className="mr-2 h-4 w-4" /> ADD FUNDS
-          </Button>
+          <div className="flex gap-4">
+            <Button variant="outline" className="border-white/10 text-white" onClick={() => setIsLoggedIn(false)}>
+              LOGOUT
+            </Button>
+            <Button className="bg-accent text-background font-bold hover:bg-accent/90">
+              <Plus className="mr-2 h-4 w-4" /> ADD FUNDS
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-8 md:grid-cols-3">
