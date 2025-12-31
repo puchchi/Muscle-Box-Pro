@@ -18,6 +18,7 @@ const loginSchema = z.object({
 
 export default function Login() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
