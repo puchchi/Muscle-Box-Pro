@@ -44,7 +44,7 @@ export default function Hero() {
                 <span className="skew-x-[10deg]">REQUEST DEMO</span>
               </Button>
             </Link>
-            <Link href="/account">
+            <Link href="/login">
               <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold border-primary text-primary hover:bg-primary/10 rounded-none skew-x-[-10deg]">
                 <span className="skew-x-[10deg]">USER LOGIN</span>
               </Button>
