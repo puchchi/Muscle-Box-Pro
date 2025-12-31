@@ -20,10 +20,10 @@ export default function Account() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const transactions = [
-    { id: 1, item: "Banana Blast", date: "Oct 24, 2024", amount: -5.00, location: "Gold's Gym Main" },
-    { id: 2, item: "Date Delight", date: "Oct 22, 2024", amount: -5.50, location: "Iron Paradise" },
-    { id: 3, item: "Wallet Reload", date: "Oct 20, 2024", amount: +20.00, location: "App" },
-    { id: 4, item: "Choco Whey", date: "Oct 18, 2024", amount: -4.50, location: "Downtown Fit" },
+    { id: 1, item: "Banana Blast", date: "Oct 24, 2024", amount: -350.00, location: "Gold's Gym Main" },
+    { id: 2, item: "Date Delight", date: "Oct 22, 2024", amount: -450.50, location: "Iron Paradise" },
+    { id: 3, item: "Wallet Reload", date: "Oct 20, 2024", amount: +1000.00, location: "App" },
+    { id: 4, item: "Choco Whey", date: "Oct 18, 2024", amount: -250.50, location: "Downtown Fit" },
   ];
 
   const handleLogin = (e: React.FormEvent) => {
@@ -145,7 +145,7 @@ export default function Account() {
               <CreditCard className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-display font-bold text-white">$15.50</div>
+              <div className="text-4xl font-display font-bold text-white">₹750.50</div>
               <p className="text-xs text-gray-500 mt-1">Auto-reload enabled</p>
             </CardContent>
           </Card>
@@ -203,7 +203,7 @@ export default function Account() {
                           </div>
                         </div>
                         <div className={`font-mono font-bold ${t.amount > 0 ? 'text-green-500' : 'text-white'}`}>
-                          {t.amount > 0 ? '+' : ''}{t.amount.toFixed(2)}
+                          {t.amount > 0 ? '+' : ''}₹{Math.abs(t.amount).toFixed(2)}
                         </div>
                       </div>
                     ))}
