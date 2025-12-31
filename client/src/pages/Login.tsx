@@ -11,7 +11,7 @@ import { Dumbbell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.string().min(1, "Email or username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   remember: z.boolean().default(false),
 });
@@ -86,11 +86,11 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white font-medium">Email Address</FormLabel>
+                    <FormLabel className="text-white font-medium">Email or Username</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="you@example.com"
-                        type="email"
+                        placeholder="demo_user"
+                        type="text"
                         {...field}
                         className="bg-background/50 border-white/10 text-white placeholder:text-gray-600 focus:border-primary focus:bg-background/70 transition-colors h-11"
                         data-testid="input-email"

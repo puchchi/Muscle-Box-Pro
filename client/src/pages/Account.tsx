@@ -71,8 +71,8 @@ export default function Account() {
                 </DialogHeader>
                 <form onSubmit={handleLogin} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <label className="text-sm text-gray-400 font-mono">EMAIL</label>
-                    <Input className="bg-background border-white/10 focus:border-primary" placeholder="athlete@musclebox.pro" type="email" required />
+                    <label className="text-sm text-gray-400 font-mono">EMAIL OR USERNAME</label>
+                    <Input className="bg-background border-white/10 focus:border-primary" placeholder="demo_user" type="text" required />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm text-gray-400 font-mono">PASSWORD</label>
