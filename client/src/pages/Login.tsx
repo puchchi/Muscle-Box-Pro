@@ -31,9 +31,18 @@ export default function Login() {
   function onSubmit(values: z.infer<typeof loginSchema>) {
     if (values.email === "demo_user" && values.password === "demo_pass") {
       sessionStorage.setItem("isLoggedIn", "true");
+      sessionStorage.setItem("userType", "user");
       toast({
         title: "Welcome Back!",
         description: "You've been logged in successfully.",
+      });
+      setLocation("/account");
+    } else if (values.email === "demo_gym" && values.password === "demo_pass") {
+      sessionStorage.setItem("isLoggedIn", "true");
+      sessionStorage.setItem("userType", "gym");
+      toast({
+        title: "Welcome Back, Owner!",
+        description: "Accessing your gym management portal.",
       });
       setLocation("/account");
     } else {
@@ -229,9 +238,10 @@ export default function Login() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-xl"
         >
-          <p className="text-xs text-gray-400 leading-relaxed">
-            <strong className="text-primary">Demo Credentials:</strong> Use <code className="text-white">demo_user</code> and <code className="text-white">demo_pass</code>. This is a mockup—no authentication is required.
-          </p>
+          <div className="text-xs text-gray-400 leading-relaxed space-y-2">
+            <p><strong className="text-primary">User Demo:</strong> <code className="text-white">demo_user</code> / <code className="text-white">demo_pass</code></p>
+            <p><strong className="text-primary">Gym Demo:</strong> <code className="text-white">demo_gym</code> / <code className="text-white">demo_pass</code></p>
+          </div>
         </motion.div>
       </motion.div>
     </div>

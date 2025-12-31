@@ -2,7 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, History, Plus, User, LogIn } from "lucide-react";
+import { CreditCard, History, Plus, User, LogIn, TrendingUp, Users, Activity, Wallet } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,12 +14,25 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const revenueData = [
+  { name: 'Mon', revenue: 4500 },
+  { name: 'Tue', revenue: 5200 },
+  { name: 'Wed', revenue: 4800 },
+  { name: 'Thu', revenue: 6100 },
+  { name: 'Fri', revenue: 5900 },
+  { name: 'Sat', revenue: 7500 },
+  { name: 'Sun', revenue: 6800 },
+];
 
 export default function Account() {
   const { toast } = useToast();
-  // Initialize from session storage or similar to persist mock state
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return sessionStorage.getItem("isLoggedIn") === "true";
+  });
+  const [userType, setUserType] = useState(() => {
+    return sessionStorage.getItem("userType") || "user";
   });
 
   const transactions = [
@@ -36,18 +49,35 @@ export default function Account() {
 
     if (email === "demo_user" && password === "demo_pass") {
       setIsLoggedIn(true);
+      setUserType("user");
       sessionStorage.setItem("isLoggedIn", "true");
+      sessionStorage.setItem("userType", "user");
       toast({
         title: "Successfully logged in",
         description: "Welcome to your Muscle Box Pro dashboard.",
+      });
+    } else if (email === "demo_gym" && password === "demo_pass") {
+      setIsLoggedIn(true);
+      setUserType("gym");
+      sessionStorage.setItem("isLoggedIn", "true");
+      sessionStorage.setItem("userType", "gym");
+      toast({
+        title: "Successfully logged in",
+        description: "Welcome to your Gym Owner portal.",
       });
     } else {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid credentials. Use demo_user / demo_pass",
+        description: "Invalid credentials. Use demo_user or demo_gym with demo_pass",
       });
     }
+  };
+
+  const logout = () => {
+    setIsLoggedIn(false);
+    sessionStorage.removeItem("isLoggedIn");
+    sessionStorage.removeItem("userType");
   };
 
   if (!isLoggedIn) {
@@ -58,7 +88,7 @@ export default function Account() {
           <Card className="bg-card border-white/10 w-full max-w-md p-8 text-center">
             <User className="h-16 w-16 text-primary mx-auto mb-6" />
             <h1 className="text-3xl font-display font-bold text-white mb-4">ACCOUNT ACCESS</h1>
-            <p className="text-gray-400 mb-8">Sign in to manage your balance and view order history.</p>
+            <p className="text-gray-400 mb-8">Sign in to manage your profile or gym revenue.</p>
             
             <Dialog>
               <DialogTrigger asChild>
@@ -70,17 +100,17 @@ export default function Account() {
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-display font-bold">USER LOGIN</DialogTitle>
                   <DialogDescription className="text-gray-400">
-                    Enter your credentials to access your protein wallet.
+                    Use demo_user or demo_gym to see different views.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleLogin} className="space-y-4 mt-4">
                   <div className="space-y-2">
                     <label className="text-sm text-gray-400 font-mono">EMAIL OR USERNAME</label>
-                    <Input className="bg-background border-white/10 focus:border-primary" placeholder="demo_user" type="text" required />
+                    <Input className="bg-background border-white/10 focus:border-primary" placeholder="demo_user / demo_gym" type="text" required />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm text-gray-400 font-mono">PASSWORD</label>
-                    <Input className="bg-background border-white/10 focus:border-primary" type="password" required />
+                    <Input className="bg-background border-white/10 focus:border-primary" type="password" placeholder="demo_pass" required />
                   </div>
                   <Button type="submit" className="w-full bg-primary text-background font-bold mt-4">
                     ACCESS ACCOUNT
@@ -130,115 +160,190 @@ export default function Account() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <div className="pt-32 pb-20 px-4 max-w-5xl mx-auto">
+      <div className="pt-32 pb-20 px-4 max-w-6xl mx-auto">
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
           <div>
-             <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2">
-              WELCOME BACK, <span className="text-primary">ALEX</span>
+             <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2 uppercase">
+              {userType === 'gym' ? 'GYM OWNER PORTAL' : 'MEMBER DASHBOARD'}
             </h1>
-            <p className="text-gray-400">Manage your balance and view order history</p>
+            <p className="text-muted-foreground">
+              {userType === 'gym' ? 'Managing: Iron Paradise Fitness' : 'Welcome back, Alex. Ready for your post-workout fuel?'}
+            </p>
           </div>
           <div className="flex gap-4">
-            <Button variant="outline" className="border-white/10 text-white" onClick={() => {
-              setIsLoggedIn(false);
-              sessionStorage.removeItem("isLoggedIn");
-            }}>
+            <Button variant="outline" className="border-white/10 text-white" onClick={logout}>
               LOGOUT
             </Button>
-            <Button className="bg-accent text-background font-bold hover:bg-accent/90">
-              <Plus className="mr-2 h-4 w-4" /> ADD FUNDS
-            </Button>
+            {userType === 'user' && (
+              <Button className="bg-accent text-background font-bold hover:bg-accent/90">
+                <Plus className="mr-2 h-4 w-4" /> ADD FUNDS
+              </Button>
+            )}
           </div>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          
-          {/* Balance Card */}
-          <Card className="bg-card border-primary/20 shadow-lg shadow-primary/5">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Current Balance</CardTitle>
-              <CreditCard className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-display font-bold text-white">₹750.50</div>
-              <p className="text-xs text-gray-500 mt-1">Auto-reload enabled</p>
-            </CardContent>
-          </Card>
-
-           {/* Stats Card */}
-           <Card className="bg-card border-white/10">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Shakes this Month</CardTitle>
-              <User className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-display font-bold text-white">12</div>
-              <p className="text-xs text-green-500 mt-1 flex items-center">
-                 Top 10% of users
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Fav Card */}
-          <Card className="bg-card border-white/10">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">Favorite Blend</CardTitle>
-              <History className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-display font-bold text-white truncate">Banana Blast</div>
-              <Button variant="link" className="text-primary p-0 h-auto text-xs mt-1">Order Again</Button>
-            </CardContent>
-          </Card>
-
-        </div>
-
-        <div className="mt-10">
-          <Tabs defaultValue="history" className="w-full">
-            <TabsList className="bg-card border border-white/10 w-full justify-start h-12">
-              <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-background">Order History</TabsTrigger>
-              <TabsTrigger value="settings" className="data-[state=active]:bg-primary data-[state=active]:text-background">Settings</TabsTrigger>
-            </TabsList>
-            <TabsContent value="history" className="mt-6">
-              <Card className="bg-card border-white/10">
-                <CardHeader>
-                  <CardTitle className="font-display text-white">Recent Activity</CardTitle>
+        {userType === 'user' ? (
+          <div className="space-y-8">
+            <div className="grid gap-6 md:grid-cols-3">
+              <Card className="bg-card border-primary/20">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Current Balance</CardTitle>
+                  <Wallet className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {transactions.map((t) => (
-                      <div key={t.id} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
-                        <div className="flex items-center gap-4">
-                          <div className={`h-10 w-10 rounded-full flex items-center justify-center ${t.amount > 0 ? 'bg-green-500/10 text-green-500' : 'bg-primary/10 text-primary'}`}>
-                            {t.amount > 0 ? <Plus className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
-                          </div>
-                          <div>
-                            <p className="font-medium text-white">{t.item}</p>
-                            <p className="text-sm text-gray-500">{t.location} • {t.date}</p>
-                          </div>
+                  <div className="text-4xl font-display font-bold">₹750.50</div>
+                  <p className="text-xs text-muted-foreground mt-1">Ready for 2 premium shakes</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-white/10">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Monthly Shakes</CardTitle>
+                  <Activity className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-display font-bold">12</div>
+                  <p className="text-xs text-accent mt-1">+15% from last month</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-white/10">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Fav Blend</CardTitle>
+                  <History className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-display font-bold truncate">Banana Blast</div>
+                  <Button variant="link" className="text-primary p-0 h-auto text-xs mt-1">Quick Reorder</Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-card border-white/10">
+              <CardHeader>
+                <CardTitle className="font-display">Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {transactions.map((t) => (
+                    <div key={t.id} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${t.amount > 0 ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
+                          {t.amount > 0 ? <Plus className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
                         </div>
-                        <div className={`font-mono font-bold ${t.amount > 0 ? 'text-green-500' : 'text-white'}`}>
-                          {t.amount > 0 ? '+' : ''}₹{Math.abs(t.amount).toFixed(2)}
+                        <div>
+                          <p className="font-medium">{t.item}</p>
+                          <p className="text-sm text-muted-foreground">{t.location} • {t.date}</p>
+                        </div>
+                      </div>
+                      <div className={`font-mono font-bold ${t.amount > 0 ? 'text-accent' : 'text-white'}`}>
+                        {t.amount > 0 ? '+' : ''}₹{Math.abs(t.amount).toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <div className="grid gap-6 md:grid-cols-4">
+              <Card className="bg-card border-primary/20">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Weekly Revenue</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-display font-bold">₹42,500</div>
+                  <p className="text-xs text-accent mt-1">+8% week-over-week</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-white/10">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Total Users</CardTitle>
+                  <Users className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-display font-bold">842</div>
+                  <p className="text-xs text-muted-foreground mt-1">24 active today</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-white/10">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Machine Status</CardTitle>
+                  <Activity className="h-4 w-4 text-accent" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-display font-bold text-accent uppercase">Online</div>
+                  <p className="text-xs text-muted-foreground mt-1">Last service: 2 days ago</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-white/10">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Stock Level</CardTitle>
+                  <Activity className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-display font-bold">84%</div>
+                  <p className="text-xs text-muted-foreground mt-1">Refill due in 4 days</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-8">
+              <Card className="bg-card border-white/10">
+                <CardHeader>
+                  <CardTitle className="font-display">Revenue Overview</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={revenueData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                      <XAxis dataKey="name" stroke="#666" fontSize={12} />
+                      <YAxis stroke="#666" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }}
+                        itemStyle={{ color: '#00d1ff' }}
+                      />
+                      <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-white/10">
+                <CardHeader>
+                  <CardTitle className="font-display">Top Selling Blends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {[
+                      { name: 'Banana Blast', percentage: 45, color: 'bg-primary' },
+                      { name: 'Chocolate Pure', percentage: 32, color: 'bg-accent' },
+                      { name: 'Date Delight', percentage: 23, color: 'bg-muted' }
+                    ].map((blend) => (
+                      <div key={blend.name} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-bold">{blend.name}</span>
+                          <span className="text-muted-foreground">{blend.percentage}%</span>
+                        </div>
+                        <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+                          <div className={`${blend.color} h-full`} style={{ width: `${blend.percentage}%` }} />
                         </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-            <TabsContent value="settings" className="mt-6">
-               <Card className="bg-card border-white/10">
-                <CardContent className="pt-6">
-                  <p className="text-gray-400">Account settings placeholder.</p>
-                </CardContent>
-               </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
