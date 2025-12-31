@@ -11,10 +11,11 @@ export default function Navbar() {
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Gym Demo", path: "/gym-demo" },
-    { name: "Login", path: "/login" },
     { name: "My Account", path: "/account" },
     { name: "Advertise", path: "/advertise" },
   ];
+
+  const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-white/10">
@@ -44,9 +45,13 @@ export default function Navbar() {
                 </span>
               </Link>
             ))}
-            <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
-              GET STARTED
-            </Button>
+            {!isLoggedIn && (
+              <Link href="/login">
+                <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
+                  LOGIN
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Nav */}

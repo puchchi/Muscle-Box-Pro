@@ -78,6 +78,7 @@ export default function Account() {
     setIsLoggedIn(false);
     sessionStorage.removeItem("isLoggedIn");
     sessionStorage.removeItem("userType");
+    window.location.href = "/";
   };
 
   if (!isLoggedIn) {
