@@ -17,7 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Account() {
   const { toast } = useToast();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Initialize from session storage or similar to persist mock state
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return sessionStorage.getItem("isLoggedIn") === "true";
+  });
 
   const transactions = [
     { id: 1, item: "Banana Blast", date: "Oct 24, 2024", amount: -350.00, location: "Gold's Gym Main" },
@@ -33,6 +36,7 @@ export default function Account() {
 
     if (email === "demo_user" && password === "demo_pass") {
       setIsLoggedIn(true);
+      sessionStorage.setItem("isLoggedIn", "true");
       toast({
         title: "Successfully logged in",
         description: "Welcome to your Muscle Box Pro dashboard.",
@@ -138,7 +142,10 @@ export default function Account() {
             <p className="text-gray-400">Manage your balance and view order history</p>
           </div>
           <div className="flex gap-4">
-            <Button variant="outline" className="border-white/10 text-white" onClick={() => setIsLoggedIn(false)}>
+            <Button variant="outline" className="border-white/10 text-white" onClick={() => {
+              setIsLoggedIn(false);
+              sessionStorage.removeItem("isLoggedIn");
+            }}>
               LOGOUT
             </Button>
             <Button className="bg-accent text-background font-bold hover:bg-accent/90">

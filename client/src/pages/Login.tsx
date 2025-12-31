@@ -30,6 +30,7 @@ export default function Login() {
 
   function onSubmit(values: z.infer<typeof loginSchema>) {
     if (values.email === "demo_user" && values.password === "demo_pass") {
+      sessionStorage.setItem("isLoggedIn", "true");
       toast({
         title: "Welcome Back!",
         description: "You've been logged in successfully.",
