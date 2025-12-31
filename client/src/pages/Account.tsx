@@ -179,9 +179,47 @@ export default function Account() {
               LOGOUT
             </Button>
             {userType === 'user' && (
-              <Button className="bg-accent text-background font-bold hover:bg-accent/90">
-                <Plus className="mr-2 h-4 w-4" /> ADD FUNDS
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="bg-accent text-background font-bold hover:bg-accent/90">
+                    <Plus className="mr-2 h-4 w-4" /> ADD FUNDS
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-card border-white/10 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-display font-bold uppercase">Load Wallet</DialogTitle>
+                    <DialogDescription className="text-gray-400">
+                      Add balance to your Muscle Box Pro account for instant shakes.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-6 mt-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      {[500, 1000, 2000].map((amount) => (
+                        <Button 
+                          key={amount} 
+                          variant="outline" 
+                          className="border-white/10 hover:border-primary hover:text-primary py-8 text-lg font-bold"
+                          onClick={() => toast({ title: "Amount Selected", description: `₹${amount} added to checkout.` })}
+                        >
+                          ₹{amount}
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-400 font-mono uppercase">Custom Amount</label>
+                      <Input className="bg-background border-white/10 focus:border-primary h-12 text-lg" placeholder="Enter amount" type="number" />
+                    </div>
+                    <Button className="w-full bg-primary text-background font-bold h-12 text-lg" onClick={() => {
+                      toast({ title: "Processing Payment", description: "Connecting to secure gateway..." });
+                    }}>
+                      PROCEED TO PAYMENT
+                    </Button>
+                    <p className="text-[10px] text-center text-gray-500 uppercase tracking-widest">
+                      Secure 256-bit SSL Encrypted Payment
+                    </p>
+                  </div>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
         </div>
