@@ -28,11 +28,22 @@ export default function Account() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoggedIn(true);
-    toast({
-      title: "Successfully logged in",
-      description: "Welcome to your Muscle Box Pro dashboard.",
-    });
+    const email = (e.target as any).elements[0].value;
+    const password = (e.target as any).elements[1].value;
+
+    if (email === "demo_user" && password === "demo_pass") {
+      setIsLoggedIn(true);
+      toast({
+        title: "Successfully logged in",
+        description: "Welcome to your Muscle Box Pro dashboard.",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Invalid credentials. Use demo_user / demo_pass",
+      });
+    }
   };
 
   if (!isLoggedIn) {

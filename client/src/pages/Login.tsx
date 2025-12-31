@@ -28,12 +28,19 @@ export default function Login() {
   });
 
   function onSubmit(values: z.infer<typeof loginSchema>) {
-    console.log(values);
-    toast({
-      title: "Welcome Back!",
-      description: "You've been logged in successfully.",
-    });
-    form.reset();
+    if (values.email === "demo_user" && values.password === "demo_pass") {
+      toast({
+        title: "Welcome Back!",
+        description: "You've been logged in successfully.",
+      });
+      setLocation("/account");
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Invalid credentials. Use demo_user / demo_pass",
+      });
+    }
   }
 
   return (
@@ -221,7 +228,7 @@ export default function Login() {
           className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-xl"
         >
           <p className="text-xs text-gray-400 leading-relaxed">
-            <strong className="text-primary">Demo Credentials:</strong> Use any email and password (minimum 6 characters). This is a mockup—no authentication is required.
+            <strong className="text-primary">Demo Credentials:</strong> Use <code className="text-white">demo_user</code> and <code className="text-white">demo_pass</code>. This is a mockup—no authentication is required.
           </p>
         </motion.div>
       </motion.div>
