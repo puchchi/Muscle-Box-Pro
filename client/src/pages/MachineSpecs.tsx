@@ -28,7 +28,7 @@ export default function MachineSpecs() {
         { icon: Layers, label: "Flavors", value: "20+ Dynamic Mixed Drink Varieties" },
         { icon: Thermometer, label: "Stirring", value: "Independent Mechanical Stirring System" },
         { icon: Droplets, label: "Canisters", value: "7 Tall Canisters (28L Total Capacity)" },
-        { icon: Layers, label: "Dispenser", value: "Auto Cup Dispenser (70pcs / 14oz)" }
+        { icon: Layers, label: "Dispenser", value: "Auto Cup Dispenser (70pcs / 400ml)" }
       ]
     },
     {
@@ -110,7 +110,7 @@ export default function MachineSpecs() {
               <p className="text-gray-400 text-xs uppercase tracking-widest">Total Canister Storage</p>
             </div>
             <div className="border-x border-primary/20">
-              <p className="text-primary font-display text-4xl font-bold mb-1">14oz</p>
+              <p className="text-primary font-display text-4xl font-bold mb-1">400ml</p>
               <p className="text-gray-400 text-xs uppercase tracking-widest">Standard Cup Capacity</p>
             </div>
             <div>
