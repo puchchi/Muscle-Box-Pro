@@ -219,6 +219,19 @@ export default function Account() {
                         onChange={(e) => setCustomAmount(e.target.value)}
                       />
                     </div>
+                    <div className="space-y-4">
+                      <label className="text-sm text-gray-400 font-mono uppercase block">Select Payment Method</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button variant="outline" className="border-white/10 flex flex-col items-center gap-2 py-6 hover:border-primary hover:text-primary">
+                          <CreditCard className="h-5 w-5" />
+                          <span className="text-[10px] uppercase">Credit Card</span>
+                        </Button>
+                        <Button variant="outline" className="border-white/10 flex flex-col items-center gap-2 py-6 hover:border-primary hover:text-primary">
+                          <Activity className="h-5 w-5" />
+                          <span className="text-[10px] uppercase">UPI / QR</span>
+                        </Button>
+                      </div>
+                    </div>
                     <Button className="w-full bg-primary text-background font-bold h-12 text-lg" onClick={() => {
                       toast({ title: "Processing Payment", description: "Connecting to secure gateway..." });
                     }}>

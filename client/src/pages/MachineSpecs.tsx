@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Cpu, Wifi, Droplets, Layers, Maximize, Thermometer, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import machineSpecsImg from '@assets/generated_images/futuristic_protein_shake_vending_machine_specs.png';
+import machineSpecsImg from '@/assets/futuristic_protein_shake_vending_machine_specs.png';
 
 export default function MachineSpecs() {
   const specs = [
