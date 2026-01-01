@@ -56,6 +56,10 @@ export default function Advertiser() {
                       <input className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" placeholder="marketing@brand.com" />
                     </div>
                   </div>
+                  <div className="w-full">
+                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Mobile Number</label>
+                    <input className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" placeholder="+91 98765 43210" />
+                  </div>
                   <Button size="lg" className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90">
                     GET MEDIA KIT
                   </Button>

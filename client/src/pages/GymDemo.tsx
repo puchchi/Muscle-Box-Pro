@@ -12,6 +12,7 @@ const formSchema = z.object({
   name: z.string().min(2, "Name is required"),
   gymName: z.string().min(2, "Gym name is required"),
   email: z.string().email("Invalid email"),
+  mobile: z.string().min(10, "Valid mobile number is required"),
   location: z.string().min(2, "Location is required"),
   message: z.string().optional(),
 });
@@ -24,6 +25,7 @@ export default function GymDemo() {
       name: "",
       gymName: "",
       email: "",
+      mobile: "",
       location: "",
       message: "",
     },
@@ -100,6 +102,19 @@ export default function GymDemo() {
                       <FormLabel className="text-gray-300">Email Address</FormLabel>
                       <FormControl>
                         <Input placeholder="john@example.com" {...field} className="bg-background border-white/10 focus:border-primary" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mobile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-300">Mobile Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+91 98765 43210" {...field} className="bg-background border-white/10 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
