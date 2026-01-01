@@ -65,7 +65,7 @@ export default function MachineSpecs() {
               className="relative aspect-[3/4] max-w-md mx-auto bg-card rounded-3xl border border-white/10 overflow-hidden shadow-2xl shadow-primary/20 group"
             >
               <img 
-                src={machineSpecsImg} 
+                src="/assets/machine-specs.png" 
                 alt="Muscle Box Pro Technical View" 
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
