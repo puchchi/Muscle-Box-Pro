@@ -1,11 +1,17 @@
 import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
-import { Cpu, Wifi, Droplets, Layers, Maximize, Thermometer, ShieldCheck } from "lucide-react";
+import { Cpu, Wifi, Droplets, Layers, Maximize, Thermometer, ShieldCheck, CreditCard, QrCode, Smartphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import machineSpecsImg from '@/assets/futuristic_protein_shake_vending_machine_specs.png';
 
 export default function MachineSpecs() {
+  const paymentMethods = [
+    { icon: CreditCard, label: "Credit/Debit Cards", desc: "Visa, Mastercard, RuPay" },
+    { icon: Smartphone, label: "UPI Payments", desc: "PhonePe, Google Pay, Paytm" },
+    { icon: QrCode, label: "Dynamic QR", desc: "Instant Scan & Pay on Screen" }
+  ];
+
   const specs = [
     {
       group: "Smart Core",
@@ -98,7 +104,7 @@ export default function MachineSpecs() {
           </div>
 
           {/* Technical Details Banner */}
-          <div className="bg-primary/10 rounded-3xl p-8 border border-primary/20 grid md:grid-cols-3 gap-8 text-center">
+          <div className="bg-primary/10 rounded-3xl p-8 border border-primary/20 grid md:grid-cols-3 gap-8 text-center mb-16">
             <div>
               <p className="text-primary font-display text-4xl font-bold mb-1">28L</p>
               <p className="text-gray-400 text-xs uppercase tracking-widest">Total Canister Storage</p>
@@ -111,6 +117,26 @@ export default function MachineSpecs() {
               <p className="text-primary font-display text-4xl font-bold mb-1">MDB</p>
               <p className="text-gray-400 text-xs uppercase tracking-widest">Payment Protocol Installed</p>
             </div>
+          </div>
+
+          {/* Payment Options Section */}
+          <div className="text-center mb-12">
+            <h2 className="text-2xl font-display font-bold text-white mb-2 uppercase tracking-tight">Integrated Payment Options</h2>
+            <p className="text-gray-400 text-sm">Our machines support all modern payment methods for a frictionless user experience.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {paymentMethods.map((method, i) => (
+              <Card key={i} className="bg-card border-white/5 hover:border-primary/30 transition-all group">
+                <CardContent className="p-6 text-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary group-hover:text-background transition-colors">
+                    <method.icon className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-white font-bold mb-1">{method.label}</h4>
+                  <p className="text-gray-500 text-xs">{method.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </main>
