@@ -118,9 +118,43 @@ export default function Account() {
                   <Button type="submit" className="w-full bg-primary text-background font-bold mt-4">
                     ACCESS ACCOUNT
                   </Button>
-                  <p className="text-center text-sm text-gray-400 mt-4">
-                    Don't have an account? <Link href="/signup"><span className="text-primary hover:underline cursor-pointer">Sign up</span></Link>
-                  </p>
+                  <div className="flex flex-col gap-2 mt-4 text-center">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button type="button" className="text-sm text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                          Forgot your password?
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-card border-white/10 text-white">
+                        <DialogHeader>
+                          <DialogTitle className="text-2xl font-display font-bold uppercase">Reset Password</DialogTitle>
+                          <DialogDescription className="text-gray-400">
+                            Enter your registered email address and we'll send you a reset link.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 mt-4">
+                          <div className="space-y-2">
+                            <label className="text-xs text-gray-500 uppercase tracking-widest">Email Address</label>
+                            <Input className="bg-background border-white/10 focus:border-primary h-12" placeholder="you@example.com" type="email" />
+                          </div>
+                          <Button 
+                            className="w-full bg-primary text-background font-bold h-12" 
+                            onClick={() => {
+                              toast({ 
+                                title: "Reset Link Sent", 
+                                description: "Check your email for instructions to reset your password." 
+                              });
+                            }}
+                          >
+                            SEND RESET LINK
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    <p className="text-sm text-gray-400">
+                      Don't have an account? <Link href="/signup"><span className="text-primary hover:underline cursor-pointer">Sign up</span></Link>
+                    </p>
+                  </div>
                 </form>
 
                 <div className="relative my-4">
