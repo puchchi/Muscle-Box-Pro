@@ -11,6 +11,7 @@ import Advertiser from "@/pages/Advertiser";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import MachineSpecs from "@/pages/MachineSpecs";
+import ForgotPassword from "@/pages/ForgotPassword";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/advertise" component={Advertiser} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route component={NotFound} />
     </Switch>
   );
