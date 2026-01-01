@@ -126,10 +126,6 @@ export default function Home() {
             <p className="text-gray-600 text-[10px] uppercase tracking-[0.2em]">
               © 2024 MUSCLE BOX PRO. ALL RIGHTS RESERVED.
             </p>
-            <div className="flex gap-6 text-gray-600 text-[10px] uppercase tracking-[0.2em]">
-              <span>Terms of Service</span>
-              <span>Cookie Policy</span>
-            </div>
           </div>
         </div>
       </footer>
