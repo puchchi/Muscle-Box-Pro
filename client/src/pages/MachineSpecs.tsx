@@ -62,14 +62,14 @@ export default function MachineSpecs() {
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
-              className="relative aspect-[3/4] max-w-md mx-auto bg-card rounded-3xl border border-white/10 overflow-hidden shadow-2xl shadow-primary/20 group"
+              className="relative aspect-[3/4] max-w-md mx-auto bg-card rounded-3xl border border-white/10 overflow-hidden shadow-2xl shadow-primary/20"
             >
               <img 
                 src="/assets/machine-specs.png" 
                 alt="Muscle Box Pro Technical View" 
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10" />
               <div className="absolute bottom-8 left-8 z-20">
                 <p className="text-white font-display text-3xl font-bold">SIZE: 76x60x180 CM</p>
                 <p className="text-primary font-mono text-sm tracking-widest">W x D x H</p>
