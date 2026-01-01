@@ -108,16 +108,16 @@ export default function Home() {
             <div>
               <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Company</h4>
               <ul className="space-y-4 text-sm text-gray-500">
-                <li className="hover:text-primary cursor-pointer transition-colors">About Us</li>
-                <li className="hover:text-primary cursor-pointer transition-colors">Our Machine</li>
+                <Link href="/about"><li className="hover:text-primary cursor-pointer transition-colors">About Us</li></Link>
+                <Link href="/specs"><li className="hover:text-primary cursor-pointer transition-colors">Our Machine</li></Link>
                 <li className="hover:text-primary cursor-pointer transition-colors">Success Stories</li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Support</h4>
               <ul className="space-y-4 text-sm text-gray-500">
-                <li className="hover:text-primary cursor-pointer transition-colors">Help Center</li>
-                <li className="hover:text-primary cursor-pointer transition-colors">Contact Us</li>
+                <Link href="/help"><li className="hover:text-primary cursor-pointer transition-colors">Help Center</li></Link>
+                <Link href="/contact"><li className="hover:text-primary cursor-pointer transition-colors">Contact Us</li></Link>
                 <li className="hover:text-primary cursor-pointer transition-colors">Privacy Policy</li>
               </ul>
             </div>

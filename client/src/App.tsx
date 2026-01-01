@@ -12,6 +12,9 @@ import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import MachineSpecs from "@/pages/MachineSpecs";
 import ForgotPassword from "@/pages/ForgotPassword";
+import AboutUs from "@/pages/AboutUs";
+import ContactUs from "@/pages/ContactUs";
+import HelpCenter from "@/pages/HelpCenter";
 
 function Router() {
   return (
@@ -24,6 +27,9 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/about" component={AboutUs} />
+      <Route path="/contact" component={ContactUs} />
+      <Route path="/help" component={HelpCenter} />
       <Route component={NotFound} />
     </Switch>
   );
