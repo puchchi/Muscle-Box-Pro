@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Cpu, Wifi, Droplets, Layers, Maximize, Thermometer, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import machineSpecsImg from '@assets/generated_images/futuristic_protein_shake_vending_machine_specs.png';
 
 export default function MachineSpecs() {
   const specs = [
@@ -55,14 +56,14 @@ export default function MachineSpecs() {
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
-              className="relative aspect-[3/4] max-w-md mx-auto bg-card rounded-3xl border border-white/10 overflow-hidden shadow-2xl shadow-primary/20"
+              className="relative aspect-[3/4] max-w-md mx-auto bg-card rounded-3xl border border-white/10 overflow-hidden shadow-2xl shadow-primary/20 group"
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center p-12">
-                <div className="w-full h-full border-2 border-primary/30 rounded-xl border-dashed animate-pulse flex items-center justify-center">
-                  <span className="font-display text-primary/40 text-2xl tracking-[0.5em] -rotate-90">PRO-TECH CHASSIS</span>
-                </div>
-              </div>
+              <img 
+                src={machineSpecsImg} 
+                alt="Muscle Box Pro Technical View" 
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10" />
               <div className="absolute bottom-8 left-8 z-20">
                 <p className="text-white font-display text-3xl font-bold">SIZE: 76x60x180 CM</p>
                 <p className="text-primary font-mono text-sm tracking-widest">W x D x H</p>
