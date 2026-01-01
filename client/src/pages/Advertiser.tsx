@@ -61,7 +61,7 @@ export default function Advertiser() {
                     <input className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" placeholder="+91 98765 43210" />
                   </div>
                   <Button size="lg" className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90">
-                    GET MEDIA KIT
+                    CONTACT FOR PRICING
                   </Button>
                 </div>
               </div>
