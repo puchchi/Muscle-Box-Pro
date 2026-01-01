@@ -10,12 +10,14 @@ import Account from "@/pages/Account";
 import Advertiser from "@/pages/Advertiser";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import MachineSpecs from "@/pages/MachineSpecs";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/gym-demo" component={GymDemo} />
+      <Route path="/specs" component={MachineSpecs} />
       <Route path="/account" component={Account} />
       <Route path="/advertise" component={Advertiser} />
       <Route path="/login" component={Login} />
