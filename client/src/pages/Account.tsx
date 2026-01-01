@@ -117,6 +117,9 @@ export default function Account() {
                   <Button type="submit" className="w-full bg-primary text-background font-bold mt-4">
                     ACCESS ACCOUNT
                   </Button>
+                  <p className="text-center text-sm text-gray-400 mt-4">
+                    Don't have an account? <Link href="/signup"><span className="text-primary hover:underline cursor-pointer">Sign up</span></Link>
+                  </p>
                 </form>
 
                 <div className="relative my-4">
