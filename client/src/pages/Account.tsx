@@ -34,6 +34,7 @@ export default function Account() {
   const [userType, setUserType] = useState(() => {
     return sessionStorage.getItem("userType") || "user";
   });
+  const [customAmount, setCustomAmount] = useState("");
 
   const transactions = [
     { id: 1, item: "Banana Blast", date: "Oct 24, 2024", amount: -350.00, location: "Gold's Gym Main" },
@@ -199,7 +200,10 @@ export default function Account() {
                           key={amount} 
                           variant="outline" 
                           className="border-white/10 hover:border-primary hover:text-primary py-8 text-lg font-bold"
-                          onClick={() => toast({ title: "Amount Selected", description: `₹${amount} added to checkout.` })}
+                          onClick={() => {
+                            setCustomAmount(amount.toString());
+                            toast({ title: "Amount Selected", description: `₹${amount} added to checkout.` });
+                          }}
                         >
                           ₹{amount}
                         </Button>
@@ -207,7 +211,13 @@ export default function Account() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm text-gray-400 font-mono uppercase">Custom Amount</label>
-                      <Input className="bg-background border-white/10 focus:border-primary h-12 text-lg" placeholder="Enter amount" type="number" />
+                      <Input 
+                        className="bg-background border-white/10 focus:border-primary h-12 text-lg" 
+                        placeholder="Enter amount" 
+                        type="number" 
+                        value={customAmount}
+                        onChange={(e) => setCustomAmount(e.target.value)}
+                      />
                     </div>
                     <Button className="w-full bg-primary text-background font-bold h-12 text-lg" onClick={() => {
                       toast({ title: "Processing Payment", description: "Connecting to secure gateway..." });
