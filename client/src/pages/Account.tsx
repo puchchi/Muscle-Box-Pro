@@ -121,7 +121,7 @@ export default function Account() {
                   <div className="flex flex-col gap-2 mt-4 text-center">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <button type="button" className="text-sm text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                        <button type="button" data-testid="button-forgot-password" className="text-sm text-gray-400 hover:text-primary transition-colors cursor-pointer outline-none">
                           Forgot your password?
                         </button>
                       </DialogTrigger>
@@ -135,9 +135,10 @@ export default function Account() {
                         <div className="space-y-4 mt-4">
                           <div className="space-y-2">
                             <label className="text-xs text-gray-500 uppercase tracking-widest">Email Address</label>
-                            <Input className="bg-background border-white/10 focus:border-primary h-12" placeholder="you@example.com" type="email" />
+                            <Input className="bg-background border-white/10 focus:border-primary h-12" placeholder="you@example.com" type="email" data-testid="input-reset-email" />
                           </div>
                           <Button 
+                            data-testid="button-send-reset-link"
                             className="w-full bg-primary text-background font-bold h-12" 
                             onClick={() => {
                               toast({ 
@@ -152,7 +153,7 @@ export default function Account() {
                       </DialogContent>
                     </Dialog>
                     <p className="text-sm text-gray-400">
-                      Don't have an account? <Link href="/signup"><span className="text-primary hover:underline cursor-pointer">Sign up</span></Link>
+                      Don't have an account? <Link href="/signup"><span data-testid="link-signup" className="text-primary hover:underline cursor-pointer">Sign up</span></Link>
                     </p>
                   </div>
                 </form>
