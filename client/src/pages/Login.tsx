@@ -28,24 +28,35 @@ export default function Login() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof loginSchema>) {
-    if (values.email === "demo_user" && values.password === "demo_pass") {
-      sessionStorage.setItem("isLoggedIn", "true");
-      sessionStorage.setItem("userType", "user");
-      toast({
-        title: "Welcome Back!",
-        description: "You've been logged in successfully.",
-      });
-      setLocation("/account");
-    } else if (values.email === "demo_gym" && values.password === "demo_pass") {
-      sessionStorage.setItem("isLoggedIn", "true");
-      sessionStorage.setItem("userType", "gym");
-      toast({
-        title: "Welcome Back, Owner!",
-        description: "Accessing your gym management portal.",
-      });
-      setLocation("/account");
-    } else {
+  async function onSubmit(values: z.infer<typeof loginSchema>) {
+    try {
+      // PROTOTYPE ONLY: This simulates how you would hit your backend
+      // In a real app, you would use: await fetch('http://127.0.0.1:9999/auth/login', ...)
+      console.log("Hitting API: POST http://127.0.0.1:9999/auth/login", values);
+      
+      // Simulating a network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      if (values.email === "demo_user" && values.password === "demo_pass") {
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("userType", "user");
+        toast({
+          title: "Welcome Back!",
+          description: "You've been logged in successfully.",
+        });
+        setLocation("/account");
+      } else if (values.email === "demo_gym" && values.password === "demo_pass") {
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("userType", "gym");
+        toast({
+          title: "Welcome Back, Owner!",
+          description: "Accessing your gym management portal.",
+        });
+        setLocation("/account");
+      } else {
+        throw new Error("Invalid credentials");
+      }
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Login Failed",

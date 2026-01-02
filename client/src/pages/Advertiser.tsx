@@ -2,8 +2,32 @@ import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Monitor, Users, TrendingUp } from "lucide-react";
 import heroBg from "@assets/generated_images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Advertiser() {
+  const [brandName, setBrandName] = useState("");
+  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
+  const { toast } = useToast();
+
+  const handleCampaignRequest = async () => {
+    const values = { brandName, email, mobile };
+    // PROTOTYPE ONLY: Simulating API hit to backend
+    console.log("Hitting API: POST http://127.0.0.1:9999/leads/campaign-request", values);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    toast({
+      title: "Inquiry Received!",
+      description: "Our advertising team will contact you shortly.",
+    });
+    setBrandName("");
+    setEmail("");
+    setMobile("");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -49,18 +73,37 @@ export default function Advertiser() {
                   <div className="flex gap-4">
                     <div className="w-full">
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Brand Name</label>
-                      <input className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" placeholder="Nike, GymShark..." />
+                      <input 
+                        className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" 
+                        placeholder="Nike, GymShark..." 
+                        value={brandName}
+                        onChange={(e) => setBrandName(e.target.value)}
+                      />
                     </div>
                      <div className="w-full">
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Work Email</label>
-                      <input className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" placeholder="marketing@brand.com" />
+                      <input 
+                        className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" 
+                        placeholder="marketing@brand.com" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className="w-full">
                     <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Mobile Number</label>
-                    <input className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" placeholder="+91 98765 43210" />
+                    <input 
+                      className="w-full bg-background/50 border border-white/10 rounded-md p-3 text-white focus:border-primary outline-none" 
+                      placeholder="+91 98765 43210" 
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value)}
+                    />
                   </div>
-                  <Button size="lg" className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90">
+                  <Button 
+                    size="lg" 
+                    className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90"
+                    onClick={handleCampaignRequest}
+                  >
                     CONTACT FOR PRICING
                   </Button>
                 </div>

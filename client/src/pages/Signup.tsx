@@ -32,8 +32,13 @@ export default function Signup() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof signupSchema>) {
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof signupSchema>) {
+    // PROTOTYPE ONLY: Simulating API hit to backend
+    console.log("Hitting API: POST http://127.0.0.1:9999/auth/signup", values);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     toast({
       title: "Account Created!",
       description: "Welcome to Muscle Box Pro.",

@@ -243,8 +243,17 @@ export default function Account() {
                         </Button>
                       </div>
                     </div>
-                    <Button className="w-full bg-primary text-background font-bold h-12 text-lg" onClick={() => {
+                    <Button className="w-full bg-primary text-background font-bold h-12 text-lg" onClick={async () => {
+                      // PROTOTYPE ONLY: Simulating API hit to backend
+                      const payload = { amount: customAmount };
+                      console.log("Hitting API: POST http://127.0.0.1:9999/wallet/add-funds", payload);
+                      
                       toast({ title: "Processing Payment", description: "Connecting to secure gateway..." });
+                      
+                      // Simulate network delay
+                      await new Promise(resolve => setTimeout(resolve, 1500));
+                      
+                      toast({ title: "Success!", description: `₹${customAmount} added to your wallet.` });
                     }}>
                       PROCEED TO PAYMENT
                     </Button>

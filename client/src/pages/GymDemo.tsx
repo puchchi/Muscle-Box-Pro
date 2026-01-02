@@ -31,8 +31,13 @@ export default function GymDemo() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    // PROTOTYPE ONLY: Simulating API hit to backend
+    console.log("Hitting API: POST http://127.0.0.1:9999/leads/demo-request", values);
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     toast({
       title: "Request Sent!",
       description: "We'll be in touch shortly to schedule your demo.",
