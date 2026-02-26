@@ -39,6 +39,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          ui: ["framer-motion", "lucide-react", "@radix-ui/react-dialog"],
+          charts: ["recharts"],
+        },
+      },
+    },
   },
   server: {
     host: "0.0.0.0",
