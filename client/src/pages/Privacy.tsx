@@ -65,7 +65,7 @@ export default function PrivacyPolicy() {
               href="mailto:contact@muscleboxpro.com" 
               className="inline-block bg-primary text-background font-bold py-3 px-8 rounded-lg hover:bg-primary/90 transition-colors"
             >
-              CONTACT PRIVACY TEAM
+              CONTACT US
             </a>
           </div>
         </motion.div>
