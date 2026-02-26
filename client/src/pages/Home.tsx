@@ -119,7 +119,7 @@ export default function Home() {
                 <Link href="/help"><li className="hover:text-primary cursor-pointer transition-colors">Help Center</li></Link>
                 <Link href="/contact"><li className="hover:text-primary cursor-pointer transition-colors">Contact Us</li></Link>
                 <Link href="/terms"><li className="hover:text-primary cursor-pointer transition-colors">Terms & Conditions</li></Link>
-                <li className="hover:text-primary cursor-pointer transition-colors">Privacy Policy</li>
+                <Link href="/privacy"><li className="hover:text-primary cursor-pointer transition-colors">Privacy Policy</li></Link>
               </ul>
             </div>
           </div>
