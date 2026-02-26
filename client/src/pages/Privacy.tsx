@@ -62,7 +62,7 @@ export default function PrivacyPolicy() {
               If you have any questions or concerns about our privacy practices, please contact our data protection team.
             </p>
             <a 
-              href="mailto:privacy@muscleboxpro.com" 
+              href="mailto:contact@muscleboxpro.com" 
               className="inline-block bg-primary text-background font-bold py-3 px-8 rounded-lg hover:bg-primary/90 transition-colors"
             >
               CONTACT PRIVACY TEAM
