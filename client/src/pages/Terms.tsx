@@ -59,10 +59,10 @@ export default function TermsAndConditions() {
           <div className="mt-20 p-8 bg-secondary rounded-2xl border border-white/10">
             <h3 className="text-lg font-bold mb-4">Questions about our terms?</h3>
             <p className="text-gray-400 mb-6">
-              If you have any questions regarding these terms, please contact our legal department.
+              If you have any questions regarding these terms, please contact our legal department at <span className="text-primary">contact@muscleboxpro.com</span>.
             </p>
             <a 
-              href="mailto:legal@muscleboxpro.com" 
+              href="mailto:contact@muscleboxpro.com" 
               className="inline-block bg-primary text-background font-bold py-3 px-8 rounded-lg hover:bg-primary/90 transition-colors"
             >
               CONTACT LEGAL
