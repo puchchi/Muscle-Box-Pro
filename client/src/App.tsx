@@ -18,6 +18,7 @@ const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const AboutUs = lazy(() => import("@/pages/AboutUs"));
 const ContactUs = lazy(() => import("@/pages/ContactUs"));
 const HelpCenter = lazy(() => import("@/pages/HelpCenter"));
+const Terms = lazy(() => import("@/pages/Terms"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function Router() {
@@ -35,6 +36,7 @@ function Router() {
         <Route path="/about" component={AboutUs} />
         <Route path="/contact" component={ContactUs} />
         <Route path="/help" component={HelpCenter} />
+        <Route path="/terms" component={Terms} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
