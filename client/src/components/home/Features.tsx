@@ -1,6 +1,6 @@
 import { Zap, Leaf, Smartphone, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import shakeImg from "@assets/generated_images/fresh_banana_date_protein_shake_advertising_shot..png";
+import shakeImg from "@assets/generated_images/fresh_banana_date_protein_shake_advertising_shot.png";
 
 const features = [
   {

@@ -7,6 +7,15 @@ import premiumDateImg from "@assets/generated_images/premium_date_banana_shake.p
 import creamyVanillaImg from "@assets/generated_images/creamy_milk-based_vanilla_shake.png";
 import darkChocolateImg from "@assets/generated_images/premium_dark_chocolate_shake.png";
 import tropicalBananaImg from "@assets/generated_images/fresh_tropical_banana_shake.png";
+import chocolateDateImg from "@assets/generated_images/chocolate_date_protein_shake.png";
+import chocolateDateCreamyImg from "@assets/generated_images/chocolate_date_milk_protein_shake.png";
+import chocolateCreamyImg from "@assets/generated_images/chocolate_milk_protein_shake.png";
+import chocolateCreamyBananaImg from "@assets/generated_images/chocolate_banana_milk_protein_shake.png";
+import chocolateBananaDateImg from "@assets/generated_images/chocolate_banana_date_protien_shake.png";
+import chocolateCreamyBananaDateImg from "@assets/generated_images/chocolate_banana_date_milk_protein_shake.png";
+import creamyProteinImg from "@assets/generated_images/creamy_protien_shake.png";
+import creamyBananaImg from "@assets/generated_images/creamy_banana_proties_shake.png";
+import creamyBananaDateImg from "@assets/generated_images/creamy_banana_date_protien_shake.png";
 
 const shakeVariants = [
   {
@@ -18,7 +27,7 @@ const shakeVariants = [
     carbs: 2,
     fat: 1,
     calories: 130,
-    price: 350,
+    price: 120,
     color: "from-blue-500 to-cyan-500",
     image: pureWheyImg,
   },
@@ -31,7 +40,7 @@ const shakeVariants = [
     carbs: 35,
     fat: 1,
     calories: 270,
-    price: 400,
+    price: 150,
     color: "from-yellow-500 to-orange-500",
     badge: "BESTSELLER",
     image: tropicalBananaImg,
@@ -45,7 +54,7 @@ const shakeVariants = [
     carbs: 48,
     fat: 2,
     calories: 360,
-    price: 450,
+    price: 160,
     color: "from-amber-600 to-red-600",
     badge: "PREMIUM",
     image: premiumDateImg,
@@ -59,7 +68,7 @@ const shakeVariants = [
     carbs: 3,
     fat: 1,
     calories: 140,
-    price: 375,
+    price: 130,
     color: "from-amber-900 to-orange-700",
     image: darkChocolateImg,
   },
@@ -72,7 +81,7 @@ const shakeVariants = [
     carbs: 36,
     fat: 1,
     calories: 280,
-    price: 425,
+    price: 160,
     color: "from-amber-800 to-amber-600",
     image: chocolateBananaImg,
   },
@@ -85,9 +94,9 @@ const shakeVariants = [
     carbs: 50,
     fat: 2,
     calories: 370,
-    price: 475,
+    price: 170,
     color: "from-amber-900 to-orange-900",
-    image: darkChocolateImg,
+    image: chocolateBananaDateImg,
   },
   {
     id: 7,
@@ -98,9 +107,9 @@ const shakeVariants = [
     carbs: 11,
     fat: 8,
     calories: 240,
-    price: 450,
+    price: 130,
     color: "from-purple-400 to-pink-400",
-    image: creamyVanillaImg,
+    image: creamyProteinImg,
   },
   {
     id: 8,
@@ -111,9 +120,9 @@ const shakeVariants = [
     carbs: 44,
     fat: 8,
     calories: 380,
-    price: 500,
+    price: 160,
     color: "from-purple-500 to-pink-500",
-    image: chocolateBananaImg,
+    image: creamyBananaImg,
   },
   {
     id: 9,
@@ -124,9 +133,9 @@ const shakeVariants = [
     carbs: 57,
     fat: 8,
     calories: 470,
-    price: 550,
+    price: 170,
     color: "from-purple-600 to-pink-600",
-    image: premiumDateImg,
+    image: creamyBananaDateImg,
   },
   {
     id: 10,
@@ -137,9 +146,9 @@ const shakeVariants = [
     carbs: 12,
     fat: 8,
     calories: 250,
-    price: 475,
+    price: 140,
     color: "from-purple-900 to-pink-900",
-    image: darkChocolateImg,
+    image: chocolateCreamyImg,
   },
   {
     id: 11,
@@ -150,9 +159,9 @@ const shakeVariants = [
     carbs: 45,
     fat: 8,
     calories: 390,
-    price: 525,
+    price: 150,
     color: "from-purple-950 to-pink-950",
-    image: chocolateBananaImg,
+    image: chocolateCreamyBananaImg,
   },
   {
     id: 12,
@@ -163,9 +172,9 @@ const shakeVariants = [
     carbs: 58,
     fat: 8,
     calories: 480,
-    price: 575,
+    price: 160,
     color: "from-red-900 to-orange-900",
-    image: darkChocolateImg,
+    image: chocolateCreamyBananaDateImg,
   },
 ];
 
