@@ -2,19 +2,39 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import cors from "cors";
-import { env } from "./config/env";
+import cors, { type CorsOptions } from "cors";
+import { env, getAllowedOrigins } from "./config/env";
 
 const app = express();
 const httpServer = createServer(app);
+const allowedOrigins = getAllowedOrigins();
+const corsOptions: CorsOptions = {
+  credentials: true,
+  origin: (origin, callback) => {
+    // Allow server-to-server tools, cURL and same-origin requests without an Origin header.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    const error = new Error(`CORS blocked for origin: ${origin}`) as Error & {
+      status?: number;
+      code?: string;
+    };
+    error.status = 403;
+    error.code = "CORS_ORIGIN_DENIED";
+    callback(error);
+  },
+};
 
 app.set("trust proxy", 1);
-app.use(
-  cors({
-    origin: env.FRONTEND_URL,
-    credentials: true,
-  }),
-);
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 declare module "http" {
   interface IncomingMessage {
@@ -72,12 +92,25 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) {
+      next(err);
+      return;
+    }
+
+    if (err?.code === "CORS_ORIGIN_DENIED") {
+      res.status(403).json({
+        message: "CORS origin denied",
+        allowedOrigins: Array.from(allowedOrigins),
+      });
+      return;
+    }
+
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    log(`error ${status}: ${message}`, "express:error");
   });
 
   // importantly only setup vite in development and after
