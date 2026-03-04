@@ -9,6 +9,8 @@ import { motion } from "framer-motion";
 import { Dumbbell, Building2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiRequest } from "@/lib/queryClient";
+import { setAccessToken } from "@/lib/auth";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -33,17 +35,34 @@ export default function Signup() {
   });
 
   async function onSubmit(values: z.infer<typeof signupSchema>) {
-    // PROTOTYPE ONLY: Simulating API hit to backend
-    console.log("Hitting API: POST http://127.0.0.1:9999/auth/signup", values);
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const res = await apiRequest("POST", "/api/auth/signup", values);
+      const body = await res.json();
+      const token: string | undefined = body?.session?.accessToken;
 
-    toast({
-      title: "Account Created!",
-      description: "Welcome to Muscle Box Pro.",
-    });
-    setLocation(values.gymName ? "/advertise" : "/account");
+      if (token) {
+        setAccessToken(token);
+        toast({
+          title: "Account Created!",
+          description: "Welcome to Muscle Box Pro.",
+        });
+        setLocation(values.gymName ? "/advertise" : "/account");
+        return;
+      }
+
+      toast({
+        title: "Verify Your Email",
+        description: "Signup successful. Please check your inbox to confirm your account.",
+      });
+      setLocation("/login");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Signup Failed",
+        description:
+          error instanceof Error ? error.message : "Could not create account. Please try again.",
+      });
+    }
   }
 
   return (

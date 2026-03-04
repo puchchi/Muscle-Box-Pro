@@ -5,16 +5,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ForgotPassword() {
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleReset = (e: React.FormEvent) => {
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Reset Link Sent",
-      description: "If an account exists, you will receive an email shortly.",
-    });
+    try {
+      setIsSubmitting(true);
+      await apiRequest("POST", "/api/auth/forgot-password", {
+        email,
+        redirectTo: `${window.location.origin}/login`,
+      });
+      toast({
+        title: "Reset Link Sent",
+        description: "If an account exists, you will receive an email shortly.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Request Failed",
+        description:
+          error instanceof Error ? error.message : "Unable to send reset email right now.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -50,18 +70,20 @@ export default function ForgotPassword() {
                   type="email" 
                   placeholder="you@example.com" 
                   className="bg-background/50 border-white/10 pl-10 focus:border-primary" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required 
                 />
               </div>
             </div>
 
-            <Button type="submit" className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90 transition-all">
-              SEND RECOVERY LINK
+            <Button disabled={isSubmitting} type="submit" className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90 transition-all">
+              {isSubmitting ? "SENDING..." : "SEND RECOVERY LINK"}
             </Button>
           </form>
 
           <div className="text-center mt-6">
-            <Link href="/account">
+            <Link href="/login">
               <span className="text-gray-400 text-sm hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-2">
                 <ArrowLeft className="h-4 w-4" /> Back to Login
               </span>

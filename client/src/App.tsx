@@ -15,6 +15,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const Signup = lazy(() => import("@/pages/Signup"));
 const MachineSpecs = lazy(() => import("@/pages/MachineSpecs"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const AuthCallback = lazy(() => import("@/pages/AuthCallback"));
 const AboutUs = lazy(() => import("@/pages/AboutUs"));
 const ContactUs = lazy(() => import("@/pages/ContactUs"));
 const HelpCenter = lazy(() => import("@/pages/HelpCenter"));
@@ -34,6 +35,7 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/auth/callback" component={AuthCallback} />
         <Route path="/about" component={AboutUs} />
         <Route path="/contact" component={ContactUs} />
         <Route path="/help" component={HelpCenter} />

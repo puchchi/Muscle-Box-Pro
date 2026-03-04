@@ -1,16 +1,25 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { Router } from "express";
+import rateLimit from "express-rate-limit";
+import { authRouter } from "./routes/auth";
+import { userRouter } from "./routes/user";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  const apiRouter = Router();
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  apiRouter.use("/auth", authLimiter, authRouter);
+  apiRouter.use("/user", userRouter);
+  app.use("/api", apiRouter);
 
   return httpServer;
 }

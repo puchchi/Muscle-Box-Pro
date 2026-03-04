@@ -1,8 +1,7 @@
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, History, Plus, User, LogIn, TrendingUp, Users, Activity, Wallet } from "lucide-react";
+import { CreditCard, History, Plus, User, TrendingUp, Users, Activity, Wallet } from "lucide-react";
 import { Link } from "wouter";
 import {
   Dialog,
@@ -16,6 +15,9 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useQuery } from "@tanstack/react-query";
+import { getQueryFn, queryClient } from "@/lib/queryClient";
+import { clearAccessToken, hasAccessToken } from "@/lib/auth";
 
 const revenueData = [
   { name: 'Mon', revenue: 4500 },
@@ -29,13 +31,15 @@ const revenueData = [
 
 export default function Account() {
   const { toast } = useToast();
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return sessionStorage.getItem("isLoggedIn") === "true";
-  });
-  const [userType, setUserType] = useState(() => {
-    return sessionStorage.getItem("userType") || "user";
-  });
   const [customAmount, setCustomAmount] = useState("");
+  const { data: session, isLoading } = useQuery<{ user: { userMetadata?: Record<string, unknown> } } | null>({
+    queryKey: ["/api/auth/session"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: hasAccessToken(),
+  });
+  const isLoggedIn = Boolean(session?.user);
+  const accountType = session?.user?.userMetadata?.account_type;
+  const userType = accountType === "gym" ? "gym" : "user";
 
   const transactions = [
     { id: 1, item: "Banana Blast", date: "Oct 24, 2024", amount: -350.00, location: "Gold's Gym Main" },
@@ -44,44 +48,22 @@ export default function Account() {
     { id: 4, item: "Choco Whey", date: "Oct 18, 2024", amount: -250.50, location: "Downtown Fit" },
   ];
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = (e.target as any).elements[0].value;
-    const password = (e.target as any).elements[1].value;
-
-    if (email === "demo_user" && password === "demo_pass") {
-      setIsLoggedIn(true);
-      setUserType("user");
-      sessionStorage.setItem("isLoggedIn", "true");
-      sessionStorage.setItem("userType", "user");
-      toast({
-        title: "Successfully logged in",
-        description: "Welcome to your Muscle Box Pro dashboard.",
-      });
-    } else if (email === "demo_gym" && password === "demo_pass") {
-      setIsLoggedIn(true);
-      setUserType("gym");
-      sessionStorage.setItem("isLoggedIn", "true");
-      sessionStorage.setItem("userType", "gym");
-      toast({
-        title: "Successfully logged in",
-        description: "Welcome to your Gym Owner portal.",
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Invalid credentials. Use demo_user or demo_gym with demo_pass",
-      });
-    }
-  };
-
   const logout = () => {
-    setIsLoggedIn(false);
-    sessionStorage.removeItem("isLoggedIn");
-    sessionStorage.removeItem("userType");
+    clearAccessToken();
+    queryClient.invalidateQueries();
     window.location.href = "/";
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-32 pb-20 px-4 flex items-center justify-center text-gray-400">
+          Checking session...
+        </div>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (
@@ -92,80 +74,11 @@ export default function Account() {
             <User className="h-16 w-16 text-primary mx-auto mb-6" />
             <h1 className="text-3xl font-display font-bold text-white mb-4">ACCOUNT ACCESS</h1>
             <p className="text-gray-400 mb-8">Sign in to manage your profile or gym revenue.</p>
-            
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90 h-12">
-                  <LogIn className="mr-2 h-5 w-5" /> SIGN IN TO DASHBOARD
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-white/10 text-white">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-display font-bold">USER LOGIN</DialogTitle>
-                  <DialogDescription className="text-gray-400">
-                    Use demo_user or demo_gym to see different views.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <label className="text-sm text-gray-400 font-mono">EMAIL OR USERNAME</label>
-                    <Input className="bg-background border-white/10 focus:border-primary" placeholder="demo_user / demo_gym" type="text" required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm text-gray-400 font-mono">PASSWORD</label>
-                    <Input className="bg-background border-white/10 focus:border-primary" type="password" placeholder="demo_pass" required />
-                  </div>
-                  <Button type="submit" className="w-full bg-primary text-background font-bold mt-4">
-                    ACCESS ACCOUNT
-                  </Button>
-                  <div className="flex flex-col gap-2 mt-4 text-center">
-                    <Link href="/forgot-password">
-                      <span className="text-sm text-gray-400 hover:text-primary transition-colors cursor-pointer">
-                        Forgot your password?
-                      </span>
-                    </Link>
-                    <p className="text-sm text-gray-400">
-                      Don't have an account? <Link href="/signup"><span data-testid="link-signup" className="text-primary hover:underline cursor-pointer">Sign up</span></Link>
-                    </p>
-                  </div>
-                </form>
-
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10" />
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="px-2 bg-card text-gray-500 uppercase tracking-widest">OR</span>
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="w-full h-11 border-white/10 text-white hover:bg-white/5 font-medium flex items-center justify-center gap-2"
-                  onClick={handleLogin}
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24">
-                    <path
-                      fill="currentColor"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  Sign in with Google
-                </Button>
-              </DialogContent>
-            </Dialog>
+            <Link href="/login">
+              <Button className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90 h-12">
+                SIGN IN TO DASHBOARD
+              </Button>
+            </Link>
           </Card>
         </div>
       </div>

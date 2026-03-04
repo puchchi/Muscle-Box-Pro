@@ -9,9 +9,11 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Dumbbell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { setAccessToken } from "@/lib/auth";
 
 const loginSchema = z.object({
-  email: z.string().min(1, "Email or username is required"),
+  email: z.string().email("A valid email is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   remember: z.boolean().default(false),
 });
@@ -30,37 +32,50 @@ export default function Login() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     try {
-      // PROTOTYPE ONLY: This simulates how you would hit your backend
-      // In a real app, you would use: await fetch('http://127.0.0.1:9999/auth/login', ...)
-      console.log("Hitting API: POST http://127.0.0.1:9999/auth/login", values);
-      
-      // Simulating a network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      if (values.email === "demo_user" && values.password === "demo_pass") {
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("userType", "user");
-        toast({
-          title: "Welcome Back!",
-          description: "You've been logged in successfully.",
-        });
-        setLocation("/account");
-      } else if (values.email === "demo_gym" && values.password === "demo_pass") {
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("userType", "gym");
-        toast({
-          title: "Welcome Back, Owner!",
-          description: "Accessing your gym management portal.",
-        });
-        setLocation("/account");
-      } else {
-        throw new Error("Invalid credentials");
+      const res = await apiRequest("POST", "/api/auth/login", {
+        email: values.email,
+        password: values.password,
+      });
+      const body = await res.json();
+      const token: string | undefined = body?.session?.accessToken;
+      if (!token) {
+        throw new Error("Missing access token in response");
       }
+
+      setAccessToken(token);
+      toast({
+        title: "Welcome Back!",
+        description: "You've been logged in successfully.",
+      });
+      setLocation("/account");
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid credentials. Use demo_user / demo_pass",
+        description:
+          error instanceof Error ? error.message : "Please check your credentials and try again.",
+      });
+    }
+  }
+
+  async function handleGoogleLogin() {
+    try {
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      const res = await apiRequest(
+        "GET",
+        `/api/auth/google-url?redirectTo=${encodeURIComponent(redirectTo)}`,
+      );
+      const body = await res.json();
+      if (!body?.url) {
+        throw new Error("Unable to initialize Google sign-in.");
+      }
+      window.location.href = body.url;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Google sign-in failed",
+        description:
+          error instanceof Error ? error.message : "Could not start Google authentication.",
       });
     }
   }
@@ -108,11 +123,11 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white font-medium">Email or Username</FormLabel>
+                    <FormLabel className="text-white font-medium">Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="demo_user"
-                        type="text"
+                        placeholder="you@example.com"
+                        type="email"
                         {...field}
                         className="bg-background/50 border-white/10 text-white placeholder:text-gray-600 focus:border-primary focus:bg-background/70 transition-colors h-11"
                         data-testid="input-email"
@@ -199,6 +214,7 @@ export default function Login() {
               variant="outline"
               className="w-full h-12 border-white/10 text-white hover:bg-white/5 font-medium flex items-center justify-center gap-2"
               data-testid="button-google-login"
+              onClick={handleGoogleLogin}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -250,8 +266,8 @@ export default function Login() {
           className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-xl"
         >
           <div className="text-xs text-gray-400 leading-relaxed space-y-2">
-            <p><strong className="text-primary">User Demo:</strong> <code className="text-white">demo_user</code> / <code className="text-white">demo_pass</code></p>
-            <p><strong className="text-primary">Gym Demo:</strong> <code className="text-white">demo_gym</code> / <code className="text-white">demo_pass</code></p>
+            <p><strong className="text-primary">Email login:</strong> use your registered email and password.</p>
+            <p><strong className="text-primary">Google login:</strong> use the Sign in with Google button.</p>
           </div>
         </motion.div>
       </motion.div>

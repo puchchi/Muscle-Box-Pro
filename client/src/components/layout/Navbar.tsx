@@ -3,6 +3,7 @@ import { Menu, X, Dumbbell } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { hasAccessToken } from "@/lib/auth";
 
 export default function Navbar() {
   const [location] = useLocation();
@@ -16,7 +17,7 @@ export default function Navbar() {
     { name: "Advertise", path: "/advertise" },
   ];
 
-  const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
+  const isLoggedIn = hasAccessToken();
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-white/10">
