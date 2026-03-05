@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell, MailWarning, TriangleAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, type ApiRequestError } from "@/lib/queryClient";
 import { setAccessToken } from "@/lib/auth";
+import { useState } from "react";
 
 const loginSchema = z.object({
   email: z.string().email("A valid email is required"),
@@ -21,6 +22,12 @@ const loginSchema = z.object({
 export default function Login() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [notice, setNotice] = useState<{
+    type: "error" | "warning" | "success";
+    message: string;
+    canResend?: boolean;
+  } | null>(null);
+  const [isResending, setIsResending] = useState(false);
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -31,6 +38,7 @@ export default function Login() {
   });
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
+    setNotice(null);
     try {
       const res = await apiRequest("POST", "/api/auth/login", {
         email: values.email,
@@ -39,7 +47,11 @@ export default function Login() {
       const body = await res.json();
       const token: string | undefined = body?.session?.accessToken;
       if (!token) {
-        throw new Error("Missing access token in response");
+        setNotice({
+          type: "error",
+          message: "We couldn't sign you in. Please check your email and password and try again.",
+        });
+        return;
       }
 
       setAccessToken(token);
@@ -48,13 +60,74 @@ export default function Login() {
         description: "You've been logged in successfully.",
       });
       setLocation("/account");
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description:
-          error instanceof Error ? error.message : "Please check your credentials and try again.",
+    } catch (rawError) {
+      const error = rawError as ApiRequestError;
+      const code =
+        error.body && typeof error.body === "object" && "code" in error.body
+          ? (error.body as { code?: string }).code
+          : undefined;
+      const bodyMessage =
+        error.body &&
+        typeof error.body === "object" &&
+        "message" in error.body &&
+        typeof (error.body as { message?: unknown }).message === "string"
+          ? (error.body as { message: string }).message
+          : "";
+      const normalizedMessage = `${error.message} ${bodyMessage}`.toLowerCase();
+
+      if (
+        code === "EMAIL_NOT_CONFIRMED" ||
+        normalizedMessage.includes("email not confirmed") ||
+        normalizedMessage.includes("email not verified")
+      ) {
+        setNotice({
+          type: "warning",
+          message:
+            "Email is not confirmed. Please verify your email before logging in.",
+          canResend: true,
+        });
+        return;
+      }
+
+      setNotice({
+        type: "error",
+        message: "We couldn't sign you in. Please check your email and password and try again.",
       });
+    }
+  }
+
+  async function handleResendVerification() {
+    const values = form.getValues();
+    if (!values.email || !values.password) {
+      setNotice({
+        type: "warning",
+        message: "Please enter your email and password to resend verification.",
+        canResend: true,
+      });
+      return;
+    }
+
+    try {
+      setIsResending(true);
+      await apiRequest("POST", "/api/auth/resend-verification", {
+        email: values.email,
+        password: values.password,
+      });
+
+      setNotice({
+        type: "success",
+        message: "Verification link has been sent, please click on then login.",
+      });
+    } catch (rawError) {
+      const error = rawError as ApiRequestError;
+      setNotice({
+        type: "error",
+        message:
+          error.message || "Unable to resend verification link. Please try again.",
+        canResend: true,
+      });
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -188,6 +261,42 @@ export default function Login() {
               />
 
               {/* Submit Button */}
+              {notice && (
+                <div
+                  className={
+                    notice.type === "warning"
+                      ? "rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-amber-300"
+                      : notice.type === "success"
+                        ? "rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-primary"
+                        : "rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-destructive"
+                  }
+                >
+                  <div className="flex items-start gap-2">
+                    {notice.type === "warning" ? (
+                      <MailWarning className="mt-0.5 h-4 w-4 shrink-0" />
+                    ) : (
+                      <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                    )}
+                    <div className="space-y-2">
+                      <p className="text-sm">{notice.message}</p>
+                      {notice.canResend && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-8 border-current/40 text-current hover:bg-white/10"
+                          onClick={handleResendVerification}
+                          disabled={isResending}
+                        >
+                          {isResending
+                            ? "SENDING..."
+                            : "Resend verification link"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90 transition-colors mt-8"

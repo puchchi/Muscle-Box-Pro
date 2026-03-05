@@ -3,6 +3,7 @@ import { SignJWT, jwtVerify } from "jose";
 import {
   forgotPasswordSchema,
   googleUrlSchema,
+  resendVerificationSchema,
   signInSchema,
   signUpSchema,
 } from "@shared/auth";
@@ -31,6 +32,24 @@ async function createVerificationToken(payload: { userId: string; email: string 
     .setIssuedAt()
     .setExpirationTime(`${ttlMinutes}m`)
     .sign(verificationSecret);
+}
+
+async function sendCustomVerificationForUser(input: {
+  userId: string;
+  email: string;
+  name?: string;
+}) {
+  const token = await createVerificationToken({
+    userId: input.userId,
+    email: input.email,
+  });
+  const verifyUrl = `${getBackendPublicUrl()}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
+
+  await sendVerificationEmail({
+    to: input.email,
+    name: input.name,
+    verificationUrl: verifyUrl,
+  });
 }
 
 authRouter.post("/signup", async (req, res) => {
@@ -71,16 +90,10 @@ authRouter.post("/signup", async (req, res) => {
     return;
   }
 
-  const token = await createVerificationToken({
+  await sendCustomVerificationForUser({
     userId: data.user.id,
-    email: data.user.email ?? email,
-  });
-  const verifyUrl = `${getBackendPublicUrl()}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
-
-  await sendVerificationEmail({
-    to: email,
+    email,
     name,
-    verificationUrl: verifyUrl,
   });
 
   res.status(201).json({
@@ -148,6 +161,8 @@ authRouter.post("/login", async (req, res) => {
   if (!data.user?.email_confirmed_at) {
     res.status(403).json({
       message: "Email not verified. Please verify your email before logging in.",
+      code: "EMAIL_NOT_CONFIRMED",
+      email,
     });
     return;
   }
@@ -160,6 +175,53 @@ authRouter.post("/login", async (req, res) => {
       tokenType: data.session.token_type,
     },
     user: data.user,
+  });
+});
+
+authRouter.post("/resend-verification", async (req, res) => {
+  const missingConfig = getCustomEmailConfigErrors();
+  if (missingConfig.length > 0) {
+    res.status(500).json({
+      message: `Custom email verification is not configured. Missing: ${missingConfig.join(", ")}`,
+    });
+    return;
+  }
+
+  const parsed = resendVerificationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message: parsed.error.issues[0]?.message ?? "Invalid payload",
+    });
+    return;
+  }
+
+  const { email, password } = parsed.data;
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error || !data.user) {
+    res.status(401).json({
+      message: "We couldn't verify your credentials. Please check your email and password.",
+    });
+    return;
+  }
+
+  if (data.user.email_confirmed_at) {
+    res.status(400).json({ message: "Email is already verified. Please login." });
+    return;
+  }
+
+  await sendCustomVerificationForUser({
+    userId: data.user.id,
+    email: data.user.email ?? email,
+    name:
+      (data.user.user_metadata?.full_name as string | undefined) ??
+      (data.user.user_metadata?.name as string | undefined),
+  });
+
+  res.json({
+    message: "Verification link has been sent, please click on then login.",
   });
 });
 

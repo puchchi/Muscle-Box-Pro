@@ -13,6 +13,8 @@ export const signInSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+export const resendVerificationSchema = signInSchema;
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email("A valid email is required"),
   redirectTo: z.string().url().optional(),

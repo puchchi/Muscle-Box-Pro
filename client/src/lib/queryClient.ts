@@ -15,10 +15,37 @@ function toApiUrl(url: string) {
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let body: unknown = null;
+    try {
+      body = await res.json();
+    } catch (_error) {
+      body = null;
+    }
+
+    let message = res.statusText || "Request failed";
+    if (
+      body &&
+      typeof body === "object" &&
+      "message" in body &&
+      typeof (body as { message?: unknown }).message === "string"
+    ) {
+      message = (body as { message: string }).message;
+    }
+
+    const error = new Error(message) as Error & {
+      status: number;
+      body: unknown;
+    };
+    error.status = res.status;
+    error.body = body;
+    throw error;
   }
 }
+
+export type ApiRequestError = Error & {
+  status?: number;
+  body?: unknown;
+};
 
 export async function apiRequest(
   method: string,

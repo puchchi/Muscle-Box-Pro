@@ -8,33 +8,56 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Dumbbell, Building2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { setAccessToken } from "@/lib/auth";
+import { useState } from "react";
 
-const signupSchema = z.object({
+const userSignupSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   mobile: z.string().min(10, "Valid mobile number is required"),
-  gymName: z.string().optional(),
+});
+
+const gymContactSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  address: z.string().min(8, "Address is required"),
+  phone: z.string().min(10, "Valid phone number is required"),
+  email: z.string().email("Invalid email address"),
 });
 
 export default function Signup() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const form = useForm<z.infer<typeof signupSchema>>({
-    resolver: zodResolver(signupSchema),
+  const [accountType, setAccountType] = useState<"user" | "gym">("user");
+  const [signupMessage, setSignupMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  const userForm = useForm<z.infer<typeof userSignupSchema>>({
+    resolver: zodResolver(userSignupSchema),
     defaultValues: {
       name: "",
       email: "",
       password: "",
       mobile: "",
-      gymName: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof signupSchema>) {
+  const gymForm = useForm<z.infer<typeof gymContactSchema>>({
+    resolver: zodResolver(gymContactSchema),
+    defaultValues: {
+      name: "",
+      address: "",
+      phone: "",
+      email: "",
+    },
+  });
+
+  async function onUserSignup(values: z.infer<typeof userSignupSchema>) {
+    setSignupMessage(null);
     try {
       const res = await apiRequest("POST", "/api/auth/signup", values);
       const body = await res.json();
@@ -46,23 +69,32 @@ export default function Signup() {
           title: "Account Created!",
           description: "Welcome to Muscle Box Pro.",
         });
-        setLocation(values.gymName ? "/advertise" : "/account");
+        setLocation("/account");
         return;
       }
 
-      toast({
-        title: "Verify Your Email",
-        description: "Signup successful. Please check your inbox to confirm your account.",
+      setSignupMessage({
+        type: "success",
+        text: "Verification link has been sent, please click on then login.",
       });
-      setLocation("/login");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Signup Failed",
-        description:
-          error instanceof Error ? error.message : "Could not create account. Please try again.",
+      setSignupMessage({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Could not create account. Please try again.",
       });
     }
+  }
+
+  async function onGymContactSubmit(values: z.infer<typeof gymContactSchema>) {
+    console.log("Gym owner lead submitted", values);
+    toast({
+      title: "Request Received",
+      description: "Our team will contact you shortly to onboard your gym.",
+    });
+    gymForm.reset();
   }
 
   return (
@@ -88,80 +120,164 @@ export default function Signup() {
         </div>
 
         <div className="bg-card border border-white/10 rounded-2xl p-8 shadow-2xl">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Tabs defaultValue="user" className="w-full mb-6">
-                <TabsList className="grid w-full grid-cols-2 bg-background border border-white/10">
-                  <TabsTrigger value="user" className="data-[state=active]:bg-primary data-[state=active]:text-background flex items-center gap-2">
-                    <User className="h-4 w-4" /> USER
-                  </TabsTrigger>
-                  <TabsTrigger value="gym" className="data-[state=active]:bg-primary data-[state=active]:text-background flex items-center gap-2">
-                    <Building2 className="h-4 w-4" /> GYM OWNER
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+          <Tabs
+            value={accountType}
+            onValueChange={(value) => setAccountType(value as "user" | "gym")}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2 bg-background border border-white/10">
+              <TabsTrigger value="user" className="data-[state=active]:bg-primary data-[state=active]:text-background flex items-center gap-2">
+                <User className="h-4 w-4" /> USER
+              </TabsTrigger>
+              <TabsTrigger value="gym" className="data-[state=active]:bg-primary data-[state=active]:text-background flex items-center gap-2">
+                <Building2 className="h-4 w-4" /> GYM OWNER
+              </TabsTrigger>
+            </TabsList>
 
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} className="bg-background/50 border-white/10" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <TabsContent value="user">
+              <Form {...userForm}>
+                <form onSubmit={userForm.handleSubmit(onUserSignup)} className="space-y-6">
+                  {signupMessage && (
+                    <div
+                      className={
+                        signupMessage.type === "success"
+                          ? "rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-primary"
+                          : "rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                      }
+                    >
+                      {signupMessage.text}
+                    </div>
+                  )}
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="you@example.com" type="email" {...field} className="bg-background/50 border-white/10" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={userForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Full Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John Doe" {...field} className="bg-background/50 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="mobile"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Mobile Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+91 98765 43210" {...field} className="bg-background/50 border-white/10" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={userForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="you@example.com" type="email" {...field} className="bg-background/50 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Password</FormLabel>
-                    <FormControl>
-                      <Input placeholder="••••••••" type="password" {...field} className="bg-background/50 border-white/10" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={userForm.control}
+                    name="mobile"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Mobile Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+91 98765 43210" {...field} className="bg-background/50 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <Button type="submit" className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90">
-                CREATE ACCOUNT
-              </Button>
-            </form>
-          </Form>
+                  <FormField
+                    control={userForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Password</FormLabel>
+                        <FormControl>
+                          <Input placeholder="••••••••" type="password" {...field} className="bg-background/50 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90">
+                    CREATE ACCOUNT
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+
+            <TabsContent value="gym">
+              <Form {...gymForm}>
+                <form onSubmit={gymForm.handleSubmit(onGymContactSubmit)} className="space-y-6">
+                  <FormField
+                    control={gymForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Gym owner name" {...field} className="bg-background/50 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={gymForm.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Gym address" {...field} className="bg-background/50 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={gymForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Phone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+91 98765 43210" {...field} className="bg-background/50 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={gymForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="owner@gym.com" type="email" {...field} className="bg-background/50 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90">
+                    CONTACT US
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
 
           <div className="text-center mt-6">
             <p className="text-gray-400 text-sm">

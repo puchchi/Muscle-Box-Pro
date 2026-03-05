@@ -29,10 +29,21 @@ const revenueData = [
   { name: 'Sun', revenue: 6800 },
 ];
 
+function toDisplayName(rawName: string) {
+  return rawName
+    .replace(/[._-]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export default function Account() {
   const { toast } = useToast();
   const [customAmount, setCustomAmount] = useState("");
-  const { data: session, isLoading } = useQuery<{ user: { userMetadata?: Record<string, unknown> } } | null>({
+  const { data: session, isLoading } = useQuery<{
+    user: { email?: string; userMetadata?: Record<string, unknown> };
+  } | null>({
     queryKey: ["/api/auth/session"],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: hasAccessToken(),
@@ -40,6 +51,14 @@ export default function Account() {
   const isLoggedIn = Boolean(session?.user);
   const accountType = session?.user?.userMetadata?.account_type;
   const userType = accountType === "gym" ? "gym" : "user";
+  const fullNameFromMetadata =
+    (session?.user?.userMetadata?.full_name as string | undefined) ??
+    (session?.user?.userMetadata?.name as string | undefined);
+  const memberName =
+    fullNameFromMetadata?.trim() ||
+    session?.user?.email?.split("@")[0] ||
+    "Member";
+  const memberDisplayName = toDisplayName(memberName);
 
   const transactions = [
     { id: 1, item: "Banana Blast", date: "Oct 24, 2024", amount: -350.00, location: "Gold's Gym Main" },
@@ -95,9 +114,16 @@ export default function Account() {
              <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2 uppercase">
               {userType === 'gym' ? 'GYM OWNER PORTAL' : 'MEMBER DASHBOARD'}
             </h1>
-            <p className="text-muted-foreground">
-              {userType === 'gym' ? 'Managing: Iron Paradise Fitness' : 'Welcome back, Alex. Ready for your post-workout fuel?'}
-            </p>
+            {userType === "gym" ? (
+              <p className="text-muted-foreground">Managing: Iron Paradise Fitness</p>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-lg md:text-2xl font-display font-semibold text-primary">
+                  Welcome back, {memberDisplayName}
+                </p>
+                <p className="text-muted-foreground">Ready for your post-workout fuel?</p>
+              </div>
+            )}
           </div>
           <div className="flex gap-4">
             <Button variant="outline" className="border-white/10 text-white" onClick={logout}>
