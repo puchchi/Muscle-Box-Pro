@@ -22,8 +22,21 @@ export const resendVerificationSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("A valid email is required"),
-  redirectTo: z.string().url().optional(),
+  email: z
+    .string({ required_error: "Email is required" })
+    .trim()
+    .min(1, "Email is required")
+    .email("A valid email is required"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z
+    .string({ required_error: "Reset token is required" })
+    .trim()
+    .min(1, "Reset token is required"),
+  password: z
+    .string({ required_error: "Password is required" })
+    .min(6, "Password must be at least 6 characters"),
 });
 
 export const googleUrlSchema = z.object({

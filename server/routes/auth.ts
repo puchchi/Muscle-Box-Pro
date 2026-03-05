@@ -4,6 +4,7 @@ import {
   forgotPasswordSchema,
   googleUrlSchema,
   resendVerificationSchema,
+  resetPasswordSchema,
   signInSchema,
   signUpSchema,
 } from "@shared/auth";
@@ -12,13 +13,17 @@ import {
   env,
   getBackendPublicUrl,
   getCustomEmailConfigErrors,
+  getPasswordResetConfigErrors,
 } from "../config/env";
 import { requireAuth } from "../middleware/auth";
-import { sendVerificationEmail } from "../lib/email";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email";
 
 export const authRouter = Router();
 const verificationSecret = new TextEncoder().encode(
   env.EMAIL_VERIFICATION_SECRET ?? "",
+);
+const passwordResetSecret = new TextEncoder().encode(
+  env.PASSWORD_RESET_SECRET ?? "",
 );
 
 async function createVerificationToken(payload: { userId: string; email: string }) {
@@ -32,6 +37,22 @@ async function createVerificationToken(payload: { userId: string; email: string 
     .setIssuedAt()
     .setExpirationTime(`${ttlMinutes}m`)
     .sign(verificationSecret);
+}
+
+async function createPasswordResetToken(payload: {
+  userId: string;
+  email: string;
+}) {
+  const ttlMinutes = Number(env.PASSWORD_RESET_TTL_MINUTES || "30");
+  return new SignJWT({
+    type: "password_reset",
+    email: payload.email,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(payload.userId)
+    .setIssuedAt()
+    .setExpirationTime(`${ttlMinutes}m`)
+    .sign(passwordResetSecret);
 }
 
 async function sendCustomVerificationForUser(input: {
@@ -49,6 +70,27 @@ async function sendCustomVerificationForUser(input: {
     to: input.email,
     name: input.name,
     verificationUrl: verifyUrl,
+  });
+}
+
+async function sendCustomPasswordResetForUser(input: {
+  userId: string;
+  email: string;
+  name?: string;
+  redirectBase?: string;
+}) {
+  const token = await createPasswordResetToken({
+    userId: input.userId,
+    email: input.email,
+  });
+  const base = input.redirectBase ?? `${env.FRONTEND_URL}/forgot-password`;
+  const separator = base.includes("?") ? "&" : "?";
+  const resetUrl = `${base}${separator}token=${encodeURIComponent(token)}`;
+
+  await sendPasswordResetEmail({
+    to: input.email,
+    name: input.name,
+    resetUrl,
   });
 }
 
@@ -256,23 +298,102 @@ authRouter.post("/resend-verification", async (req, res) => {
 });
 
 authRouter.post("/forgot-password", async (req, res) => {
+  const missingConfig = getPasswordResetConfigErrors();
+  if (missingConfig.length > 0) {
+    res.status(500).json({
+      message: `Custom password reset is not configured. Missing: ${missingConfig.join(", ")}`,
+    });
+    return;
+  }
+
   const parsed = forgotPasswordSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid payload" });
     return;
   }
 
-  const { email, redirectTo } = parsed.data;
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: redirectTo ?? `${env.FRONTEND_URL}/login`,
+  const { email } = parsed.data;
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
   });
 
   if (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: "Unable to process reset request right now." });
     return;
   }
 
+  const matchedUser = data.users.find(
+    (user) => (user.email ?? "").toLowerCase() === email.toLowerCase(),
+  );
+  if (matchedUser) {
+    try {
+      await sendCustomPasswordResetForUser({
+        userId: matchedUser.id,
+        email: matchedUser.email ?? email,
+        name:
+          (matchedUser.user_metadata?.full_name as string | undefined) ??
+          (matchedUser.user_metadata?.name as string | undefined),
+      });
+    } catch (sendError) {
+      res.status(500).json({
+        message:
+          sendError instanceof Error
+            ? `Unable to send reset email: ${sendError.message}`
+            : "Unable to send reset email right now.",
+      });
+      return;
+    }
+  }
+
   res.json({ message: "Password reset email sent if the account exists." });
+});
+
+authRouter.post("/reset-password", async (req, res) => {
+  const missingConfig = getPasswordResetConfigErrors();
+  if (missingConfig.length > 0) {
+    res.status(500).json({
+      message: `Custom password reset is not configured. Missing: ${missingConfig.join(", ")}`,
+    });
+    return;
+  }
+
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message: parsed.error.issues[0]?.message ?? "Invalid payload",
+    });
+    return;
+  }
+
+  const { token, password } = parsed.data;
+  try {
+    const { payload } = await jwtVerify(token, passwordResetSecret, {
+      algorithms: ["HS256"],
+    });
+    if (payload.type !== "password_reset") {
+      res.status(400).json({ message: "Invalid reset token type" });
+      return;
+    }
+
+    const userId = payload.sub;
+    if (!userId) {
+      res.status(400).json({ message: "Invalid reset token payload" });
+      return;
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password,
+    });
+    if (error) {
+      res.status(400).json({ message: error.message });
+      return;
+    }
+
+    res.json({ message: "Password has been reset successfully." });
+  } catch (_error) {
+    res.status(400).json({ message: "Reset token is invalid or expired" });
+  }
 });
 
 authRouter.get("/google-url", async (req, res) => {

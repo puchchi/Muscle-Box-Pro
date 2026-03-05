@@ -37,6 +37,7 @@ Set these values in root `.env`:
 
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `EMAIL_VERIFICATION_SECRET`
+- `PASSWORD_RESET_SECRET`
 - `BACKEND_PUBLIC_URL` (e.g. `http://localhost:5001`)
 - SMTP settings:
   - `SMTP_HOST`
@@ -47,6 +48,7 @@ Set these values in root `.env`:
   - `SMTP_FROM`
 
 Signup now sends a custom verification email from backend, and login is blocked until email verification is complete.
+Forgot password now also uses custom backend email templates and token-based reset flow.
 
 ## 3) Run app
 

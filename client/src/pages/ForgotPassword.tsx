@@ -1,36 +1,84 @@
 import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
-import { Dumbbell, Mail, ArrowLeft } from "lucide-react";
+import { Dumbbell, Mail, ArrowLeft, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "wouter";
-import { useToast } from "@/hooks/use-toast";
+import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function ForgotPassword() {
-  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [notice, setNotice] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
-  const handleReset = async (e: React.FormEvent) => {
+  const token = new URLSearchParams(window.location.search).get("token");
+  const isResetMode = Boolean(token);
+
+  const handleResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    setNotice(null);
     try {
       setIsSubmitting(true);
       await apiRequest("POST", "/api/auth/forgot-password", {
         email,
-        redirectTo: `${window.location.origin}/login`,
       });
-      toast({
-        title: "Reset Link Sent",
-        description: "If an account exists, you will receive an email shortly.",
+      setNotice({
+        type: "success",
+        message:
+          "If an account exists for this email, a password reset link has been sent.",
       });
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Request Failed",
-        description:
-          error instanceof Error ? error.message : "Unable to send reset email right now.",
+      setNotice({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to send reset email right now.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setNotice(null);
+
+    if (password !== confirmPassword) {
+      setNotice({
+        type: "error",
+        message: "Passwords do not match. Please enter the same password in both fields.",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await apiRequest("POST", "/api/auth/reset-password", {
+        token,
+        password,
+      });
+      setNotice({
+        type: "success",
+        message:
+          "Your password has been reset successfully. Redirecting to login...",
+      });
+      setTimeout(() => setLocation("/login"), 1200);
+    } catch (error) {
+      setNotice({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Could not reset password.",
       });
     } finally {
       setIsSubmitting(false);
@@ -56,29 +104,85 @@ export default function ForgotPassword() {
               </span>
             </span>
           </Link>
-          <h1 className="text-3xl font-display font-bold text-white mb-2 uppercase tracking-tighter">RESET PASSWORD</h1>
-          <p className="text-gray-400">Enter your email to receive a recovery link</p>
+          <h1 className="text-3xl font-display font-bold text-white mb-2 uppercase tracking-tighter">
+            {isResetMode ? "SET NEW PASSWORD" : "RESET PASSWORD"}
+          </h1>
+          <p className="text-gray-400">
+            {isResetMode
+              ? "Create a new password for your account"
+              : "Enter your email to receive a recovery link"}
+          </p>
         </div>
 
         <div className="bg-card border border-white/10 rounded-2xl p-8 shadow-2xl">
-          <form onSubmit={handleReset} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400 font-mono uppercase tracking-widest">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input 
-                  type="email" 
-                  placeholder="you@example.com" 
-                  className="bg-background/50 border-white/10 pl-10 focus:border-primary" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required 
-                />
+          <form onSubmit={isResetMode ? handleResetPassword : handleResetRequest} className="space-y-6">
+            {notice && (
+              <div
+                className={
+                  notice.type === "success"
+                    ? "rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-primary"
+                    : "rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                }
+              >
+                {notice.message}
               </div>
-            </div>
+            )}
+
+            {isResetMode ? (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-400 font-mono uppercase tracking-widest">New Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      className="bg-background/50 border-white/10 pl-10 focus:border-primary"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-400 font-mono uppercase tracking-widest">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      className="bg-background/50 border-white/10 pl-10 focus:border-primary"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm text-gray-400 font-mono uppercase tracking-widest">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    className="bg-background/50 border-white/10 pl-10 focus:border-primary"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            )}
 
             <Button disabled={isSubmitting} type="submit" className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90 transition-all">
-              {isSubmitting ? "SENDING..." : "SEND RECOVERY LINK"}
+              {isSubmitting
+                ? "PROCESSING..."
+                : isResetMode
+                  ? "UPDATE PASSWORD"
+                  : "SEND RECOVERY LINK"}
             </Button>
           </form>
 

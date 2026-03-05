@@ -15,6 +15,8 @@ const envSchema = z.object({
   SUPABASE_JWT_AUDIENCE: z.string().default("authenticated"),
   EMAIL_VERIFICATION_SECRET: z.string().optional(),
   EMAIL_VERIFICATION_TTL_MINUTES: z.string().default("60"),
+  PASSWORD_RESET_SECRET: z.string().optional(),
+  PASSWORD_RESET_TTL_MINUTES: z.string().default("30"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().default("587"),
   SMTP_SECURE: z
@@ -72,6 +74,19 @@ export function getCustomEmailConfigErrors() {
 
   if (!env.SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   if (!env.EMAIL_VERIFICATION_SECRET) missing.push("EMAIL_VERIFICATION_SECRET");
+  if (!env.SMTP_HOST) missing.push("SMTP_HOST");
+  if (!env.SMTP_USER) missing.push("SMTP_USER");
+  if (!env.SMTP_PASS) missing.push("SMTP_PASS");
+  if (!env.SMTP_FROM) missing.push("SMTP_FROM");
+
+  return missing;
+}
+
+export function getPasswordResetConfigErrors() {
+  const missing: string[] = [];
+
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!env.PASSWORD_RESET_SECRET) missing.push("PASSWORD_RESET_SECRET");
   if (!env.SMTP_HOST) missing.push("SMTP_HOST");
   if (!env.SMTP_USER) missing.push("SMTP_USER");
   if (!env.SMTP_PASS) missing.push("SMTP_PASS");
