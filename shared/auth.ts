@@ -52,7 +52,14 @@ export const demoRequestSchema = z.object({
   message: z.string().optional(),
 });
 
+export const campaignRequestSchema = z.object({
+  brandName: z.string().min(2, "Brand name is required"),
+  email: z.string().email("A valid email is required"),
+  mobile: z.string().min(10, "Valid mobile number is required"),
+});
+
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type DemoRequestInput = z.infer<typeof demoRequestSchema>;
+export type CampaignRequestInput = z.infer<typeof campaignRequestSchema>;

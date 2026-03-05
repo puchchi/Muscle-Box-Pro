@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { demoRouter } from "./routes/demo";
+import { campaignRouter } from "./routes/campaign";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -23,9 +24,16 @@ export async function registerRoutes(
     standardHeaders: true,
     legacyHeaders: false,
   });
+  const campaignLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
 
   apiRouter.use("/auth", authLimiter, authRouter);
   apiRouter.use("/demo", demoLimiter, demoRouter);
+  apiRouter.use("/campaign", campaignLimiter, campaignRouter);
   apiRouter.use("/user", userRouter);
   app.use("/api", apiRouter);
 

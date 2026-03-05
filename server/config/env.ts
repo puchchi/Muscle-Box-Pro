@@ -27,6 +27,7 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
   DEMO_REQUEST_CC: z.string().email().default("contact@muscleboxpro.com"),
+  CAMPAIGN_REQUEST_CC: z.string().email().default("contact@muscleboxpro.com"),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -102,5 +103,15 @@ export function getDemoRequestConfigErrors() {
   if (!env.SMTP_USER) missing.push("SMTP_USER");
   if (!env.SMTP_PASS) missing.push("SMTP_PASS");
   if (!env.SMTP_FROM) missing.push("SMTP_FROM");
+  return missing;
+}
+
+export function getCampaignRequestConfigErrors() {
+  const missing: string[] = [];
+  if (!env.SMTP_HOST) missing.push("SMTP_HOST");
+  if (!env.SMTP_USER) missing.push("SMTP_USER");
+  if (!env.SMTP_PASS) missing.push("SMTP_PASS");
+  if (!env.SMTP_FROM) missing.push("SMTP_FROM");
+  if (!process.env.DATABASE_URL) missing.push("DATABASE_URL");
   return missing;
 }

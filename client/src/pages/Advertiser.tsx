@@ -3,29 +3,45 @@ import { Button } from "@/components/ui/button";
 import { Monitor, Users, TrendingUp } from "lucide-react";
 import heroBg from "@assets/generated_images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Advertiser() {
   const [brandName, setBrandName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
-  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notice, setNotice] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const handleCampaignRequest = async () => {
+    setNotice(null);
     const values = { brandName, email, mobile };
-    // PROTOTYPE ONLY: Simulating API hit to backend
-    console.log("Hitting API: POST http://127.0.0.1:9999/leads/campaign-request", values);
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    toast({
-      title: "Inquiry Received!",
-      description: "Our advertising team will contact you shortly.",
-    });
-    setBrandName("");
-    setEmail("");
-    setMobile("");
+    try {
+      setIsSubmitting(true);
+      const res = await apiRequest("POST", "/api/campaign/request", values);
+      const body = await res.json();
+      setNotice({
+        type: "success",
+        message:
+          body?.message ||
+          "Thank you! Our advertising team will contact you shortly.",
+      });
+      setBrandName("");
+      setEmail("");
+      setMobile("");
+    } catch (error) {
+      setNotice({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to submit inquiry right now. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -70,6 +86,17 @@ export default function Advertiser() {
                   Get real-time analytics on impressions and engagement. Packages start at just $500/month per location network.
                 </p>
                 <div className="space-y-4">
+                  {notice && (
+                    <div
+                      className={
+                        notice.type === "success"
+                          ? "rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-primary"
+                          : "rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                      }
+                    >
+                      {notice.message}
+                    </div>
+                  )}
                   <div className="flex gap-4">
                     <div className="w-full">
                       <label className="text-xs text-gray-500 uppercase tracking-wider mb-1 block">Brand Name</label>
@@ -103,8 +130,9 @@ export default function Advertiser() {
                     size="lg" 
                     className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90"
                     onClick={handleCampaignRequest}
+                    disabled={isSubmitting}
                   >
-                    CONTACT FOR PRICING
+                    {isSubmitting ? "SUBMITTING..." : "CONTACT FOR PRICING"}
                   </Button>
                 </div>
               </div>

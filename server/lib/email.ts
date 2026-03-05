@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import {
+  getCampaignRequestEmailTemplate,
   getDemoRequestEmailTemplate,
   getPasswordResetEmailTemplate,
   getVerificationEmailTemplate,
@@ -100,6 +101,35 @@ export async function sendDemoRequestEmail(input: {
     from: env.SMTP_FROM,
     to: input.to,
     cc: env.DEMO_REQUEST_CC,
+    subject,
+    text,
+    html,
+  });
+}
+
+export async function sendCampaignRequestEmail(input: {
+  to: string;
+  brandName: string;
+  email: string;
+  mobile: string;
+}) {
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM) {
+    throw new Error(
+      "Campaign request email is not configured. Missing SMTP_HOST/SMTP_USER/SMTP_PASS/SMTP_FROM.",
+    );
+  }
+
+  const transporter = createTransporter();
+  const { subject, text, html } = getCampaignRequestEmailTemplate({
+    brandName: input.brandName,
+    email: input.email,
+    mobile: input.mobile,
+  });
+
+  await transporter.sendMail({
+    from: env.SMTP_FROM,
+    to: input.to,
+    cc: env.CAMPAIGN_REQUEST_CC,
     subject,
     text,
     html,
