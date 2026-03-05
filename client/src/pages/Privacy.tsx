@@ -4,29 +4,60 @@ import { motion } from "framer-motion";
 export default function PrivacyPolicy() {
   const sections = [
     {
-      title: "1. Information We Collect",
-      content: "We collect information you provide directly to us, such as when you create an account, add funds to your wallet, or contact us for support. This may include your name, email address, phone number, and gym affiliation."
+      title: "1. Privacy Commitment",
+      content:
+        "MuscleBoxPro, operated by BlendBox Innovations LLP, is committed to protecting user privacy and personal information."
     },
     {
-      title: "2. How We Use Your Information",
-      content: "We use the information we collect to provide, maintain, and improve our services, including processing transactions, sending technical notices, and responding to your comments and questions."
+      title: "2. Information We Collect",
+      content:
+        "The platform may collect limited personal information including Name, Email address, Mobile number, Payment transaction details, and Machine usage data."
     },
     {
-      title: "3. Data Security",
-      content: "We take reasonable measures to help protect information about you from loss, theft, misuse, and unauthorized access, disclosure, alteration, and destruction."
+      title: "3. When Information Is Collected",
+      content:
+        "Personal information is collected when users register on the platform, place an order, contact customer support, or interact with the website or vending machines."
     },
     {
-      title: "4. Sharing of Information",
-      content: "We do not share your personal information with third parties except as described in this policy, such as with your consent or to comply with legal obligations."
+      title: "4. Purpose of Data Usage",
+      content:
+        "Information collected is used to process orders and payments, provide customer support, improve vending machine operations and services, and communicate updates, promotions, or service notifications."
     },
     {
-      title: "5. Your Choices",
-      content: "You may update or correct your account information at any time by logging into your account or contacting us. You can also opt out of receiving promotional communications from us."
+      title: "5. Payment Security",
+      content:
+        "Payments are processed through third-party payment providers such as PhonePe or other digital payment systems, and sensitive payment credentials are not stored by MuscleBoxPro."
     },
     {
-      title: "6. Changes to This Policy",
-      content: "We may change this Privacy Policy from time to time. If we make changes, we will notify you by revising the date at the top of the policy."
-    }
+      title: "6. Sharing of Data",
+      content:
+        "Personal data may be shared with trusted service providers only when necessary to process payments or operate services."
+    },
+    {
+      title: "7. Data Protection Measures",
+      content:
+        "MuscleBoxPro implements reasonable technical and security measures to protect user data from unauthorized access or misuse."
+    },
+    {
+      title: "8. User Rights",
+      content:
+        "Users may request access, correction, or deletion of their personal information by contacting customer support."
+    },
+    {
+      title: "9. Data Retention",
+      content:
+        "Personal data will only be retained for as long as necessary for business operations or as required by applicable law."
+    },
+    {
+      title: "10. Consent",
+      content:
+        "By using the platform, users consent to the collection and use of information in accordance with this Privacy Policy."
+    },
+    {
+      title: "11. Policy Updates",
+      content:
+        "MuscleBoxPro may update this Privacy Policy periodically and changes will be published on the website."
+    },
   ];
 
   return (

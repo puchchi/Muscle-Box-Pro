@@ -5,28 +5,64 @@ export default function TermsAndConditions() {
   const sections = [
     {
       title: "1. Acceptance of Terms",
-      content: "By accessing and using Muscle Box Pro vending machines and our digital platforms, you agree to be bound by these Terms and Conditions. If you do not agree, please refrain from using our services."
+      content:
+        "MuscleBoxPro is a smart vending platform operated by BlendBox Innovations LLP, providing freshly prepared protein shakes and nutritional beverages through automated vending machines and the website www.muscleboxpro.com."
     },
     {
-      title: "2. User Accounts & Wallet",
-      content: "Users are responsible for maintaining the confidentiality of their account credentials. Credits added to the Muscle Box Pro wallet are non-refundable but can be used at any Muscle Box Pro location nationwide. We are not responsible for unauthorized access to your account due to negligence."
+      title: "2. User Agreement",
+      content:
+        "By accessing the website, using a vending machine, or making a purchase, users agree to comply with these Terms and Conditions."
     },
     {
-      title: "3. Product Consumption",
-      content: "Our protein shakes are prepared using high-quality supplements. However, users are responsible for checking allergen information displayed on the machine and ensuring the product aligns with their dietary requirements and health conditions. Muscle Box Pro is not liable for adverse reactions resulting from undisclosed medical conditions or allergies."
+      title: "3. Account and Information Accuracy",
+      content:
+        "Users must provide accurate information when creating an account or placing an order on the platform."
     },
     {
-      title: "4. Gym Owner Responsibilities",
-      content: "Gym owners partnering with Muscle Box Pro must ensure the machine is provided with the required power supply and space as per the partnership agreement. Revenue sharing is calculated based on net sales and settled according to the agreed-upon billing cycle."
+      title: "4. Product Preparation",
+      content:
+        "Protein shakes are prepared instantly through automated vending machines using selected ingredients such as protein powders, milk or water bases, flavors, and add-ons."
     },
     {
-      title: "5. Intellectual Property",
-      content: "All content, branding, and technology associated with Muscle Box Pro are the exclusive property of Muscle Box Pro. Unauthorized reproduction or use of our trademarked materials is strictly prohibited."
+      title: "5. Allergies and Ingredient Responsibility",
+      content:
+        "Users are responsible for checking ingredient information and ensuring they do not have allergies to ingredients such as milk, nuts, seeds, or other additives."
     },
     {
-      title: "6. Limitation of Liability",
-      content: "Muscle Box Pro shall not be liable for any indirect, incidental, or consequential damages arising from the use of our machines or digital services. Our total liability is limited to the amount paid by the user for the specific service or product in question."
-    }
+      title: "6. Payments",
+      content:
+        "Payments may be made using digital payment methods including UPI, PhonePe, debit cards, credit cards, or other supported payment options."
+    },
+    {
+      title: "7. Payment Security",
+      content:
+        "All payments are processed through secure third-party payment gateways and MuscleBoxPro does not store card or UPI credentials."
+    },
+    {
+      title: "8. Service Availability",
+      content:
+        "Service availability may vary depending on machine location, connectivity, ingredient availability, or maintenance requirements."
+    },
+    {
+      title: "9. Unauthorized Use",
+      content:
+        "Unauthorized use of the website, vending machines, or platform services may lead to suspension of access and legal action under applicable laws."
+    },
+    {
+      title: "10. Intellectual Property",
+      content:
+        "All content on the platform including logos, graphics, software interfaces, and design elements are the intellectual property of BlendBox Innovations LLP."
+    },
+    {
+      title: "11. Changes to Terms",
+      content:
+        "MuscleBoxPro reserves the right to modify services, pricing, or these Terms and Conditions at any time."
+    },
+    {
+      title: "12. Governing Law and Jurisdiction",
+      content:
+        "These Terms shall be governed by the laws of India and any disputes shall fall under the jurisdiction of courts."
+    },
   ];
 
   return (

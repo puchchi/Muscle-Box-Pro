@@ -21,6 +21,7 @@ const ContactUs = lazy(() => import("@/pages/ContactUs"));
 const HelpCenter = lazy(() => import("@/pages/HelpCenter"));
 const Privacy = lazy(() => import("@/pages/Privacy"));
 const Terms = lazy(() => import("@/pages/Terms"));
+const RefundCancellation = lazy(() => import("@/pages/RefundCancellation"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function Router() {
@@ -41,6 +42,7 @@ function Router() {
         <Route path="/help" component={HelpCenter} />
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/refund-cancellation" component={RefundCancellation} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

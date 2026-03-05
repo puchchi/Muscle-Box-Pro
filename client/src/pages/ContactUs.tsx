@@ -30,21 +30,21 @@ export default function ContactUs() {
                 <Mail className="text-primary h-6 w-6 mt-1" />
                 <div>
                   <h3 className="text-white font-bold mb-1 uppercase tracking-wider">Email Us</h3>
-                  <p className="text-gray-400">support@muscleboxpro.com</p>
+                  <p className="text-gray-400">contact@muscleboxpro.com</p>
                 </div>
               </div>
-              <div className="bg-card border border-white/10 p-6 rounded-2xl flex items-start gap-4">
+              {/* <div className="bg-card border border-white/10 p-6 rounded-2xl flex items-start gap-4">
                 <Phone className="text-primary h-6 w-6 mt-1" />
                 <div>
                   <h3 className="text-white font-bold mb-1 uppercase tracking-wider">Call Us</h3>
                   <p className="text-gray-400">+91 98765 43210</p>
                 </div>
-              </div>
+              </div> */}
               <div className="bg-card border border-white/10 p-6 rounded-2xl flex items-start gap-4">
                 <MapPin className="text-primary h-6 w-6 mt-1" />
                 <div>
                   <h3 className="text-white font-bold mb-1 uppercase tracking-wider">Visit Us</h3>
-                  <p className="text-gray-400">Fitness Innovation Hub, Sector 62, Noida, India</p>
+                  <p className="text-gray-400">Blendbox Innovations LLP, Sector 75, Noida, Uttar Pradesh, India</p>
                 </div>
               </div>
             </div>
