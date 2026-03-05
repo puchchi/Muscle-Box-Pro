@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
+import { getVerificationEmailTemplate } from "./emailTemplates";
 
 export async function sendVerificationEmail(input: {
   to: string;
@@ -22,25 +23,10 @@ export async function sendVerificationEmail(input: {
     },
   });
 
-  const subject = "Verify your Muscle Box Pro account";
-  const greeting = input.name ? `Hi ${input.name},` : "Hi,";
-  const html = `
-    <p>${greeting}</p>
-    <p>Thanks for signing up for Muscle Box Pro.</p>
-    <p>Please verify your email address by clicking the link below:</p>
-    <p><a href="${input.verificationUrl}">${input.verificationUrl}</a></p>
-    <p>If you did not create this account, you can ignore this email.</p>
-  `;
-
-  const text = [
-    greeting,
-    "",
-    "Thanks for signing up for Muscle Box Pro.",
-    "Please verify your email address by opening the link below:",
-    input.verificationUrl,
-    "",
-    "If you did not create this account, you can ignore this email.",
-  ].join("\n");
+  const { subject, text, html } = getVerificationEmailTemplate({
+    name: input.name,
+    verificationUrl: input.verificationUrl,
+  });
 
   await transporter.sendMail({
     from: env.SMTP_FROM,
