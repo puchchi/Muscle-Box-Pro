@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import {
+  getDemoRequestEmailTemplate,
   getPasswordResetEmailTemplate,
   getVerificationEmailTemplate,
 } from "./emailTemplates";
@@ -64,6 +65,41 @@ export async function sendPasswordResetEmail(input: {
   await transporter.sendMail({
     from: env.SMTP_FROM,
     to: input.to,
+    subject,
+    text,
+    html,
+  });
+}
+
+export async function sendDemoRequestEmail(input: {
+  to: string;
+  name: string;
+  gymName: string;
+  email: string;
+  location: string;
+  mobile: string;
+  message?: string;
+}) {
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM) {
+    throw new Error(
+      "Demo request email is not configured. Missing SMTP_HOST/SMTP_USER/SMTP_PASS/SMTP_FROM.",
+    );
+  }
+
+  const transporter = createTransporter();
+  const { subject, text, html } = getDemoRequestEmailTemplate({
+    name: input.name,
+    gymName: input.gymName,
+    email: input.email,
+    mobile: input.mobile,
+    location: input.location,
+    message: input.message,
+  });
+
+  await transporter.sendMail({
+    from: env.SMTP_FROM,
+    to: input.to,
+    cc: env.DEMO_REQUEST_CC,
     subject,
     text,
     html,

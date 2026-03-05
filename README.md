@@ -49,6 +49,7 @@ Set these values in root `.env`:
 
 Signup now sends a custom verification email from backend, and login is blocked until email verification is complete.
 Forgot password now also uses custom backend email templates and token-based reset flow.
+Gym demo requests now call backend and send a confirmation email to the requester with CC to `contact@muscleboxpro.com` (configurable via `DEMO_REQUEST_CC`).
 
 ## 3) Run app
 

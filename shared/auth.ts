@@ -43,6 +43,16 @@ export const googleUrlSchema = z.object({
   redirectTo: z.string().url().optional(),
 });
 
+export const demoRequestSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  gymName: z.string().min(2, "Gym name is required"),
+  email: z.string().email("A valid email is required"),
+  mobile: z.string().min(10, "Valid mobile number is required"),
+  location: z.string().min(2, "Location is required"),
+  message: z.string().optional(),
+});
+
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type DemoRequestInput = z.infer<typeof demoRequestSchema>;
