@@ -90,11 +90,21 @@ authRouter.post("/signup", async (req, res) => {
     return;
   }
 
-  await sendCustomVerificationForUser({
-    userId: data.user.id,
-    email,
-    name,
-  });
+  try {
+    await sendCustomVerificationForUser({
+      userId: data.user.id,
+      email,
+      name,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message:
+        error instanceof Error
+          ? `Unable to send verification email: ${error.message}`
+          : "Unable to send verification email right now.",
+    });
+    return;
+  }
 
   res.status(201).json({
     message: "Signup successful. Please verify your email to activate your account.",
@@ -195,30 +205,50 @@ authRouter.post("/resend-verification", async (req, res) => {
     return;
   }
 
-  const { email, password } = parsed.data;
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+  const { email } = parsed.data;
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
   });
-  if (error || !data.user) {
-    res.status(401).json({
-      message: "We couldn't verify your credentials. Please check your email and password.",
+  if (error) {
+    res.status(500).json({ message: "Unable to process verification request." });
+    return;
+  }
+
+  const matchedUser = data.users.find(
+    (user) => (user.email ?? "").toLowerCase() === email.toLowerCase(),
+  );
+
+  // Return generic success for unknown users to avoid account enumeration.
+  if (!matchedUser) {
+    res.json({
+      message: "If your account exists, a verification link has been sent.",
     });
     return;
   }
 
-  if (data.user.email_confirmed_at) {
+  if (matchedUser.email_confirmed_at) {
     res.status(400).json({ message: "Email is already verified. Please login." });
     return;
   }
 
-  await sendCustomVerificationForUser({
-    userId: data.user.id,
-    email: data.user.email ?? email,
-    name:
-      (data.user.user_metadata?.full_name as string | undefined) ??
-      (data.user.user_metadata?.name as string | undefined),
-  });
+  try {
+    await sendCustomVerificationForUser({
+      userId: matchedUser.id,
+      email: matchedUser.email ?? email,
+      name:
+        (matchedUser.user_metadata?.full_name as string | undefined) ??
+        (matchedUser.user_metadata?.name as string | undefined),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message:
+        error instanceof Error
+          ? `Unable to send verification email: ${error.message}`
+          : "Unable to send verification email right now.",
+    });
+    return;
+  }
 
   res.json({
     message: "Verification link has been sent, please click on then login.",

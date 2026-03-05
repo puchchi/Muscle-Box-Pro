@@ -98,10 +98,15 @@ export default function Login() {
 
   async function handleResendVerification() {
     const values = form.getValues();
-    if (!values.email || !values.password) {
+    const emailFromDom =
+      (document.querySelector('input[name="email"]') as HTMLInputElement | null)
+        ?.value ?? "";
+    const email = values.email?.trim() || emailFromDom.trim();
+
+    if (!email) {
       setNotice({
         type: "warning",
-        message: "Please enter your email and password to resend verification.",
+        message: "Please enter your email to resend verification.",
         canResend: true,
       });
       return;
@@ -110,8 +115,7 @@ export default function Login() {
     try {
       setIsResending(true);
       await apiRequest("POST", "/api/auth/resend-verification", {
-        email: values.email,
-        password: values.password,
+        email,
       });
 
       setNotice({
