@@ -349,13 +349,6 @@ export default function Login() {
               </svg>
               Sign in with Google
             </Button>
-            <Button
-              variant="outline"
-              className="w-full h-12 border-primary/30 text-primary hover:bg-primary/10 font-bold"
-              data-testid="button-guest"
-            >
-              CONTINUE AS GUEST
-            </Button>
           </div>
         </motion.div>
 
@@ -371,18 +364,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Info Box */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-xl"
-        >
-          <div className="text-xs text-gray-400 leading-relaxed space-y-2">
-            <p><strong className="text-primary">Email login:</strong> use your registered email and password.</p>
-            <p><strong className="text-primary">Google login:</strong> use the Sign in with Google button.</p>
-          </div>
-        </motion.div>
       </motion.div>
     </div>
   );
