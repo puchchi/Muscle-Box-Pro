@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
 import {
+  getContactRequestEmailTemplate,
   getCampaignRequestEmailTemplate,
   getDemoRequestEmailTemplate,
   getPasswordResetEmailTemplate,
@@ -130,6 +131,35 @@ export async function sendCampaignRequestEmail(input: {
     from: env.SMTP_FROM,
     to: input.to,
     cc: env.CAMPAIGN_REQUEST_CC,
+    subject,
+    text,
+    html,
+  });
+}
+
+export async function sendContactRequestEmail(input: {
+  to: string;
+  name: string;
+  email: string;
+  message: string;
+}) {
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM) {
+    throw new Error(
+      "Contact request email is not configured. Missing SMTP_HOST/SMTP_USER/SMTP_PASS/SMTP_FROM.",
+    );
+  }
+
+  const transporter = createTransporter();
+  const { subject, text, html } = getContactRequestEmailTemplate({
+    name: input.name,
+    email: input.email,
+    message: input.message,
+  });
+
+  await transporter.sendMail({
+    from: env.SMTP_FROM,
+    to: input.to,
+    cc: env.CONTACT_REQUEST_CC,
     subject,
     text,
     html,

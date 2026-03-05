@@ -58,8 +58,15 @@ export const campaignRequestSchema = z.object({
   mobile: z.string().min(10, "Valid mobile number is required"),
 });
 
+export const contactRequestSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("A valid email is required"),
+  message: z.string().min(5, "Message is required"),
+});
+
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type DemoRequestInput = z.infer<typeof demoRequestSchema>;
 export type CampaignRequestInput = z.infer<typeof campaignRequestSchema>;
+export type ContactRequestInput = z.infer<typeof contactRequestSchema>;
