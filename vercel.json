@@ -20,6 +20,7 @@
     { "source": "/api/:path*", "destination": "/api/index" }
   ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
