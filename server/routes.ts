@@ -46,8 +46,14 @@ export async function registerRoutes(
   apiRouter.get("/health", (req, res) => {
     res.status(200).json({ ok: true, method: req.method, url: req.url });
   });
-  app.use("/api", apiRouter);
-  app.use("/api/index", apiRouter);
+
+  if (process.env.NODE_ENV !== "production") {
+    // Vercel eat up /api from requests, so we need to use / instead
+    app.use("/", apiRouter);
+  } else {
+    app.use("/api", apiRouter);
+    app.use("/api/index", apiRouter);
+  }
 
   return httpServer;
 }
