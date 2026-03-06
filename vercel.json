@@ -9,9 +9,14 @@
     {
       "src": "api/index.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/health.js",
+      "use": "@vercel/node"
     }
   ],
   "rewrites": [
+    { "source": "/api/health", "destination": "/api/health" },
     { "source": "/api/:path*", "destination": "/api/index" }
   ],
   "routes": [
