@@ -55,16 +55,16 @@ export async function createApp() {
   app.options("*", cors(corsOptions));
 
   if (process.env.NODE_ENV !== "production") {
-    app.use((req, res, next) => {
-      const path = req.query.path;
-      if (typeof path === "string" && path) {
-        const qs = req.url?.includes("?") ? req.url.split("?")[1] ?? "" : "";
-        const rest = qs ? "?" + qs.replace(/[&?]path=[^&]*/g, "").replace(/^&/, "") : "";
-        req.url = `/api/index/${path}${rest}`;
-        delete req.query.path;
-      }
-      next();
-    });
+    // app.use((req, res, next) => {
+    //   const path = req.query.path;
+    //   if (typeof path === "string" && path) {
+    //     const qs = req.url?.includes("?") ? req.url.split("?")[1] ?? "" : "";
+    //     const rest = qs ? "?" + qs.replace(/[&?]path=[^&]*/g, "").replace(/^&/, "") : "";
+    //     req.url = `/api/index/${path}${rest}`;
+    //     delete req.query.path;
+    //   }
+    //   next();
+    // });
   }
 
   app.use(
