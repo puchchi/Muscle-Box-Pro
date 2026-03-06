@@ -53,6 +53,17 @@ export async function createApp() {
   app.use(cors(corsOptions));
   app.options("*", cors(corsOptions));
 
+  app.use((req, res, next) => {
+    const path = req.query.path;
+    if (typeof path === "string" && path) {
+      const qs = req.url?.includes("?") ? req.url.split("?")[1] ?? "" : "";
+      const rest = qs ? "?" + qs.replace(/[&?]path=[^&]*/g, "").replace(/^&/, "") : "";
+      req.url = `/api/index/${path}${rest}`;
+      delete req.query.path;
+    }
+    next();
+  });
+
   app.use(
     express.json({
       verify: (req, _res, buf) => {

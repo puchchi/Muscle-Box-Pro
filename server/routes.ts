@@ -44,6 +44,7 @@ export async function registerRoutes(
   apiRouter.use("/contact", contactLimiter, contactRouter);
   apiRouter.use("/user", userRouter);
   app.use("/api", apiRouter);
+  app.use("/api/index", apiRouter);
 
   return httpServer;
 }
