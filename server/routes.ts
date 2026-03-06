@@ -43,6 +43,9 @@ export async function registerRoutes(
   apiRouter.use("/campaign", campaignLimiter, campaignRouter);
   apiRouter.use("/contact", contactLimiter, contactRouter);
   apiRouter.use("/user", userRouter);
+  apiRouter.get("/health", (req, res) => {
+    res.status(200).json({ ok: true, method: req.method, url: req.url });
+  });
   app.use("/api", apiRouter);
   app.use("/api/index", apiRouter);
 

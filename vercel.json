@@ -14,7 +14,7 @@
     { "handle": "filesystem" },
     {
       "src": "/(.*)",
-      "dest": "/dist/public/$1"
+      "dest": "/dist/public/index.html"
     }
   ]
 }
