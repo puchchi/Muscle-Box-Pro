@@ -1,3 +1,4 @@
+import "express-async-errors";
 import express, { type Request, Response, NextFunction } from "express";
 import cors, { type CorsOptions } from "cors";
 import { createServer } from "http";
@@ -103,6 +104,9 @@ export async function createApp() {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+    console.error("[express] Error:", err?.message ?? err);
+    if (err?.stack) console.error("[express] Stack:", err.stack);
+
     if (res.headersSent) {
       next(err);
       return;
