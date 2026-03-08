@@ -114,6 +114,7 @@ export default function Login() {
           headers: {
             "Content-Type": "application/json",
             apikey: publicAnonKey,
+            Authorization: `Bearer ${publicAnonKey}`,
           },
           body: JSON.stringify({ email }),
         },
