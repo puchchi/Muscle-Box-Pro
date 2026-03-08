@@ -1,5 +1,6 @@
-import nodemailer from "nodemailer";
-import { requireEnv, optionalEnv } from "./env.ts";
+// @ts-ignore Deno npm specifier resolved during Supabase function bundling.
+import nodemailer from "npm:nodemailer";
+import { requireEnv, optionalEnv } from "../../../lib/env.ts";
 
 export interface SendMailOptions {
   from?: string;

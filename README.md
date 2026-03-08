@@ -38,7 +38,7 @@ supabase functions deploy demo-request campaign-request contact-request health s
 **Secrets** — set in Supabase:
 
 ```bash
-supabase secrets set SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... SUPABASE_ANON_KEY=... RESEND_API_KEY=... EMAIL_FROM="Muscle Box Pro <no-reply@muscleboxpro.com>"
+supabase secrets set ENV_SUPABASE_URL=... ENV_SUPABASE_SERVICE_ROLE_KEY=... SUPABASE_ANON_KEY=... RESEND_API_KEY=... EMAIL_FROM="Muscle Box Pro <no-reply@muscleboxpro.com>"
 ```
 
 **Database** — apply migrations:

@@ -1,7 +1,8 @@
+/// <reference path="../_shared/deno.d.ts" />
 import { corsResponse, jsonResponse } from "../_shared/cors.ts";
-import { getResend } from "../../../lib/resend.ts";
+import { sendMail } from "../_shared/email.ts";
 import { optionalEnv } from "../../../lib/env.ts";
-import { contactRequestSchema } from "../../../shared/validation/contact.ts";
+import { contactRequestSchema } from "../_shared/validation/contact.ts";
 import { getContactRequestEmailTemplate } from "../../../shared/email/contactRequest.ts";
 
 Deno.serve(async (req) => {
@@ -21,20 +22,15 @@ Deno.serve(async (req) => {
   const values = parsed.data;
 
   try {
-    const resend = getResend();
     const { subject, html } = getContactRequestEmailTemplate({
       name: values.name,
       email: values.email,
       message: values.message,
     });
 
-    const ccAddress = optionalEnv("CONTACT_REQUEST_CC", "contact@muscleboxpro.com");
-    const fromAddress = optionalEnv("EMAIL_FROM", "Muscle Box Pro <no-reply@muscleboxpro.com>");
-
-    await resend.emails.send({
-      from: fromAddress,
+    await sendMail({
       to: values.email,
-      cc: ccAddress,
+      cc: optionalEnv("CONTACT_REQUEST_CC", "contact@muscleboxpro.com"),
       subject,
       html,
     });

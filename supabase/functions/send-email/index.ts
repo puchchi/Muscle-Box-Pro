@@ -1,7 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+/// <reference path="../_shared/deno.d.ts" />
+// @ts-ignore Deno npm specifier resolved during Supabase function bundling.
+import { createClient } from "npm:@supabase/supabase-js@2.98.0";
 import { corsResponse, jsonResponse } from "../_shared/cors.ts";
-import { getResend } from "../../../lib/resend.ts";
-import { requireEnv, optionalEnv } from "../../../lib/env.ts";
+import { sendMail } from "../_shared/email.ts";
+import { requireEnv } from "../../../lib/env.ts";
 
 const emailPayloadSchema = {
   parse(body: unknown) {
@@ -34,7 +36,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(
-      requireEnv("SUPABASE_URL"),
+      requireEnv("ENV_SUPABASE_URL"),
       requireEnv("SUPABASE_ANON_KEY"),
       {
         global: { headers: { Authorization: authHeader } },
@@ -65,13 +67,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const resend = getResend();
-    const fromAddress = optionalEnv(
-      "EMAIL_FROM",
-      "Muscle Box Pro <no-reply@muscleboxpro.com>",
-    );
-    await resend.emails.send({
-      from: fromAddress,
+    await sendMail({
       to: payload.to,
       cc: payload.cc,
       subject: payload.subject,

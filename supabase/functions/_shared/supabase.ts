@@ -1,5 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-import { requireEnv } from "./env.ts";
+// @ts-ignore Deno npm specifier resolved during Supabase function bundling.
+import { createClient } from "npm:@supabase/supabase-js@2.98.0";
+import { requireEnv } from "../../../lib/env.ts";
 
 export function getSupabaseAdmin() {
   return createClient(

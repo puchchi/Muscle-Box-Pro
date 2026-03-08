@@ -1,8 +1,9 @@
-import { corsHeaders, corsResponse, jsonResponse } from "../_shared/cors.ts";
-import { getSupabaseAdmin } from "../../../lib/supabase.ts";
-import { getResend } from "../../../lib/resend.ts";
+/// <reference path="../_shared/deno.d.ts" />
+import { corsResponse, jsonResponse } from "../_shared/cors.ts";
+import { getSupabaseAdmin } from "../_shared/supabase.ts";
+import { sendMail } from "../_shared/email.ts";
 import { optionalEnv } from "../../../lib/env.ts";
-import { demoRequestSchema } from "../../../shared/validation/demo.ts";
+import { demoRequestSchema } from "../_shared/validation/demo.ts";
 import { getDemoRequestEmailTemplate } from "../../../shared/email/demoRequest.ts";
 
 Deno.serve(async (req) => {
@@ -39,7 +40,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const resend = getResend();
     const { subject, html } = getDemoRequestEmailTemplate({
       name: values.name,
       gymName: values.gymName,
@@ -49,13 +49,9 @@ Deno.serve(async (req) => {
       message: values.message,
     });
 
-    const ccAddress = optionalEnv("DEMO_REQUEST_CC", "contact@muscleboxpro.com");
-    const fromAddress = optionalEnv("EMAIL_FROM", "Muscle Box Pro <no-reply@muscleboxpro.com>");
-
-    await resend.emails.send({
-      from: fromAddress,
+    await sendMail({
       to: values.email,
-      cc: ccAddress,
+      cc: optionalEnv("DEMO_REQUEST_CC", "contact@muscleboxpro.com"),
       subject,
       html,
     });
