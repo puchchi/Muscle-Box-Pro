@@ -4,7 +4,7 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Dumbbell, Building2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +28,6 @@ const gymContactSchema = z.object({
 
 export default function Signup() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   const [accountType, setAccountType] = useState<"user" | "gym">("user");
   const [signupMessage, setSignupMessage] = useState<{
     type: "success" | "error";
@@ -58,15 +57,12 @@ export default function Signup() {
   async function onUserSignup(values: z.infer<typeof userSignupSchema>) {
     setSignupMessage(null);
 
-    const { data, error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-      options: {
-        data: {
-          full_name: values.name,
-          mobile: values.mobile,
-          account_type: "user",
-        },
+    const { data, error } = await supabase.functions.invoke("auth-signup", {
+      body: {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        mobile: values.mobile,
       },
     });
 
@@ -78,18 +74,11 @@ export default function Signup() {
       return;
     }
 
-    if (data.session) {
-      toast({
-        title: "Account Created!",
-        description: "Welcome to Muscle Box Pro.",
-      });
-      setLocation("/account");
-      return;
-    }
-
     setSignupMessage({
       type: "success",
-      text: "Verification link has been sent, please click on then login.",
+      text:
+        (data as { message?: string } | null)?.message ||
+        "Verification link has been sent, please click on then login.",
     });
   }
 

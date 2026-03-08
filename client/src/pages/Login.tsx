@@ -12,6 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const publicAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as
+  | string
+  | undefined;
+
 const loginSchema = z.object({
   email: z.string().email("A valid email is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -98,15 +103,36 @@ export default function Login() {
 
     try {
       setIsResending(true);
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email,
-      });
-      if (error) throw error;
+      if (!supabaseUrl || !publicAnonKey) {
+        throw new Error("Supabase environment variables are missing.");
+      }
 
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/resend-verification`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: publicAnonKey,
+          },
+          body: JSON.stringify({ email }),
+        },
+      );
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        message?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.message || "Unable to resend verification link.");
+      }
+
+      const responseMessage = payload.message;
       setNotice({
         type: "success",
-        message: "Verification link has been sent, please click on then login.",
+        message:
+          responseMessage ||
+          "Verification link has been sent, please click on then login.",
       });
     } catch (rawError) {
       const error = rawError as Error;
