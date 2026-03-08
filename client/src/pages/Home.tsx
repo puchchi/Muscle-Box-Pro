@@ -126,7 +126,7 @@ export default function Home() {
           </div>
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-600 text-[10px] uppercase tracking-[0.2em]">
-              © 2024 MUSCLE BOX PRO. ALL RIGHTS RESERVED.
+              © 2026 MUSCLE BOX PRO. ALL RIGHTS RESERVED.
             </p>
           </div>
         </div>
