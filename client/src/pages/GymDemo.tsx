@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -40,12 +40,14 @@ export default function GymDemo() {
     setNotice(null);
     try {
       setIsSubmitting(true);
-      const res = await apiRequest("POST", "/api/demo/request", values);
-      const body = await res.json();
+      const { data, error } = await supabase.functions.invoke("demo-request", {
+        body: values,
+      });
+      if (error) throw error;
       setNotice({
         type: "success",
         message:
-          body?.message ||
+          (data as { message?: string })?.message ||
           "Thanks for your interest. We will contact you shortly to schedule your demo.",
       });
       form.reset();

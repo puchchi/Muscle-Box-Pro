@@ -16,8 +16,8 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from "@tanstack/react-query";
-import { getQueryFn, queryClient } from "@/lib/queryClient";
-import { clearAccessToken, hasAccessToken } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 
 const revenueData = [
   { name: 'Mon', revenue: 4500 },
@@ -44,9 +44,17 @@ export default function Account() {
   const { data: session, isLoading } = useQuery<{
     user: { email?: string; userMetadata?: Record<string, unknown> };
   } | null>({
-    queryKey: ["/api/auth/session"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    enabled: hasAccessToken(),
+    queryKey: ["supabase-session"],
+    queryFn: async () => {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      if (!s) return null;
+      return {
+        user: {
+          email: s.user.email,
+          userMetadata: s.user.user_metadata as Record<string, unknown>,
+        },
+      };
+    },
   });
   const isLoggedIn = Boolean(session?.user);
   const accountType = session?.user?.userMetadata?.account_type;
@@ -67,8 +75,8 @@ export default function Account() {
     { id: 4, item: "Choco Whey", date: "Oct 18, 2024", amount: -250.50, location: "Downtown Fit" },
   ];
 
-  const logout = () => {
-    clearAccessToken();
+  const logout = async () => {
+    await supabase.auth.signOut();
     queryClient.invalidateQueries();
     window.location.href = "/";
   };

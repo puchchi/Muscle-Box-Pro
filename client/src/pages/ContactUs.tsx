@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 
 export default function ContactUs() {
   const [name, setName] = useState("");
@@ -22,16 +22,15 @@ export default function ContactUs() {
     setNotice(null);
     try {
       setIsSubmitting(true);
-      const res = await apiRequest("POST", "/api/contact/request", {
-        name,
-        email,
-        message,
-      });
-      const body = await res.json();
+      const { data, error } = await supabase.functions.invoke(
+        "contact-request",
+        { body: { name, email, message } },
+      );
+      if (error) throw error;
       setNotice({
         type: "success",
         message:
-          body?.message ||
+          (data as { message?: string })?.message ||
           "Thanks for reaching out. We will contact you shortly.",
       });
       setName("");

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
@@ -26,9 +26,10 @@ export default function ForgotPassword() {
     setNotice(null);
     try {
       setIsSubmitting(true);
-      await apiRequest("POST", "/api/auth/forgot-password", {
-        email,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/forgot-password`,
       });
+      if (error) throw error;
       setNotice({
         type: "success",
         message:
@@ -62,10 +63,10 @@ export default function ForgotPassword() {
 
     try {
       setIsSubmitting(true);
-      await apiRequest("POST", "/api/auth/reset-password", {
-        token,
+      const { error } = await supabase.auth.updateUser({
         password,
       });
+      if (error) throw error;
       setNotice({
         type: "success",
         message:

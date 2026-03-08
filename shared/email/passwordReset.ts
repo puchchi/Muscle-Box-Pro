@@ -1,0 +1,71 @@
+type PasswordResetTemplateInput = {
+  name?: string;
+  resetUrl: string;
+};
+
+export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput) {
+  const greetingName = input.name?.trim() ? input.name.trim() : "there";
+  const safeUrl = input.resetUrl;
+
+  const subject = "Reset your Muscle Box Pro password";
+
+  const text = [
+    `Hi ${greetingName},`,
+    "",
+    "We received a request to reset your Muscle Box Pro password.",
+    "Open the link below to set a new password:",
+    safeUrl,
+    "",
+    "If you did not request this, you can ignore this email.",
+  ].join("\n");
+
+  const html = `
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#11131b;font-family:Rajdhani,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#11131b;padding:36px 14px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#1b1f2b;border:1px solid #2f3647;border-radius:14px;overflow:hidden;">
+            <tr>
+              <td style="padding:30px 30px 16px 30px;">
+                <div style="font-family:'Russo One',Rajdhani,Arial,sans-serif;color:#ffffff;font-size:24px;line-height:1;letter-spacing:0.5px;">
+                  MUSCLE BOX<span style="color:#00cfff;">PRO</span>
+                </div>
+                <div style="height:1px;background:#2f3647;margin:14px 0 0 0;"></div>
+                <h1 style="margin:22px 0 12px 0;color:#ffffff;font-family:'Russo One',Rajdhani,Arial,sans-serif;font-size:28px;line-height:1.2;letter-spacing:0.4px;">Reset your password</h1>
+                <p style="margin:0;color:#aeb7cb;font-size:17px;line-height:1.6;">
+                  Hi <strong style="color:#ffffff;font-weight:700;">${greetingName}</strong>, we received a request to reset your password.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 30px 0 30px;">
+                <a href="${safeUrl}" style="display:inline-block;background:#00cfff;color:#11131b;text-decoration:none;font-weight:800;font-size:14px;letter-spacing:0.5px;padding:12px 22px;border-radius:8px;">
+                  Reset Password
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 30px 30px 30px;">
+                <p style="margin:0 0 8px 0;color:#9aa7c7;font-size:13px;line-height:1.5;letter-spacing:0.2px;">
+                  If the button does not work, copy and paste this link in your browser:
+                </p>
+                <p style="margin:0;word-break:break-all;">
+                  <a href="${safeUrl}" style="color:#00cfff;font-size:13px;text-decoration:underline;">${safeUrl}</a>
+                </p>
+                <div style="height:1px;background:#2f3647;margin:24px 0 16px 0;"></div>
+                <p style="margin:0;color:#7c87a5;font-size:12px;line-height:1.5;">
+                  If you did not request this, you can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+  return { subject, text, html };
+}

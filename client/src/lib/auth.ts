@@ -1,17 +1,31 @@
-const ACCESS_TOKEN_KEY = "mbp_access_token";
+import { supabase } from "./supabase";
 
-export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+export async function getAccessToken(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
 }
 
-export function setAccessToken(token: string) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+export function getAccessTokenSync(): string | null {
+  const raw = localStorage.getItem(
+    `sb-${new URL(import.meta.env.VITE_SUPABASE_URL as string).hostname.split(".")[0]}-auth-token`,
+  );
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.access_token ?? null;
+  } catch {
+    return null;
+  }
 }
 
-export function clearAccessToken() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
+export async function hasAccessToken(): Promise<boolean> {
+  return Boolean(await getAccessToken());
 }
 
-export function hasAccessToken() {
-  return Boolean(getAccessToken());
+export function hasAccessTokenSync(): boolean {
+  return Boolean(getAccessTokenSync());
+}
+
+export async function clearSession() {
+  await supabase.auth.signOut();
 }

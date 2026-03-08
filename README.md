@@ -1,85 +1,61 @@
-# Muscle Box Pro - Local Run Guide
+# Muscle Box Pro
 
-Small guide to run frontend and backend locally.
+React + Vite frontend deployed on Vercel. Backend runs on Supabase (Auth, Postgres, Edge Functions). Email delivery via Resend.
 
-## 1) Install dependencies
+## Setup
 
 ```bash
 npm install
-```
-
-## 2) Setup environment
-
-Create backend env at project root:
-
-```bash
 cp .env.example .env
-```
-
-Create frontend env inside `client`:
-
-```bash
 cp client/.env.example client/.env
 ```
 
-### Recommended for split mode (frontend 5000, backend 5001)
+Set your Supabase project values in `client/.env`:
 
-- In `.env`:
-  - `PORT=5001`
-  - `FRONTEND_URL=http://localhost:5000`
-  - optional: `FRONTEND_URLS=http://localhost:5002,http://127.0.0.1:5000` (if you test from multiple local origins)
-- In `client/.env`:
-  - `VITE_API_BASE_URL=http://localhost:5001`
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
 
-### Custom email verification (required for signup)
-
-Set these values in root `.env`:
-
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `EMAIL_VERIFICATION_SECRET`
-- `PASSWORD_RESET_SECRET`
-- `BACKEND_PUBLIC_URL` (e.g. `http://localhost:5001`)
-- SMTP settings:
-  - `SMTP_HOST`
-  - `SMTP_PORT`
-  - `SMTP_SECURE`
-  - `SMTP_USER`
-  - `SMTP_PASS`
-  - `SMTP_FROM`
-
-Signup now sends a custom verification email from backend, and login is blocked until email verification is complete.
-Forgot password now also uses custom backend email templates and token-based reset flow.
-Gym demo requests now call backend and send a confirmation email to the requester with CC to `contact@muscleboxpro.com` (configurable via `DEMO_REQUEST_CC`).
-Advertiser "Start Your Campaign" requests now call backend, store data in Postgres (`campaign_requests` table), and send email confirmation to the requester with CC to `contact@muscleboxpro.com` (configurable via `CAMPAIGN_REQUEST_CC`).
-Contact Us form now calls backend and sends confirmation email to the user with CC to `contact@muscleboxpro.com` (configurable via `CONTACT_REQUEST_CC`), with inline success/error messaging in the UI.
-
-## 3) Run app
-
-Open 2 terminals.
-
-Terminal 1 (backend):
+## Development
 
 ```bash
 npm run dev
 ```
 
-Terminal 2 (frontend):
+Opens at `http://localhost:5000`.
+
+## Deploy
+
+**Frontend** — push to Vercel. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Vercel env vars.
+
+**Edge Functions** — deploy via Supabase CLI:
 
 ```bash
-npm run dev:client
+supabase functions deploy demo-request campaign-request contact-request health send-email
 ```
 
-Now open: `http://localhost:5000`
-
-## Optional: single-process mode on port 5000
-
-If you want backend + frontend from one command (`npm run dev`), set:
-
-- `.env` -> `PORT=5000`
-- `client/.env` -> `VITE_API_BASE_URL=http://localhost:5000`
-
-Then run:
+**Secrets** — set in Supabase:
 
 ```bash
-npm run dev
+supabase secrets set SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... SUPABASE_ANON_KEY=... RESEND_API_KEY=... EMAIL_FROM="Muscle Box Pro <no-reply@muscleboxpro.com>"
+```
+
+**Database** — apply migrations:
+
+```bash
+supabase db push
+```
+
+## Project Structure
+
+```
+client/          React frontend (Vite)
+shared/
+  validation/    Zod schemas (shared between client + edge functions)
+  email/         HTML email templates
+lib/             Edge function utilities (Supabase client, Resend, env)
+supabase/
+  functions/     Supabase Edge Functions (Deno)
+  migrations/    SQL migrations
 ```

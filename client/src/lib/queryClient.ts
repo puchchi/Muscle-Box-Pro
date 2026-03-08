@@ -1,17 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { getAccessToken } from "./auth";
-
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(
-  /\/$/,
-  "",
-);
-
-function toApiUrl(url: string) {
-  if (!API_BASE_URL) return url;
-  if (/^https?:\/\//.test(url)) return url;
-  const normalizedPath = url.startsWith("/") ? url : `/${url}`;
-  return `${API_BASE_URL}${normalizedPath}`;
-}
+import { supabase } from "./supabase";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -47,12 +35,28 @@ export type ApiRequestError = Error & {
   body?: unknown;
 };
 
+export async function invokeEdgeFunction(
+  functionName: string,
+  data?: unknown,
+): Promise<{ data: unknown; error: unknown }> {
+  const { data: responseData, error } = await supabase.functions.invoke(
+    functionName,
+    {
+      body: data ? JSON.stringify(data) : undefined,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+  return { data: responseData, error };
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const token = getAccessToken();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+
   const headers: Record<string, string> = data
     ? { "Content-Type": "application/json" }
     : {};
@@ -60,11 +64,10 @@ export async function apiRequest(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(toApiUrl(url), {
+  const res = await fetch(url, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
   });
 
   await throwIfResNotOk(res);
@@ -77,17 +80,15 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const token = getAccessToken();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
     const headers: Record<string, string> = {};
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
 
     const url = queryKey.join("/") as string;
-    const res = await fetch(toApiUrl(url), {
-      credentials: "include",
-      headers,
-    });
+    const res = await fetch(url, { headers });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;

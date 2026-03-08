@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Monitor, Users, TrendingUp } from "lucide-react";
 import heroBg from "@assets/generated_images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png";
 import { useState } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 
 export default function Advertiser() {
   const [brandName, setBrandName] = useState("");
@@ -20,12 +20,15 @@ export default function Advertiser() {
     const values = { brandName, email, mobile };
     try {
       setIsSubmitting(true);
-      const res = await apiRequest("POST", "/api/campaign/request", values);
-      const body = await res.json();
+      const { data, error } = await supabase.functions.invoke(
+        "campaign-request",
+        { body: values },
+      );
+      if (error) throw error;
       setNotice({
         type: "success",
         message:
-          body?.message ||
+          (data as { message?: string })?.message ||
           "Thank you! Our advertising team will contact you shortly.",
       });
       setBrandName("");

@@ -9,8 +9,7 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Dumbbell, MailWarning, TriangleAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, type ApiRequestError } from "@/lib/queryClient";
-import { setAccessToken } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 
 const loginSchema = z.object({
@@ -39,46 +38,16 @@ export default function Login() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setNotice(null);
-    try {
-      const res = await apiRequest("POST", "/api/auth/login", {
-        email: values.email,
-        password: values.password,
-      });
-      const body = await res.json();
-      const token: string | undefined = body?.session?.accessToken;
-      if (!token) {
-        setNotice({
-          type: "error",
-          message: "We couldn't sign you in. Please check your email and password and try again.",
-        });
-        return;
-      }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    });
 
-      setAccessToken(token);
-      toast({
-        title: "Welcome Back!",
-        description: "You've been logged in successfully.",
-      });
-      setLocation("/account");
-    } catch (rawError) {
-      const error = rawError as ApiRequestError;
-      const code =
-        error.body && typeof error.body === "object" && "code" in error.body
-          ? (error.body as { code?: string }).code
-          : undefined;
-      const bodyMessage =
-        error.body &&
-        typeof error.body === "object" &&
-        "message" in error.body &&
-        typeof (error.body as { message?: unknown }).message === "string"
-          ? (error.body as { message: string }).message
-          : "";
-      const normalizedMessage = `${error.message} ${bodyMessage}`.toLowerCase();
-
+    if (error) {
+      const msg = error.message.toLowerCase();
       if (
-        code === "EMAIL_NOT_CONFIRMED" ||
-        normalizedMessage.includes("email not confirmed") ||
-        normalizedMessage.includes("email not verified")
+        msg.includes("email not confirmed") ||
+        msg.includes("email not verified")
       ) {
         setNotice({
           type: "warning",
@@ -93,7 +62,22 @@ export default function Login() {
         type: "error",
         message: "We couldn't sign you in. Please check your email and password and try again.",
       });
+      return;
     }
+
+    if (!data.session) {
+      setNotice({
+        type: "error",
+        message: "We couldn't sign you in. Please check your email and password and try again.",
+      });
+      return;
+    }
+
+    toast({
+      title: "Welcome Back!",
+      description: "You've been logged in successfully.",
+    });
+    setLocation("/account");
   }
 
   async function handleResendVerification() {
@@ -114,16 +98,18 @@ export default function Login() {
 
     try {
       setIsResending(true);
-      await apiRequest("POST", "/api/auth/resend-verification", {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
         email,
       });
+      if (error) throw error;
 
       setNotice({
         type: "success",
         message: "Verification link has been sent, please click on then login.",
       });
     } catch (rawError) {
-      const error = rawError as ApiRequestError;
+      const error = rawError as Error;
       setNotice({
         type: "error",
         message:
@@ -137,16 +123,20 @@ export default function Login() {
 
   async function handleGoogleLogin() {
     try {
-      const redirectTo = `${window.location.origin}/auth/callback`;
-      const res = await apiRequest(
-        "GET",
-        `/api/auth/google-url?redirectTo=${encodeURIComponent(redirectTo)}`,
-      );
-      const body = await res.json();
-      if (!body?.url) {
-        throw new Error("Unable to initialize Google sign-in.");
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+        },
+      });
+      if (error) throw error;
+      if (data.url) {
+        window.location.href = data.url;
       }
-      window.location.href = body.url;
     } catch (error) {
       toast({
         variant: "destructive",

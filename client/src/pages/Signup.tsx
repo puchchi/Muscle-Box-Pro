@@ -9,8 +9,7 @@ import { motion } from "framer-motion";
 import { Dumbbell, Building2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiRequest } from "@/lib/queryClient";
-import { setAccessToken } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 
 const userSignupSchema = z.object({
@@ -58,34 +57,40 @@ export default function Signup() {
 
   async function onUserSignup(values: z.infer<typeof userSignupSchema>) {
     setSignupMessage(null);
-    try {
-      const res = await apiRequest("POST", "/api/auth/signup", values);
-      const body = await res.json();
-      const token: string | undefined = body?.session?.accessToken;
 
-      if (token) {
-        setAccessToken(token);
-        toast({
-          title: "Account Created!",
-          description: "Welcome to Muscle Box Pro.",
-        });
-        setLocation("/account");
-        return;
-      }
+    const { data, error } = await supabase.auth.signUp({
+      email: values.email,
+      password: values.password,
+      options: {
+        data: {
+          full_name: values.name,
+          mobile: values.mobile,
+          account_type: "user",
+        },
+      },
+    });
 
-      setSignupMessage({
-        type: "success",
-        text: "Verification link has been sent, please click on then login.",
-      });
-    } catch (error) {
+    if (error) {
       setSignupMessage({
         type: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Could not create account. Please try again.",
+        text: error.message || "Could not create account. Please try again.",
       });
+      return;
     }
+
+    if (data.session) {
+      toast({
+        title: "Account Created!",
+        description: "Welcome to Muscle Box Pro.",
+      });
+      setLocation("/account");
+      return;
+    }
+
+    setSignupMessage({
+      type: "success",
+      text: "Verification link has been sent, please click on then login.",
+    });
   }
 
   async function onGymContactSubmit(values: z.infer<typeof gymContactSchema>) {

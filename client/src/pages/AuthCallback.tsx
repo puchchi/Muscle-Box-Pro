@@ -1,41 +1,30 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { setAccessToken } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-
-function extractTokenFromHash(hash: string): string | null {
-  const cleaned = hash.startsWith("#") ? hash.slice(1) : hash;
-  const params = new URLSearchParams(cleaned);
-  return params.get("access_token");
-}
 
 export default function AuthCallback() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    const tokenFromHash = extractTokenFromHash(window.location.hash);
-    const tokenFromQuery = new URLSearchParams(window.location.search).get(
-      "access_token",
-    );
-    const token = tokenFromHash ?? tokenFromQuery;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        toast({
+          variant: "destructive",
+          title: "Authentication failed",
+          description: "No session returned from provider.",
+        });
+        setLocation("/login");
+        return;
+      }
 
-    if (!token) {
       toast({
-        variant: "destructive",
-        title: "Authentication failed",
-        description: "No access token returned from provider.",
+        title: "Signed in successfully",
+        description: "Your account is now connected.",
       });
-      setLocation("/login");
-      return;
-    }
-
-    setAccessToken(token);
-    toast({
-      title: "Signed in successfully",
-      description: "Your account is now connected.",
+      setLocation("/account");
     });
-    setLocation("/account");
   }, [setLocation, toast]);
 
   return (
