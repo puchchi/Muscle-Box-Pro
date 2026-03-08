@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Dumbbell, Building2, User } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
@@ -27,12 +26,16 @@ const gymContactSchema = z.object({
 });
 
 export default function Signup() {
-  const { toast } = useToast();
   const [accountType, setAccountType] = useState<"user" | "gym">("user");
   const [signupMessage, setSignupMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [gymMessage, setGymMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [isGymSubmitting, setIsGymSubmitting] = useState(false);
 
   const userForm = useForm<z.infer<typeof userSignupSchema>>({
     resolver: zodResolver(userSignupSchema),
@@ -83,12 +86,37 @@ export default function Signup() {
   }
 
   async function onGymContactSubmit(values: z.infer<typeof gymContactSchema>) {
-    console.log("Gym owner lead submitted", values);
-    toast({
-      title: "Request Received",
-      description: "Our team will contact you shortly to onboard your gym.",
+    setGymMessage(null);
+    setIsGymSubmitting(true);
+    const message = `Gym onboarding request\nAddress: ${values.address}\nPhone: ${values.phone}`;
+
+    const { data, error } = await supabase.functions.invoke("contact-request", {
+      body: {
+        name: values.name,
+        email: values.email,
+        message,
+      },
+    });
+
+    if (error) {
+      setGymMessage({
+        type: "error",
+        text:
+          error.message ||
+          "We could not submit your request right now. Please try again.",
+      });
+      setIsGymSubmitting(false);
+      return;
+    }
+
+    setGymMessage({
+      type: "success",
+      text:
+        (data as { message?: string } | null)?.message ||
+        "We have received your request and will contact you soon.",
     });
     gymForm.reset();
+    setIsGymSubmitting(false);
   }
 
   return (
@@ -209,6 +237,17 @@ export default function Signup() {
             <TabsContent value="gym">
               <Form {...gymForm}>
                 <form onSubmit={gymForm.handleSubmit(onGymContactSubmit)} className="space-y-6">
+                  {gymMessage && (
+                    <div
+                      className={
+                        gymMessage.type === "success"
+                          ? "rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-primary"
+                          : "rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                      }
+                    >
+                      {gymMessage.text}
+                    </div>
+                  )}
                   <FormField
                     control={gymForm.control}
                     name="name"
@@ -265,8 +304,12 @@ export default function Signup() {
                     )}
                   />
 
-                  <Button type="submit" className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90">
-                    CONTACT US
+                  <Button
+                    type="submit"
+                    disabled={isGymSubmitting}
+                    className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90"
+                  >
+                    {isGymSubmitting ? "SENDING..." : "CONTACT US"}
                   </Button>
                 </form>
               </Form>

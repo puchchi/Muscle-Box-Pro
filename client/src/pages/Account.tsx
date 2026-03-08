@@ -29,6 +29,44 @@ const revenueData = [
   { name: 'Sun', revenue: 6800 },
 ];
 
+type MemberTransaction = {
+  id: string;
+  item: string;
+  date: string;
+  amount: number;
+  location: string;
+};
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function parseMemberTransactions(value: unknown): MemberTransaction[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry, index) => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as Record<string, unknown>;
+      const amount = asNumber(row.amount);
+      if (amount === null) return null;
+
+      const item = typeof row.item === "string" ? row.item : "Transaction";
+      const location = typeof row.location === "string" ? row.location : "App";
+      const date = typeof row.date === "string" ? row.date : "Recently";
+      const id =
+        typeof row.id === "string" ? row.id : `transaction-${index.toString()}`;
+
+      return { id, item, date, amount, location };
+    })
+    .filter((entry): entry is MemberTransaction => entry !== null);
+}
+
 function toDisplayName(rawName: string) {
   return rawName
     .replace(/[._-]+/g, " ")
@@ -67,13 +105,16 @@ export default function Account() {
     session?.user?.email?.split("@")[0] ||
     "Member";
   const memberDisplayName = toDisplayName(memberName);
-
-  const transactions = [
-    { id: 1, item: "Banana Blast", date: "Oct 24, 2024", amount: -350.00, location: "Gold's Gym Main" },
-    { id: 2, item: "Date Delight", date: "Oct 22, 2024", amount: -450.50, location: "Iron Paradise" },
-    { id: 3, item: "Wallet Reload", date: "Oct 20, 2024", amount: +1000.00, location: "App" },
-    { id: 4, item: "Choco Whey", date: "Oct 18, 2024", amount: -250.50, location: "Downtown Fit" },
-  ];
+  const walletBalance = asNumber(session?.user?.userMetadata?.wallet_balance);
+  const monthlyShakes = asNumber(session?.user?.userMetadata?.monthly_shakes);
+  const favoriteBlend =
+    typeof session?.user?.userMetadata?.favorite_blend === "string" &&
+      session.user.userMetadata.favorite_blend.trim()
+      ? session.user.userMetadata.favorite_blend
+      : null;
+  const memberTransactions = parseMemberTransactions(
+    session?.user?.userMetadata?.transactions,
+  );
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -223,8 +264,16 @@ export default function Account() {
                   <Wallet className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-display font-bold">₹750.50</div>
-                  <p className="text-xs text-muted-foreground mt-1">Ready for 2 premium shakes</p>
+                  <div className="text-4xl font-display font-bold">
+                    {walletBalance !== null
+                      ? `₹${walletBalance.toFixed(2)}`
+                      : "Not available"}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {walletBalance !== null
+                      ? "Synced from your account profile."
+                      : "Wallet balance is not available yet."}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -234,8 +283,14 @@ export default function Account() {
                   <Activity className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-display font-bold">12</div>
-                  <p className="text-xs text-accent mt-1">+15% from last month</p>
+                  <div className="text-4xl font-display font-bold">
+                    {monthlyShakes !== null ? monthlyShakes : "--"}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {monthlyShakes !== null
+                      ? "Tracked from your account profile."
+                      : "Monthly usage data is not available yet."}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -245,8 +300,12 @@ export default function Account() {
                   <History className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-display font-bold truncate">Banana Blast</div>
-                  <Button variant="link" className="text-primary p-0 h-auto text-xs mt-1">Quick Reorder</Button>
+                  <div className="text-2xl font-display font-bold truncate">
+                    {favoriteBlend ?? "Not available"}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Favorite blend is shown after your orders sync.
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -257,22 +316,26 @@ export default function Account() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {transactions.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                  {memberTransactions.length > 0 ? memberTransactions.map((transaction) => (
+                    <div key={transaction.id} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
                       <div className="flex items-center gap-4">
-                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${t.amount > 0 ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
-                          {t.amount > 0 ? <Plus className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${transaction.amount > 0 ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
+                          {transaction.amount > 0 ? <Plus className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
                         </div>
                         <div>
-                          <p className="font-medium">{t.item}</p>
-                          <p className="text-sm text-muted-foreground">{t.location} • {t.date}</p>
+                          <p className="font-medium">{transaction.item}</p>
+                          <p className="text-sm text-muted-foreground">{transaction.location} • {transaction.date}</p>
                         </div>
                       </div>
-                      <div className={`font-mono font-bold ${t.amount > 0 ? 'text-accent' : 'text-white'}`}>
-                        {t.amount > 0 ? '+' : ''}₹{Math.abs(t.amount).toFixed(2)}
+                      <div className={`font-mono font-bold ${transaction.amount > 0 ? 'text-accent' : 'text-white'}`}>
+                        {transaction.amount > 0 ? '+' : ''}₹{Math.abs(transaction.amount).toFixed(2)}
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-sm text-muted-foreground">
+                      No recent activity yet.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
