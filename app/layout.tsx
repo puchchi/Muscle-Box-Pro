@@ -7,11 +7,11 @@ import "@/index.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.muscleboxpro.com"),
   title: {
-    default: "Muscle Box Pro | Smart Protein Shake Vending Machines for Gyms",
+    default: "Protein Shake Vending Machine for Gyms | Automated Protein Shake Blend Machine | MuscleBoxPro",
     template: "%s",
   },
   description:
-    "Muscle Box Pro provides smart protein shake vending machines for gyms with zero-maintenance operations, fresh post-workout nutrition for members, and recurring revenue for gym owners.",
+    "MuscleBoxPro is a smart protein shake vending machine for gyms. Serve fresh protein shake blends in 30 seconds and generate passive revenue for fitness centers with automated protein vending technology.",
   keywords: [
     "protein shake vending machine",
     "gym vending machine",
