@@ -12,7 +12,7 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/50 to-background z-10" />
         <img
           src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
-          alt="Muscle Box Pro Machine"
+          alt="protein shake vending machine for gyms"
           className="w-full h-full object-cover opacity-60"
         />
       </div>
