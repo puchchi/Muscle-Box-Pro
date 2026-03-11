@@ -1,6 +1,7 @@
+"use client";
+
 import { Zap, Leaf, Smartphone, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import shakeImg from "@assets/generated_images/fresh_banana_date_protein_shake_advertising_shot.png";
 
 const features = [
   {
@@ -65,7 +66,7 @@ export default function Features() {
           >
             <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
             <img 
-              src={shakeImg} 
+              src="/images/fresh_banana_date_protein_shake_advertising_shot.png"
               alt="Fresh Shake" 
               className="relative z-10 w-full rounded-2xl border border-white/10 shadow-2xl shadow-primary/20 hover:scale-105 transition-transform duration-500"
             />

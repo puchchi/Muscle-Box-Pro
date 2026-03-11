@@ -1,3 +1,5 @@
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
 import { HelpCircle, Search, CreditCard, Droplets, User } from "lucide-react";

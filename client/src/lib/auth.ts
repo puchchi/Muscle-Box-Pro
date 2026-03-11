@@ -6,8 +6,9 @@ export async function getAccessToken(): Promise<string | null> {
 }
 
 export function getAccessTokenSync(): string | null {
+  if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(
-    `sb-${new URL(import.meta.env.VITE_SUPABASE_URL as string).hostname.split(".")[0]}-auth-token`,
+    `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL as string).hostname.split(".")[0]}-auth-token`,
   );
   if (!raw) return null;
   try {

@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Auth/account routes should not be indexed
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /account
+Disallow: /auth/
+
+Sitemap: https://www.muscleboxpro.com/sitemap.xml

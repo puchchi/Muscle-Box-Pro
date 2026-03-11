@@ -1,8 +1,11 @@
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, History, Plus, User, TrendingUp, Users, Activity, Wallet } from "lucide-react";
-import { Link } from "wouter";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -78,6 +81,7 @@ function toDisplayName(rawName: string) {
 
 export default function Account() {
   const { toast } = useToast();
+  const router = useRouter();
   const [customAmount, setCustomAmount] = useState("");
   const { data: session, isLoading } = useQuery<{
     user: { email?: string; userMetadata?: Record<string, unknown> };
@@ -119,7 +123,7 @@ export default function Account() {
   const logout = async () => {
     await supabase.auth.signOut();
     queryClient.invalidateQueries();
-    window.location.href = "/";
+    router.push("/");
   };
 
   if (isLoading) {
@@ -232,13 +236,11 @@ export default function Account() {
                       </div>
                     </div>
                     <Button className="w-full bg-primary text-background font-bold h-12 text-lg" onClick={async () => {
-                      // PROTOTYPE ONLY: Simulating API hit to backend
                       const payload = { amount: customAmount };
                       console.log("Hitting API: POST http://127.0.0.1:9999/wallet/add-funds", payload);
                       
                       toast({ title: "Processing Payment", description: "Connecting to secure gateway..." });
                       
-                      // Simulate network delay
                       await new Promise(resolve => setTimeout(resolve, 1500));
                       
                       toast({ title: "Success!", description: `₹${customAmount} added to your wallet.` });

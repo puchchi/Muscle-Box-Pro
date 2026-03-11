@@ -1,14 +1,18 @@
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
 import { Dumbbell, Mail, ArrowLeft, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 
-export default function ForgotPassword() {
-  const [, setLocation] = useLocation();
+function ForgotPasswordInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState("");
@@ -18,7 +22,7 @@ export default function ForgotPassword() {
     message: string;
   } | null>(null);
 
-  const token = new URLSearchParams(window.location.search).get("token");
+  const token = searchParams.get("token");
   const isResetMode = Boolean(token);
 
   const handleResetRequest = async (e: React.FormEvent) => {
@@ -72,7 +76,7 @@ export default function ForgotPassword() {
         message:
           "Your password has been reset successfully. Redirecting to login...",
       });
-      setTimeout(() => setLocation("/login"), 1200);
+      setTimeout(() => router.push("/login"), 1200);
     } catch (error) {
       setNotice({
         type: "error",
@@ -197,5 +201,17 @@ export default function ForgotPassword() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function ForgotPassword() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center text-gray-400">
+        Loading...
+      </div>
+    }>
+      <ForgotPasswordInner />
+    </Suspense>
   );
 }

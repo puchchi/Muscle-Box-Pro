@@ -1,3 +1,5 @@
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/home/Hero";
 import Features from "@/components/home/Features";
@@ -5,7 +7,7 @@ import ShakeVariants from "@/components/home/ShakeVariants";
 import { Monitor, TrendingUp, Users, Dumbbell } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import Link from "next/link";
 
 export default function Home() {
   return (

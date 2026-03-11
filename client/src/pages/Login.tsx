@@ -1,3 +1,5 @@
+"use client";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -5,17 +7,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Link, useLocation } from "wouter";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Dumbbell, MailWarning, TriangleAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const publicAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as
-  | string
-  | undefined;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const publicAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const loginSchema = z.object({
   email: z.string().email("A valid email is required"),
@@ -25,7 +26,7 @@ const loginSchema = z.object({
 
 export default function Login() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const [notice, setNotice] = useState<{
     type: "error" | "warning" | "success";
     message: string;
@@ -82,7 +83,7 @@ export default function Login() {
       title: "Welcome Back!",
       description: "You've been logged in successfully.",
     });
-    setLocation("/account");
+    router.push("/account");
   }
 
   async function handleResendVerification() {

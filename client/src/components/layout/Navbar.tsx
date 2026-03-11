@@ -1,4 +1,7 @@
-import { Link, useLocation } from "wouter";
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X, Dumbbell } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -6,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { hasAccessTokenSync } from "@/lib/auth";
 
 export default function Navbar() {
-  const [location] = useLocation();
+  const location = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   const navLinks = [

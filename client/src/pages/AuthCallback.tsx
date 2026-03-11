@@ -1,11 +1,13 @@
+"use client";
+
 import { useEffect } from "react";
-import { useLocation } from "wouter";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AuthCallback() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -15,7 +17,7 @@ export default function AuthCallback() {
           title: "Authentication failed",
           description: "No session returned from provider.",
         });
-        setLocation("/login");
+        router.push("/login");
         return;
       }
 
@@ -23,9 +25,9 @@ export default function AuthCallback() {
         title: "Signed in successfully",
         description: "Your account is now connected.",
       });
-      setLocation("/account");
+      router.push("/account");
     });
-  }, [setLocation, toast]);
+  }, [router, toast]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center text-gray-300">

@@ -1,7 +1,8 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
-import heroBg from "@assets/generated_images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png";
+import Link from "next/link";
 
 export default function Hero() {
   return (
@@ -10,7 +11,7 @@ export default function Hero() {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/50 to-background z-10" />
         <img
-          src={heroBg}
+          src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
           alt="Muscle Box Pro Machine"
           className="w-full h-full object-cover opacity-60"
         />

@@ -1,21 +1,8 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import pureWheyImg from "@assets/generated_images/pure_vanilla_protein_shake_in_glass.png";
-import chocolateBananaImg from "@assets/generated_images/chocolate_banana_protein_shake.png";
-import premiumDateImg from "@assets/generated_images/premium_date_banana_shake.png";
-import creamyVanillaImg from "@assets/generated_images/creamy_milk-based_vanilla_shake.png";
-import darkChocolateImg from "@assets/generated_images/premium_dark_chocolate_shake.png";
-import tropicalBananaImg from "@assets/generated_images/fresh_tropical_banana_shake.png";
-import chocolateDateImg from "@assets/generated_images/chocolate_date_protein_shake.png";
-import chocolateDateCreamyImg from "@assets/generated_images/chocolate_date_milk_protein_shake.png";
-import chocolateCreamyImg from "@assets/generated_images/chocolate_milk_protein_shake.png";
-import chocolateCreamyBananaImg from "@assets/generated_images/chocolate_banana_milk_protein_shake.png";
-import chocolateBananaDateImg from "@assets/generated_images/chocolate_banana_date_protien_shake.png";
-import chocolateCreamyBananaDateImg from "@assets/generated_images/chocolate_banana_date_milk_protein_shake.png";
-import creamyProteinImg from "@assets/generated_images/creamy_protien_shake.png";
-import creamyBananaImg from "@assets/generated_images/creamy_banana_proties_shake.png";
-import creamyBananaDateImg from "@assets/generated_images/creamy_banana_date_protien_shake.png";
 
 const shakeVariants = [
   {
@@ -29,7 +16,7 @@ const shakeVariants = [
     calories: 130,
     price: 120,
     color: "from-blue-500 to-cyan-500",
-    image: pureWheyImg,
+    image: "/images/pure_vanilla_protein_shake_in_glass.png",
   },
   {
     id: 2,
@@ -43,7 +30,7 @@ const shakeVariants = [
     price: 150,
     color: "from-yellow-500 to-orange-500",
     badge: "BESTSELLER",
-    image: tropicalBananaImg,
+    image: "/images/fresh_tropical_banana_shake.png",
   },
   {
     id: 3,
@@ -57,7 +44,7 @@ const shakeVariants = [
     price: 160,
     color: "from-amber-600 to-red-600",
     badge: "PREMIUM",
-    image: premiumDateImg,
+    image: "/images/premium_date_banana_shake.png",
   },
   {
     id: 4,
@@ -70,7 +57,7 @@ const shakeVariants = [
     calories: 140,
     price: 130,
     color: "from-amber-900 to-orange-700",
-    image: darkChocolateImg,
+    image: "/images/premium_dark_chocolate_shake.png",
   },
   {
     id: 5,
@@ -83,7 +70,7 @@ const shakeVariants = [
     calories: 280,
     price: 160,
     color: "from-amber-800 to-amber-600",
-    image: chocolateBananaImg,
+    image: "/images/chocolate_banana_protein_shake.png",
   },
   {
     id: 6,
@@ -96,7 +83,7 @@ const shakeVariants = [
     calories: 370,
     price: 170,
     color: "from-amber-900 to-orange-900",
-    image: chocolateBananaDateImg,
+    image: "/images/chocolate_banana_date_protien_shake.png",
   },
   {
     id: 7,
@@ -109,7 +96,7 @@ const shakeVariants = [
     calories: 240,
     price: 130,
     color: "from-purple-400 to-pink-400",
-    image: creamyProteinImg,
+    image: "/images/creamy_protien_shake.png",
   },
   {
     id: 8,
@@ -122,7 +109,7 @@ const shakeVariants = [
     calories: 380,
     price: 160,
     color: "from-purple-500 to-pink-500",
-    image: creamyBananaImg,
+    image: "/images/creamy_banana_proties_shake.png",
   },
   {
     id: 9,
@@ -135,7 +122,7 @@ const shakeVariants = [
     calories: 470,
     price: 170,
     color: "from-purple-600 to-pink-600",
-    image: creamyBananaDateImg,
+    image: "/images/creamy_banana_date_protien_shake.png",
   },
   {
     id: 10,
@@ -148,7 +135,7 @@ const shakeVariants = [
     calories: 250,
     price: 140,
     color: "from-purple-900 to-pink-900",
-    image: chocolateCreamyImg,
+    image: "/images/chocolate_milk_protein_shake.png",
   },
   {
     id: 11,
@@ -161,7 +148,7 @@ const shakeVariants = [
     calories: 390,
     price: 150,
     color: "from-purple-950 to-pink-950",
-    image: chocolateCreamyBananaImg,
+    image: "/images/chocolate_banana_milk_protein_shake.png",
   },
   {
     id: 12,
@@ -174,7 +161,7 @@ const shakeVariants = [
     calories: 480,
     price: 160,
     color: "from-red-900 to-orange-900",
-    image: chocolateCreamyBananaDateImg,
+    image: "/images/chocolate_banana_date_milk_protein_shake.png",
   },
 ];
 

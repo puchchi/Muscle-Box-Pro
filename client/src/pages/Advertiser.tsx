@@ -1,7 +1,8 @@
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Monitor, Users, TrendingUp } from "lucide-react";
-import heroBg from "@assets/generated_images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -141,7 +142,7 @@ export default function Advertiser() {
               </div>
               <div className="relative h-64 lg:h-auto">
                  <img 
-                  src={heroBg} 
+                  src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
                   alt="Machine Screen" 
                   className="absolute inset-0 w-full h-full object-cover"
                 />
