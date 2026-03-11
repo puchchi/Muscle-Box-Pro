@@ -28,15 +28,18 @@ export default function Hero() {
               The Future of Fuel
             </span>
           </div>
-          <h1 className="text-5xl md:text-7xl lg:text-9xl font-display font-bold text-white mb-6 tracking-tight text-glow">
+          <h1 className="sr-only">
+            Protein Shake Vending Machine for Gyms | MuscleBoxPro
+          </h1>
+          <h2 className="text-5xl md:text-7xl lg:text-9xl font-display font-bold text-white mb-6 tracking-tight text-glow">
             FUEL YOUR <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
               GAINS INSTANTLY
             </span>
-          </h1>
+          </h2>
           <p className="max-w-2xl mx-auto text-xl text-gray-300 mb-10 font-light leading-relaxed">
-            Fresh banana, premium whey, and organic dates blended on demand. 
-            The first smart vending solution for serious athletes.
+            Automated protein shake blending machine delivering fresh 
+            post-workout shakes in seconds.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

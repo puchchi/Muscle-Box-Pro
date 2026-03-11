@@ -16,7 +16,102 @@ export default function Home() {
       <main>
         <Hero />
         <Features />
+        <section className="sr-only">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-6">
+              What is a Protein Shake Vending Machine?
+            </h2>
+            <p className="text-gray-300 text-lg leading-relaxed mb-5">
+              A protein shake vending machine automatically blends whey protein, fruits, and liquids to prepare fresh protein shakes instantly. These machines are increasingly used in gyms and fitness centers to provide members with convenient post-workout nutrition without requiring shaker bottles or manual preparation.
+            </p>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              MuscleBoxPro allows gym members to enjoy fresh protein shake blends in seconds while helping gym owners create an additional revenue stream through automated protein vending.
+            </p>
+          </div>
+        </section>
+
+        <section className="sr-only py-20 bg-card/30 border-y border-white/5">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-10">
+              How the Protein Shake Vending Machine Works
+            </h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                {
+                  title: "1. Select your shake",
+                  description:
+                    "Gym members choose their preferred protein shake blend.",
+                },
+                {
+                  title: "2. Automated blending",
+                  description:
+                    "The machine mixes whey protein, banana, dates or other ingredients automatically.",
+                },
+                {
+                  title: "3. Fresh shake served",
+                  description:
+                    "A hygienic protein shake is prepared and dispensed within seconds.",
+                },
+              ].map((step) => (
+                <div
+                  key={step.title}
+                  className="rounded-2xl border border-white/10 bg-background/50 p-6"
+                >
+                  <h3 className="text-xl font-display font-bold text-white mb-3">
+                    {step.title}
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">{step.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="sr-only py-20">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-8">
+              Why Gyms Install Protein Shake Vending Machines
+            </h2>
+            <ul className="space-y-3 text-gray-300 text-lg mb-8">
+              <li>• Instant post-workout nutrition for gym members</li>
+              <li>• No shaker bottles required</li>
+              <li>• Additional revenue for fitness centers</li>
+              <li>• Hygienic automated blending system</li>
+              <li>• Convenient protein shake access inside the gym</li>
+            </ul>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              Protein shake vending machines improve the gym experience by providing convenient access to protein shakes immediately after workouts.
+            </p>
+          </div>
+        </section>
+
         <ShakeVariants />
+
+        <section className="sr-only py-20 border-y border-white/5 bg-card/20">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-6">
+              Protein Shake Vending Machine for Gym Revenue
+            </h2>
+            <p className="text-gray-300 text-lg leading-relaxed mb-5">
+              Installing a protein shake vending machine allows gyms to generate additional income by selling fresh protein shakes to members. Since the shakes are prepared automatically, gym staff do not need to manually mix drinks.
+            </p>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              This creates a passive revenue stream while improving member satisfaction.
+            </p>
+          </div>
+        </section>
+
+        <section className="sr-only">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2>Protein Shake Vending Machines for Gyms in India</h2>
+            <p>
+              MuscleBoxPro offers protein shake vending machines for gyms in India, helping fitness centers in cities like Delhi, Mumbai, Bengaluru, Hyderabad, Pune, and Chennai deliver instant post-workout nutrition.
+            </p>
+            <p>
+              Our automated protein vending solution is built for Indian gym operations, enabling hygienic shake preparation, faster member service, and additional in-gym revenue.
+            </p>
+          </div>
+        </section>
         
         {/* Ad Opportunity Section */}
         <section className="py-24 bg-card/30 border-y border-white/5 relative overflow-hidden">
