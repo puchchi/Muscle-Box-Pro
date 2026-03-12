@@ -178,8 +178,9 @@ export default function ShakeVariants() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
-            THE MENU
+          <Badge variant="outline" className="mb-4 border-primary/30 text-primary">THE MENU</Badge>
+          <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
+            Protein Shake Blends Available From Our <span className="text-primary">Vending Machine</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
             Twelve scientifically-formulated blends. Choose your protein, your base, and your flavor.
