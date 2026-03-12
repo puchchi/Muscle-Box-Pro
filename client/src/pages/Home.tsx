@@ -239,6 +239,7 @@ export default function Home() {
                 <Link href="/about"><li className="hover:text-primary cursor-pointer transition-colors">About Us</li></Link>
                 <Link href="/specs"><li className="hover:text-primary cursor-pointer transition-colors">Our Machine</li></Link>
                 <Link href="/protein-shake-vending-machine"><li className="hover:text-primary cursor-pointer transition-colors">Vending Machine Business</li></Link>
+                <Link href="/protein-vending-machine-india"><li className="hover:text-primary cursor-pointer transition-colors">Vending Machine Business in India</li></Link>
                 <li className="hover:text-primary cursor-pointer transition-colors">Success Stories</li>
               </ul>
             </div>

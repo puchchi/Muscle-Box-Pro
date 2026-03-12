@@ -96,7 +96,7 @@ export default function ProteinShakeVendingMachine() {
                         </li>
                         <li className="flex items-center gap-3">
                             <CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" />
-                            <span><strong>Customizable Options:</strong> Pre-workout, BCAA, and Whey protein options.</span>
+                            <span><strong>Customizable Options:</strong> Whey protein options.</span>
                         </li>
                         <li className="flex items-center gap-3">
                             <CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" />
@@ -131,7 +131,7 @@ export default function ProteinShakeVendingMachine() {
             {/* Simple Footer for SEO Page */}
             <footer className="bg-black py-12 border-t border-white/10 text-center">
                 <p className="text-gray-600 text-xs uppercase tracking-widest">
-                    © 2024 MUSCLE BOX PRO. ALL RIGHTS RESERVED.
+                    © 2026 MUSCLE BOX PRO. ALL RIGHTS RESERVED.
                 </p>
             </footer>
         </div>
