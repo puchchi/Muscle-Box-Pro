@@ -21,9 +21,10 @@ export default function ProteinVendingMachineIndia() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6 leading-tight">
+              <h1 className="sr-only">protein vending machine India</h1>
+              <h2 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6 leading-tight">
                 Protein Vending Machine in <span className="text-primary">India</span> for Gyms
-              </h1>
+              </h2>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -31,10 +32,10 @@ export default function ProteinVendingMachineIndia() {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <p className="text-gray-400 text-xl leading-relaxed max-w-3xl mx-auto">
-                Protein vending machines are becoming increasingly popular in gyms and fitness centers across India. These machines automatically prepare fresh protein shakes using premium whey protein and natural ingredients, allowing gym members to enjoy convenient post-workout nutrition.
+                Protein vending machine India demand is growing rapidly in gyms and fitness centers. These machines automatically prepare fresh protein shakes using premium whey protein and natural ingredients, allowing gym members to enjoy convenient post-workout nutrition.
               </p>
               <p className="text-gray-400 text-xl leading-relaxed max-w-3xl mx-auto mt-4">
-                MuscleBoxPro provides a smart protein vending machine designed specifically for gyms. The system blends protein shakes instantly and dispenses them hygienically without requiring manual preparation. For gym owners, installing a protein vending machine creates an additional revenue stream while improving the overall gym experience.
+                MuscleBoxPro provides a smart protein vending machine designed specifically for gyms. The system blends protein shakes instantly and dispenses them hygienically without requiring manual preparation. For gym owners, installing a protein vending machine India setup creates an additional revenue stream while improving the overall gym experience.
               </p>
             </motion.div>
             <motion.div
@@ -81,7 +82,7 @@ export default function ProteinVendingMachineIndia() {
           </p>
 
           <h2 className="font-display font-bold text-3xl text-white mt-16 mb-6">Why Gyms in India Are Installing Protein Vending Machines</h2>
-          <p className="text-gray-400 mb-8">Gym owners across India are upgrading their facilities with automated solutions to provide better service and increase profitability.</p>
+          <p className="text-gray-400 mb-8">Gym owners across India are upgrading their facilities with automated solutions to provide better service and increase profitability. This is why protein vending machine India searches continue to rise among fitness businesses.</p>
           <div className="grid sm:grid-cols-2 gap-4 not-prose my-8">
             {[
               "Instant post-workout nutrition for members",
@@ -143,7 +144,7 @@ export default function ProteinVendingMachineIndia() {
           </div>
 
           <h2 className="font-display font-bold text-3xl text-white mt-16">Protein Vending Machines for Gyms Across India</h2>
-          <p className="text-gray-400">We provide installation, maintenance, and supplement restocking for protein shake vending machines in major Indian cities, including:</p>
+          <p className="text-gray-400">We provide installation, maintenance, and supplement restocking for protein shake vending machines in major Indian cities. If you are looking for a reliable protein vending machine India partner, we support full rollout and operations, including:</p>
           <div className="flex flex-wrap gap-3 my-6 not-prose">
             {["Delhi", "Mumbai", "Bengaluru", "Hyderabad", "Pune", "Chennai"].map(city => (
               <span key={city} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-bold">
