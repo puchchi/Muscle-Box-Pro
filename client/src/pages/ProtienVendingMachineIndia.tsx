@@ -6,7 +6,19 @@ import Link from "next/link";
 import { CheckCircle2, MapPin, IndianRupee, Zap, Shield, MousePointerClick, RotateCw, CupSoda } from "lucide-react";
 import Footer from "@/components/footer";
 
-export default function ProteinVendingMachineIndia() {
+type ProteinVendingMachineIndiaProps = {
+  cityName?: string;
+};
+
+export default function ProteinVendingMachineIndia({
+  cityName,
+}: ProteinVendingMachineIndiaProps) {
+  const locationLabel = cityName ?? "India";
+  const isIndiaPage = !cityName;
+  const locationKeyword = cityName
+    ? `protein vending machine ${cityName.toLowerCase()}`
+    : "protein vending machine India";
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -21,9 +33,9 @@ export default function ProteinVendingMachineIndia() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="sr-only">protein vending machine India</h1>
+              <h1 className="sr-only">{locationKeyword}</h1>
               <h2 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6 leading-tight">
-                Protein Vending Machine in <span className="text-primary">India</span> for Gyms
+              <span className="text-primary">Protein Vending Machine</span> in {locationLabel} for Gyms
               </h2>
             </motion.div>
             <motion.div
@@ -32,10 +44,14 @@ export default function ProteinVendingMachineIndia() {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               <p className="text-gray-400 text-xl leading-relaxed max-w-3xl mx-auto">
-                Protein vending machine India demand is growing rapidly in gyms and fitness centers. These machines automatically prepare fresh protein shakes using premium whey protein and natural ingredients, allowing gym members to enjoy convenient post-workout nutrition.
+                {isIndiaPage
+                  ? "Protein vending machine India demand is growing rapidly in gyms and fitness centers. These machines automatically prepare fresh protein shakes using premium whey protein and natural ingredients, allowing gym members to enjoy convenient post-workout nutrition."
+                  : `Protein vending machine demand is growing rapidly in gyms and fitness centers across ${locationLabel}. These machines automatically prepare fresh protein shakes using premium whey protein and natural ingredients, allowing gym members to enjoy convenient post-workout nutrition.`}
               </p>
               <p className="text-gray-400 text-xl leading-relaxed max-w-3xl mx-auto mt-4">
-                MuscleBoxPro provides a smart protein vending machine designed specifically for gyms. The system blends protein shakes instantly and dispenses them hygienically without requiring manual preparation. For gym owners, installing a protein vending machine India setup creates an additional revenue stream while improving the overall gym experience.
+                {isIndiaPage
+                  ? "MuscleBoxPro provides a smart protein vending machine designed specifically for gyms. The system blends protein shakes instantly and dispenses them hygienically without requiring manual preparation. For gym owners, installing a protein vending machine India setup creates an additional revenue stream while improving the overall gym experience."
+                  : `MuscleBoxPro provides a smart protein vending machine designed specifically for gyms. The system blends protein shakes instantly and dispenses them hygienically without requiring manual preparation. For gym owners in ${locationLabel}, installing a protein vending machine setup creates an additional revenue stream while improving the overall gym experience.`}
               </p>
             </motion.div>
             <motion.div
@@ -61,7 +77,7 @@ export default function ProteinVendingMachineIndia() {
           <div className="relative aspect-[21/9] rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,209,255,0.15)] group">
              <img 
               src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png" 
-              alt="protein vending machine for gyms in India" 
+              alt={`protein vending machine for gyms in ${locationLabel}`} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
@@ -81,8 +97,12 @@ export default function ProteinVendingMachineIndia() {
             Unlike traditional vending machines that dispense packaged drinks, protein vending machines prepare fresh shakes using an automated blending system.
           </p>
 
-          <h2 className="font-display font-bold text-3xl text-white mt-16 mb-6">Why Gyms in India Are Installing Protein Vending Machines</h2>
-          <p className="text-gray-400 mb-8">Gym owners across India are upgrading their facilities with automated solutions to provide better service and increase profitability. This is why protein vending machine India searches continue to rise among fitness businesses.</p>
+          <h2 className="font-display font-bold text-3xl text-white mt-16 mb-6">Why Gyms in {locationLabel} Are Installing Protein Vending Machines</h2>
+          <p className="text-gray-400 mb-8">
+            {isIndiaPage
+              ? "Gym owners across India are upgrading their facilities with automated solutions to provide better service and increase profitability. This is why protein vending machine India searches continue to rise among fitness businesses."
+              : `Gym owners across ${locationLabel} are upgrading their facilities with automated solutions to provide better service and increase profitability.`}
+          </p>
           <div className="grid sm:grid-cols-2 gap-4 not-prose my-8">
             {[
               "Instant post-workout nutrition for members",
@@ -143,8 +163,16 @@ export default function ProteinVendingMachineIndia() {
             </div>
           </div>
 
-          <h2 className="font-display font-bold text-3xl text-white mt-16">Protein Vending Machines for Gyms Across India</h2>
-          <p className="text-gray-400">We provide installation, maintenance, and supplement restocking for protein shake vending machines in major Indian cities. If you are looking for a reliable protein vending machine India partner, we support full rollout and operations, including:</p>
+          <h2 className="font-display font-bold text-3xl text-white mt-16">
+            {isIndiaPage
+              ? "Protein Vending Machines for Gyms Across India"
+              : `Protein Vending Machine Services in ${locationLabel}`}
+          </h2>
+          <p className="text-gray-400">
+            {isIndiaPage
+              ? "We provide installation, maintenance, and supplement restocking for protein shake vending machines in major Indian cities. If you are looking for a reliable protein vending machine India partner, we support full rollout and operations, including:"
+              : `We provide installation, maintenance, and supplement restocking for protein shake vending machines for gyms in ${locationLabel}. We also support rollout in major Indian cities, including:`}
+          </p>
           <div className="flex flex-wrap gap-3 my-6 not-prose">
             {["Delhi", "Mumbai", "Bengaluru", "Hyderabad", "Pune", "Chennai"].map(city => (
               <span key={city} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-bold">
@@ -176,7 +204,7 @@ export default function ProteinVendingMachineIndia() {
       <section className="py-24 bg-primary relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-display font-bold text-background mb-6">
-            Install a Protein Vending Machine in Your Gym
+            Install a Protein Vending Machine{isIndiaPage ? " in Your Gym" : ` in Your ${locationLabel} Gym`}
           </h2>
           <p className="text-background/80 text-xl mb-10 max-w-2xl mx-auto">
             If you are a gym owner looking to offer fresh protein shakes to your members, MuscleBoxPro provides a complete automated protein vending solution designed for modern fitness centers.
