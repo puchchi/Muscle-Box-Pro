@@ -3,7 +3,7 @@ import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CheckCircle2, MapPin, IndianRupee, Zap, Shield, Play } from "lucide-react";
+import { CheckCircle2, MapPin, IndianRupee, Zap, Shield, MousePointerClick, RotateCw, CupSoda } from "lucide-react";
 import Footer from "@/components/footer";
 
 export default function ProteinVendingMachineIndia() {
@@ -74,13 +74,13 @@ export default function ProteinVendingMachineIndia() {
           <h2 className="font-display font-bold text-3xl text-white mt-16">How a Protein Vending Machine Works</h2>
           <div className="grid md:grid-cols-3 gap-6 my-8 not-prose">
             {[
-              { step: "1", title: "Select", desc: "Member selects a protein shake from the machine interface" },
-              { step: "2", title: "Blend", desc: "The machine automatically blends protein powder and ingredients" },
-              { step: "3", title: "Dispense", desc: "A fresh protein shake is dispensed within seconds" }
+              { step: "1", title: "Select", desc: "Member selects a protein shake from the machine interface", icon: MousePointerClick },
+              { step: "2", title: "Blend", desc: "The machine automatically blends protein powder and ingredients", icon: RotateCw },
+              { step: "3", title: "Dispense", desc: "A fresh protein shake is dispensed within seconds", icon: CupSoda }
             ].map((s) => (
               <div key={s.step} className="bg-background/50 border border-white/10 p-6 rounded-2xl relative overflow-hidden">
                 <span className="absolute -top-4 -right-4 text-8xl font-display font-bold text-white/5">{s.step}</span>
-                <Play className="text-primary h-8 w-8 mb-4 relative z-10" />
+                <s.icon className="text-primary h-8 w-8 mb-4 relative z-10" />
                 <p className="text-gray-300 relative z-10">{s.desc}</p>
               </div>
             ))}
