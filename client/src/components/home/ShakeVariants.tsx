@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "../ui/button";
+import Link from "next/link";
 
 const shakeVariants = [
   {
@@ -165,7 +167,8 @@ const shakeVariants = [
   },
 ];
 
-export default function ShakeVariants() {
+export default function ShakeVariants({ limit }: { limit?: number }) {
+  const displayedShakes = limit ? shakeVariants.slice(0, limit) : shakeVariants;
   return (
     <section className="py-24 bg-black relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
@@ -183,22 +186,24 @@ export default function ShakeVariants() {
             Protein Shake Blends Available From Our <span className="text-primary">Vending Machine</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Twelve scientifically-formulated blends. Choose your protein, your base, and your flavor.
+          Just a taste of the twelve scientifically-formulated blends available in our machines. Customize your blend to your liking.
           </p>
         </motion.div>
 
-        {/* Filter by Category */}
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {["Classic", "Popular", "Premium", "Flavor", "Milk-Based"].map((cat) => (
-            <Badge key={cat} variant="outline" className="px-4 py-2 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer">
-              {cat.toUpperCase()}
-            </Badge>
-          ))}
-        </div>
+        {/* Filter by Category - only show if no limit */}
+        {!limit && (
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
+            {["Classic", "Popular", "Premium", "Flavor", "Milk-Based"].map((cat) => (
+              <Badge key={cat} variant="outline" className="px-4 py-2 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer">
+                {cat.toUpperCase()}
+              </Badge>
+            ))}
+          </div>
+        )}
 
         {/* Shake Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {shakeVariants.map((shake, i) => (
+          {displayedShakes.map((shake, i) => (
             <motion.div
               key={shake.id}
               initial={{ opacity: 0, y: 20 }}
@@ -274,19 +279,30 @@ export default function ShakeVariants() {
           ))}
         </div>
 
+        {/* View All Menu Button (if limit is provided) */}
+        {limit && (
+          <div className="mt-12 text-center">
+            <Button asChild size="lg" className="bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-black font-bold h-14 px-8">
+              <Link href="/menu">VIEW FULL MENU</Link>
+            </Button>
+          </div>
+        )}
+
         {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mt-20 p-12 bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-2xl text-center"
-        >
-          <h3 className="text-3xl font-display font-bold text-white mb-4">Custom Blends Available</h3>
-          <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
-            Want a combination not listed? Our machines support unlimited customization. Ask your gym staff or franchise owner about custom blend options.
-          </p>
-        </motion.div>
+        {!limit && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="mt-20 p-12 bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-2xl text-center"
+          >
+            <h3 className="text-3xl font-display font-bold text-white mb-4">Custom Blends Available</h3>
+            <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
+              Want a combination not listed? Our machines support unlimited customization. Ask your gym staff or franchise owner about custom blend options.
+            </p>
+          </motion.div>
+        )}
       </div>
     </section>
   );
