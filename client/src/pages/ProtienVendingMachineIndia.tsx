@@ -1,10 +1,10 @@
 "use client";
-
 import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CheckCircle2, MapPin, IndianRupee, Zap, Shield } from "lucide-react";
+import { CheckCircle2, MapPin, IndianRupee, Zap, Shield, Play } from "lucide-react";
+import Footer from "@/components/footer";
 
 export default function ProteinVendingMachineIndia() {
   return (
@@ -15,12 +15,14 @@ export default function ProteinVendingMachineIndia() {
       <section className="relative pt-32 pb-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-4xl mx-auto mb-16">
-            <Badge variant="outline" className="mb-4 border-primary/30 text-primary">INDIA'S #1 FITNESS AUTOMATION</Badge>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6">
-              Protein <span className="text-primary">Vending Machine</span> in India for Gyms
+              Protein <span className="text-primary">Vending Machine</span> for Gyms in India
             </h1>
             <p className="text-gray-400 text-xl leading-relaxed max-w-3xl mx-auto">
-              Capitalize on India's booming fitness industry. Our fully automated protein shake vending machines are designed for Indian gyms, featuring UPI integration, affordable maintenance, and high ROI.
+              Protein vending machines are becoming increasingly popular in gyms and fitness centers across India. These machines automatically prepare fresh protein shakes using premium whey protein and natural ingredients, allowing gym members to enjoy convenient post-workout nutrition.
+            </p>
+            <p className="text-gray-400 text-xl leading-relaxed max-w-3xl mx-auto mt-4">
+              MuscleBoxPro provides a smart protein vending machine designed specifically for gyms. The system blends protein shakes instantly and dispenses them hygienically without requiring manual preparation. For gym owners, installing a protein vending machine creates an additional revenue stream while improving the overall gym experience.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/gym-demo">
@@ -28,86 +30,108 @@ export default function ProteinVendingMachineIndia() {
                   REQUEST MACHINE DEMO
                 </Button>
               </Link>
-              <Link href="/specs">
-                <Button size="lg" variant="outline" className="border-white/10 text-white hover:bg-white/5 h-14 px-8 text-lg w-full sm:w-auto">
-                  VIEW MACHINE SPECS
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Why Choose Section */}
-      <section className="py-24 bg-card/30 border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
-              Why Install a <span className="text-primary">Protein Vending Machine in India?</span>
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              With gym memberships rising across Tier 1 and Tier 2 cities in India, members demand premium, instant post-workout nutrition. 
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { icon: IndianRupee, title: "High ROI in ₹", desc: "Low operational costs and premium shake pricing (₹80-₹120) lead to excellent margins." },
-              { icon: Zap, title: "UPI & QR Payments", desc: "Seamless payment integration with PhonePe, Google Pay, Paytm, and local wallets." },
-              { icon: Shield, title: "Pan-India Support", desc: "Reliable maintenance and supplement restocking networks across major Indian cities." },
-              { icon: MapPin, title: "Small Footprint", desc: "Optimized for Indian gyms where floor space is premium. Generates high revenue per square foot." }
-            ].map((feature, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="bg-background/50 border border-white/10 p-6 rounded-2xl"
-              >
-                <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-                <p className="text-gray-400">{feature.desc}</p>
-              </motion.div>
-            ))}
+      {/* Image Section */}
+      <section className="py-12 bg-black">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative aspect-[21/9] rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-primary/20 group">
+             <img 
+              src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+              alt="protein vending machine for gyms in India" 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
           </div>
         </div>
       </section>
 
       {/* SEO Content Section */}
-      <section className="py-24">
+      <section className="py-24 bg-card/30 border-y border-white/5">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 prose prose-invert prose-lg">
-          <h2 className="font-display font-bold text-3xl text-white">The Booming Protein Vending Machine Business in India</h2>
-          <p className="text-gray-400">
-            India's fitness industry is growing at an unprecedented rate. As more Indians prioritize their health, gym owners are looking for innovative ways to increase revenue and improve member experience. A <strong>protein shake vending machine in India</strong> offers a zero-staff, high-margin business model that perfectly complements any fitness center.
-          </p>
           
-          <h3 className="font-display font-bold text-2xl text-white mt-12">Seamless UPI & Cashless Payments</h3>
+          <h2 className="font-display font-bold text-3xl text-white">What is a Protein Vending Machine?</h2>
           <p className="text-gray-400">
-            In a digital-first economy, cash is no longer king. Our machines are fully integrated with India's UPI infrastructure. Whether your members use PhonePe, Google Pay, Paytm, or BHIM, they can purchase a chilled, freshly blended protein shake in under 45 seconds with a simple QR scan.
+            A protein vending machine automatically blends protein powder, fruits and liquids to create fresh protein shakes on demand. These machines are typically installed in gyms, fitness centers, universities and sports complexes.
+          </p>
+          <p className="text-gray-400">
+            Unlike traditional vending machines that dispense packaged drinks, protein vending machines prepare fresh shakes using an automated blending system.
           </p>
 
+          <h2 className="font-display font-bold text-3xl text-white mt-16">Why Gyms in India Are Installing Protein Vending Machines</h2>
+          <p className="text-gray-400">Gym owners across India are upgrading their facilities with automated solutions to provide better service and increase profitability.</p>
           <ul className="space-y-4 my-8 text-gray-400 list-none pl-0">
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" />
-              <span><strong>100% Cashless:</strong> Fast checkout via dynamic UPI QR codes and cards.</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" />
-              <span><strong>Premium Supplements:</strong> Top international and Indian whey protein brands available.</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" />
-              <span><strong>Remote Management:</strong> Track sales in real-time from anywhere in India.</span>
-            </li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" /><span>instant post-workout nutrition for members</span></li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" /><span>hygienic shake preparation</span></li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" /><span>automated dispensing</span></li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" /><span>additional revenue stream</span></li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" /><span>convenient supplement access</span></li>
           </ul>
 
-          <h3 className="font-display font-bold text-2xl text-white mt-12">Revenue Sharing Model</h3>
+          <h2 className="font-display font-bold text-3xl text-white mt-16">How a Protein Vending Machine Works</h2>
+          <div className="grid md:grid-cols-3 gap-6 my-8 not-prose">
+            {[
+              { step: "1", title: "Select", desc: "Member selects a protein shake from the machine interface" },
+              { step: "2", title: "Blend", desc: "The machine automatically blends protein powder and ingredients" },
+              { step: "3", title: "Dispense", desc: "A fresh protein shake is dispensed within seconds" }
+            ].map((s) => (
+              <div key={s.step} className="bg-background/50 border border-white/10 p-6 rounded-2xl relative overflow-hidden">
+                <span className="absolute -top-4 -right-4 text-8xl font-display font-bold text-white/5">{s.step}</span>
+                <Play className="text-primary h-8 w-8 mb-4 relative z-10" />
+                <p className="text-gray-300 relative z-10">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <h2 className="font-display font-bold text-3xl text-white mt-16">Features of the MuscleBoxPro Protein Vending Machine</h2>
+          <ul className="space-y-4 my-8 text-gray-400 list-none pl-0">
+            <li className="flex items-center gap-3"><Zap className="text-primary h-5 w-5 flex-shrink-0" /><span>automated protein blending</span></li>
+            <li className="flex items-center gap-3"><IndianRupee className="text-primary h-5 w-5 flex-shrink-0" /><span>smart payment integration (UPI / cards)</span></li>
+            <li className="flex items-center gap-3"><Shield className="text-primary h-5 w-5 flex-shrink-0" /><span>hygienic ingredient containers</span></li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary h-5 w-5 flex-shrink-0" /><span>customizable shake menu</span></li>
+            <li className="flex items-center gap-3"><CheckCircle2 className="text-primary h-5 w-5 flex-shrink-0" /><span>digital display for advertising</span></li>
+          </ul>
+
+          <h2 className="font-display font-bold text-3xl text-white mt-16">Protein Vending Machine Revenue for Gyms</h2>
           <p className="text-gray-400">
-            Beyond selling shakes, MuscleBoxPro protein vending machines in India include high-resolution digital displays. This allows gym owners to run localized ads, promote personal training packages, or share in the revenue from ad space sold to local Indian brands, creating a highly profitable secondary income stream with zero upfront cost.
+            The cost of shake preparation is significantly lower than the selling price, creating high profit margins. A gym protein shake machine generates passive income for gyms with minimal staff involvement.
           </p>
+
+          <h2 className="font-display font-bold text-3xl text-white mt-16">Protein Vending Machines for Gyms Across India</h2>
+          <p className="text-gray-400">We provide installation, maintenance, and supplement restocking for protein shake vending machines in major Indian cities, including:</p>
+          <div className="flex flex-wrap gap-3 my-6 not-prose">
+            {["Delhi", "Mumbai", "Bengaluru", "Hyderabad", "Pune", "Chennai"].map(city => (
+              <span key={city} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-bold">
+                <MapPin className="h-4 w-4" /> {city}
+              </span>
+            ))}
+          </div>
+
+          <h2 className="font-display font-bold text-3xl text-white mt-16">Protein Vending Machine FAQ</h2>
+          <div className="space-y-6 my-8" itemScope itemType="https://schema.org/FAQPage">
+            <div itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
+              <strong className="text-white block mb-2" itemProp="name">What is a protein vending machine?</strong>
+              <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+                <p className="text-gray-400 m-0" itemProp="text">A protein vending machine automatically prepares fresh protein shakes using protein powder and other ingredients.</p>
+              </div>
+            </div>
+            <div itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
+              <strong className="text-white block mb-2" itemProp="name">How long does it take to prepare a shake?</strong>
+              <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+                <p className="text-gray-400 m-0" itemProp="text">Most machines prepare a shake in about 20–30 seconds.</p>
+              </div>
+            </div>
+            <div itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
+              <strong className="text-white block mb-2" itemProp="name">Why install a protein vending machine in a gym?</strong>
+              <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+                <p className="text-gray-400 m-0" itemProp="text">It provides convenient nutrition for members and creates additional revenue for gym owners.</p>
+              </div>
+            </div>
+          </div>
+          
         </div>
       </section>
 
@@ -115,33 +139,21 @@ export default function ProteinVendingMachineIndia() {
       <section className="py-24 bg-primary relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-display font-bold text-background mb-6">
-            Ready to Bring the Future of Fitness to Your Gym?
+            Install a Protein Vending Machine in Your Gym
           </h2>
           <p className="text-background/80 text-xl mb-10 max-w-2xl mx-auto">
-            Join the fastest-growing network of automated fitness nutrition in India.
+            If you are a gym owner looking to offer fresh protein shakes to your members, MuscleBoxPro provides a complete automated protein vending solution designed for modern fitness centers.
           </p>
           <Link href="/gym-demo">
             <Button size="lg" className="bg-background text-primary font-bold h-14 px-10 text-lg hover:bg-background/90 shadow-2xl">
-              GET A QUOTE FOR YOUR GYM
+              CONTACT US
             </Button>
           </Link>
         </div>
       </section>
       
       {/* Simple Footer for SEO Page */}
-      <footer className="bg-black py-12 border-t border-white/10 text-center">
-        <p className="text-gray-600 text-xs uppercase tracking-widest">
-          © 2026 MUSCLE BOX PRO INDIA. ALL RIGHTS RESERVED.
-        </p>
-      </footer>
+      <Footer />
     </div>
-  );
-}
-
-function Badge({ children, className, variant }: any) {
-  return (
-    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase ${className}`}>
-      {children}
-    </span>
   );
 }
