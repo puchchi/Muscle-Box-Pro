@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import ProteinVendingMachineIndia from "@/pages/ProtienVendingMachineIndia";
 
 export const metadata: Metadata = {
-  title: "Protein Vending Machine in India | Muscle Box Pro",
+  title: "Protein Vending Machine in India for Gyms | Automated Protein Shake Machine | MuscleBoxPro",
   description:
-    "Discover how Muscle Box Pro protein vending machines help gyms increase member convenience and generate additional recurring revenue in India.",
+    "MuscleBoxPro offers automated protein vending machines for gyms in India. Serve fresh protein shakes instantly and generate additional revenue for fitness centers.",
   alternates: { canonical: "/protein-vending-machine-india" },
   openGraph: { type: "website", url: "/protein-vending-machine-india" },
 };
