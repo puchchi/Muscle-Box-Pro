@@ -16,6 +16,12 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
+        <section className="sr-only">
+          <h2>Core Protein Vending Keywords</h2>
+          <p>protein vending machine</p>
+          <p>gym protein shake machine</p>
+          <p>protein shake machine</p>
+        </section>
         <Features />
         <section className="sr-only">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
