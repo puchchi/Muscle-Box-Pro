@@ -238,6 +238,7 @@ export default function Home() {
               <ul className="space-y-4 text-sm text-gray-500">
                 <Link href="/about"><li className="hover:text-primary cursor-pointer transition-colors">About Us</li></Link>
                 <Link href="/specs"><li className="hover:text-primary cursor-pointer transition-colors">Our Machine</li></Link>
+                <Link href="/protein-shake-vending-machine"><li className="hover:text-primary cursor-pointer transition-colors">Vending Machine Business</li></Link>
                 <li className="hover:text-primary cursor-pointer transition-colors">Success Stories</li>
               </ul>
             </div>

@@ -1,7 +1,9 @@
+"use client";
+
 import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import Link from "next/link";
 import { CheckCircle2, TrendingUp, Zap, Shield, Monitor } from "lucide-react";
 
 export default function ProteinShakeVendingMachine() {
