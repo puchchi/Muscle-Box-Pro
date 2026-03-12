@@ -33,6 +33,8 @@ export const metadata: Metadata = {
         alt: "Muscle Box Pro smart protein shake vending machine in a gym",
       },
     ],
+    description:
+    "Discover Muscle Box Pro, the premium protein shake vending machine designed to boost gym revenue with zero maintenance and high-resolution advertising displays.",
   },
   twitter: {
     card: "summary_large_image",

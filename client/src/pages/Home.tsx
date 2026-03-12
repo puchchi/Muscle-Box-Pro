@@ -87,20 +87,6 @@ export default function Home() {
 
         <ShakeVariants />
 
-        <section className="sr-only py-20 border-y border-white/5 bg-card/20">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-6">
-              Protein Shake Vending Machine for Gym Revenue
-            </h2>
-            <p className="text-gray-300 text-lg leading-relaxed mb-5">
-              Installing a protein shake vending machine allows gyms to generate additional income by selling fresh protein shakes to members. Since the shakes are prepared automatically, gym staff do not need to manually mix drinks.
-            </p>
-            <p className="text-gray-300 text-lg leading-relaxed">
-              This creates a passive revenue stream while improving member satisfaction.
-            </p>
-          </div>
-        </section>
-
         <section className="sr-only">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2>Protein Shake Vending Machines for Gyms in India</h2>
@@ -112,6 +98,50 @@ export default function Home() {
             </p>
           </div>
         </section>
+
+        {/* Revenue Section */}
+        <section className="py-24 bg-black relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+             <div className="text-center max-w-3xl mx-auto mb-16">
+              <Badge variant="outline" className="mb-4 border-primary/30 text-primary">FOR GYM OWNERS</Badge>
+              <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
+                Protein Shake Vending Machine for <br />
+                <span className="text-primary">Gym Revenue</span>
+              </h2>
+              <p className="text-gray-400 text-lg mb-8 leading-relaxed">
+                Turn unused floor space into a highly profitable, fully automated protein shake vending machine business. Zero staff required.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+               {[
+                  { title: "Zero Maintenance", desc: "Our team handles the restocking, cleaning, and technical support. You just collect the revenue." },
+                  { title: "High Margins", desc: "Premium protein shakes command premium prices. Enjoy industry-leading profit sharing." },
+                  { title: "Member Retention", desc: "Offer the ultimate convenience. Members who fuel up post-workout stay longer and train harder." }
+                ].map((item, i) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                    className="bg-card/50 border border-white/10 p-8 rounded-2xl backdrop-blur-sm hover:bg-card/80 transition-colors"
+                  >
+                    <h3 className="text-xl font-bold text-white mb-4">{item.title}</h3>
+                    <p className="text-gray-400 leading-relaxed">{item.desc}</p>
+                  </motion.div>
+                ))}
+            </div>
+            <div className="mt-16 text-center">
+              <Link href="/gym-demo">
+                <Button size="lg" className="bg-primary text-background font-bold h-14 px-8 text-lg hover:bg-primary/90">
+                  REQUEST A DEMO MACHINE
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         
         {/* Ad Opportunity Section */}
         <section className="py-24 bg-card/30 border-y border-white/5 relative overflow-hidden">
@@ -129,8 +159,9 @@ export default function Home() {
                   <span className="text-primary">EVERY SCREEN</span>
                 </h2>
                 <p className="text-gray-400 text-lg mb-8 leading-relaxed">
-                  Our vending machines aren't just for shakes—they're high-impact digital billboards. 
-                  Reach a captive, health-conscious audience during their most productive hour.
+                  Our vending machines aren't just for shakes, they're high-impact digital billboards.
+                   MuscleBoxPro protein shake vending machines include high-resolution displays that 
+                   allow brands to advertise directly to gym members.
                 </p>
                 
                 <div className="space-y-4 mb-8">
