@@ -106,6 +106,16 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.muscleboxpro.com/blog/best-protein-shake-after-workout</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.muscleboxpro.com/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
