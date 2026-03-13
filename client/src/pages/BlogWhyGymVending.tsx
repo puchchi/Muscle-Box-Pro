@@ -14,6 +14,12 @@ export default function BlogWhyGymVending() {
       <Navbar />
 
       <main className="pt-24 pb-16">
+      <section className="sr-only">
+          <h2>Related Protein Shake Keywords</h2>
+          <p>protein shake in gyms</p>
+          <p>gym protein shake bar</p>
+          <p>post workout shake gym</p>
+        </section>
         <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Article Header */}
           <header className="text-center mb-12">
@@ -62,7 +68,7 @@ export default function BlogWhyGymVending() {
                 Revenue Fact
               </h3>
               <p className="text-gray-300 m-0">
-                Gyms that install automated protein dispensers report an average <strong className="text-primary">300% increase</strong> in supplement sales compared to selling tubs of powder at the front desk.
+                Gyms that install automated protein dispensers report an average <strong className="text-primary">120% increase</strong> in supplement sales compared to selling tubs of powder at the front desk.
               </p>
             </div>
 

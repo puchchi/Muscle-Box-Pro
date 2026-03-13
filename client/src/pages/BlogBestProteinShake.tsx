@@ -13,6 +13,12 @@ export default function BlogBestProteinShake() {
       <Navbar />
 
       <main className="pt-24 pb-16">
+        <section className="sr-only">
+          <h2>Related Protein Shake Keywords</h2>
+          <p>whey vs natural protein shake</p>
+          <p>banana whey protein shake</p>
+          <p>natural protein shake benefits</p>
+        </section>
         <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Article Header */}
           <header className="text-center mb-12">
