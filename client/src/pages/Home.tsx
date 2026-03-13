@@ -17,10 +17,15 @@ export default function Home() {
       <main>
         <Hero />
         <section className="sr-only">
-          <h2>Core Protein Vending Keywords</h2>
-          <p>protein vending machine</p>
-          <p>gym protein shake machine</p>
-          <p>protein shake machine</p>
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2>Protein Vending and Shake Machine Solutions for Gyms</h2>
+            <p>
+              Looking for a protein vending machine for your fitness center? A gym protein shake machine delivers fresh post-workout shakes automatically. MuscleBoxPro’s protein shake machine blends premium whey and natural ingredients in seconds. Fitness centers across India install a protein vending machine to boost revenue and member satisfaction.
+            </p>
+            <p>
+              A gym protein shake machine requires zero staff—the protein shake machine handles blending, dispensing, and payments. Choose the right protein vending machine for your facility. A gym protein shake machine improves member retention. Our protein shake machine supports UPI and card payments. A protein vending machine creates passive income for gym owners.
+            </p>
+          </div>
         </section>
         <Features />
         <section className="sr-only">
