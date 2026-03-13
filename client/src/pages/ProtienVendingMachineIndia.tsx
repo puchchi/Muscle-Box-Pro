@@ -177,10 +177,26 @@ export default function ProteinVendingMachineIndia({
               : `We provide installation, maintenance, and supplement restocking for protein shake vending machines for gyms in ${locationLabel}. We also support rollout in major Indian cities, including:`}
           </p>
           <div className="flex flex-wrap gap-3 my-6 not-prose">
-            {["Delhi", "Mumbai", "Bengaluru", "Hyderabad", "Pune", "Chennai"].map(city => (
-              <span key={city} className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-bold">
-                <MapPin className="h-4 w-4" /> {city}
-              </span>
+            {[
+              { name: "Delhi", slug: "delhi" },
+              { name: "Mumbai", slug: "mumbai" },
+              { name: "Bangalore", slug: "bangalore" },
+              { name: "Hyderabad", slug: "hyderabad" },
+              { name: "Pune", slug: "pune" },
+              { name: "Chennai", slug: "chennai" },
+              { name: "Ahmedabad", slug: "ahmedabad" },
+              { name: "Kolkata", slug: "kolkata" },
+              { name: "Chandigarh", slug: "chandigarh" },
+              { name: "Gurgaon", slug: "gurgaon" },
+              { name: "Noida", slug: "noida" },
+            ].map(({ name, slug }) => (
+              <Link
+                key={slug}
+                href={`/protein-vending-machine-${slug}`}
+                className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full font-bold hover:bg-primary/20 transition-colors"
+              >
+                <MapPin className="h-4 w-4" /> {name}
+              </Link>
             ))}
           </div>
 

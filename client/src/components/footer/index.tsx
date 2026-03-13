@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className="bg-black py-16 border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-12 mb-12">
           <div className="col-span-2">
             <span className="flex items-center gap-2 mb-6">
               <div className="p-2 bg-primary rounded-lg">
@@ -20,6 +20,23 @@ export default function Footer() {
               The ultimate on-demand nutrition solution for modern fitness centers. 
               Premium shakes, zero maintenance, maximum impact.
             </p>
+          </div>
+          <div>
+            <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Locations</h4>
+            <ul className="space-y-4 text-sm text-gray-500">
+              <Link href="/protein-vending-machine-india"><li className="hover:text-primary cursor-pointer transition-colors block">India</li></Link>
+              <Link href="/protein-vending-machine-delhi"><li className="hover:text-primary cursor-pointer transition-colors block">Delhi</li></Link>
+              <Link href="/protein-vending-machine-mumbai"><li className="hover:text-primary cursor-pointer transition-colors block">Mumbai</li></Link>
+              <Link href="/protein-vending-machine-bangalore"><li className="hover:text-primary cursor-pointer transition-colors block">Bangalore</li></Link>
+              <Link href="/protein-vending-machine-hyderabad"><li className="hover:text-primary cursor-pointer transition-colors block">Hyderabad</li></Link>
+              <Link href="/protein-vending-machine-pune"><li className="hover:text-primary cursor-pointer transition-colors block">Pune</li></Link>
+              <Link href="/protein-vending-machine-chennai"><li className="hover:text-primary cursor-pointer transition-colors block">Chennai</li></Link>
+              <Link href="/protein-vending-machine-ahmedabad"><li className="hover:text-primary cursor-pointer transition-colors block">Ahmedabad</li></Link>
+              <Link href="/protein-vending-machine-kolkata"><li className="hover:text-primary cursor-pointer transition-colors block">Kolkata</li></Link>
+              <Link href="/protein-vending-machine-chandigarh"><li className="hover:text-primary cursor-pointer transition-colors block">Chandigarh</li></Link>
+              <Link href="/protein-vending-machine-gurgaon"><li className="hover:text-primary cursor-pointer transition-colors block">Gurgaon</li></Link>
+              <Link href="/protein-vending-machine-noida"><li className="hover:text-primary cursor-pointer transition-colors block">Noida</li></Link>
+            </ul>
           </div>
           <div>
             <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">Company</h4>
