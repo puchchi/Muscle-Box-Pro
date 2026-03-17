@@ -1,10 +1,9 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
-import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, TrendingUp, Users, Zap } from "lucide-react";
+import { CheckCircle2, TrendingUp } from "lucide-react";
 // import blogHeroImg from "@assets/generated_images/blog_gym_vending_machine.png";
 
 export default function BlogWhyGymVending() {
@@ -59,7 +58,7 @@ export default function BlogWhyGymVending() {
 
             <h2 className="text-3xl mt-12 mb-6">1. The Ultimate Post-Workout Convenience</h2>
             <p className="text-gray-400">
-              The "anabolic window"—that critical 30-45 minute period after a workout when muscles crave protein—is well known to fitness enthusiasts. However, bringing shaker bottles, messy powders, and warm water to the gym is a hassle most members hate. For more details on recovery nutrition, see our guide on the <Link href="/blog/best-protein-shake-after-workout" className="text-primary hover:underline">best post-workout shakes</Link>.
+              The <a href="https://jissn.biomedcentral.com/articles/10.1186/1550-2783-10-5" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">"anabolic window"</a>—that critical 30-45 minute period after a workout when muscles crave protein—is well known to fitness enthusiasts. However, bringing shaker bottles, messy powders, and warm water to the gym is a hassle most members hate. For more details on recovery nutrition, see our guide on the <Link href="/blog/best-protein-shake-after-workout" className="text-primary hover:underline">best post-workout shakes</Link>.
             </p>
             <p className="text-gray-400">
               A <Link href="/gym-protein-shake-machine" className="text-primary hover:underline">gym protein shake machine</Link> solves this instantly. With a few taps on a screen, members get a perfectly chilled, freshly blended, clump-free protein shake exactly when their bodies need it most.

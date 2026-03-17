@@ -78,12 +78,63 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
+              "@id": "https://www.muscleboxpro.com/#organization",
               name: "Muscle Box Pro",
+              legalName: "BlendBox Innovations LLP",
               url: "https://www.muscleboxpro.com",
-              logo: "https://www.muscleboxpro.com/favicon.png",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://www.muscleboxpro.com/favicon.png",
+              },
               description:
-                "Smart protein shake vending machines for gyms with zero-maintenance operations and recurring revenue.",
-              sameAs: [],
+                "Smart protein shake vending machines for gyms with zero-maintenance operations and recurring revenue. Operating across India.",
+              email: "contact@muscleboxpro.com",
+              telephone: "+91-8687247670",
+              address: {
+                "@type": "PostalAddress",
+                addressCountry: "IN",
+                addressRegion: "India",
+              },
+              contactPoint: {
+                "@type": "ContactPoint",
+                contactType: "customer service",
+                email: "contact@muscleboxpro.com",
+                telephone: "+91-8687247670",
+                availableLanguage: ["English", "Hindi"],
+              },
+              sameAs: [
+                "https://www.instagram.com/muscleboxpro",
+                "https://www.linkedin.com/company/muscleboxpro",
+              ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "LocalBusiness",
+              "@id": "https://www.muscleboxpro.com/#localbusiness",
+              name: "Muscle Box Pro",
+              description:
+                "Automated protein shake vending machines installed in gyms and fitness centers across India.",
+              url: "https://www.muscleboxpro.com",
+              telephone: "+91-8687247670",
+              email: "contact@muscleboxpro.com",
+              image: "https://www.muscleboxpro.com/og-image.png",
+              priceRange: "₹₹",
+              servesCuisine: "Protein Nutrition",
+              address: {
+                "@type": "PostalAddress",
+                addressCountry: "IN",
+                addressRegion: "India",
+              },
+              areaServed: [
+                "Delhi", "Mumbai", "Bangalore", "Hyderabad",
+                "Pune", "Chennai", "Ahmedabad", "Kolkata",
+                "Chandigarh", "Gurgaon", "Noida",
+              ],
             }),
           }}
         />

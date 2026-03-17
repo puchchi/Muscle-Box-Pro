@@ -85,7 +85,7 @@ export default function BlogBestProteinShake() {
 
             <div className="bg-card/30 border border-white/10 rounded-xl p-6 my-8 italic text-gray-300 border-l-4 border-l-primary">
               <p className="m-0">
-                "Research published in the <em>American Journal of Clinical Nutrition</em> demonstrates that whey protein stimulates muscle protein synthesis to a greater degree than other proteins like casein or soy at rest and after resistance exercise." (Tang et al., 2009)
+                "Research published in the <a href="https://academic.oup.com/ajcn/article/89/1/161/4598335" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline"><em>American Journal of Clinical Nutrition</em></a> demonstrates that whey protein stimulates muscle protein synthesis to a greater degree than other proteins like casein or soy at rest and after resistance exercise." (Tang et al., 2009)
               </p>
             </div>
 
@@ -113,7 +113,7 @@ export default function BlogBestProteinShake() {
 
             <div className="bg-card/30 border border-white/10 rounded-xl p-6 my-8 italic text-gray-300 border-l-4 border-l-green-500">
               <p className="m-0">
-                "A 2019 study in the <em>Journal of the International Society of Sports Nutrition</em> found that pea protein yielded similar results to whey protein in promoting muscle thickness during a 12-week resistance training program." (Babault et al., 2015)
+                "A 2015 study in the <a href="https://jissn.biomedcentral.com/articles/10.1186/s12970-015-0087-9" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline"><em>Journal of the International Society of Sports Nutrition</em></a> found that pea protein yielded similar results to whey protein in promoting muscle thickness during a 12-week resistance training program." (Babault et al., 2015)
               </p>
             </div>
 
