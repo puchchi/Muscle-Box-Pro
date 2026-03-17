@@ -89,13 +89,33 @@ export default function PrivacyPolicy() {
             ))}
           </div>
 
-          <div className="mt-20 p-8 bg-secondary rounded-2xl border border-white/10">
+          <div className="mt-20">
+            <h2 className="text-2xl font-bold mb-8 text-white uppercase tracking-wider">Frequently Asked Questions</h2>
+            <div className="space-y-4" itemScope itemType="https://schema.org/FAQPage">
+              {[
+                { q: "What personal information does MuscleBoxPro collect?", a: "MuscleBoxPro may collect your name, email address, mobile number, payment transaction details, and machine usage data when you register, place an order, or interact with the platform." },
+                { q: "How is my payment information secured?", a: "Payments are processed through third-party providers such as PhonePe. MuscleBoxPro does not store your card or UPI credentials." },
+                { q: "Can I request deletion of my personal data?", a: "Yes. You may request access, correction, or deletion of your personal information by contacting our team at contact@muscleboxpro.com or +91-8687247670." },
+                { q: "Does MuscleBoxPro share my data with third parties?", a: "Personal data may be shared with trusted service providers only when necessary to process payments or operate services. It is never sold to third parties." },
+                { q: "How long is my data retained?", a: "Personal data is retained only as long as necessary for business operations or as required by applicable law." },
+              ].map((faq, i) => (
+                <div key={i} className="bg-secondary border border-white/10 p-6 rounded-xl" itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
+                  <h3 className="text-white font-bold text-lg mb-2" itemProp="name">{faq.q}</h3>
+                  <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+                    <p className="text-gray-400" itemProp="text">{faq.a}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-12 p-8 bg-secondary rounded-2xl border border-white/10">
             <h3 className="text-lg font-bold mb-4">Privacy Concerns?</h3>
             <p className="text-gray-400 mb-6">
-              If you have any questions or concerns about our privacy practices, please contact our data protection team.
+              If you have any questions or concerns about our privacy practices, please contact our data protection team at <a href="mailto:contact@muscleboxpro.com" className="text-primary hover:underline">contact@muscleboxpro.com</a> or call us at <a href="tel:+918687247670" className="text-primary hover:underline">+91-8687247670</a>.
             </p>
-            <a 
-              href="mailto:contact@muscleboxpro.com" 
+            <a
+              href="/contact"
               className="inline-block bg-primary text-background font-bold py-3 px-8 rounded-lg hover:bg-primary/90 transition-colors"
             >
               CONTACT US

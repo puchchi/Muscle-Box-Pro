@@ -167,6 +167,27 @@ export default function BlogProteinDiabetes() {
               Protein plays an important role in managing diabetes by supporting stable blood sugar levels, maintaining muscle mass, and promoting healthy metabolism. When combined with balanced carbohydrates and regular physical activity, protein-rich foods can help people with diabetes maintain better long-term health.
             </p>
           </div>
+
+          {/* FAQ Section */}
+          <div className="mt-16 mb-16">
+            <h2 className="text-2xl font-display font-bold text-white mb-8 uppercase tracking-wider">Frequently Asked Questions</h2>
+            <div className="space-y-4" itemScope itemType="https://schema.org/FAQPage">
+              {[
+                { q: "Is protein good for diabetes management?", a: "Yes. Protein has minimal direct effect on blood glucose and helps slow digestion, reducing glucose spikes. Adequate protein also supports muscle mass, which improves insulin sensitivity." },
+                { q: "How much protein should a diabetic eat per day?", a: "Most diabetes nutrition guidelines recommend protein make up 20–30% of total daily calories, roughly 1.0–1.5 grams per kilogram of body weight for optimal glycemic control." },
+                { q: "Are protein shakes safe for diabetics?", a: "Yes. Low-sugar, high-quality protein shakes such as whey protein can be a safe and convenient option for diabetics. Always check the label for added sugars and consult your healthcare provider." },
+                { q: "Which protein sources are best for people with diabetes?", a: "Lean sources like fish, chicken breast, eggs, Greek yogurt, lentils, chickpeas, and tofu are ideal. Plant proteins may also reduce diabetes risk more effectively than processed animal proteins." },
+                { q: "Can diabetics with kidney disease eat high protein?", a: "People with diabetic nephropathy (kidney disease) may need to limit protein intake to avoid further kidney damage. Always consult a registered dietitian or healthcare provider before increasing protein." },
+              ].map((faq, i) => (
+                <div key={i} className="bg-card/30 border border-white/10 p-6 rounded-xl" itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
+                  <h3 className="text-white font-bold text-lg mb-2" itemProp="name">{faq.q}</h3>
+                  <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+                    <p className="text-gray-400 m-0" itemProp="text">{faq.a}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </article>
       </main>
 
