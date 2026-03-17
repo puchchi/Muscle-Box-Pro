@@ -12,3 +12,4 @@ client/.env
 client/.env.*
 !client/.env.example
 /.next
+/coverage
