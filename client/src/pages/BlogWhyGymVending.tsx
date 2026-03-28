@@ -27,16 +27,6 @@ export default function BlogWhyGymVending() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* ── Hidden SEO block ── */}
-      <section className="sr-only">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2>Protein Shake in Gyms and Gym Protein Shake Bar Solutions</h2>
-          <p>
-            Offering a protein shake in gyms has become essential for modern fitness centers. A gym protein shake bar or automated dispenser lets members grab a post workout shake gym-side without shaker bottles. Members expect a protein shake in gyms after every session—a gym protein shake bar meets that demand.
-          </p>
-        </div>
-      </section>
-
       {/* ── Article Hero ── */}
       <section className="bg-gray-950 pt-32 pb-0 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[240px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />

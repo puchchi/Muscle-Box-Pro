@@ -28,11 +28,6 @@ export default function Hero() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            {/* Hidden SEO h1 */}
-            <h1 className="sr-only">
-              Protein Shake Vending Machine for Gyms | MuscleBoxPro
-            </h1>
-
             {/* Live pill badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/20 text-primary text-sm font-semibold mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
@@ -40,7 +35,7 @@ export default function Hero() {
             </div>
 
             {/* Headline */}
-            <h2
+            <h1
               className="font-display font-black text-foreground leading-[0.88] mb-6 uppercase"
               style={{ fontSize: "clamp(3rem, 6vw, 5rem)" }}
             >
@@ -49,7 +44,7 @@ export default function Hero() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                 Right in your gym.
               </span>
-            </h2>
+            </h1>
 
             <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md">
               12 fresh protein blends blended in 60 seconds. No staff. No shaker bottles. Just fuel.
