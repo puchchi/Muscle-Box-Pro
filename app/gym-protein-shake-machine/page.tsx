@@ -9,12 +9,21 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/gym-protein-shake-machine" },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+    { "@type": "ListItem", position: 2, name: "Gym Protein Shake Machine", item: "https://www.muscleboxpro.com/gym-protein-shake-machine" },
+  ],
+};
+
 const productSchema = {
   "@context": "https://schema.org",
   "@type": "Product",
   name: "MuscleBoxPro Gym Protein Shake Machine",
   description:
-    "Automated gym protein shake machine that blends fresh whey and plant protein shakes in 30–45 seconds. Zero staff, 24/7 operation, cashless payments.",
+    "Automated gym protein shake machine that blends fresh whey and plant protein shakes in 60 seconds. Zero staff, 24/7 operation, cashless payments.",
   brand: { "@type": "Brand", name: "Muscle Box Pro" },
   manufacturer: { "@type": "Organization", name: "BlendBox Innovations LLP" },
   image: "https://www.muscleboxpro.com/og-image.png",
@@ -37,7 +46,7 @@ const faqSchema = {
       name: "What is a gym protein shake machine?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "A gym protein shake machine is an automated vending unit installed on the gym floor that blends fresh protein shakes using whey isolate or plant protein in 30–45 seconds without any staff involvement.",
+        text: "A gym protein shake machine is an automated vending unit installed on the gym floor that blends fresh protein shakes using whey isolate or plant protein in 60 seconds without any staff involvement.",
       },
     },
     {
@@ -73,6 +82,7 @@ export default function Page() {
       <GymProteinShakeMachine />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );
 }

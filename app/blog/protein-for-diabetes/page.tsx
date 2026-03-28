@@ -8,6 +8,16 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/blog/protein-for-diabetes" },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+    { "@type": "ListItem", position: 2, name: "Blog", item: "https://www.muscleboxpro.com/blog" },
+    { "@type": "ListItem", position: 3, name: "Why Protein Is Important for Diabetes Management", item: "https://www.muscleboxpro.com/blog/protein-for-diabetes" },
+  ],
+};
+
 const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
@@ -27,7 +37,7 @@ const blogPostingSchema = {
   publisher: {
     "@type": "Organization",
     name: "Muscle Box Pro",
-    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png" },
+    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png", width: 507, height: 520 },
   },
   mainEntityOfPage: {
     "@type": "WebPage",
@@ -60,6 +70,7 @@ export default function Page() {
     <>
       <BlogProteinDiabetes />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );
 }

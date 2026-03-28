@@ -84,7 +84,7 @@ export default function GymProteinShakeMachine() {
                 </span>
               </h1>
               <p className="text-white/55 text-base leading-relaxed max-w-lg mb-8">
-                Upgrade your fitness center with our state-of-the-art automated shake dispenser. Deliver perfectly chilled, freshly blended post-workout shakes in under 45 seconds.
+                Upgrade your fitness center with our state-of-the-art automated shake dispenser. Deliver perfectly chilled, freshly blended post-workout shakes in 60 seconds.
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link href="/gym-demo">

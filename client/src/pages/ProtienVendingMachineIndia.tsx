@@ -187,7 +187,7 @@ export default function ProteinVendingMachineIndia({
             </h2>
             <div className="grid sm:grid-cols-2 gap-3">
               {[
-                { icon: Zap, text: "Automated protein blending in under 45 seconds" },
+                { icon: Zap, text: "Automated protein blending in 60 seconds" },
                 { icon: IndianRupee, text: "Smart payment integration (UPI, Credit/Debit cards)" },
                 { icon: Shield, text: "Self-cleaning system with hygienic ingredient containers" },
                 { icon: CheckCircle2, text: "Customizable shake menu (Whey, Vegan, Flavors)" },
@@ -280,7 +280,7 @@ export default function ProteinVendingMachineIndia({
             <div className="space-y-3" itemScope itemType="https://schema.org/FAQPage">
               {[
                 { q: "What is a protein vending machine?", a: "A protein vending machine is an automated kiosk that instantly mixes and dispenses fresh protein shakes, pre-workouts, and BCAAs using high-quality powder and chilled water or milk." },
-                { q: "How long does it take to prepare a shake?", a: "Our advanced gym protein shake machines prepare a perfectly blended, clump-free shake in under 45 seconds." },
+                { q: "How long does it take to prepare a shake?", a: "Our advanced gym protein shake machines prepare a perfectly blended, clump-free shake in 60 seconds." },
                 { q: "Why install a protein vending machine in a gym?", a: "It provides convenient 24/7 post-workout nutrition for members, requires zero staff overhead, and creates a high-margin passive revenue stream for gym owners." },
                 { q: "Are the shakes made from powder or ready-to-drink bottles?", a: "The machine automatically mixes premium whey or plant-based protein powder with chilled water or milk on demand, ensuring a fresher and more customizable drink than pre-packaged bottles." },
                 { q: "How do members pay for the protein shakes?", a: "Our machines support multiple cashless payment options including UPI, credit/debit cards, and an integrated digital wallet through the MuscleBoxPro app." },

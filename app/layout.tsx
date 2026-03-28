@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s",
   },
   description:
-    "MuscleBoxPro is a smart protein shake vending machine for gyms. Serve fresh protein shake blends in 30 seconds and generate passive revenue for fitness centers with automated protein vending technology.",
+    "MuscleBoxPro is a smart protein shake vending machine for gyms. Serve fresh protein shake blends in 60 seconds and generate passive revenue for fitness centers with automated protein vending technology.",
   keywords: [
     "protein shake vending machine",
     "gym vending machine",
@@ -81,6 +81,8 @@ export default function RootLayout({
               logo: {
                 "@type": "ImageObject",
                 url: "https://www.muscleboxpro.com/favicon.png",
+                width: 507,
+                height: 520,
               },
               description:
                 "Smart protein shake vending machines for gyms with zero-maintenance operations and recurring revenue. Operating across India.",
@@ -89,7 +91,7 @@ export default function RootLayout({
               address: {
                 "@type": "PostalAddress",
                 addressCountry: "IN",
-                addressRegion: "India",
+                addressRegion: "Uttar Pradesh",
               },
               contactPoint: {
                 "@type": "ContactPoint",
@@ -101,6 +103,7 @@ export default function RootLayout({
               sameAs: [
                 "https://www.instagram.com/muscleboxpro",
                 "https://www.linkedin.com/company/muscleboxpro",
+                "https://maps.app.goo.gl/ERqXE85LfseUMBQ6A",
               ],
             }),
           }}
@@ -110,7 +113,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "LocalBusiness",
+              "@type": "ProfessionalService",
               "@id": "https://www.muscleboxpro.com/#localbusiness",
               name: "Muscle Box Pro",
               description:
@@ -120,16 +123,18 @@ export default function RootLayout({
               email: "contact@muscleboxpro.com",
               image: "https://www.muscleboxpro.com/og-image.png",
               priceRange: "₹₹",
-              servesCuisine: "Protein Nutrition",
               address: {
                 "@type": "PostalAddress",
                 addressCountry: "IN",
-                addressRegion: "India",
+                addressRegion: "Uttar Pradesh",
               },
               areaServed: [
                 "Delhi", "Mumbai", "Bangalore", "Hyderabad",
                 "Pune", "Chennai", "Ahmedabad", "Kolkata",
                 "Chandigarh", "Gurgaon", "Noida",
+              ],
+              sameAs: [
+                "https://maps.app.goo.gl/ERqXE85LfseUMBQ6A",
               ],
             }),
           }}
@@ -142,12 +147,6 @@ export default function RootLayout({
               "@type": "WebSite",
               name: "Muscle Box Pro",
               url: "https://www.muscleboxpro.com",
-              potentialAction: {
-                "@type": "SearchAction",
-                target:
-                  "https://www.muscleboxpro.com/?q={search_term_string}",
-                "query-input": "required name=search_term_string",
-              },
             }),
           }}
         />

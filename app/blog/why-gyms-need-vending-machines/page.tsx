@@ -8,6 +8,16 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/blog/why-gyms-need-vending-machines" },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+    { "@type": "ListItem", position: 2, name: "Blog", item: "https://www.muscleboxpro.com/blog" },
+    { "@type": "ListItem", position: 3, name: "Why Every Gym Should Install a Protein Shake Vending Machine", item: "https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines" },
+  ],
+};
+
 const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
@@ -27,7 +37,7 @@ const blogPostingSchema = {
   publisher: {
     "@type": "Organization",
     name: "Muscle Box Pro",
-    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png" },
+    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png", width: 507, height: 520 },
   },
   mainEntityOfPage: {
     "@type": "WebPage",
@@ -41,7 +51,7 @@ const blogPostingSchema = {
       publisher: { "@type": "Organization", name: "Journal of the International Society of Sports Nutrition" },
     },
     {
-      "@type": "GovernmentOrganization",
+      "@type": "Article",
       name: "USDA Dietary Guidelines: Protein Needs for Active Adults",
       url: "https://www.dietaryguidelines.gov/sites/default/files/2020-12/Dietary_Guidelines_for_Americans_2020-2025.pdf",
       publisher: { "@type": "GovernmentOrganization", name: "U.S. Department of Agriculture" },
@@ -54,6 +64,7 @@ export default function Page() {
     <>
       <BlogWhyGymVending />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { hasAccessTokenSync } from "@/lib/auth";
@@ -11,6 +11,11 @@ import { hasAccessTokenSync } from "@/lib/auth";
 export default function Navbar() {
   const location = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(hasAccessTokenSync());
+  }, []);
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -19,8 +24,6 @@ export default function Navbar() {
     { name: "My Account", path: "/account" },
     { name: "Advertise", path: "/advertise" },
   ];
-
-  const isLoggedIn = hasAccessTokenSync();
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
@@ -31,6 +34,8 @@ export default function Navbar() {
               <img
                 src="/assets/logo.png"
                 alt="MuscleBoxPro"
+                width={160}
+                height={40}
                 className="h-10 w-auto flex-shrink-0 group-hover:opacity-90 transition-opacity"
               />
               {/* <span className="font-display text-xl font-bold tracking-wider text-brand-gradient group-hover:opacity-90 transition-opacity">

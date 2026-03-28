@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title:
     "Protein Shake Vending Machine for Gyms | Automated Protein Shake Blend Machine | MuscleBoxPro",
   description:
-    "MuscleBoxPro is a smart protein shake vending machine for gyms. Serve fresh protein shake blends in 30 seconds and generate passive revenue for fitness centers with automated protein vending technology.",
+    "MuscleBoxPro is a smart protein shake vending machine for gyms. Serve fresh protein shake blends in 60 seconds and generate passive revenue for fitness centers with automated protein vending technology.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",

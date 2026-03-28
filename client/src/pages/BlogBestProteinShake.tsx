@@ -18,16 +18,6 @@ export default function BlogBestProteinShake() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* ── Hidden SEO ── */}
-      <section className="sr-only">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2>Whey vs Natural Protein Shake and Natural Protein Shake Benefits</h2>
-          <p>
-            The whey vs natural protein shake debate matters for post-workout recovery. A banana whey protein shake combines fast-absorbing whey with potassium and carbs. Natural protein shake benefits include fiber, antioxidants, and easier digestion.
-          </p>
-        </div>
-      </section>
-
       {/* ── Article Hero ── */}
       <section className="bg-gray-950 pt-32 pb-0 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[240px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
@@ -172,7 +162,7 @@ export default function BlogBestProteinShake() {
             <p className="text-gray-600 text-sm leading-relaxed mb-4">
               At MuscleBoxPro, our{" "}
               <Link href="/protein-vending-machine-india" className="text-primary hover:underline font-medium">smart protein kiosks</Link>{" "}
-              are stocked with premium Whey Isolate <em>and</em> high-quality Vegan Plant blends — freshly mixed, perfectly chilled, and ready in 45 seconds via our{" "}
+              are stocked with premium Whey Isolate <em>and</em> high-quality Vegan Plant blends — freshly mixed, perfectly chilled, and ready in 60 seconds via our{" "}
               <Link href="/gym-protein-shake-machine" className="text-primary hover:underline font-medium">automated supplement bars</Link>.
             </p>
           </div>

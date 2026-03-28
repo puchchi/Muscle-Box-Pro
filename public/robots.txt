@@ -1,11 +1,46 @@
 User-agent: *
 Allow: /
-
-# Auth/account routes should not be indexed
 Disallow: /login
 Disallow: /signup
 Disallow: /forgot-password
 Disallow: /account
 Disallow: /auth/
+
+# Google
+User-agent: Googlebot
+Allow: /
+
+# Google Image
+User-agent: Googlebot-Image
+Allow: /
+
+# Bing
+User-agent: Bingbot
+Allow: /
+
+# AI crawlers — allow for brand visibility in AI search
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
 
 Sitemap: https://www.muscleboxpro.com/sitemap.xml

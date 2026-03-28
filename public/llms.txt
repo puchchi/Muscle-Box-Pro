@@ -1,0 +1,38 @@
+# MuscleBoxPro
+
+> MuscleBoxPro is a smart protein shake vending machine for gyms, operated by BlendBox Innovations LLP — a DPIIT-recognised startup (Certificate No: DIPP252770). The machine blends fresh whey or plant-based protein shakes in 60 seconds with zero staff, cashless payments (UPI, card), and a built-in HD advertising display. Gym owners receive free installation and earn passive revenue through a profit-sharing model.
+
+## Product
+
+- [Protein Shake Vending Machine](https://www.muscleboxpro.com/protein-shake-vending-machine): Automated machine that blends 12 fresh protein shake variants in 60 seconds. Installed free in gyms across India.
+- [Gym Protein Shake Machine](https://www.muscleboxpro.com/gym-protein-shake-machine): On-floor shake dispenser for fitness centres — zero staff, UPI payments, HD display, 24/7 operation.
+- [Shake Menu](https://www.muscleboxpro.com/menu): 12 protein shake blends including whey isolate, plant protein, banana, chocolate, and milk-based variants. Starting from ₹120.
+- [Machine Specifications](https://www.muscleboxpro.com/specs): Technical details — blend time 60s, payment options, display specs, dimensions, hygiene system.
+
+## For Gym Owners
+
+- [Request a Demo](https://www.muscleboxpro.com/gym-demo): Free demo machine installation with zero upfront cost. Revenue-sharing model for fitness centres.
+- [Advertise](https://www.muscleboxpro.com/advertise): HD 4K advertising display on the machine — 60 seconds of captive audience per transaction. Targeted reach to gym members.
+
+## Coverage — India City Pages
+
+- [Protein Vending Machine India](https://www.muscleboxpro.com/protein-vending-machine-india): National overview of gym installations across India.
+- [Delhi](https://www.muscleboxpro.com/protein-vending-machine-delhi), [Mumbai](https://www.muscleboxpro.com/protein-vending-machine-mumbai), [Bangalore](https://www.muscleboxpro.com/protein-vending-machine-bangalore), [Hyderabad](https://www.muscleboxpro.com/protein-vending-machine-hyderabad), [Pune](https://www.muscleboxpro.com/protein-vending-machine-pune), [Chennai](https://www.muscleboxpro.com/protein-vending-machine-chennai), [Ahmedabad](https://www.muscleboxpro.com/protein-vending-machine-ahmedabad), [Kolkata](https://www.muscleboxpro.com/protein-vending-machine-kolkata), [Chandigarh](https://www.muscleboxpro.com/protein-vending-machine-chandigarh), [Gurgaon](https://www.muscleboxpro.com/protein-vending-machine-gurgaon), [Noida](https://www.muscleboxpro.com/protein-vending-machine-noida)
+
+## Blog
+
+- [Why Every Gym Should Install a Protein Shake Vending Machine](https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines): Business case for gym owners — revenue, member retention, and post-workout nutrition science.
+- [The Best Protein Shake After a Workout: Whey vs. Plant](https://www.muscleboxpro.com/blog/best-protein-shake-after-workout): Comparison of whey isolate and plant protein for post-workout recovery, citing peer-reviewed research.
+- [Why Protein Is Important for Diabetes Management](https://www.muscleboxpro.com/blog/protein-for-diabetes): Evidence-based guide on protein's role in blood sugar control and muscle preservation for people with diabetes.
+
+## Company
+
+- [About Us](https://www.muscleboxpro.com/about): MuscleBoxPro is built by BlendBox Innovations LLP, a DPIIT-recognised startup in the Food & Beverages sector. Mission: on-demand post-workout nutrition through smart automation.
+- [Contact](https://www.muscleboxpro.com/contact): Email contact@muscleboxpro.com · Phone +91-8687247670 · For gym partnerships, machine placement, and support.
+- [Help Center](https://www.muscleboxpro.com/help): FAQs on payments, machine operation, accounts, and troubleshooting.
+
+## Legal
+
+- [Terms & Conditions](https://www.muscleboxpro.com/terms)
+- [Privacy Policy](https://www.muscleboxpro.com/privacy)
+- [Refund & Cancellation](https://www.muscleboxpro.com/refund-cancellation)

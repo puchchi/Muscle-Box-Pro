@@ -9,6 +9,40 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/contact" },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+    { "@type": "ListItem", position: 2, name: "Contact Us", item: "https://www.muscleboxpro.com/contact" },
+  ],
+};
+
+const contactPageSchema = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  "@id": "https://www.muscleboxpro.com/contact#webpage",
+  name: "Contact Muscle Box Pro",
+  url: "https://www.muscleboxpro.com/contact",
+  description:
+    "Contact Muscle Box Pro for partnerships, machine placement, support, and business inquiries.",
+  inLanguage: "en",
+  isPartOf: { "@id": "https://www.muscleboxpro.com/#website" },
+  mainEntity: { "@id": "https://www.muscleboxpro.com/#organization" },
+};
+
 export default function Page() {
-  return <ContactUs />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactPageSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <ContactUs />
+    </>
+  );
 }
