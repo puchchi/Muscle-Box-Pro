@@ -9,7 +9,7 @@ export default function Footer() {
           <div className="col-span-2">
             <span className="flex items-center gap-2 mb-6">
               <img
-                src="/assets/logo.png"
+                src="/assets/logo_mini.png"
                 alt="MuscleBoxPro"
                 className="h-8 w-auto flex-shrink-0"
               />

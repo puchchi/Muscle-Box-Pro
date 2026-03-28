@@ -187,7 +187,7 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
           </div>
           {!limit && (
             <p className="text-muted-foreground text-sm max-w-xs sm:text-right leading-relaxed">
-              Fresh ingredients, premium whey isolate. Every blend made to order in 30 seconds.
+              Fresh ingredients, premium whey isolate. Every blend made to order in 60 seconds.
             </p>
           )}
         </div>
@@ -234,10 +234,6 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
                   </div>
                 )}
 
-                {/* Color category dot */}
-                <div className="absolute top-3 right-3">
-                  <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${shake.color} shadow-sm`} />
-                </div>
               </div>
 
               {/* Card info */}

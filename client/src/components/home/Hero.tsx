@@ -7,7 +7,7 @@ import Link from "next/link";
 const categories = ["All Blends", "Classic", "Banana", "Chocolate", "Milk-Based", "Premium"];
 
 const quickStats = [
-  { val: "30s", label: "blend time" },
+  { val: "60s", label: "blend time" },
   { val: "12", label: "blends" },
   { val: "₹120", label: "from" },
   { val: "UPI", label: "payments" },
@@ -52,7 +52,7 @@ export default function Hero() {
             </h2>
 
             <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md">
-              12 fresh protein blends blended in 30 seconds. No staff. No shaker bottles. Just fuel.
+              12 fresh protein blends blended in 60 seconds. No staff. No shaker bottles. Just fuel.
             </p>
 
             {/* Category chips — Airbnb style */}
@@ -125,7 +125,7 @@ export default function Hero() {
                 className="font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary leading-none"
                 style={{ fontSize: "2.4rem" }}
               >
-                30s
+                60s
               </p>
             </motion.div>
 
@@ -141,7 +141,7 @@ export default function Hero() {
                 className="font-display font-black text-gray-900 leading-none mb-3"
                 style={{ fontSize: "2.6rem" }}
               >
-                30g
+                25g
               </p>
               <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full w-[80%] bg-gradient-to-r from-accent to-primary rounded-full" />
