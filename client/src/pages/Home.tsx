@@ -69,7 +69,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="sr-only py-20 bg-card/30 border-y border-white/5">
+        <section className="sr-only py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2>How the Protein Shake Vending Machine Works</h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -78,9 +78,9 @@ export default function Home() {
                 { title: "2. Automated blending", description: "The machine mixes whey protein, banana, dates or other ingredients automatically." },
                 { title: "3. Fresh shake served", description: "A hygienic protein shake is prepared and dispensed within seconds." },
               ].map((step) => (
-                <div key={step.title} className="rounded-2xl border border-white/10 bg-background/50 p-6">
-                  <h3 className="text-xl font-display font-bold text-white mb-3">{step.title}</h3>
-                  <p className="text-gray-300 leading-relaxed">{step.description}</p>
+                <div key={step.title} className="rounded-2xl border border-gray-200 p-6">
+                  <h3 className="text-xl font-display font-bold text-foreground mb-3">{step.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{step.description}</p>
                 </div>
               ))}
             </div>
@@ -90,7 +90,7 @@ export default function Home() {
         <section className="sr-only py-20">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2>Why Gyms Install Protein Shake Vending Machines</h2>
-            <ul className="space-y-3 text-gray-300 text-lg mb-8">
+            <ul className="space-y-3 text-muted-foreground text-lg mb-8">
               <li>• Instant post-workout nutrition for gym members</li>
               <li>• No shaker bottles required</li>
               <li>• Additional revenue for fitness centers</li>
@@ -116,10 +116,9 @@ export default function Home() {
         </section>
 
         {/* ── For Gym Owners ── */}
-        <section className="py-24 bg-background relative overflow-hidden">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/6 rounded-full blur-[140px] pointer-events-none" />
-
+        <section className="py-24 bg-muted relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
             {/* Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -133,7 +132,7 @@ export default function Home() {
               </span>
               <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
                 <h2
-                  className="font-display font-black text-white leading-none uppercase"
+                  className="font-display font-black text-foreground leading-none uppercase"
                   style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
                 >
                   Turn floor space
@@ -143,7 +142,7 @@ export default function Home() {
                     gym revenue.
                   </span>
                 </h2>
-                <p className="text-gray-400 text-sm leading-relaxed max-w-xs lg:text-right">
+                <p className="text-muted-foreground text-sm leading-relaxed max-w-xs lg:text-right">
                   Zero staff required. Passive income from an automated
                   protein shake machine inside your gym.
                 </p>
@@ -151,17 +150,17 @@ export default function Home() {
             </motion.div>
 
             <div className="grid lg:grid-cols-2 gap-10 items-start">
-              {/* Left: Revenue card — Airbnb "start earning" style */}
+              {/* Left: Revenue card */}
               <motion.div
                 initial={{ opacity: 0, x: -24 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.7 }}
-                className="bg-card rounded-2xl p-8 relative overflow-hidden"
+                className="bg-white rounded-2xl p-8 shadow-md border border-gray-100 relative overflow-hidden"
               >
-                <div className="absolute -top-8 -right-8 w-48 h-48 bg-gradient-to-br from-accent/8 to-primary/8 rounded-full blur-[60px]" />
+                <div className="absolute -top-8 -right-8 w-48 h-48 bg-gradient-to-br from-accent/5 to-primary/5 rounded-full blur-[60px]" />
 
-                <p className="text-xs font-bold tracking-[0.2em] text-gray-500 uppercase mb-4">
+                <p className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-4">
                   Avg monthly revenue per machine
                 </p>
                 <p
@@ -170,11 +169,11 @@ export default function Home() {
                 >
                   ₹35K+
                 </p>
-                <p className="text-gray-500 text-sm mb-8">
+                <p className="text-muted-foreground text-sm mb-8">
                   Passive income. No effort on your end.
                 </p>
 
-                <div className="h-px w-full bg-white/8 mb-6" />
+                <div className="h-px w-full bg-gray-100 mb-6" />
 
                 <Link href="/gym-demo">
                   <Button
@@ -186,7 +185,7 @@ export default function Home() {
                 </Link>
               </motion.div>
 
-              {/* Right: Features — clean rows */}
+              {/* Right: Feature rows */}
               <div className="space-y-4">
                 {revenueFeatures.map((item, i) => (
                   <motion.div
@@ -195,14 +194,14 @@ export default function Home() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="flex gap-4 p-5 rounded-2xl bg-card hover:bg-card/80 hover:-translate-y-0.5 transition-all duration-200 cursor-default group"
+                    className="flex gap-4 p-5 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default group"
                   >
-                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/18 transition-colors duration-200">
+                    <div className="w-11 h-11 rounded-xl bg-primary/8 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors">
                       <item.icon className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white mb-1">{item.title}</h3>
-                      <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+                      <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -212,9 +211,7 @@ export default function Home() {
         </section>
 
         {/* ── Advertise ── */}
-        <section className="py-24 bg-black relative overflow-hidden">
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[450px] h-[450px] bg-accent/6 rounded-full blur-[130px] pointer-events-none" />
-
+        <section className="py-24 bg-background relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid lg:grid-cols-2 gap-14 items-center">
 
@@ -229,7 +226,7 @@ export default function Home() {
                   Advertising opportunities
                 </span>
                 <h2
-                  className="font-display font-black text-white leading-none uppercase mb-5"
+                  className="font-display font-black text-foreground leading-none uppercase mb-5"
                   style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
                 >
                   Your brand on
@@ -238,7 +235,7 @@ export default function Home() {
                     every screen.
                   </span>
                 </h2>
-                <p className="text-gray-400 text-sm leading-relaxed mb-8 max-w-sm">
+                <p className="text-muted-foreground text-sm leading-relaxed mb-8 max-w-sm">
                   MuscleBoxPro machines include high-resolution 4K displays
                   that advertise directly to gym members — a captive, high-intent audience.
                 </p>
@@ -246,12 +243,12 @@ export default function Home() {
                 <div className="space-y-4 mb-8">
                   {adFeatures.map((item, i) => (
                     <div key={i} className="flex gap-3 items-start">
-                      <div className="mt-0.5 w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <div className="mt-0.5 w-9 h-9 rounded-xl bg-primary/8 flex items-center justify-center flex-shrink-0">
                         <item.icon size={16} className="text-primary" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-white mb-0.5">{item.title}</h4>
-                        <p className="text-gray-500 text-sm">{item.text}</p>
+                        <h4 className="font-semibold text-gray-900 mb-0.5">{item.title}</h4>
+                        <p className="text-muted-foreground text-sm">{item.text}</p>
                       </div>
                     </div>
                   ))}
@@ -272,21 +269,21 @@ export default function Home() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="relative aspect-video rounded-2xl overflow-hidden bg-card shadow-2xl shadow-black/60"
+                className="relative aspect-video rounded-2xl overflow-hidden bg-gray-50 shadow-xl border border-gray-200"
               >
-                <div className="absolute inset-0 bg-gradient-to-tr from-accent/8 via-transparent to-primary/8" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-primary/5" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <Monitor size={64} className="text-white/10" />
-                  <p className="font-display font-black text-lg text-white/15 tracking-[0.3em] uppercase">
+                  <Monitor size={64} className="text-gray-200" />
+                  <p className="font-display font-black text-lg text-gray-300 tracking-[0.3em] uppercase">
                     Ad Space Available
                   </p>
                 </div>
-                <div className="absolute bottom-4 left-4 right-4 h-10 bg-white/5 backdrop-blur-md rounded-xl border border-white/8 flex items-center px-4 justify-between">
+                <div className="absolute bottom-4 left-4 right-4 h-10 bg-white rounded-xl border border-gray-200 flex items-center px-4 justify-between shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded-full bg-gradient-to-r from-accent to-primary" />
-                    <div className="h-1.5 w-16 bg-white/15 rounded-full" />
+                    <div className="h-1.5 w-16 bg-gray-200 rounded-full" />
                   </div>
-                  <div className="h-1.5 w-8 bg-primary/25 rounded-full" />
+                  <div className="h-1.5 w-8 bg-primary/20 rounded-full" />
                 </div>
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent to-primary" />
               </motion.div>
@@ -294,9 +291,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── CTA Banner — Airbnb "Ready to start?" style ── */}
+        {/* ── CTA Banner — full-bleed gradient, keeps working on light theme ── */}
         <section className="py-24 px-4 bg-gradient-to-r from-accent to-primary relative overflow-hidden">
-          {/* Noise texture */}
           <div
             className="absolute inset-0 opacity-[0.07]"
             style={{
@@ -326,7 +322,7 @@ export default function Home() {
               <Link href="/gym-demo">
                 <Button
                   size="lg"
-                  className="h-14 px-10 rounded-full font-semibold bg-black text-white hover:bg-black/80 border-0 cursor-pointer text-base shadow-xl"
+                  className="h-14 px-10 rounded-full font-semibold bg-white text-gray-900 hover:bg-white/90 border-0 cursor-pointer text-base shadow-xl"
                 >
                   Request a demo
                 </Button>

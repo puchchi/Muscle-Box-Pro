@@ -172,21 +172,21 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
     <section className="py-20 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Section header — Airbnb style */}
+        {/* Section header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
           <div>
             <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
               Our menu
             </span>
             <h2
-              className="font-display font-black text-white leading-none uppercase"
+              className="font-display font-black text-foreground leading-none uppercase"
               style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
             >
               {limit ? "Popular blends" : "All 12 blends"}
             </h2>
           </div>
           {!limit && (
-            <p className="text-gray-500 text-sm max-w-xs sm:text-right leading-relaxed">
+            <p className="text-muted-foreground text-sm max-w-xs sm:text-right leading-relaxed">
               Fresh ingredients, premium whey isolate. Every blend made to order in 30 seconds.
             </p>
           )}
@@ -198,7 +198,7 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
             {["All", "Classic", "Popular", "Premium", "Flavor", "Milk-Based"].map((cat) => (
               <span
                 key={cat}
-                className="px-4 py-2 rounded-full border border-white/12 text-xs font-semibold text-gray-400 hover:border-primary/50 hover:text-white transition-all cursor-pointer"
+                className="px-4 py-2 rounded-full border border-gray-200 text-xs font-semibold text-gray-500 hover:border-primary/40 hover:text-primary transition-all cursor-pointer"
               >
                 {cat}
               </span>
@@ -215,53 +215,50 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
-              className="rounded-2xl overflow-hidden bg-card hover:shadow-2xl hover:shadow-black/60 hover:-translate-y-1 transition-all duration-300 group cursor-default"
+              className="rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-default border border-gray-100"
             >
-              {/* Product image — Airbnb listing proportion */}
-              <div className="relative aspect-[4/3] overflow-hidden bg-black/20">
+              {/* Product image */}
+              <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                 <img
                   src={shake.image}
                   alt={shake.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
 
-                {/* Badge — Airbnb "Superhost" style (white pill, top-left) */}
+                {/* Badge — white pill top-left (Airbnb "Superhost" style) */}
                 {shake.badge && (
                   <div className="absolute top-3 left-3">
-                    <span className="px-3 py-1.5 rounded-full bg-white text-[11px] font-bold text-gray-900 tracking-wide">
+                    <span className="px-3 py-1.5 rounded-full bg-white text-[11px] font-bold text-gray-900 tracking-wide shadow-sm">
                       {shake.badge}
                     </span>
                   </div>
                 )}
 
-                {/* Color dot indicator top-right */}
+                {/* Color category dot */}
                 <div className="absolute top-3 right-3">
                   <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${shake.color} shadow-sm`} />
                 </div>
-
-                {/* Gradient fade at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent" />
               </div>
 
-              {/* Card info — Airbnb listing info style */}
+              {/* Card info */}
               <div className="p-4 pb-5">
-                {/* Name + protein highlight */}
+                {/* Name + protein */}
                 <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-semibold text-white text-[15px] leading-snug">
+                  <h3 className="font-semibold text-gray-900 text-[15px] leading-snug">
                     {shake.name}
                   </h3>
-                  <span className="text-[13px] font-semibold text-white/80 ml-2 flex-shrink-0">
+                  <span className="text-[13px] font-semibold text-gray-700 ml-2 flex-shrink-0">
                     <span className="text-primary">★</span> {shake.protein}g
                   </span>
                 </div>
 
-                {/* Category + ingredient count */}
-                <p className="text-gray-500 text-[13px] mb-3">
+                {/* Category + count */}
+                <p className="text-gray-400 text-[13px] mb-3">
                   {shake.category} · {shake.ingredients.length} ingredient{shake.ingredients.length > 1 ? "s" : ""}
                 </p>
 
-                {/* Macro row */}
-                <div className="flex items-center gap-1.5 text-[12px] text-gray-600 mb-4">
+                {/* Macros */}
+                <div className="flex items-center gap-1.5 text-[12px] text-gray-400 mb-4">
                   <span>{shake.carbs}g carbs</span>
                   <span>·</span>
                   <span>{shake.fat}g fat</span>
@@ -270,9 +267,9 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
                 </div>
 
                 {/* Price */}
-                <span className="text-white font-semibold text-[15px]">
+                <span className="text-gray-900 font-semibold text-[15px]">
                   ₹{shake.price}
-                  <span className="text-gray-500 font-normal text-[13px]"> / serving</span>
+                  <span className="text-gray-400 font-normal text-[13px]"> / serving</span>
                 </span>
               </div>
             </motion.div>
@@ -285,26 +282,27 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
             <Button
               asChild
               size="lg"
-              className="h-13 px-8 rounded-full font-semibold border border-white/20 bg-transparent text-white hover:bg-white/8 hover:border-white/30 transition-all cursor-pointer text-base"
+              variant="outline"
+              className="h-13 px-8 rounded-full font-semibold border-gray-300 text-gray-800 hover:bg-gray-100 hover:border-gray-400 transition-all cursor-pointer text-base"
             >
               <Link href="/menu">View all 12 blends →</Link>
             </Button>
           </div>
         )}
 
-        {/* Full menu custom blend note */}
+        {/* Full menu: custom blend note */}
         {!limit && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="mt-16 p-8 rounded-2xl border border-white/8 bg-card text-center"
+            className="mt-16 p-8 rounded-2xl border border-gray-200 bg-gray-50 text-center"
           >
-            <h3 className="font-display font-black text-2xl text-white uppercase mb-2">
+            <h3 className="font-display font-black text-2xl text-foreground uppercase mb-2">
               Custom blends available
             </h3>
-            <p className="text-gray-500 max-w-md mx-auto text-sm leading-relaxed">
+            <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">
               Want a combination not listed? Our machines support unlimited customization.
               Ask your gym staff about custom blend options.
             </p>
