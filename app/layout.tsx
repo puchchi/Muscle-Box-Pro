@@ -81,6 +81,8 @@ export default function RootLayout({
               logo: {
                 "@type": "ImageObject",
                 url: "https://www.muscleboxpro.com/favicon.png",
+                width: 507,
+                height: 520,
               },
               description:
                 "Smart protein shake vending machines for gyms with zero-maintenance operations and recurring revenue. Operating across India.",
