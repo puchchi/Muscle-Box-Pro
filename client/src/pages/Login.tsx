@@ -162,17 +162,17 @@ export default function Login() {
           <Link href="/">
             <span className="inline-flex items-center gap-2 group cursor-pointer mb-6">
               <div className="p-2 bg-primary rounded-lg group-hover:bg-primary/90 transition-colors">
-                <Dumbbell className="h-5 w-5 text-background" />
+                <Dumbbell className="h-5 w-5 text-white" />
               </div>
-              <span className="font-display text-lg tracking-wider text-white group-hover:text-primary transition-colors">
+              <span className="font-display text-lg tracking-wider text-foreground group-hover:text-primary transition-colors">
                 MUSCLE BOX<span className="text-primary">PRO</span>
               </span>
             </span>
           </Link>
-          <h1 className="text-3xl font-display font-bold text-white mb-2">
+          <h1 className="text-3xl font-display font-bold text-foreground mb-2">
             SIGN IN
           </h1>
-          <p className="text-gray-400">
+          <p className="text-muted-foreground">
             Access your account and check your balance
           </p>
         </div>
@@ -182,7 +182,7 @@ export default function Login() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-card border border-white/10 rounded-2xl p-8 shadow-2xl"
+          className="bg-white border border-gray-200 rounded-2xl p-8 shadow-lg"
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -192,13 +192,13 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-white font-medium">Email</FormLabel>
+                    <FormLabel className="text-gray-700 font-medium">Email</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="you@example.com"
                         type="email"
                         {...field}
-                        className="bg-background/50 border-white/10 text-white placeholder:text-gray-600 focus:border-primary focus:bg-background/70 transition-colors h-11"
+                        className="bg-white border-gray-300 text-foreground placeholder:text-gray-400 focus:border-primary transition-colors h-11"
                         data-testid="input-email"
                       />
                     </FormControl>
@@ -214,7 +214,7 @@ export default function Login() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel className="text-white font-medium">Password</FormLabel>
+                      <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
                       <Link href="/forgot-password">
                         <span className="text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer">
                           Forgot?
@@ -226,7 +226,7 @@ export default function Login() {
                         placeholder="••••••••"
                         type="password"
                         {...field}
-                        className="bg-background/50 border-white/10 text-white placeholder:text-gray-600 focus:border-primary focus:bg-background/70 transition-colors h-11"
+                        className="bg-white border-gray-300 text-foreground placeholder:text-gray-400 focus:border-primary transition-colors h-11"
                         data-testid="input-password"
                       />
                     </FormControl>
@@ -245,11 +245,11 @@ export default function Login() {
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        className="border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                         data-testid="checkbox-remember"
                       />
                     </FormControl>
-                    <FormLabel className="text-gray-400 text-sm font-normal cursor-pointer">
+                    <FormLabel className="text-muted-foreground text-sm font-normal cursor-pointer">
                       Remember me for 30 days
                     </FormLabel>
                   </FormItem>
@@ -295,7 +295,7 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-primary text-background font-display font-bold text-lg hover:bg-primary/90 transition-colors mt-8"
+                className="w-full h-12 bg-primary text-white font-display font-bold text-lg hover:bg-primary/90 transition-colors mt-8 rounded-full cursor-pointer"
                 data-testid="button-login"
               >
                 SIGN IN
@@ -307,7 +307,7 @@ export default function Login() {
 
         {/* Footer */}
         <div className="text-center mt-8">
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Don't have an account?{" "}
             <Link href="/signup">
               <span className="text-primary hover:text-primary/80 transition-colors cursor-pointer font-medium">

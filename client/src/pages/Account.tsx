@@ -3,7 +3,7 @@
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, History, Plus, User, TrendingUp, Users, Activity, Wallet } from "lucide-react";
+import { CreditCard, History, Plus, User, TrendingUp, Users, Activity, Wallet, Dumbbell, ArrowUpRight, ArrowDownLeft, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -21,6 +21,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
+import { motion } from "framer-motion";
 
 const revenueData = [
   { name: 'Mon', revenue: 4500 },
@@ -51,20 +52,16 @@ function asNumber(value: unknown): number | null {
 
 function parseMemberTransactions(value: unknown): MemberTransaction[] {
   if (!Array.isArray(value)) return [];
-
   return value
     .map((entry, index) => {
       if (!entry || typeof entry !== "object") return null;
       const row = entry as Record<string, unknown>;
       const amount = asNumber(row.amount);
       if (amount === null) return null;
-
       const item = typeof row.item === "string" ? row.item : "Transaction";
       const location = typeof row.location === "string" ? row.location : "App";
       const date = typeof row.date === "string" ? row.date : "Recently";
-      const id =
-        typeof row.id === "string" ? row.id : `transaction-${index.toString()}`;
-
+      const id = typeof row.id === "string" ? row.id : `transaction-${index.toString()}`;
       return { id, item, date, amount, location };
     })
     .filter((entry): entry is MemberTransaction => entry !== null);
@@ -128,9 +125,9 @@ export default function Account() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="pt-32 pb-20 px-4 flex items-center justify-center text-gray-400">
+        <div className="pt-32 pb-20 px-4 flex items-center justify-center text-muted-foreground">
           Checking session...
         </div>
       </div>
@@ -139,70 +136,87 @@ export default function Account() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gray-50">
         <Navbar />
         <div className="pt-32 pb-20 px-4 flex items-center justify-center">
-          <Card className="bg-card border-white/10 w-full max-w-md p-8 text-center">
-            <User className="h-16 w-16 text-primary mx-auto mb-6" />
-            <h1 className="text-3xl font-display font-bold text-white mb-4">ACCOUNT ACCESS</h1>
-            <p className="text-gray-400 mb-8">Sign in to manage your profile or gym revenue.</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-gray-200 shadow-lg rounded-2xl w-full max-w-md p-10 text-center"
+          >
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <User className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-2xl font-display font-bold text-foreground mb-3">Account Access</h1>
+            <p className="text-muted-foreground mb-8 text-sm leading-relaxed">Sign in to manage your wallet, track shakes, and view your gym revenue.</p>
             <Link href="/login">
-              <Button className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90 h-12">
-                SIGN IN TO DASHBOARD
+              <Button className="w-full bg-primary text-white font-bold text-base hover:bg-primary/90 h-12 rounded-full cursor-pointer">
+                Sign In to Dashboard
               </Button>
             </Link>
-          </Card>
+          </motion.div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="pt-32 pb-20 px-4 max-w-6xl mx-auto">
-        
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
-          <div>
-             <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2 uppercase">
-              {userType === 'gym' ? 'GYM OWNER PORTAL' : 'MEMBER DASHBOARD'}
+
+      {/* ── Welcome Banner ── */}
+      <div className="bg-gradient-to-r from-accent to-primary pt-32 pb-20 px-4">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <p className="text-white/70 text-xs font-bold tracking-[0.25em] uppercase mb-2">
+              {userType === "gym" ? "Gym Owner Portal" : "Member Dashboard"}
+            </p>
+            <h1 className="text-3xl md:text-4xl font-display font-black text-white uppercase leading-tight mb-1">
+              {userType === "gym" ? "Iron Paradise Fitness" : `Hey, ${memberDisplayName}`}
             </h1>
-            {userType === "gym" ? (
-              <p className="text-muted-foreground">Managing: Iron Paradise Fitness</p>
-            ) : (
-              <div className="space-y-1">
-                <p className="text-lg md:text-2xl font-display font-semibold text-primary">
-                  Welcome back, {memberDisplayName}
-                </p>
-                <p className="text-muted-foreground">Ready for your post-workout fuel?</p>
-              </div>
-            )}
-          </div>
-          <div className="flex gap-4">
-            <Button variant="outline" className="border-white/10 text-white" onClick={logout}>
-              LOGOUT
+            <p className="text-white/70 text-sm">
+              {userType === "gym" ? "Managing your machine & revenue" : "Ready for your post-workout fuel?"}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="flex gap-3"
+          >
+            <Button
+              variant="outline"
+              className="border-white/30 text-white bg-white/10 hover:bg-white/20 cursor-pointer rounded-full backdrop-blur-sm"
+              onClick={logout}
+            >
+              Logout
             </Button>
-            {userType === 'user' && (
+            {userType === "user" && (
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button className="bg-accent text-background font-bold hover:bg-accent/90">
-                    <Plus className="mr-2 h-4 w-4" /> ADD FUNDS
+                  <Button className="bg-white text-primary font-bold hover:bg-white/90 cursor-pointer rounded-full shadow-lg">
+                    <Plus className="mr-2 h-4 w-4" /> Add Funds
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-card border-white/10 text-white">
+                <DialogContent className="bg-white border-gray-200 shadow-xl">
                   <DialogHeader>
-                    <DialogTitle className="text-2xl font-display font-bold uppercase">Load Wallet</DialogTitle>
-                    <DialogDescription className="text-gray-400">
+                    <DialogTitle className="text-2xl font-display font-bold uppercase text-foreground">Load Wallet</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
                       Add balance to your Muscle Box Pro account for instant shakes.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-6 mt-4">
                     <div className="grid grid-cols-3 gap-3">
                       {[500, 1000, 2000].map((amount) => (
-                        <Button 
-                          key={amount} 
-                          variant="outline" 
-                          className="border-white/10 hover:border-primary hover:text-primary py-8 text-lg font-bold"
+                        <Button
+                          key={amount}
+                          variant="outline"
+                          className="border-gray-200 hover:border-primary hover:text-primary py-8 text-lg font-bold cursor-pointer rounded-xl"
                           onClick={() => {
                             setCustomAmount(amount.toString());
                             toast({ title: "Amount Selected", description: `₹${amount} added to checkout.` });
@@ -213,228 +227,238 @@ export default function Account() {
                       ))}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm text-gray-400 font-mono uppercase">Custom Amount</label>
-                      <Input 
-                        className="bg-background border-white/10 focus:border-primary h-12 text-lg" 
-                        placeholder="Enter amount" 
-                        type="number" 
+                      <label className="text-sm text-gray-600 font-semibold uppercase tracking-wider">Custom Amount</label>
+                      <Input
+                        className="bg-white border-gray-300 focus:border-primary h-12 text-lg rounded-xl"
+                        placeholder="Enter amount"
+                        type="number"
                         value={customAmount}
                         onChange={(e) => setCustomAmount(e.target.value)}
                       />
                     </div>
-                    <div className="space-y-4">
-                      <label className="text-sm text-gray-400 font-mono uppercase block">Select Payment Method</label>
+                    <div className="space-y-3">
+                      <label className="text-sm text-gray-600 font-semibold uppercase tracking-wider block">Payment Method</label>
                       <div className="grid grid-cols-2 gap-3">
-                        <Button variant="outline" className="border-white/10 flex flex-col items-center gap-2 py-6 hover:border-primary hover:text-primary">
+                        <Button variant="outline" className="border-gray-200 flex flex-col items-center gap-2 py-6 hover:border-primary hover:text-primary cursor-pointer rounded-xl">
                           <CreditCard className="h-5 w-5" />
-                          <span className="text-[10px] uppercase">Credit Card</span>
+                          <span className="text-[11px] uppercase font-semibold">Credit Card</span>
                         </Button>
-                        <Button variant="outline" className="border-white/10 flex flex-col items-center gap-2 py-6 hover:border-primary hover:text-primary">
-                          <Activity className="h-5 w-5" />
-                          <span className="text-[10px] uppercase">UPI / QR</span>
+                        <Button variant="outline" className="border-gray-200 flex flex-col items-center gap-2 py-6 hover:border-primary hover:text-primary cursor-pointer rounded-xl">
+                          <Zap className="h-5 w-5" />
+                          <span className="text-[11px] uppercase font-semibold">UPI / QR</span>
                         </Button>
                       </div>
                     </div>
-                    <Button className="w-full bg-primary text-background font-bold h-12 text-lg" onClick={async () => {
-                      const payload = { amount: customAmount };
-                      console.log("Hitting API: POST http://127.0.0.1:9999/wallet/add-funds", payload);
-                      
-                      toast({ title: "Processing Payment", description: "Connecting to secure gateway..." });
-                      
-                      await new Promise(resolve => setTimeout(resolve, 1500));
-                      
-                      toast({ title: "Success!", description: `₹${customAmount} added to your wallet.` });
-                    }}>
-                      PROCEED TO PAYMENT
+                    <Button
+                      className="w-full bg-primary text-white font-bold h-12 text-base rounded-full cursor-pointer"
+                      onClick={async () => {
+                        const payload = { amount: customAmount };
+                        console.log("Hitting API: POST http://127.0.0.1:9999/wallet/add-funds", payload);
+                        toast({ title: "Processing Payment", description: "Connecting to secure gateway..." });
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        toast({ title: "Success!", description: `₹${customAmount} added to your wallet.` });
+                      }}
+                    >
+                      Proceed to Payment
                     </Button>
-                    <p className="text-[10px] text-center text-gray-500 uppercase tracking-widest">
+                    <p className="text-[10px] text-center text-gray-400 uppercase tracking-widest">
                       Secure 256-bit SSL Encrypted Payment
                     </p>
                   </div>
                 </DialogContent>
               </Dialog>
             )}
-          </div>
+          </motion.div>
         </div>
+      </div>
 
-        {userType === 'user' ? (
-          <div className="space-y-8">
-            <div className="grid gap-6 md:grid-cols-3">
-              <Card className="bg-card border-primary/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Current Balance</CardTitle>
-                  <Wallet className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-display font-bold">
-                    {walletBalance !== null
-                      ? `₹${walletBalance.toFixed(2)}`
-                      : "Not available"}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {walletBalance !== null
-                      ? "Synced from your account profile."
-                      : "Wallet balance is not available yet."}
-                  </p>
-                </CardContent>
-              </Card>
+      {/* ── Main Content ── */}
+      <div className="-mt-10 pb-20 px-4 max-w-6xl mx-auto">
 
-              <Card className="bg-card border-white/10">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Monthly Shakes</CardTitle>
-                  <Activity className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-display font-bold">
-                    {monthlyShakes !== null ? monthlyShakes : "--"}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {monthlyShakes !== null
-                      ? "Tracked from your account profile."
-                      : "Monthly usage data is not available yet."}
-                  </p>
-                </CardContent>
-              </Card>
+        {userType === "user" ? (
+          <div className="space-y-6">
 
-              <Card className="bg-card border-white/10">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Fav Blend</CardTitle>
-                  <History className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-display font-bold truncate">
-                    {favoriteBlend ?? "Not available"}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Favorite blend is shown after your orders sync.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-card border-white/10">
-              <CardHeader>
-                <CardTitle className="font-display">Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {memberTransactions.length > 0 ? memberTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
-                      <div className="flex items-center gap-4">
-                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${transaction.amount > 0 ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
-                          {transaction.amount > 0 ? <Plus className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
-                        </div>
-                        <div>
-                          <p className="font-medium">{transaction.item}</p>
-                          <p className="text-sm text-muted-foreground">{transaction.location} • {transaction.date}</p>
-                        </div>
-                      </div>
-                      <div className={`font-mono font-bold ${transaction.amount > 0 ? 'text-accent' : 'text-white'}`}>
-                        {transaction.amount > 0 ? '+' : ''}₹{Math.abs(transaction.amount).toFixed(2)}
-                      </div>
+            {/* Stat Cards */}
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Balance */}
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                <Card className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between pb-3 pt-5">
+                    <CardTitle className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase">Current Balance</CardTitle>
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Wallet className="h-4 w-4 text-primary" />
                     </div>
-                  )) : (
-                    <p className="text-sm text-muted-foreground">
-                      No recent activity yet.
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-display font-black text-foreground mb-1">
+                      {walletBalance !== null ? `₹${walletBalance.toFixed(2)}` : "—"}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {walletBalance !== null ? "Synced from your account" : "Wallet balance not available yet"}
                     </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="grid gap-6 md:grid-cols-4">
-              <Card className="bg-card border-primary/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Weekly Revenue</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-display font-bold">₹42,500</div>
-                  <p className="text-xs text-accent mt-1">+8% week-over-week</p>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-              <Card className="bg-card border-white/10">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-display font-bold">842</div>
-                  <p className="text-xs text-muted-foreground mt-1">24 active today</p>
-                </CardContent>
-              </Card>
+              {/* Monthly Shakes */}
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+                <Card className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between pb-3 pt-5">
+                    <CardTitle className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase">Monthly Shakes</CardTitle>
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-blue-500" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-display font-black text-foreground mb-1">
+                      {monthlyShakes !== null ? monthlyShakes : "—"}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {monthlyShakes !== null ? "Tracked from your account" : "Usage data not available yet"}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-              <Card className="bg-card border-white/10">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Machine Status</CardTitle>
-                  <Activity className="h-4 w-4 text-accent" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-display font-bold text-accent uppercase">Online</div>
-                  <p className="text-xs text-muted-foreground mt-1">Last service: 2 days ago</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-card border-white/10">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Stock Level</CardTitle>
-                  <Activity className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-display font-bold">84%</div>
-                  <p className="text-xs text-muted-foreground mt-1">Refill due in 4 days</p>
-                </CardContent>
-              </Card>
+              {/* Fav Blend */}
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                <Card className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <CardHeader className="flex flex-row items-center justify-between pb-3 pt-5">
+                    <CardTitle className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase">Favourite Blend</CardTitle>
+                    <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+                      <Dumbbell className="h-4 w-4 text-amber-500" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl font-display font-black text-foreground mb-1 truncate">
+                      {favoriteBlend ?? "—"}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Shown after your orders sync</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8">
-              <Card className="bg-card border-white/10">
-                <CardHeader>
-                  <CardTitle className="font-display">Revenue Overview</CardTitle>
+            {/* Recent Activity */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+              <Card className="bg-white border-gray-100 shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 pb-4">
+                  <CardTitle className="font-display font-bold text-foreground text-base">Recent Activity</CardTitle>
+                  <History className="h-4 w-4 text-gray-400" />
                 </CardHeader>
-                <CardContent className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={revenueData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                      <XAxis dataKey="name" stroke="#666" fontSize={12} />
-                      <YAxis stroke="#666" fontSize={12} />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }}
-                        itemStyle={{ color: '#00d1ff' }}
-                      />
-                      <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-card border-white/10">
-                <CardHeader>
-                  <CardTitle className="font-display">Top Selling Blends</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {[
-                      { name: 'Banana Blast', percentage: 45, color: 'bg-primary' },
-                      { name: 'Chocolate Pure', percentage: 32, color: 'bg-accent' },
-                      { name: 'Date Delight', percentage: 23, color: 'bg-muted' }
-                    ].map((blend) => (
-                      <div key={blend.name} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-bold">{blend.name}</span>
-                          <span className="text-muted-foreground">{blend.percentage}%</span>
+                <CardContent className="pt-4">
+                  {memberTransactions.length > 0 ? (
+                    <div className="space-y-3">
+                      {memberTransactions.map((transaction) => (
+                        <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                          <div className="flex items-center gap-4">
+                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${transaction.amount > 0 ? 'bg-green-50 text-green-600' : 'bg-primary/10 text-primary'}`}>
+                              {transaction.amount > 0
+                                ? <ArrowUpRight className="h-4 w-4" />
+                                : <ArrowDownLeft className="h-4 w-4" />}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground text-sm">{transaction.item}</p>
+                              <p className="text-xs text-muted-foreground">{transaction.location} · {transaction.date}</p>
+                            </div>
+                          </div>
+                          <div className={`font-bold text-sm tabular-nums ${transaction.amount > 0 ? 'text-green-600' : 'text-foreground'}`}>
+                            {transaction.amount > 0 ? '+' : ''}₹{Math.abs(transaction.amount).toFixed(2)}
+                          </div>
                         </div>
-                        <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                          <div className={`${blend.color} h-full`} style={{ width: `${blend.percentage}%` }} />
-                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center">
+                      <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <History className="h-6 w-6 text-gray-300" />
                       </div>
-                    ))}
-                  </div>
+                      <p className="text-gray-500 font-semibold text-sm mb-1">No activity yet</p>
+                      <p className="text-gray-400 text-xs">Your shake purchases will appear here</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+            </motion.div>
+          </div>
+
+        ) : (
+          /* ── Gym Owner View ── */
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-4">
+              {[
+                { label: "Weekly Revenue", value: "₹42,500", sub: "+8% week-over-week", icon: TrendingUp, color: "from-accent to-primary", iconBg: "bg-primary/10", iconColor: "text-primary", subColor: "text-accent" },
+                { label: "Total Users", value: "842", sub: "24 active today", icon: Users, color: "from-blue-400 to-cyan-400", iconBg: "bg-blue-50", iconColor: "text-blue-500", subColor: "text-muted-foreground" },
+                { label: "Machine Status", value: "Online", sub: "Last service: 2 days ago", icon: Activity, color: "from-green-400 to-emerald-500", iconBg: "bg-green-50", iconColor: "text-green-600", subColor: "text-muted-foreground" },
+                { label: "Stock Level", value: "84%", sub: "Refill due in 4 days", icon: Wallet, color: "from-amber-400 to-orange-400", iconBg: "bg-amber-50", iconColor: "text-amber-500", subColor: "text-muted-foreground" },
+              ].map((stat, i) => (
+                <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.05 }}>
+                  <Card className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <CardHeader className="flex flex-row items-center justify-between pb-3 pt-5">
+                      <CardTitle className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase">{stat.label}</CardTitle>
+                      <div className={`w-9 h-9 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                        <stat.icon className={`h-4 w-4 ${stat.iconColor}`} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-display font-black text-foreground mb-1">{stat.value}</div>
+                      <p className={`text-xs ${stat.subColor}`}>{stat.sub}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-6">
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                <Card className="bg-white border-gray-100 shadow-sm">
+                  <CardHeader className="border-b border-gray-100 pb-4">
+                    <CardTitle className="font-display font-bold text-foreground text-base">Revenue Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[260px] pt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={revenueData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} />
+                        <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          itemStyle={{ color: '#111' }}
+                          cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                        />
+                        <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+                <Card className="bg-white border-gray-100 shadow-sm">
+                  <CardHeader className="border-b border-gray-100 pb-4">
+                    <CardTitle className="font-display font-bold text-foreground text-base">Top Selling Blends</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <div className="space-y-5">
+                      {[
+                        { name: "Banana Blast", percentage: 45, color: "bg-primary" },
+                        { name: "Chocolate Pure", percentage: 32, color: "bg-accent" },
+                        { name: "Date Delight", percentage: 23, color: "bg-amber-400" },
+                      ].map((blend) => (
+                        <div key={blend.name} className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="font-semibold text-foreground">{blend.name}</span>
+                            <span className="text-muted-foreground font-medium">{blend.percentage}%</span>
+                          </div>
+                          <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                            <div className={`${blend.color} h-full rounded-full transition-all duration-500`} style={{ width: `${blend.percentage}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </div>
           </div>
         )}
