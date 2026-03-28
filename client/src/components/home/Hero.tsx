@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -24,7 +25,7 @@ export default function Hero() {
 
           {/* Left: Copy */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 1, x: 0 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
@@ -99,11 +100,14 @@ export default function Hero() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
-            className="relative hidden lg:flex items-center justify-center"
+            className="relative flex items-center justify-center"
           >
-            <img
+            <Image
               src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
               alt="Protein shake vending machine for gyms"
+              width={800}
+              height={600}
+              priority
               className="w-full rounded-2xl object-cover shadow-2xl shadow-gray-300/60"
               style={{ maxHeight: "78vh", objectPosition: "center" }}
             />
@@ -113,7 +117,7 @@ export default function Hero() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.8 }}
-              className="absolute -left-8 top-14 bg-white px-5 py-4 rounded-2xl shadow-xl border border-gray-100"
+              className="absolute -left-8 top-14 bg-white px-5 py-4 rounded-2xl shadow-xl border border-gray-100 hidden lg:block"
             >
               <p className="text-[10px] text-gray-400 uppercase tracking-[0.25em] mb-1">Blend Time</p>
               <p
@@ -129,7 +133,7 @@ export default function Hero() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 1.0 }}
-              className="absolute -right-8 bottom-16 bg-white p-5 rounded-2xl shadow-xl border border-gray-100 min-w-[190px]"
+              className="absolute -right-8 bottom-16 bg-white p-5 rounded-2xl shadow-xl border border-gray-100 min-w-[190px] hidden lg:block"
             >
               <p className="text-[10px] text-gray-400 uppercase tracking-[0.25em] mb-2">Protein Per Shake</p>
               <p

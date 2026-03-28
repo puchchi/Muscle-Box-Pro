@@ -23,6 +23,8 @@ const productSchema = {
   offers: {
     "@type": "Offer",
     priceCurrency: "INR",
+    price: "0",
+    url: "https://www.muscleboxpro.com/protein-shake-vending-machine",
     availability: "https://schema.org/InStock",
     seller: { "@type": "Organization", name: "Muscle Box Pro" },
   },

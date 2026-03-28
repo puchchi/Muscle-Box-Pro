@@ -41,7 +41,7 @@ const blogPostingSchema = {
       publisher: { "@type": "Organization", name: "Journal of the International Society of Sports Nutrition" },
     },
     {
-      "@type": "GovernmentOrganization",
+      "@type": "Article",
       name: "USDA Dietary Guidelines: Protein Needs for Active Adults",
       url: "https://www.dietaryguidelines.gov/sites/default/files/2020-12/Dietary_Guidelines_for_Americans_2020-2025.pdf",
       publisher: { "@type": "GovernmentOrganization", name: "U.S. Department of Agriculture" },

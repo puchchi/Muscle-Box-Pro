@@ -47,7 +47,7 @@ const blogPostingSchema = {
       publisher: { "@type": "Organization", name: "Journal of the International Society of Sports Nutrition" },
     },
     {
-      "@type": "GovernmentOrganization",
+      "@type": "ScholarlyArticle",
       name: "NIH: Dietary Protein and Muscle Protein Synthesis",
       url: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5852756/",
       publisher: { "@type": "GovernmentOrganization", name: "National Institutes of Health (NIH)" },
