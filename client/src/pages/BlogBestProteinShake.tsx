@@ -162,7 +162,7 @@ export default function BlogBestProteinShake() {
             <p className="text-gray-600 text-sm leading-relaxed mb-4">
               At MuscleBoxPro, our{" "}
               <Link href="/protein-vending-machine-india" className="text-primary hover:underline font-medium">smart protein kiosks</Link>{" "}
-              are stocked with premium Whey Isolate <em>and</em> high-quality Vegan Plant blends — freshly mixed, perfectly chilled, and ready in 45 seconds via our{" "}
+              are stocked with premium Whey Isolate <em>and</em> high-quality Vegan Plant blends — freshly mixed, perfectly chilled, and ready in 60 seconds via our{" "}
               <Link href="/gym-protein-shake-machine" className="text-primary hover:underline font-medium">automated supplement bars</Link>.
             </p>
           </div>

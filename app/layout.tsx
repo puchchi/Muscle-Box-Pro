@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s",
   },
   description:
-    "MuscleBoxPro is a smart protein shake vending machine for gyms. Serve fresh protein shake blends in 30 seconds and generate passive revenue for fitness centers with automated protein vending technology.",
+    "MuscleBoxPro is a smart protein shake vending machine for gyms. Serve fresh protein shake blends in 60 seconds and generate passive revenue for fitness centers with automated protein vending technology.",
   keywords: [
     "protein shake vending machine",
     "gym vending machine",

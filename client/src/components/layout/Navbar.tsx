@@ -34,6 +34,8 @@ export default function Navbar() {
               <img
                 src="/assets/logo.png"
                 alt="MuscleBoxPro"
+                width={160}
+                height={40}
                 className="h-10 w-auto flex-shrink-0 group-hover:opacity-90 transition-opacity"
               />
               {/* <span className="font-display text-xl font-bold tracking-wider text-brand-gradient group-hover:opacity-90 transition-opacity">

@@ -14,7 +14,7 @@ const productSchema = {
   "@type": "Product",
   name: "MuscleBoxPro Protein Shake Vending Machine",
   description:
-    "Smart protein shake vending machine for gyms. Blends fresh whey or plant protein shakes in under 45 seconds with cashless payments and zero staff overhead.",
+    "Smart protein shake vending machine for gyms. Blends fresh whey or plant protein shakes in 60 seconds with cashless payments and zero staff overhead.",
   brand: { "@type": "Brand", name: "Muscle Box Pro" },
   manufacturer: { "@type": "Organization", name: "BlendBox Innovations LLP" },
   image: "https://www.muscleboxpro.com/og-image.png",
@@ -47,7 +47,7 @@ const faqSchema = {
       name: "How fast does the protein shake vending machine prepare a shake?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MuscleBoxPro machines prepare a freshly blended protein shake in 30–45 seconds from ingredient selection to dispensing.",
+        text: "MuscleBoxPro machines prepare a freshly blended protein shake in 60 seconds from ingredient selection to dispensing.",
       },
     },
     {
