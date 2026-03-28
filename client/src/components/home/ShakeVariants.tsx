@@ -1,6 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star } from "lucide-react";
 import { Button } from "../ui/button";
 import Link from "next/link";
 
@@ -165,8 +167,18 @@ const shakeVariants = [
   },
 ];
 
+const CATEGORIES = ["All", "Classic", "Popular", "Premium", "Flavor", "Milk-Based"] as const;
+
 export default function ShakeVariants({ limit }: { limit?: number }) {
-  const displayedShakes = limit ? shakeVariants.slice(0, limit) : shakeVariants;
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+
+  const filteredShakes = limit
+    ? shakeVariants.slice(0, limit)
+    : activeCategory === "All"
+      ? shakeVariants
+      : shakeVariants.filter((s) => s.category === activeCategory);
+
+  const displayedShakes = filteredShakes;
 
   return (
     <section className="py-20 bg-background">
@@ -195,26 +207,32 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
         {/* Category filter — full menu only */}
         {!limit && (
           <div className="flex gap-2 flex-wrap mb-10">
-            {["All", "Classic", "Popular", "Premium", "Flavor", "Milk-Based"].map((cat) => (
-              <span
+            {CATEGORIES.map((cat) => (
+              <button
                 key={cat}
-                className="px-4 py-2 rounded-full border border-gray-200 text-xs font-semibold text-gray-500 hover:border-primary/40 hover:text-primary transition-all cursor-pointer"
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-full border text-xs font-semibold transition-all cursor-pointer ${
+                  activeCategory === cat
+                    ? "bg-primary border-primary text-white shadow-sm shadow-primary/20"
+                    : "border-gray-200 text-gray-500 hover:border-primary/40 hover:text-primary"
+                }`}
               >
                 {cat}
-              </span>
+              </button>
             ))}
           </div>
         )}
 
         {/* Shake grid — Airbnb listing card style */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AnimatePresence mode="popLayout">
           {displayedShakes.map((shake, i) => (
             <motion.div
               key={shake.id}
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.06 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3, delay: i * 0.04 }}
               className="rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-default border border-gray-100"
             >
               {/* Product image */}
@@ -243,8 +261,8 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
                   <h3 className="font-semibold text-gray-900 text-[15px] leading-snug">
                     {shake.name}
                   </h3>
-                  <span className="text-[13px] font-semibold text-gray-700 ml-2 flex-shrink-0">
-                    <span className="text-primary">★</span> {shake.protein}g
+                  <span className="text-[13px] font-semibold text-gray-700 ml-2 flex-shrink-0 flex items-center gap-1">
+                    <Star className="w-3 h-3 text-primary fill-primary" /> {shake.protein}g
                   </span>
                 </div>
 
@@ -270,6 +288,7 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
               </div>
             </motion.div>
           ))}
+          </AnimatePresence>
         </div>
 
         {/* View all CTA */}

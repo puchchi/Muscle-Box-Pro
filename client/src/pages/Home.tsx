@@ -4,7 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/home/Hero";
 import Features from "@/components/home/Features";
 import ShakeVariants from "@/components/home/ShakeVariants";
-import { Monitor, TrendingUp, Users, ArrowRight } from "lucide-react";
+import { Monitor, TrendingUp, Users, Wrench, Heart, Percent, ArrowRight, Play, Wifi } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,17 +12,17 @@ import Footer from "@/components/footer/index";
 
 const revenueFeatures = [
   {
-    icon: Users,
+    icon: Wrench,
     title: "Zero maintenance",
     desc: "Our team handles restocking, cleaning, and support. You just collect the revenue.",
   },
   {
-    icon: TrendingUp,
+    icon: Percent,
     title: "High margins",
     desc: "Premium protein shakes command premium prices. Enjoy industry-leading profit sharing.",
   },
   {
-    icon: Monitor,
+    icon: Heart,
     title: "Member retention",
     desc: "Members who fuel up post-workout stay longer, train harder, and renew sooner.",
   },
@@ -269,23 +269,40 @@ export default function Home() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="relative aspect-video rounded-2xl overflow-hidden bg-gray-50 shadow-xl border border-gray-200"
+                className="relative aspect-video rounded-2xl overflow-hidden shadow-[0_24px_60px_-8px_rgba(0,0,0,0.18),0_8px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100"
               >
-                <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 via-transparent to-primary/5" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <Monitor size={64} className="text-gray-200" />
-                  <p className="font-display font-black text-lg text-gray-300 tracking-[0.3em] uppercase">
-                    Ad Space Available
-                  </p>
-                </div>
-                <div className="absolute bottom-4 left-4 right-4 h-10 bg-white rounded-xl border border-gray-200 flex items-center px-4 justify-between shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-r from-accent to-primary" />
-                    <div className="h-1.5 w-16 bg-gray-200 rounded-full" />
+                {/* Screen background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+
+                {/* Grid overlay */}
+                <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+
+                {/* Content area */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg">
+                    <Play className="w-7 h-7 text-white fill-white" />
                   </div>
-                  <div className="h-1.5 w-8 bg-primary/20 rounded-full" />
+                  <div className="text-center">
+                    <p className="font-display font-black text-white text-xl tracking-[0.2em] uppercase mb-1">
+                      Your Ad Here
+                    </p>
+                    <p className="text-white/50 text-xs tracking-wider uppercase">
+                      HD display · 45 seconds · Captive audience
+                    </p>
+                  </div>
                 </div>
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent to-primary" />
+
+                {/* Bottom status bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-10 bg-black/40 backdrop-blur-sm border-t border-white/10 flex items-center px-4 justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-white/60 text-xs font-medium">LIVE</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/40">
+                    <Wifi className="w-3 h-3" />
+                    <span className="text-xs">MuscleBoxPro Network</span>
+                  </div>
+                </div>
               </motion.div>
             </div>
           </div>
