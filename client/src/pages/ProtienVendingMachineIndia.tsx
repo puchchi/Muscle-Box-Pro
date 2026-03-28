@@ -24,18 +24,16 @@ export default function ProteinVendingMachineIndia({
       <Navbar />
 
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-accent via-primary to-orange-500 pt-32 pb-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 rounded-full bg-white -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-white translate-x-1/3 translate-y-1/3" />
-        </div>
+      <section className="bg-gray-950 pt-32 pb-20 px-4 relative overflow-hidden">
+        {/* Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[280px] bg-gradient-to-r from-accent/25 to-primary/25 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h1 className="sr-only">{locationKeyword}</h1>
           <motion.span
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="inline-block px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold tracking-[0.25em] uppercase mb-6"
+            className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6"
           >
             {locationLabel}
           </motion.span>
@@ -47,13 +45,15 @@ export default function ProteinVendingMachineIndia({
             style={{ fontSize: "clamp(2.2rem, 5.5vw, 4.2rem)" }}
           >
             Protein Vending Machine<br />
-            <span className="text-white/75">in {locationLabel} for Gyms</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+              in {locationLabel} for Gyms
+            </span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="text-white/80 text-lg leading-relaxed max-w-2xl mx-auto mb-10"
+            className="text-white/50 text-lg leading-relaxed max-w-2xl mx-auto mb-10"
           >
             {isIndiaPage
               ? "Fresh protein shakes, automatically blended in 60 seconds. Premium whey, real ingredients — no staff required."
@@ -65,7 +65,7 @@ export default function ProteinVendingMachineIndia({
             transition={{ delay: 0.4 }}
           >
             <Link href="/gym-demo">
-              <Button size="lg" className="h-12 px-8 rounded-full font-bold bg-white text-primary hover:bg-white/90 border-0 cursor-pointer shadow-lg">
+              <Button size="lg" className="h-12 px-8 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer shadow-lg shadow-primary/30">
                 Request Machine Demo <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
