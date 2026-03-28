@@ -101,6 +101,7 @@ export default function RootLayout({
               sameAs: [
                 "https://www.instagram.com/muscleboxpro",
                 "https://www.linkedin.com/company/muscleboxpro",
+                "https://maps.app.goo.gl/ERqXE85LfseUMBQ6A",
               ],
             }),
           }}
@@ -129,6 +130,9 @@ export default function RootLayout({
                 "Delhi", "Mumbai", "Bangalore", "Hyderabad",
                 "Pune", "Chennai", "Ahmedabad", "Kolkata",
                 "Chandigarh", "Gurgaon", "Noida",
+              ],
+              sameAs: [
+                "https://maps.app.goo.gl/ERqXE85LfseUMBQ6A",
               ],
             }),
           }}
