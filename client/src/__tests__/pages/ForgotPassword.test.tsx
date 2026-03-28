@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 const mockPush = vi.fn();
-const mockGetSearchParam = vi.fn(() => null); // no token by default
+const mockGetSearchParam = vi.fn(() => null as string | null); // no token by default
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: mockPush })),

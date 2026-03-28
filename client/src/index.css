@@ -8,7 +8,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  
+
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-card: hsl(var(--card));
@@ -28,7 +28,7 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-  
+
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-primary: hsl(var(--sidebar-primary));
@@ -38,63 +38,87 @@
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  --font-sans: 'Rajdhani', sans-serif;
-  --font-display: 'Russo One', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* HIGH-ENERGY TECH THEME */
+/* MUSCLE BOX PRO — AIRBNB-INSPIRED LIGHT THEME */
 :root {
-  /* Dark Base */
-  --background: 220 15% 8%; 
-  --foreground: 0 0% 100%;
+  /* Light Base — Airbnb white */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 13%;
 
-  /* Card / Surfaces */
-  --card: 220 15% 12%;
-  --card-foreground: 0 0% 100%;
-  
-  --popover: 220 15% 12%;
-  --popover-foreground: 0 0% 100%;
+  /* Card / Surfaces — white with shadow */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 13%;
 
-  /* Primary: Electric Blue */
-  --primary: 196 100% 50%;
-  --primary-foreground: 220 15% 8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 13%;
 
-  /* Secondary: Dark Grey Metal */
-  --secondary: 220 10% 20%;
-  --secondary-foreground: 0 0% 100%;
+  /* Primary: Orange-Red #FF512F */
+  --primary: 10 100% 59%;
+  --primary-foreground: 0 0% 100%;
 
-  /* Muted */
-  --muted: 220 10% 20%;
-  --muted-foreground: 220 10% 70%;
+  /* Secondary: Light gray surface */
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 13%;
 
-  /* Accent: Neon Green/Yellow for highlights */
-  --accent: 80 100% 50%;
-  --accent-foreground: 220 15% 8%;
+  /* Muted: #F7F7F7 — Airbnb section bg */
+  --muted: 0 0% 97%;
+  --muted-foreground: 0 0% 44%;
+
+  /* Accent: Magenta/Pink #DD2476 — used in gradient only */
+  --accent: 333 73% 50%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 220 10% 20%;
-  --input: 220 10% 20%;
-  --ring: 196 100% 50%;
+  /* Border: #DDDDDD — Airbnb subtle border */
+  --border: 0 0% 87%;
+  --input: 0 0% 87%;
+  --ring: 10 100% 59%;
 
-  --radius: 0.25rem;
+  --radius: 0.5rem;
 
-  --sidebar: 220 15% 8%;
-  --sidebar-foreground: 220 10% 90%;
-  --sidebar-primary: 196 100% 50%;
-  --sidebar-primary-foreground: 220 15% 8%;
-  --sidebar-accent: 220 10% 20%;
-  --sidebar-accent-foreground: 196 100% 50%;
-  --sidebar-border: 220 10% 20%;
-  --sidebar-ring: 196 100% 50%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 0 0% 13%;
+  --sidebar-primary: 10 100% 59%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 96%;
+  --sidebar-accent-foreground: 0 0% 13%;
+  --sidebar-border: 0 0% 87%;
+  --sidebar-ring: 10 100% 59%;
 }
 
-/* Force dark mode styles as default since this is a dark theme */
 .dark {
-  --background: 220 15% 8%;
+  --background: 0 0% 8%;
   --foreground: 0 0% 100%;
-  /* ... same as root ... */
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 10 100% 59%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 16%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 14%;
+  --muted-foreground: 0 0% 65%;
+  --accent: 333 73% 50%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 16%;
+  --input: 0 0% 16%;
+  --ring: 10 100% 59%;
+  --sidebar: 0 0% 8%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-primary: 10 100% 59%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 16%;
+  --sidebar-accent-foreground: 10 100% 59%;
+  --sidebar-border: 0 0% 16%;
+  --sidebar-ring: 10 100% 59%;
 }
 
 @layer base {
@@ -115,5 +139,14 @@
   }
   .box-glow {
     box-shadow: 0 0 20px hsla(var(--primary), 0.2);
+  }
+  .text-brand-gradient {
+    background: linear-gradient(90deg, #DD2476, #FF512F);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, #DD2476, #FF512F);
   }
 }

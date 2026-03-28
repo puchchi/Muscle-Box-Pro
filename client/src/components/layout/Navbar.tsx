@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Dumbbell } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -23,17 +23,19 @@ export default function Navbar() {
   const isLoggedIn = hasAccessTokenSync();
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-white/10">
+    <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
             <span className="flex items-center gap-2 group cursor-pointer">
-              <div className="p-2 bg-primary rounded-lg group-hover:bg-primary/90 transition-colors">
-                <Dumbbell className="h-6 w-6 text-background" />
-              </div>
-              <span className="font-display text-xl tracking-wider text-white group-hover:text-primary transition-colors">
-                MUSCLE BOX<span className="text-primary">PRO</span>
-              </span>
+              <img
+                src="/assets/logo.png"
+                alt="MuscleBoxPro"
+                className="h-10 w-auto flex-shrink-0 group-hover:opacity-90 transition-opacity"
+              />
+              {/* <span className="font-display text-xl font-bold tracking-wider text-brand-gradient group-hover:opacity-90 transition-opacity">
+                MUSCLEBOXPRO
+              </span> */}
             </span>
           </Link>
 
@@ -63,11 +65,11 @@ export default function Navbar() {
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white">
+                <Button variant="ghost" size="icon" className="text-gray-700">
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-card border-l border-white/10 w-[300px]">
+              <SheetContent side="right" className="bg-white border-l border-gray-200 w-[300px]">
                 <div className="flex flex-col gap-6 mt-10">
                   {navLinks.map((link) => (
                     <Link key={link.path} href={link.path}>

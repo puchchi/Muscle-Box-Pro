@@ -13,3 +13,4 @@ client/.env.*
 !client/.env.example
 /.next
 /coverage
+/.claude/skills

@@ -1,163 +1,300 @@
 "use client";
 
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/footer/index";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CheckCircle2, TrendingUp, Zap, Shield, Monitor } from "lucide-react";
+import { CheckCircle2, TrendingUp, Zap, Shield, Monitor, ArrowRight } from "lucide-react";
+
+const features = [
+  {
+    icon: TrendingUp,
+    title: "High ROI",
+    desc: "Premium pricing for fresh, customized protein shakes leads to excellent profit margins.",
+    color: "text-accent",
+    bg: "bg-accent/10",
+  },
+  {
+    icon: Zap,
+    title: "Zero Staff Needed",
+    desc: "Fully automated dispensing, payment, and self-cleaning mechanisms.",
+    color: "text-primary",
+    bg: "bg-primary/10",
+  },
+  {
+    icon: Shield,
+    title: "Turnkey Operation",
+    desc: "We handle maintenance, restocking, and technical support. You collect the revenue.",
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+  },
+  {
+    icon: Monitor,
+    title: "Dual Revenue",
+    desc: "High-resolution displays let brands advertise to gym members, creating a second income stream.",
+    color: "text-purple-600",
+    bg: "bg-purple-50",
+  },
+];
+
+const faqs = [
+  {
+    q: "Is a protein shake vending machine profitable?",
+    a: "Yes, automated protein shake dispensers offer excellent ROI due to the high retail price of freshly blended shakes compared to the low cost of whey powder and water/milk.",
+  },
+  {
+    q: "Who handles the maintenance of the supplement kiosk?",
+    a: "Our turnkey solution means MuscleBoxPro handles all maintenance, software updates, and major cleaning. Staff only need to run simple daily automated cleaning cycles.",
+  },
+  {
+    q: "Do these machines only dispense whey protein?",
+    a: "No, our smart vending machines can be configured to dispense whey isolate, plant-based vegan protein, pre-workouts, and BCAAs.",
+  },
+];
 
 export default function ProteinShakeVendingMachine() {
-    return (
-        <div className="min-h-screen bg-background">
-            <Navbar />
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar />
 
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center max-w-4xl mx-auto mb-16">
-                        <Badge variant="outline" className="mb-4 border-primary/30 text-primary">THE FUTURE OF GYM REVENUE</Badge>
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6">
-                            Start Your <span className="text-primary">Protein Shake Vending Machine</span> Business
-                        </h1>
-                        <p className="text-gray-400 text-xl leading-relaxed max-w-3xl mx-auto">
-                            Transform unused floor space into a passive income stream. Our fully automated, high-tech protein shake vending machines are designed for modern fitness centers, offering premium post-workout nutrition with zero staff required.
-                        </p>
-                        <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link href="/gym-demo">
-                                <Button size="lg" className="bg-primary text-background font-bold h-14 px-8 text-lg w-full sm:w-auto hover:bg-primary/90">
-                                    REQUEST MACHINE DEMO
-                                </Button>
-                            </Link>
-                            <Link href="/specs">
-                                <Button size="lg" variant="outline" className="border-white/10 text-white hover:bg-white/5 h-14 px-8 text-lg w-full sm:w-auto">
-                                    VIEW MACHINE SPECS
-                                </Button>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </section>
+      {/* ── Hero ── */}
+      <section className="bg-gray-950 pt-32 pb-20 px-4 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[280px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:gap-14">
 
-            {/* Why Choose Section */}
-            <section className="py-24 bg-card/30 border-y border-white/5">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
-                            Why Invest in a <span className="text-primary">Protein Vending Machine?</span>
-                        </h2>
-                        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                            Gym owners and entrepreneurs are upgrading from traditional juice bars to automated vending solutions to maximize ROI and minimize overhead.
-                        </p>
-                    </div>
+            {/* Text */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7 }}
+              className="flex-1"
+            >
+              <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
+                The Future of Gym Revenue
+              </span>
+              <h1
+                className="font-display font-black text-white uppercase leading-none mb-5"
+                style={{ fontSize: "clamp(2.2rem, 5vw, 3.8rem)" }}
+              >
+                Protein Shake<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                  Vending Machine
+                </span>
+              </h1>
+              <p className="text-white/55 text-base leading-relaxed max-w-lg mb-8">
+                Transform unused floor space into a passive income stream. Our fully automated machines deliver premium post-workout nutrition with zero staff required.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/gym-demo">
+                  <Button
+                    size="lg"
+                    className="h-12 px-7 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer shadow-lg shadow-primary/25"
+                  >
+                    Request Machine Demo <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link href="/specs">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-12 px-7 rounded-full font-semibold border-white/20 text-white/80 hover:bg-white/8 cursor-pointer"
+                  >
+                    View Machine Specs
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {[
-                            { icon: TrendingUp, title: "High ROI", desc: "Premium pricing for fresh, customized protein shakes leads to excellent profit margins." },
-                            { icon: Zap, title: "Zero Staff Needed", desc: "Fully automated dispensing, payment, and self-cleaning mechanisms." },
-                            { icon: Shield, title: "Turnkey Operation", desc: "We handle maintenance, restocking, and technical support. You collect the revenue." },
-                            { icon: Monitor, title: "Dual Revenue", desc: "High-resolution displays allow brands to advertise directly to gym members, creating a second income stream." }
-                        ].map((feature, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: i * 0.1 }}
-                                className="bg-background/50 border border-white/10 p-6 rounded-2xl"
-                            >
-                                <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6">
-                                    <feature.icon className="h-6 w-6 text-primary" />
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-                                <p className="text-gray-400">{feature.desc}</p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            {/* Machine image */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, delay: 0.15 }}
+              className="mt-10 lg:mt-0 lg:w-[380px] flex-shrink-0"
+            >
+              <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
+                <img
+                  src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+                  alt="MuscleBoxPro protein shake vending machine in a modern gym"
+                  className="w-full aspect-video object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />
+              </div>
+            </motion.div>
 
-            {/* SEO Content Section */}
-            <section className="py-24">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 prose prose-invert prose-lg">
-                    <h2 className="font-display font-bold text-3xl text-white">How a Protein Shake Vending Machine Boosts Gym Revenue</h2>
-                    <p className="text-gray-400">
-                        For gym owners, providing on-site nutrition is a proven strategy to increase member retention and satisfaction. However, running a manned juice bar requires hiring staff, managing inventory, and dealing with significant overhead costs. A <strong>protein shake vending machine</strong> or <strong>automated supplement kiosk</strong> solves these problems by providing 24/7 access to premium supplements without any of the operational headaches.
-                    </p>
-
-                    <h3 className="font-display font-bold text-2xl text-white mt-12">The Ultimate Post-Workout Convenience</h3>
-                    <p className="text-gray-400">
-                        The anabolic window is critical for muscle recovery. By placing an <Link href="/gym-protein-shake-machine" className="text-primary hover:underline">automated shake dispenser</Link> directly on your gym floor, you offer members the ultimate convenience—a perfectly mixed, chilled protein shake within seconds of finishing their last set. Users can seamlessly pay using the MuscleBoxPro digital wallet, credit cards, or UPI. If you are operating in South Asia, see our guide on <Link href="/protein-vending-machine-india" className="text-primary hover:underline">protein vending machines in India</Link>.
-                    </p>
-
-                    <ul className="space-y-4 my-8 text-gray-400 list-none pl-0">
-                        <li className="flex items-center gap-3">
-                            <CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" />
-                            <span><strong>Cashless Payments:</strong> Integrated wallet system for frictionless purchases.</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                            <CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" />
-                            <span><strong>Customizable Options:</strong> Whey protein options.</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                            <CheckCircle2 className="text-primary h-6 w-6 flex-shrink-0" />
-                            <span><strong>Smart Telemetry:</strong> Real-time inventory tracking and sales analytics.</span>
-                        </li>
-                    </ul>
-
-                    <h3 className="font-display font-bold text-2xl text-white mt-12">More Than Just a Vending Machine</h3>
-                    <p className="text-gray-400">
-                        MuscleBoxPro <strong>whey protein vending machines</strong> include high-resolution displays that allow brands to advertise directly to gym members. This captive audience model means you aren't just selling shakes; you're monetizing screen real estate, turning your machine into a highly profitable digital billboard.
-                    </p>
-
-                    <h2 className="font-display font-bold text-3xl text-white mt-20 mb-8">Frequently Asked Questions</h2>
-                    <div className="space-y-4 my-8 not-prose" itemScope itemType="https://schema.org/FAQPage">
-                        {[
-                        { q: "Is a protein shake vending machine profitable?", a: "Yes, automated protein shake dispensers offer excellent ROI due to the high retail price of freshly blended shakes compared to the low cost of whey powder and water/milk." },
-                        { q: "Who handles the maintenance of the supplement kiosk?", a: "Our turnkey solution means MuscleBoxPro handles all maintenance, software updates, and major cleaning. Staff only need to run simple daily automated cleaning cycles." },
-                        { q: "Do these machines only dispense whey protein?", a: "No, our smart vending machines can be configured to dispense whey isolate, plant-based vegan protein, pre-workouts, and BCAAs." }
-                        ].map((faq, i) => (
-                        <div key={i} className="bg-card/30 border border-white/10 p-6 rounded-xl hover:bg-card/50 transition-colors" itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
-                            <h3 className="text-white font-bold text-lg mb-2" itemProp="name">{faq.q}</h3>
-                            <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
-                            <p className="text-gray-400 m-0" itemProp="text">{faq.a}</p>
-                            </div>
-                        </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA Section */}
-            <section className="py-24 bg-primary relative overflow-hidden">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-                    <h2 className="text-4xl md:text-5xl font-display font-bold text-background mb-6">
-                        Ready to Upgrade Your Gym?
-                    </h2>
-                    <p className="text-background/80 text-xl mb-10 max-w-2xl mx-auto">
-                        Join the network of modern fitness centers generating passive income with our smart vending solutions.
-                    </p>
-                    <Link href="/gym-demo">
-                        <Button size="lg" className="bg-background text-primary font-bold h-14 px-10 text-lg hover:bg-background/90 shadow-2xl">
-                            SECURE YOUR MACHINE TODAY
-                        </Button>
-                    </Link>
-                </div>
-            </section>
-
-            {/* Simple Footer for SEO Page */}
-            <footer className="bg-black py-12 border-t border-white/10 text-center">
-                <p className="text-gray-600 text-xs uppercase tracking-widest">
-                    © 2026 MUSCLE BOX PRO. ALL RIGHTS RESERVED.
-                </p>
-            </footer>
+          </div>
         </div>
-    );
-}
+      </section>
 
-function Badge({ children, className, variant }: any) {
-    return (
-        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase ${className}`}>
-            {children}
-        </span>
-    );
+      <main className="flex-1">
+
+        {/* ── Why Choose Section ── */}
+        <section className="py-20 px-4 bg-white">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
+                Why invest
+              </span>
+              <h2
+                className="font-display font-black text-foreground uppercase mb-3"
+                style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)" }}
+              >
+                Why invest in a{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                  protein vending machine?
+                </span>
+              </h2>
+              <p className="text-muted-foreground text-sm max-w-xl mx-auto">
+                Gym owners are upgrading from traditional juice bars to automated vending solutions to maximize ROI and minimize overhead.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {features.map((f, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className="bg-white border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-2xl p-6 cursor-default"
+                >
+                  <div className={`w-11 h-11 ${f.bg} rounded-xl flex items-center justify-center mb-4`}>
+                    <f.icon className={`w-5 h-5 ${f.color}`} />
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── SEO Content Section ── */}
+        <section className="py-20 px-4 bg-gray-50 border-t border-gray-100">
+          <div className="max-w-3xl mx-auto">
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="space-y-6"
+            >
+              <h2 className="font-display font-black text-foreground uppercase text-2xl md:text-3xl">
+                How a Protein Shake Vending Machine Boosts Gym Revenue
+              </h2>
+              <p className="text-gray-600 leading-relaxed">
+                For gym owners, providing on-site nutrition is a proven strategy to increase member retention and satisfaction. However, running a manned juice bar requires hiring staff, managing inventory, and dealing with significant overhead costs. A <strong>protein shake vending machine</strong> or <strong>automated supplement kiosk</strong> solves these problems by providing 24/7 access to premium supplements without any of the operational headaches.
+              </p>
+
+              <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
+                The Ultimate Post-Workout Convenience
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                The anabolic window is critical for muscle recovery. By placing an{" "}
+                <Link href="/gym-protein-shake-machine" className="text-primary hover:underline font-medium">
+                  automated shake dispenser
+                </Link>{" "}
+                directly on your gym floor, you offer members the ultimate convenience — a perfectly mixed, chilled protein shake within seconds of finishing their last set. Users can pay using the MuscleBoxPro digital wallet, credit cards, or UPI. Operating in South Asia? See our guide on{" "}
+                <Link href="/protein-vending-machine-india" className="text-primary hover:underline font-medium">
+                  protein vending machines in India
+                </Link>.
+              </p>
+
+              <ul className="space-y-3 pt-2">
+                {[
+                  { label: "Cashless Payments", text: "Integrated wallet system for frictionless purchases." },
+                  { label: "Customizable Options", text: "Multiple whey protein blends to suit every member." },
+                  { label: "Smart Telemetry", text: "Real-time inventory tracking and sales analytics." },
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <CheckCircle2 className="text-primary w-5 h-5 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-600 text-sm"><strong className="text-gray-900">{item.label}:</strong> {item.text}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
+                More Than Just a Vending Machine
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                MuscleBoxPro <strong>whey protein vending machines</strong> include high-resolution displays that allow brands to advertise directly to gym members. This captive audience model means you aren't just selling shakes — you're monetizing screen real estate, turning your machine into a highly profitable digital billboard.
+              </p>
+            </motion.div>
+
+          </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section className="py-20 px-4 bg-white border-t border-gray-100">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-10">
+              <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">FAQ</span>
+              <h2
+                className="font-display font-black text-foreground uppercase"
+                style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)" }}
+              >
+                Frequently Asked Questions
+              </h2>
+            </div>
+
+            <div className="space-y-4" itemScope itemType="https://schema.org/FAQPage">
+              {faqs.map((faq, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.07 }}
+                  className="bg-gray-50 border border-gray-100 rounded-2xl p-6 hover:border-primary/20 transition-colors"
+                  itemScope
+                  itemProp="mainEntity"
+                  itemType="https://schema.org/Question"
+                >
+                  <h3 className="font-bold text-gray-900 mb-2" itemProp="name">{faq.q}</h3>
+                  <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+                    <p className="text-gray-600 text-sm leading-relaxed m-0" itemProp="text">{faq.a}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className="py-20 px-4 bg-gradient-to-r from-accent to-primary relative overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="max-w-2xl mx-auto text-center relative z-10"
+          >
+            <h2
+              className="font-display font-black text-white uppercase leading-none mb-4"
+              style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
+            >
+              Ready to upgrade your gym?
+            </h2>
+            <p className="text-white/80 text-sm mb-8 leading-relaxed">
+              Join modern fitness centers across India generating passive revenue with our smart vending solutions.
+            </p>
+            <Link href="/gym-demo">
+              <Button
+                size="lg"
+                className="h-12 px-8 rounded-full font-bold bg-white text-primary hover:bg-white/90 border-0 cursor-pointer shadow-lg"
+              >
+                Secure Your Machine Today <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
+          </motion.div>
+        </section>
+
+      </main>
+
+      <Footer />
+    </div>
+  );
 }
