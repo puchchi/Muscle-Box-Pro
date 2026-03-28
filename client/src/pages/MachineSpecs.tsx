@@ -20,7 +20,9 @@ const keyStats = [
 const specs = [
   {
     group: "Smart Core",
-    color: "bg-blue-500",
+    dotColor: "bg-blue-500",
+    iconBg: "bg-blue-50",
+    iconColor: "text-blue-600",
     items: [
       { icon: Cpu, label: "OS", value: "Android System & Smart Cloud Management" },
       { icon: Maximize, label: "Display", value: "27-inch HD Touch Screen Interface" },
@@ -30,7 +32,9 @@ const specs = [
   },
   {
     group: "Mixing & Capacity",
-    color: "bg-primary",
+    dotColor: "bg-primary",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
     items: [
       { icon: Layers, label: "Flavors", value: "20+ Dynamic Mixed Drink Varieties" },
       { icon: Thermometer, label: "Stirring", value: "Independent Mechanical Stirring System" },
@@ -40,7 +44,9 @@ const specs = [
   },
   {
     group: "Hardware & Precision",
-    color: "bg-accent",
+    dotColor: "bg-accent",
+    iconBg: "bg-accent/10",
+    iconColor: "text-accent",
     items: [
       { icon: ShieldCheck, label: "Build", value: "Industrial Carbon Steel Panel Material" },
       { icon: Thermometer, label: "Thermals", value: "Hot (1.8L) & Compressor Refrig (2L)" },
@@ -77,26 +83,34 @@ export default function MachineSpecs() {
                 Specifications
               </span>
             </h1>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
+            <p className="text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed mb-8">
               The ultimate high-performance vending solution designed for premium gym environments.
             </p>
+            <Link href="/gym-demo">
+              <Button
+                variant="outline"
+                className="h-11 px-7 rounded-full font-semibold border-gray-300 text-gray-700 hover:bg-gray-100 cursor-pointer"
+              >
+                Request a Demo <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
           </div>
         </section>
 
         {/* ── Key Stats Row ── */}
-        <section className="border-y border-gray-200 bg-gray-50">
-          <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-200">
+        <section className="py-10 px-4 bg-gray-50">
+          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
             {keyStats.map((stat, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
-                className="py-8 px-6 text-center"
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm py-7 px-5 text-center"
               >
                 <p
-                  className="font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary leading-none mb-1"
-                  style={{ fontSize: "clamp(1.4rem, 3vw, 2rem)" }}
+                  className="font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary leading-none mb-2"
+                  style={{ fontSize: "clamp(1.3rem, 2.5vw, 1.9rem)" }}
                 >
                   {stat.value}
                 </p>
@@ -118,7 +132,7 @@ export default function MachineSpecs() {
               transition={{ duration: 0.8 }}
               className="sticky top-24"
             >
-              <div className="relative aspect-[3/4] max-w-sm mx-auto rounded-3xl overflow-hidden shadow-2xl shadow-gray-200/80 border border-gray-100">
+              <div className="relative aspect-[3/4] max-w-md mx-auto rounded-3xl overflow-hidden shadow-[0_32px_80px_-12px_rgba(0,0,0,0.25),0_8px_24px_-4px_rgba(0,0,0,0.15)] border border-gray-100">
                 <img
                   src="/assets/machine-specs.png"
                   alt="Muscle Box Pro Technical View"
@@ -133,8 +147,6 @@ export default function MachineSpecs() {
                     Width × Depth × Height
                   </p>
                 </div>
-                {/* Top accent bar */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent to-primary" />
               </div>
             </motion.div>
 
@@ -150,20 +162,19 @@ export default function MachineSpecs() {
                 >
                   {/* Group header */}
                   <div className="flex items-center gap-3 mb-5">
-                    <div className={`w-1 h-5 rounded-full ${group.color}`} />
-                    <h3 className="text-xs font-bold tracking-[0.25em] uppercase text-gray-500">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-[0.2em] uppercase text-white ${group.dotColor}`}>
                       {group.group}
-                    </h3>
+                    </span>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-3">
                     {group.items.map((item, i) => (
                       <div
                         key={i}
-                        className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-primary/20 hover:-translate-y-0.5 transition-all duration-200 group"
+                        className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 hover:-translate-y-0.5 transition-all duration-200 group"
                       >
-                        <div className="w-9 h-9 rounded-xl bg-primary/8 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors">
-                          <item.icon className="w-4 h-4 text-primary" />
+                        <div className={`w-11 h-11 rounded-xl ${group.iconBg} flex items-center justify-center flex-shrink-0`}>
+                          <item.icon className={`w-5 h-5 ${group.iconColor}`} />
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1">
