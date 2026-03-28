@@ -1,8 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import Link from "next/link";
 
@@ -169,137 +167,146 @@ const shakeVariants = [
 
 export default function ShakeVariants({ limit }: { limit?: number }) {
   const displayedShakes = limit ? shakeVariants.slice(0, limit) : shakeVariants;
-  return (
-    <section className="py-24 bg-black relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <Badge variant="outline" className="mb-4 border-primary/30 text-primary">THE MENU</Badge>
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
-            Protein Shake Blends Available From Our <span className="text-primary">Vending Machine</span>
-          </h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          Just a taste of the twelve scientifically-formulated blends available in our machines. Customize your blend to your liking.
-          </p>
-        </motion.div>
 
-        {/* Filter by Category - only show if no limit */}
+  return (
+    <section className="py-20 bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Section header — Airbnb style */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+          <div>
+            <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
+              Our menu
+            </span>
+            <h2
+              className="font-display font-black text-white leading-none uppercase"
+              style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
+            >
+              {limit ? "Popular blends" : "All 12 blends"}
+            </h2>
+          </div>
+          {!limit && (
+            <p className="text-gray-500 text-sm max-w-xs sm:text-right leading-relaxed">
+              Fresh ingredients, premium whey isolate. Every blend made to order in 30 seconds.
+            </p>
+          )}
+        </div>
+
+        {/* Category filter — full menu only */}
         {!limit && (
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {["Classic", "Popular", "Premium", "Flavor", "Milk-Based"].map((cat) => (
-              <Badge key={cat} variant="outline" className="px-4 py-2 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer">
-                {cat.toUpperCase()}
-              </Badge>
+          <div className="flex gap-2 flex-wrap mb-10">
+            {["All", "Classic", "Popular", "Premium", "Flavor", "Milk-Based"].map((cat) => (
+              <span
+                key={cat}
+                className="px-4 py-2 rounded-full border border-white/12 text-xs font-semibold text-gray-400 hover:border-primary/50 hover:text-white transition-all cursor-pointer"
+              >
+                {cat}
+              </span>
             ))}
           </div>
         )}
 
-        {/* Shake Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Shake grid — Airbnb listing card style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayedShakes.map((shake, i) => (
             <motion.div
               key={shake.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.05 }}
+              transition={{ duration: 0.4, delay: i * 0.06 }}
+              className="rounded-2xl overflow-hidden bg-card hover:shadow-2xl hover:shadow-black/60 hover:-translate-y-1 transition-all duration-300 group cursor-default"
             >
-              <Card className="relative overflow-hidden bg-card border-white/10 hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10 group">
-                {/* Product Image */}
-                <div className="relative h-56 overflow-hidden bg-gradient-to-br from-white/5 to-white/10">
-                  <img
-                    src={shake.image}
-                    alt={shake.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+              {/* Product image — Airbnb listing proportion */}
+              <div className="relative aspect-[4/3] overflow-hidden bg-black/20">
+                <img
+                  src={shake.image}
+                  alt={shake.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+
+                {/* Badge — Airbnb "Superhost" style (white pill, top-left) */}
+                {shake.badge && (
+                  <div className="absolute top-3 left-3">
+                    <span className="px-3 py-1.5 rounded-full bg-white text-[11px] font-bold text-gray-900 tracking-wide">
+                      {shake.badge}
+                    </span>
+                  </div>
+                )}
+
+                {/* Color dot indicator top-right */}
+                <div className="absolute top-3 right-3">
+                  <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${shake.color} shadow-sm`} />
                 </div>
 
-                {/* Gradient Background */}
-                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${shake.color} opacity-0 group-hover:opacity-10 rounded-full -mr-16 -mt-16 transition-opacity duration-500`} />
+                {/* Gradient fade at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent" />
+              </div>
 
-                <div className="relative p-6 z-10">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-xs text-primary font-mono uppercase tracking-wider mb-1">{shake.category}</p>
-                      <h3 className="text-xl font-display font-bold text-white">{shake.name}</h3>
-                    </div>
-                    {shake.badge && (
-                      <Badge className="bg-primary text-background text-xs font-bold">{shake.badge}</Badge>
-                    )}
-                  </div>
-
-                  {/* Ingredients */}
-                  <div className="mb-4">
-                    <p className="text-xs text-gray-500 font-mono uppercase mb-2">Ingredients</p>
-                    <div className="flex flex-wrap gap-2">
-                      {shake.ingredients.map((ing) => (
-                        <span key={ing} className="text-xs bg-white/5 border border-white/10 px-2 py-1 rounded text-gray-300">
-                          {ing}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Macros */}
-                  <div className="grid grid-cols-4 gap-2 mb-4 py-4 border-y border-white/10">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500 mb-1">PROTEIN</p>
-                      <p className="font-mono font-bold text-white text-sm">{shake.protein}g</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500 mb-1">CARBS</p>
-                      <p className="font-mono font-bold text-white text-sm">{shake.carbs}g</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500 mb-1">FAT</p>
-                      <p className="font-mono font-bold text-white text-sm">{shake.fat}g</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-500 mb-1">KCAL</p>
-                      <p className="font-mono font-bold text-white text-sm">{shake.calories}</p>
-                    </div>
-                  </div>
-
-                  {/* Price Only */}
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-2xl font-display font-bold text-primary">₹{shake.price}</span>
-                    <span className="text-xs text-gray-500 font-mono">Per serving</span>
-                  </div>
+              {/* Card info — Airbnb listing info style */}
+              <div className="p-4 pb-5">
+                {/* Name + protein highlight */}
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="font-semibold text-white text-[15px] leading-snug">
+                    {shake.name}
+                  </h3>
+                  <span className="text-[13px] font-semibold text-white/80 ml-2 flex-shrink-0">
+                    <span className="text-primary">★</span> {shake.protein}g
+                  </span>
                 </div>
-              </Card>
+
+                {/* Category + ingredient count */}
+                <p className="text-gray-500 text-[13px] mb-3">
+                  {shake.category} · {shake.ingredients.length} ingredient{shake.ingredients.length > 1 ? "s" : ""}
+                </p>
+
+                {/* Macro row */}
+                <div className="flex items-center gap-1.5 text-[12px] text-gray-600 mb-4">
+                  <span>{shake.carbs}g carbs</span>
+                  <span>·</span>
+                  <span>{shake.fat}g fat</span>
+                  <span>·</span>
+                  <span>{shake.calories} kcal</span>
+                </div>
+
+                {/* Price */}
+                <span className="text-white font-semibold text-[15px]">
+                  ₹{shake.price}
+                  <span className="text-gray-500 font-normal text-[13px]"> / serving</span>
+                </span>
+              </div>
             </motion.div>
           ))}
         </div>
 
-        {/* View All Menu Button (if limit is provided) */}
+        {/* View all CTA */}
         {limit && (
           <div className="mt-12 text-center">
-            <Button asChild size="lg" className="bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-black font-bold h-14 px-8">
-              <Link href="/menu">VIEW FULL MENU</Link>
+            <Button
+              asChild
+              size="lg"
+              className="h-13 px-8 rounded-full font-semibold border border-white/20 bg-transparent text-white hover:bg-white/8 hover:border-white/30 transition-all cursor-pointer text-base"
+            >
+              <Link href="/menu">View all 12 blends →</Link>
             </Button>
           </div>
         )}
 
-        {/* CTA Section */}
+        {/* Full menu custom blend note */}
         {!limit && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="mt-20 p-12 bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-2xl text-center"
+            transition={{ duration: 0.6 }}
+            className="mt-16 p-8 rounded-2xl border border-white/8 bg-card text-center"
           >
-            <h3 className="text-3xl font-display font-bold text-white mb-4">Custom Blends Available</h3>
-            <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
-              Want a combination not listed? Our machines support unlimited customization. Ask your gym staff or franchise owner about custom blend options.
+            <h3 className="font-display font-black text-2xl text-white uppercase mb-2">
+              Custom blends available
+            </h3>
+            <p className="text-gray-500 max-w-md mx-auto text-sm leading-relaxed">
+              Want a combination not listed? Our machines support unlimited customization.
+              Ask your gym staff about custom blend options.
             </p>
           </motion.div>
         )}

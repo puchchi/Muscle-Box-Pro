@@ -1,102 +1,151 @@
 "use client";
 
-import { Zap, Leaf, Smartphone, CheckCircle } from "lucide-react";
+import { Zap, Leaf, Smartphone } from "lucide-react";
 import { motion } from "framer-motion";
 
 const features = [
   {
     icon: Zap,
-    title: "Instant Recovery",
-    desc: "30 seconds from touch to shake. No clumps, perfectly blended every time.",
+    title: "Ready in 30 seconds",
+    desc: "Touch the screen and your shake is blending. No clumps, perfectly smooth every time.",
+    stat: "30s",
+    statLabel: "Blend Time",
   },
   {
     icon: Leaf,
-    title: "Real Ingredients",
-    desc: "Fresh bananas, medjool dates, and premium whey isolate. No artificial junk.",
+    title: "Real ingredients only",
+    desc: "Fresh bananas, medjool dates, and premium whey isolate. No artificial junk, ever.",
+    stat: "0",
+    statLabel: "Artificial Add-ins",
   },
   {
     icon: Smartphone,
-    title: "Smart Profile",
-    desc: "Track macros, save favorites, and pay with a tap using our app.",
+    title: "Smart & cashless",
+    desc: "Track macros, save favorites, and pay with a tap. Full UPI support built in.",
+    stat: "UPI",
+    statLabel: "Payment Support",
   },
 ];
 
 export default function Features() {
   return (
     <section className="py-24 bg-background relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          
+      {/* Ambient glow */}
+      <div className="absolute right-0 top-1/3 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+        {/* Section header */}
+        <div className="grid lg:grid-cols-2 gap-8 items-end mb-16">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
           >
-             <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
-              PREMIUM NUTRITION <br />
-              <span className="text-primary">ZERO COMPROMISE</span>
+            <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
+              Why MuscleBoxPro
+            </span>
+            <h2
+              className="font-display font-black text-white leading-none uppercase"
+              style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
+            >
+              Premium nutrition.
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                Zero compromise.
+              </span>
             </h2>
-            <p className="text-gray-400 text-lg mb-8 leading-relaxed">
-              Forget warm shakers and lumpy powder. Muscle Box Pro delivers barista-quality protein shakes right where you need them. We partner with top local suppliers to ensure fresh fruit is restocked daily.
-            </p>
-
-            <div className="grid gap-6">
-              {features.map((feature, i) => (
-                <div key={i} className="flex gap-4 p-4 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 group">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background transition-colors">
-                    <feature.icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-display font-bold text-white mb-2">{feature.title}</h3>
-                    <p className="text-gray-400 text-sm">{feature.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </motion.div>
 
-          <motion.div
-             initial={{ opacity: 0, scale: 0.9 }}
-             whileInView={{ opacity: 1, scale: 1 }}
-             viewport={{ once: true }}
-             transition={{ duration: 0.8 }}
-             className="relative"
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-gray-400 text-base leading-relaxed lg:text-right"
           >
-            <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
-            <img 
-              src="/images/fresh_banana_date_protein_shake_advertising_shot.png"
-              alt="Fresh Shake" 
-              className="relative z-10 w-full rounded-2xl border border-white/10 shadow-2xl shadow-primary/20 hover:scale-105 transition-transform duration-500"
-            />
-            
-            {/* Float Card */}
-            <div className="absolute -bottom-10 -left-10 z-20 bg-card/90 backdrop-blur-md p-6 rounded-xl border border-primary/30 box-glow max-w-xs">
-              <div className="flex items-center gap-3 mb-3">
-                <CheckCircle className="text-primary w-5 h-5" />
-                <span className="text-white font-bold">Macro Profile</span>
-              </div>
-              <div className="space-y-2 text-sm text-gray-300">
-                <div className="flex justify-between">
-                  <span>Protein</span>
-                  <span className="text-white font-mono">30g</span>
-                </div>
-                <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                  <div className="bg-primary h-full w-[80%]" />
-                </div>
-                <div className="flex justify-between">
-                  <span>Carbs</span>
-                  <span className="text-white font-mono">45g</span>
-                </div>
-                 <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                  <div className="bg-accent h-full w-[60%]" />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
+            Forget warm shakers and lumpy powder. MuscleBoxPro delivers
+            barista-quality protein shakes right where you train. Fresh fruit
+            restocked daily by our partners.
+          </motion.p>
         </div>
+
+        {/* Feature cards — cleaner Airbnb-style */}
+        <div className="grid md:grid-cols-3 gap-6 mb-16">
+          {features.map((feature, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className="group bg-card rounded-2xl p-7 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 transition-all duration-300 cursor-default"
+            >
+              {/* Icon — clean, subtle */}
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/18 transition-colors duration-300">
+                <feature.icon className="w-5 h-5 text-primary" />
+              </div>
+
+              <h3 className="font-display font-black text-xl text-white mb-2 uppercase tracking-wide">
+                {feature.title}
+              </h3>
+              <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                {feature.desc}
+              </p>
+
+              {/* Stat footer */}
+              <div className="flex items-baseline gap-2 pt-5 border-t border-white/8">
+                <span
+                  className="font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary leading-none"
+                  style={{ fontSize: "1.75rem" }}
+                >
+                  {feature.stat}
+                </span>
+                <span className="text-[10px] text-gray-600 font-bold tracking-[0.2em] uppercase">
+                  {feature.statLabel}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Full-width image banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="relative rounded-2xl overflow-hidden"
+        >
+          <img
+            src="/images/fresh_banana_date_protein_shake_advertising_shot.png"
+            alt="Fresh protein shake blend with banana and dates"
+            className="w-full object-cover"
+            style={{ height: "360px", objectPosition: "center 40%" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/55 to-transparent" />
+          <div className="absolute inset-0 flex items-center px-8 sm:px-14">
+            <div className="max-w-sm">
+              <p className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3">
+                Fresh daily
+              </p>
+              <h3
+                className="font-display font-black text-white uppercase leading-none mb-3"
+                style={{ fontSize: "clamp(1.8rem, 3.5vw, 3rem)" }}
+              >
+                Real fruit.
+                <br />
+                Real protein.
+              </h3>
+              <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                We partner with local suppliers to ensure fresh fruit is
+                restocked daily — no preservatives, no shortcuts.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
       </div>
     </section>
   );

@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { Dumbbell } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -8,12 +7,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-12 mb-12">
           <div className="col-span-2">
-            <span className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-primary rounded-lg">
-                <Dumbbell className="h-5 w-5 text-background" />
+            <span className="flex items-center gap-2.5 mb-6">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-display font-bold text-sm bg-brand-gradient flex-shrink-0">
+                MB
               </div>
-              <span className="font-display text-lg tracking-wider text-white">
-                MUSCLE BOX<span className="text-primary">PRO</span>
+              <span className="font-display text-lg font-bold tracking-wider text-brand-gradient">
+                MUSCLEBOXPRO
               </span>
             </span>
             <p className="text-gray-500 max-w-sm text-sm leading-relaxed">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Dumbbell } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,12 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
-            <span className="flex items-center gap-2 group cursor-pointer">
-              <div className="p-2 bg-primary rounded-lg group-hover:bg-primary/90 transition-colors">
-                <Dumbbell className="h-6 w-6 text-background" />
+            <span className="flex items-center gap-2.5 group cursor-pointer">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-display font-bold text-base bg-brand-gradient flex-shrink-0 group-hover:opacity-90 transition-opacity">
+                MB
               </div>
-              <span className="font-display text-xl tracking-wider text-white group-hover:text-primary transition-colors">
-                MUSCLE BOX<span className="text-primary">PRO</span>
+              <span className="font-display text-xl font-bold tracking-wider text-brand-gradient group-hover:opacity-90 transition-opacity">
+                MUSCLEBOXPRO
               </span>
             </span>
           </Link>
