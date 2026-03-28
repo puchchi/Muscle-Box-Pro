@@ -50,10 +50,10 @@ export default function MachineSpecs() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <Badge className="mb-4 bg-primary/20 text-primary border-primary/30">ENGINEERING EXCELLENCE</Badge>
-            <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6 uppercase tracking-tighter">
+            <h1 className="text-4xl md:text-6xl font-display font-bold text-foreground mb-6 uppercase tracking-tighter">
               MACHINE <span className="text-primary">SPECIFICATIONS</span>
             </h1>
-            <p className="text-gray-400 text-xl max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-xl max-w-2xl mx-auto">
               The ultimate high-performance vending solution designed for premium gym environments.
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function MachineSpecs() {
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
-              className="relative aspect-[3/4] max-w-md mx-auto bg-card rounded-3xl border border-white/10 overflow-hidden shadow-2xl shadow-primary/20"
+              className="relative aspect-[3/4] max-w-md mx-auto bg-gray-100 rounded-3xl border border-gray-200 overflow-hidden shadow-2xl shadow-gray-300/50"
             >
               <img 
                 src="/assets/machine-specs.png" 
@@ -88,12 +88,12 @@ export default function MachineSpecs() {
                   <h3 className="text-primary font-mono text-sm tracking-[0.3em] uppercase mb-6">{group.group}</h3>
                   <div className="grid sm:grid-cols-2 gap-6">
                     {group.items.map((item, i) => (
-                      <Card key={i} className="bg-white/5 border-white/10 hover:border-primary/50 transition-colors">
+                      <Card key={i} className="bg-white border-gray-200 hover:border-primary/50 transition-colors shadow-sm">
                         <CardContent className="p-4 flex items-start gap-4">
                           <item.icon className="w-5 h-5 text-primary mt-1 shrink-0" />
                           <div>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{item.label}</p>
-                            <p className="text-white text-sm font-medium leading-tight">{item.value}</p>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{item.label}</p>
+                            <p className="text-gray-900 text-sm font-medium leading-tight">{item.value}</p>
                           </div>
                         </CardContent>
                       </Card>
@@ -108,32 +108,32 @@ export default function MachineSpecs() {
           <div className="bg-primary/10 rounded-3xl p-8 border border-primary/20 grid md:grid-cols-3 gap-8 text-center mb-16">
             <div>
               <p className="text-primary font-display text-4xl font-bold mb-1">28L</p>
-              <p className="text-gray-400 text-xs uppercase tracking-widest">Total Canister Storage</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-widest">Total Canister Storage</p>
             </div>
             <div className="border-x border-primary/20">
               <p className="text-primary font-display text-4xl font-bold mb-1">400ml</p>
-              <p className="text-gray-400 text-xs uppercase tracking-widest">Standard Cup Capacity</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-widest">Standard Cup Capacity</p>
             </div>
             <div>
               <p className="text-primary font-display text-4xl font-bold mb-1">MDB</p>
-              <p className="text-gray-400 text-xs uppercase tracking-widest">Payment Protocol Installed</p>
+              <p className="text-muted-foreground text-xs uppercase tracking-widest">Payment Protocol Installed</p>
             </div>
           </div>
 
           {/* Payment Options Section */}
           <div className="text-center mb-12">
-            <h2 className="text-2xl font-display font-bold text-white mb-2 uppercase tracking-tight">Integrated Payment Options</h2>
-            <p className="text-gray-400 text-sm">Our machines support all modern payment methods for a frictionless user experience.</p>
+            <h2 className="text-2xl font-display font-bold text-foreground mb-2 uppercase tracking-tight">Integrated Payment Options</h2>
+            <p className="text-muted-foreground text-sm">Our machines support all modern payment methods for a frictionless user experience.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {paymentMethods.map((method, i) => (
-              <Card key={i} className="bg-card border-white/5 hover:border-primary/30 transition-all group">
+              <Card key={i} className="bg-white border-gray-200 hover:border-primary/30 transition-all group shadow-sm">
                 <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary group-hover:text-background transition-colors">
-                    <method.icon className="w-6 h-6" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary transition-colors">
+                    <method.icon className="w-6 h-6 text-primary group-hover:text-white transition-colors" />
                   </div>
-                  <h4 className="text-white font-bold mb-1">{method.label}</h4>
+                  <h4 className="text-gray-900 font-bold mb-1">{method.label}</h4>
                   <p className="text-gray-500 text-xs">{method.desc}</p>
                 </CardContent>
               </Card>

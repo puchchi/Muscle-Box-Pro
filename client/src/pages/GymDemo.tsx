@@ -73,16 +73,16 @@ export default function GymDemo() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           
           <div>
-            <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6">
+            <h1 className="text-4xl md:text-6xl font-display font-bold text-foreground mb-6">
               GET A MACHINE <br />
               <span className="text-primary">FOR YOUR GYM</span>
             </h1>
-            <p className="text-gray-400 text-lg mb-8">
+            <p className="text-muted-foreground text-lg mb-8">
               Increase member satisfaction and generate passive revenue. Our machines require zero maintenance from your staff. We handle stocking, cleaning, and service.
             </p>
             <ul className="space-y-4 mb-8">
               {["Free Installation", "Revenue Share Model", "Zero Maintenance", "Custom Branding Options"].map((item, i) => (
-                <li key={i} className="flex items-center gap-3 text-white">
+                <li key={i} className="flex items-center gap-3 text-gray-700">
                   <div className="h-2 w-2 bg-primary rounded-full" />
                   {item}
                 </li>
@@ -90,8 +90,8 @@ export default function GymDemo() {
             </ul>
           </div>
 
-          <div className="bg-card p-8 rounded-2xl border border-white/10 shadow-2xl">
-            <h2 className="text-2xl font-display font-bold text-white mb-6">Request a Free Demo</h2>
+          <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-6">Request a Free Demo</h2>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {notice && (
@@ -110,9 +110,9 @@ export default function GymDemo() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-300">Contact Name</FormLabel>
+                      <FormLabel className="text-gray-700">Contact Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} className="bg-background border-white/10 focus:border-primary" />
+                        <Input placeholder="John Doe" {...field} className="bg-white border-gray-300 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -123,9 +123,9 @@ export default function GymDemo() {
                   name="gymName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-300">Gym Name</FormLabel>
+                      <FormLabel className="text-gray-700">Gym Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Iron Paradise" {...field} className="bg-background border-white/10 focus:border-primary" />
+                        <Input placeholder="Iron Paradise" {...field} className="bg-white border-gray-300 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -136,9 +136,9 @@ export default function GymDemo() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-300">Email Address</FormLabel>
+                      <FormLabel className="text-gray-700">Email Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="john@example.com" {...field} className="bg-background border-white/10 focus:border-primary" />
+                        <Input placeholder="john@example.com" {...field} className="bg-white border-gray-300 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -149,9 +149,9 @@ export default function GymDemo() {
                   name="mobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-300">Mobile Number</FormLabel>
+                      <FormLabel className="text-gray-700">Mobile Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="+91 98765 43210" {...field} className="bg-background border-white/10 focus:border-primary" />
+                        <Input placeholder="+91 98765 43210" {...field} className="bg-white border-gray-300 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -162,9 +162,9 @@ export default function GymDemo() {
                   name="location"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-300">Gym Location</FormLabel>
+                      <FormLabel className="text-gray-700">Gym Location</FormLabel>
                       <FormControl>
-                        <Input placeholder="City, State" {...field} className="bg-background border-white/10 focus:border-primary" />
+                        <Input placeholder="City, State" {...field} className="bg-white border-gray-300 focus:border-primary" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -175,19 +175,19 @@ export default function GymDemo() {
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-300">Additional Notes (Optional)</FormLabel>
+                      <FormLabel className="text-gray-700">Additional Notes (Optional)</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Tell us about your gym, member count, and preferred demo time."
                           {...field}
-                          className="bg-background border-white/10 focus:border-primary min-h-[110px]"
+                          className="bg-white border-gray-300 focus:border-primary min-h-[110px]"
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full bg-primary text-background font-bold text-lg hover:bg-primary/90 h-12">
+                <Button type="submit" className="w-full bg-primary text-white font-bold text-lg hover:bg-primary/90 h-12 rounded-full cursor-pointer">
                   {isSubmitting ? "SUBMITTING..." : "SUBMIT REQUEST"}
                 </Button>
               </form>
