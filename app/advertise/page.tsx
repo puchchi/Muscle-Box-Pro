@@ -9,6 +9,20 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/advertise" },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+    { "@type": "ListItem", position: 2, name: "Advertise", item: "https://www.muscleboxpro.com/advertise" },
+  ],
+};
+
 export default function Page() {
-  return <Advertiser />;
+  return (
+    <>
+      <Advertiser />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+    </>
+  );
 }

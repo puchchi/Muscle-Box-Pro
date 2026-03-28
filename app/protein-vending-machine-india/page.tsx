@@ -9,6 +9,20 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/protein-vending-machine-india" },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+    { "@type": "ListItem", position: 2, name: "Protein Vending Machine India", item: "https://www.muscleboxpro.com/protein-vending-machine-india" },
+  ],
+};
+
 export default function Page() {
-  return <ProteinVendingMachineIndia />;
+  return (
+    <>
+      <ProteinVendingMachineIndia />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+    </>
+  );
 }

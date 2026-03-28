@@ -8,6 +8,16 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/blog/best-protein-shake-after-workout" },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+    { "@type": "ListItem", position: 2, name: "Blog", item: "https://www.muscleboxpro.com/blog" },
+    { "@type": "ListItem", position: 3, name: "Best Protein Shake After a Workout", item: "https://www.muscleboxpro.com/blog/best-protein-shake-after-workout" },
+  ],
+};
+
 const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
@@ -60,6 +70,7 @@ export default function Page() {
     <>
       <BlogBestProteinShake />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );
 }

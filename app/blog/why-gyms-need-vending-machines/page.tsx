@@ -8,6 +8,16 @@ export const metadata: Metadata = {
   openGraph: { type: "website", url: "/blog/why-gyms-need-vending-machines" },
 };
 
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+    { "@type": "ListItem", position: 2, name: "Blog", item: "https://www.muscleboxpro.com/blog" },
+    { "@type": "ListItem", position: 3, name: "Why Every Gym Should Install a Protein Shake Vending Machine", item: "https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines" },
+  ],
+};
+
 const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
@@ -54,6 +64,7 @@ export default function Page() {
     <>
       <BlogWhyGymVending />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );
 }

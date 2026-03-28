@@ -65,7 +65,23 @@ export default async function ProteinVendingMachineCityPage({
   params: Promise<{ city: string }>;
 }) {
   const resolvedParams = await params;
+  const citySlug = resolvedParams.city;
   const city = cityFromParams(resolvedParams) ?? cityConfig.delhi;
 
-  return <ProteinVendingMachineIndia cityName={city.name} />;
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.muscleboxpro.com/" },
+      { "@type": "ListItem", position: 2, name: "Protein Vending Machine India", item: "https://www.muscleboxpro.com/protein-vending-machine-india" },
+      { "@type": "ListItem", position: 3, name: `Protein Vending Machine ${city.name}`, item: `https://www.muscleboxpro.com/protein-vending-machine-${citySlug}` },
+    ],
+  };
+
+  return (
+    <>
+      <ProteinVendingMachineIndia cityName={city.name} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+    </>
+  );
 }
