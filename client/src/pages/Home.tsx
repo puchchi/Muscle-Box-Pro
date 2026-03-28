@@ -161,16 +161,16 @@ export default function Home() {
                 <div className="absolute -top-8 -right-8 w-48 h-48 bg-gradient-to-br from-accent/5 to-primary/5 rounded-full blur-[60px]" />
 
                 <p className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-4">
-                  Avg monthly revenue per machine
+                  Monthly revenue per machine
                 </p>
                 <p
                   className="font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary leading-none mb-2"
-                  style={{ fontSize: "clamp(3.5rem, 9vw, 6rem)" }}
+                  style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}
                 >
-                  ₹35K+
+                  Significant passive income
                 </p>
                 <p className="text-muted-foreground text-sm mb-8">
-                  Passive income. No effort on your end.
+                  Earn revenue share from every shake sold. No staff, no effort.
                 </p>
 
                 <div className="h-px w-full bg-gray-100 mb-6" />
