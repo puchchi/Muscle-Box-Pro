@@ -31,7 +31,7 @@ const blogPostingSchema = {
   inLanguage: "en",
   author: {
     "@type": "Person",
-    name: "Muscle Box Pro Editorial Team",
+    name: "Anurag Singh",
     url: "https://www.muscleboxpro.com/about",
   },
   publisher: {

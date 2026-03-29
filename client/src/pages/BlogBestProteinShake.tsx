@@ -42,7 +42,7 @@ export default function BlogBestProteinShake() {
               </span>
             </h1>
             <div className="flex items-center justify-center gap-3 text-white/40 text-sm">
-              <span>By MuscleBoxPro Nutrition Team</span>
+              <span>By Rishi Raj Sharma</span>
               <span>·</span>
               <span>6 min read</span>
             </div>

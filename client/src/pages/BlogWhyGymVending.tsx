@@ -51,7 +51,7 @@ export default function BlogWhyGymVending() {
               </span>
             </h1>
             <div className="flex items-center justify-center gap-3 text-white/40 text-sm">
-              <span>By MuscleBoxPro Team</span>
+              <span>By Anurag Singh</span>
               <span>·</span>
               <span>5 min read</span>
             </div>
@@ -145,9 +145,9 @@ export default function BlogWhyGymVending() {
           </p>
           <ul className="space-y-3 mb-8">
             {[
-              "Average selling price: ₹75–₹140 per shake",
-              "Cost per shake: ₹45–₹70",
-              "Gross margin: 50%+",
+              "Average selling price: ₹75–₹140 per shake (MuscleBoxPro internal partner data, Q1 2026)",
+              "Cost per shake: ₹60–₹90 (MuscleBoxPro internal partner data, Q1 2026)",
+              "Gross margin: 40%+ (MuscleBoxPro internal partner data, Q1 2026)",
               "Square footage required: Less than 10 sq ft",
             ].map((item, i) => (
               <li key={i} className="flex items-center gap-3">

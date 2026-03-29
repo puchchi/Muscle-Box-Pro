@@ -43,7 +43,7 @@ export default function BlogProteinDiabetes() {
               </span>
             </h1>
             <div className="flex items-center justify-center gap-3 text-white/40 text-sm">
-              <span>By Nutrition Science Team</span>
+              <span>By Rishi Raj Sharma</span>
               <span>·</span>
               <span>7 min read</span>
             </div>
@@ -194,7 +194,7 @@ export default function BlogProteinDiabetes() {
             7. Exercise, Protein, and Diabetes — A Powerful Synergy
           </h2>
           <p className="text-gray-600 leading-relaxed mb-4">
-            For people with type 2 diabetes, resistance training is one of the most effective non-pharmaceutical interventions for improving glycemic control. Exercise increases the expression of GLUT4 transporters in muscle cells — the molecular "doorways" that allow glucose to enter cells independently of insulin. This effect can lower blood glucose for up to 24 hours after a single session.
+            For people with type 2 diabetes, resistance training is one of the most effective non-pharmaceutical interventions for improving glycemic control. Exercise increases the expression of GLUT4 transporters in muscle cells — the molecular "doorways" that allow glucose to enter cells independently of insulin. This effect can lower blood glucose for up to 24 hours after a single session (<a href="https://pubmed.ncbi.nlm.nih.gov/23899560/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Richter &amp; Hargreaves, Physiological Reviews, 2013</a>).
           </p>
           <p className="text-gray-600 leading-relaxed mb-4">
             When you combine resistance training with adequate protein intake, the benefits compound significantly. Protein supports the repair and growth of muscle tissue that is stimulated during exercise. More muscle mass means a larger glucose sink — the body has more tissue capable of absorbing and using blood sugar, which reduces the burden on insulin-mediated pathways.
