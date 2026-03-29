@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Providers from "@/components/Providers";
@@ -48,6 +48,11 @@ export const metadata: Metadata = {
   other: {
     "theme-color": "#ffffff",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -145,6 +150,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
+              "@id": "https://www.muscleboxpro.com/#website",
               name: "Muscle Box Pro",
               url: "https://www.muscleboxpro.com",
             }),

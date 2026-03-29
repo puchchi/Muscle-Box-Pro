@@ -15,9 +15,6 @@ export default function ProteinVendingMachineIndia({
 }: ProteinVendingMachineIndiaProps) {
   const locationLabel = cityName ?? "India";
   const isIndiaPage = !cityName;
-  const locationKeyword = cityName
-    ? `protein vending machine ${cityName.toLowerCase()}`
-    : "protein vending machine India";
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,7 +25,6 @@ export default function ProteinVendingMachineIndia({
         {/* Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[280px] bg-gradient-to-r from-accent/25 to-primary/25 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h1 className="sr-only">{locationKeyword}</h1>
           <motion.span
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -37,7 +33,7 @@ export default function ProteinVendingMachineIndia({
           >
             {locationLabel}
           </motion.span>
-          <motion.h2
+          <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
@@ -48,7 +44,7 @@ export default function ProteinVendingMachineIndia({
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
               in {locationLabel} for Gyms
             </span>
-          </motion.h2>
+          </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -30,9 +30,9 @@ const blogPostingSchema = {
   image: "https://www.muscleboxpro.com/assets/blog_best_protein_shake.png",
   inLanguage: "en",
   author: {
-    "@type": "Organization",
-    name: "Muscle Box Pro",
-    url: "https://www.muscleboxpro.com",
+    "@type": "Person",
+    name: "Muscle Box Pro Editorial Team",
+    url: "https://www.muscleboxpro.com/about",
   },
   publisher: {
     "@type": "Organization",

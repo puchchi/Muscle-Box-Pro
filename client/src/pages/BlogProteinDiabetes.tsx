@@ -186,6 +186,89 @@ export default function BlogProteinDiabetes() {
             Furthermore, some studies show that excessive intake of highly processed animal proteins (like processed meats) may actually <em>increase</em> diabetes risk. Focus on clean, whole-food sources.
           </p>
 
+          {/* Section 7 */}
+          <h2 className="font-display font-black text-gray-900 uppercase text-2xl mt-12 mb-4">
+            7. Exercise, Protein, and Diabetes — A Powerful Synergy
+          </h2>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            For people with type 2 diabetes, resistance training is one of the most effective non-pharmaceutical interventions for improving glycemic control. Exercise increases the expression of GLUT4 transporters in muscle cells — the molecular "doorways" that allow glucose to enter cells independently of insulin. This effect can lower blood glucose for up to 24 hours after a single session.
+          </p>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            When you combine resistance training with adequate protein intake, the benefits compound significantly. Protein supports the repair and growth of muscle tissue that is stimulated during exercise. More muscle mass means a larger glucose sink — the body has more tissue capable of absorbing and using blood sugar, which reduces the burden on insulin-mediated pathways.
+          </p>
+          <p className="text-gray-600 leading-relaxed mb-8">
+            This is why regular gym attendance combined with consistent post-workout protein consumption is increasingly recommended by diabetes care specialists. For people with diabetes who exercise at a gym, having access to a low-sugar, high-quality protein shake immediately after training — through a{" "}
+            <Link href="/gym-protein-shake-machine" className="text-primary hover:underline font-medium">gym protein shake machine</Link>
+            {" "}— makes this nutritional habit frictionless and far more likely to be sustained.
+          </p>
+
+          {/* Section 8 */}
+          <h2 className="font-display font-black text-gray-900 uppercase text-2xl mt-12 mb-4">
+            8. Distribute Protein Across the Day for Better Blood Sugar Control
+          </h2>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            One of the most impactful and underutilised strategies in diabetic nutrition is protein distribution — spreading protein intake evenly across meals rather than consuming most of it at dinner (which is common in many dietary patterns).
+          </p>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            Research shows that consuming 25–30 g of protein at each meal produces superior muscle protein synthesis compared to front- or back-loading the same total amount. For people with diabetes, this even distribution also benefits blood sugar: protein at each meal slows gastric emptying and blunts post-meal glucose spikes consistently throughout the day, rather than providing a single large benefit at one sitting.
+          </p>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            A practical target for most adults with type 2 diabetes:
+          </p>
+          <ul className="space-y-3 mb-8">
+            {[
+              "Breakfast: 25–30 g protein (eggs, Greek yogurt, or a whey protein shake)",
+              "Lunch: 25–30 g protein (chicken, fish, lentils, or tofu)",
+              "Post-workout or snack: 20–25 g protein (protein shake, cottage cheese)",
+              "Dinner: 25–30 g protein (lean meat, fish, or plant-based alternatives)",
+            ].map((item, i) => (
+              <li key={i} className="flex items-center gap-3">
+                <CheckCircle2 className="text-primary w-5 h-5 flex-shrink-0" />
+                <span className="text-gray-700 text-sm">{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* Section 9 */}
+          <h2 className="font-display font-black text-gray-900 uppercase text-2xl mt-12 mb-4 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Activity className="w-4 h-4 text-primary" />
+            </span>
+            9. How to Choose a Protein Shake if You Have Diabetes
+          </h2>
+          <p className="text-gray-600 leading-relaxed mb-5">
+            Protein shakes can be an excellent nutritional tool for diabetics — but not all products on the market are suitable. Many commercial shakes are loaded with added sugar, maltodextrin (a high-glycemic starch), or artificial sweeteners that can cause insulin spikes in sensitive individuals. Here is what to look for and what to avoid:
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4 my-6">
+            <div className="bg-green-50 border border-green-100 rounded-2xl p-6">
+              <h4 className="font-bold text-green-800 mb-3">Look For</h4>
+              <ul className="text-gray-600 text-sm space-y-1.5">
+                {[
+                  "Whey isolate or pea protein as the first ingredient",
+                  "Less than 5 g of total sugar per serving",
+                  "20–30 g protein per serving",
+                  "Minimal ingredient list",
+                  "No added maltodextrin or corn syrup",
+                ].map(t => <li key={t} className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0 mt-1.5" />{t}</li>)}
+              </ul>
+            </div>
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-6">
+              <h4 className="font-bold text-red-800 mb-3">Avoid</h4>
+              <ul className="text-gray-600 text-sm space-y-1.5">
+                {[
+                  "Shakes with 10 g+ of sugar per serving",
+                  "Maltodextrin as a primary ingredient",
+                  "\"Mass gainer\" formulas (high calorie, high carb)",
+                  "Artificial sweeteners if you notice blood sugar sensitivity",
+                  "Whey concentrate if lactose-intolerant",
+                ].map(t => <li key={t} className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0 mt-1.5" />{t}</li>)}
+              </ul>
+            </div>
+          </div>
+          <p className="text-gray-600 leading-relaxed mb-8">
+            MuscleBoxPro machines dispense freshly blended shakes using premium whey isolate and plant protein with controlled, low-sugar formulations — making them a significantly healthier option than most packaged RTD shakes or gym juice bar products that often contain high-fructose fruit syrups.
+          </p>
+
           <div className="h-px bg-gray-100 my-10" />
 
           <h2 className="font-display font-black text-gray-900 uppercase text-xl mb-4">Conclusion</h2>
