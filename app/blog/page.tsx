@@ -33,7 +33,7 @@ const blogListingSchema = {
     "Articles on protein nutrition, gym business strategies, and fitness technology.",
   publisher: {
     "@type": "Organization",
-    name: "Muscle Box Pro",
+    name: "MuscleBoxPro",
     url: "https://www.muscleboxpro.com",
     logo: {
       "@type": "ImageObject",

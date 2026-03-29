@@ -207,7 +207,7 @@ export default function Account() {
                   <DialogHeader>
                     <DialogTitle className="text-2xl font-display font-bold uppercase text-foreground">Load Wallet</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Add balance to your Muscle Box Pro account for instant shakes.
+                      Add balance to your MuscleBoxPro account for instant shakes.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-6 mt-4">

@@ -15,7 +15,7 @@ describe("getVerificationEmailTemplate()", () => {
 
   it("returns the correct subject", () => {
     const { subject } = getVerificationEmailTemplate({ verificationUrl: url });
-    expect(subject).toBe("Verify your Muscle Box Pro account");
+    expect(subject).toBe("Verify your MuscleBoxPro account");
   });
 
   it("includes the verification URL in the HTML", () => {
@@ -58,7 +58,7 @@ describe("getPasswordResetEmailTemplate()", () => {
 
   it("returns the correct subject", () => {
     const { subject } = getPasswordResetEmailTemplate({ resetUrl: url });
-    expect(subject).toBe("Reset your Muscle Box Pro password");
+    expect(subject).toBe("Reset your MuscleBoxPro password");
   });
 
   it("includes the reset URL in the HTML", () => {
@@ -96,7 +96,7 @@ describe("getContactRequestEmailTemplate()", () => {
 
   it("returns the correct subject", () => {
     const { subject } = getContactRequestEmailTemplate(input);
-    expect(subject).toBe("We received your message - Muscle Box Pro");
+    expect(subject).toBe("We received your message - MuscleBoxPro");
   });
 
   it("includes the name in the HTML", () => {
@@ -140,7 +140,7 @@ describe("getDemoRequestEmailTemplate()", () => {
 
   it("returns the correct subject", () => {
     const { subject } = getDemoRequestEmailTemplate(input);
-    expect(subject).toBe("Your Muscle Box Pro demo request is received");
+    expect(subject).toBe("Your MuscleBoxPro demo request is received");
   });
 
   it("includes name and gym name in the HTML", () => {
@@ -184,7 +184,7 @@ describe("getCampaignRequestEmailTemplate()", () => {
 
   it("returns the correct subject", () => {
     const { subject } = getCampaignRequestEmailTemplate(input);
-    expect(subject).toBe("Your Muscle Box Pro campaign inquiry is received");
+    expect(subject).toBe("Your MuscleBoxPro campaign inquiry is received");
   });
 
   it("includes brand name in the HTML", () => {

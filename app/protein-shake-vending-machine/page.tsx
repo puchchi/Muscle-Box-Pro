@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import ProteinShakeVendingMachine from "@/pages/ProtienShakeVendingMachine";
 
 export const metadata: Metadata = {
-  title: "Protein Shake Vending Machine | Muscle Box Pro",
+  title: "Protein Shake Vending Machine | MuscleBoxPro",
   description:
-    "Discover how Muscle Box Pro protein shake vending machines help gyms increase member convenience and generate additional recurring revenue.",
+    "Discover how MuscleBoxPro protein shake vending machines help gyms increase member convenience and generate additional recurring revenue.",
   alternates: { canonical: "/protein-shake-vending-machine" },
   openGraph: { type: "website", url: "/protein-shake-vending-machine" },
 };
@@ -24,7 +24,7 @@ const productSchema = {
   name: "MuscleBoxPro Protein Shake Vending Machine",
   description:
     "Smart protein shake vending machine for gyms. Blends fresh whey or plant protein shakes in 60 seconds with cashless payments and zero staff overhead.",
-  brand: { "@type": "Brand", name: "Muscle Box Pro" },
+  brand: { "@type": "Brand", name: "MuscleBoxPro" },
   manufacturer: { "@type": "Organization", name: "BlendBox Innovations LLP" },
   image: "https://www.muscleboxpro.com/og-image.png",
   url: "https://www.muscleboxpro.com/protein-shake-vending-machine",
@@ -35,7 +35,7 @@ const productSchema = {
     price: "0",
     url: "https://www.muscleboxpro.com/protein-shake-vending-machine",
     availability: "https://schema.org/InStock",
-    seller: { "@type": "Organization", name: "Muscle Box Pro" },
+    seller: { "@type": "Organization", name: "MuscleBoxPro" },
   },
 };
 

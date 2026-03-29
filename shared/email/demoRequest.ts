@@ -8,11 +8,11 @@ type DemoRequestTemplateInput = {
 };
 
 export function getDemoRequestEmailTemplate(input: DemoRequestTemplateInput) {
-  const subject = "Your Muscle Box Pro demo request is received";
+  const subject = "Your MuscleBoxPro demo request is received";
   const text = [
     `Hi ${input.name},`,
     "",
-    "Thanks for requesting a free demo with Muscle Box Pro.",
+    "Thanks for requesting a free demo with MuscleBoxPro.",
     "Our team will contact you shortly to schedule the next steps.",
     "",
     `Gym: ${input.gymName}`,
@@ -22,7 +22,7 @@ export function getDemoRequestEmailTemplate(input: DemoRequestTemplateInput) {
     input.message ? `Message: ${input.message}` : "",
     "",
     "Regards,",
-    "Muscle Box Pro Team",
+    "MuscleBoxPro Team",
   ]
     .filter(Boolean)
     .join("\n");
@@ -148,7 +148,7 @@ export function getDemoRequestEmailTemplate(input: DemoRequestTemplateInput) {
                   <td style="padding:24px 32px 32px 32px;">
                     <div style="height:1px;background:#e5e5e5;margin-bottom:20px;"></div>
                     <p style="margin:0 0 6px 0;color:#6b6b6b;font-size:12px;line-height:1.5;">
-                      This is an automated confirmation email from Muscle Box Pro.
+                      This is an automated confirmation email from MuscleBoxPro.
                     </p>
                     <p style="margin:0;color:#bbbbbb;font-size:11px;line-height:1.5;">
                       &copy; 2026 MuscleBoxPro &mdash; BlendBox Innovations LLP &middot;

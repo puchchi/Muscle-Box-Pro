@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import BlogGymRetention from "@/pages/BlogGymRetention";
 
 export const metadata: Metadata = {
-  title: "Gym Member Retention: The Role of On-Site Nutrition | Muscle Box Pro",
+  title: "Gym Member Retention: The Role of On-Site Nutrition | MuscleBoxPro",
   description:
     "Discover how on-site protein nutrition reduces gym member churn in India. Data-backed strategies to improve retention through post-workout convenience.",
   alternates: { canonical: "/blog/gym-member-retention" },
@@ -42,7 +42,7 @@ const blogPostingSchema = {
   },
   publisher: {
     "@type": "Organization",
-    name: "Muscle Box Pro",
+    name: "MuscleBoxPro",
     logo: {
       "@type": "ImageObject",
       url: "https://www.muscleboxpro.com/favicon.png",

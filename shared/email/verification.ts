@@ -7,12 +7,12 @@ export function getVerificationEmailTemplate(input: VerificationTemplateInput) {
   const greetingName = input.name?.trim() ? input.name.trim() : "there";
   const safeUrl = input.verificationUrl;
 
-  const subject = "Verify your Muscle Box Pro account";
+  const subject = "Verify your MuscleBoxPro account";
 
   const text = [
     `Hi ${greetingName},`,
     "",
-    "Thanks for signing up for Muscle Box Pro.",
+    "Thanks for signing up for MuscleBoxPro.",
     "Please verify your email address by opening the link below:",
     safeUrl,
     "",

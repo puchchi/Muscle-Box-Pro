@@ -352,7 +352,7 @@ export default function Advertiser() {
               <div className="relative min-h-72 lg:min-h-0">
                 <img
                   src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
-                  alt="Muscle Box Pro machine in a modern gym"
+                  alt="MuscleBoxPro machine in a modern gym"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />

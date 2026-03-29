@@ -36,7 +36,7 @@ const blogPostingSchema = {
   },
   publisher: {
     "@type": "Organization",
-    name: "Muscle Box Pro",
+    name: "MuscleBoxPro",
     logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png", width: 507, height: 520 },
   },
   mainEntityOfPage: {

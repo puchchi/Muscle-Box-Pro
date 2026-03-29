@@ -13,11 +13,11 @@ export const metadata: Metadata = {
     title:
       "Protein Shake Vending Machine for Gyms | Automated Protein Shake Blend Machine | MuscleBoxPro",
     description:
-      "Discover Muscle Box Pro, the premium protein shake vending machine designed to boost gym revenue with zero maintenance and high-resolution advertising displays.",
+      "Discover MuscleBoxPro, the premium protein shake vending machine designed to boost gym revenue with zero maintenance and high-resolution advertising displays.",
     images: [
       {
         url: "/og-image.png",
-        alt: "Muscle Box Pro smart protein shake vending machine in a gym",
+        alt: "MuscleBoxPro smart protein shake vending machine in a gym",
       },
     ],
   },
@@ -47,7 +47,7 @@ const homeServiceSchema = {
   name: "Protein Shake Vending Machine for Gyms",
   provider: {
     "@type": "Organization",
-    name: "Muscle Box Pro",
+    name: "MuscleBoxPro",
     url: "https://www.muscleboxpro.com",
   },
   serviceType: "Automated protein vending machine solution for gyms",

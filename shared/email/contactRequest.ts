@@ -7,11 +7,11 @@ type ContactRequestTemplateInput = {
 export function getContactRequestEmailTemplate(
   input: ContactRequestTemplateInput,
 ) {
-  const subject = "We received your message - Muscle Box Pro";
+  const subject = "We received your message - MuscleBoxPro";
   const text = [
     `Hi ${input.name},`,
     "",
-    "Thanks for reaching out to Muscle Box Pro.",
+    "Thanks for reaching out to MuscleBoxPro.",
     "Our team has received your message and will get back to you shortly.",
     "",
     `Name: ${input.name}`,
@@ -19,7 +19,7 @@ export function getContactRequestEmailTemplate(
     `Message: ${input.message}`,
     "",
     "Regards,",
-    "Muscle Box Pro Team",
+    "MuscleBoxPro Team",
   ].join("\n");
 
   const html = `
@@ -110,7 +110,7 @@ export function getContactRequestEmailTemplate(
                   <td style="padding:24px 32px 32px 32px;">
                     <div style="height:1px;background:#e5e5e5;margin-bottom:20px;"></div>
                     <p style="margin:0 0 6px 0;color:#6b6b6b;font-size:12px;line-height:1.5;">
-                      This is an automated confirmation email from Muscle Box Pro.
+                      This is an automated confirmation email from MuscleBoxPro.
                     </p>
                     <p style="margin:0;color:#bbbbbb;font-size:11px;line-height:1.5;">
                       &copy; 2026 MuscleBoxPro &mdash; BlendBox Innovations LLP &middot;

@@ -57,7 +57,7 @@ const EMAIL_FOOTER = `
                   <td style="padding:24px 32px 32px 32px;">
                     <div style="height:1px;background:#e5e5e5;margin-bottom:20px;"></div>
                     <p style="margin:0 0 6px 0;color:#999999;font-size:12px;line-height:1.5;">
-                      This is an automated email from Muscle Box Pro.
+                      This is an automated email from MuscleBoxPro.
                     </p>
                     <p style="margin:0;color:#bbbbbb;font-size:11px;line-height:1.5;">
                       &copy; 2026 MuscleBoxPro &mdash; BlendBox Innovations LLP &middot;
@@ -102,12 +102,12 @@ export function getVerificationEmailTemplate(input: VerificationTemplateInput) {
   const greetingName = input.name?.trim() ? input.name.trim() : "there";
   const safeUrl = input.verificationUrl;
 
-  const subject = "Verify your Muscle Box Pro account";
+  const subject = "Verify your MuscleBoxPro account";
 
   const text = [
     `Hi ${greetingName},`,
     "",
-    "Thanks for signing up for Muscle Box Pro.",
+    "Thanks for signing up for MuscleBoxPro.",
     "Please verify your email address by opening the link below:",
     safeUrl,
     "",
@@ -162,12 +162,12 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
   const greetingName = input.name?.trim() ? input.name.trim() : "there";
   const safeUrl = input.resetUrl;
 
-  const subject = "Reset your Muscle Box Pro password";
+  const subject = "Reset your MuscleBoxPro password";
 
   const text = [
     `Hi ${greetingName},`,
     "",
-    "We received a request to reset your Muscle Box Pro password.",
+    "We received a request to reset your MuscleBoxPro password.",
     "Open the link below to set a new password:",
     safeUrl,
     "",
@@ -179,7 +179,7 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
                   <td style="padding:28px 32px 12px 32px;">
                     <h1 style="margin:0 0 12px 0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Reset your password</h1>
                     <p style="margin:0;color:#555555;font-size:16px;line-height:1.7;">
-                      Hi <strong style="color:#111111;">${greetingName}</strong>, we received a request to reset your Muscle Box Pro password. Click the button below to set a new one.
+                      Hi <strong style="color:#111111;">${greetingName}</strong>, we received a request to reset your MuscleBoxPro password. Click the button below to set a new one.
                     </p>
                   </td>
                 </tr>
@@ -225,11 +225,11 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
 
 // ─── Demo Request ─────────────────────────────────────────────────────────────
 export function getDemoRequestEmailTemplate(input: DemoRequestTemplateInput) {
-  const subject = "Your Muscle Box Pro demo request is received";
+  const subject = "Your MuscleBoxPro demo request is received";
   const text = [
     `Hi ${input.name},`,
     "",
-    "Thanks for requesting a free demo with Muscle Box Pro.",
+    "Thanks for requesting a free demo with MuscleBoxPro.",
     "Our team will contact you shortly to schedule the next steps.",
     "",
     `Gym: ${input.gymName}`,
@@ -239,7 +239,7 @@ export function getDemoRequestEmailTemplate(input: DemoRequestTemplateInput) {
     input.message ? `Message: ${input.message}` : "",
     "",
     "Regards,",
-    "Muscle Box Pro Team",
+    "MuscleBoxPro Team",
   ]
     .filter(Boolean)
     .join("\n");
@@ -305,11 +305,11 @@ export function getDemoRequestEmailTemplate(input: DemoRequestTemplateInput) {
 export function getCampaignRequestEmailTemplate(
   input: CampaignRequestTemplateInput,
 ) {
-  const subject = "Your Muscle Box Pro campaign inquiry is received";
+  const subject = "Your MuscleBoxPro campaign inquiry is received";
   const text = [
     `Hi ${input.brandName} team,`,
     "",
-    "Thanks for your interest in advertising with Muscle Box Pro.",
+    "Thanks for your interest in advertising with MuscleBoxPro.",
     "Our ad partnerships team will contact you shortly.",
     "",
     `Brand Name: ${input.brandName}`,
@@ -317,7 +317,7 @@ export function getCampaignRequestEmailTemplate(
     `Mobile: ${input.mobile}`,
     "",
     "Regards,",
-    "Muscle Box Pro Team",
+    "MuscleBoxPro Team",
   ].join("\n");
 
   const html = wrapCard(`
@@ -325,7 +325,7 @@ export function getCampaignRequestEmailTemplate(
                   <td style="padding:28px 32px 12px 32px;">
                     <h1 style="margin:0 0 12px 0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Campaign inquiry received</h1>
                     <p style="margin:0;color:#555555;font-size:16px;line-height:1.7;">
-                      Hi <strong style="color:#111111;">${input.brandName}</strong> team, thanks for your interest in advertising with Muscle Box Pro. Our partnerships team will be in touch shortly.
+                      Hi <strong style="color:#111111;">${input.brandName}</strong> team, thanks for your interest in advertising with MuscleBoxPro. Our partnerships team will be in touch shortly.
                     </p>
                   </td>
                 </tr>
@@ -369,11 +369,11 @@ export function getCampaignRequestEmailTemplate(
 export function getContactRequestEmailTemplate(
   input: ContactRequestTemplateInput,
 ) {
-  const subject = "We received your message - Muscle Box Pro";
+  const subject = "We received your message - MuscleBoxPro";
   const text = [
     `Hi ${input.name},`,
     "",
-    "Thanks for reaching out to Muscle Box Pro.",
+    "Thanks for reaching out to MuscleBoxPro.",
     "Our team has received your message and will get back to you shortly.",
     "",
     `Name: ${input.name}`,
@@ -381,7 +381,7 @@ export function getContactRequestEmailTemplate(
     `Message: ${input.message}`,
     "",
     "Regards,",
-    "Muscle Box Pro Team",
+    "MuscleBoxPro Team",
   ].join("\n");
 
   const html = wrapCard(`

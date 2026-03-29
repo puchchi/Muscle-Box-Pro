@@ -168,7 +168,7 @@ export default function Login() {
           transition={{ delay: 0.6 }}
           className="relative z-10 text-white/40 text-xs"
         >
-          © 2026 Muscle Box Pro. All rights reserved.
+          © 2026 MuscleBoxPro. All rights reserved.
         </motion.p>
       </div>
 

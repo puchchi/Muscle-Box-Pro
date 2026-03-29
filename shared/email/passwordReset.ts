@@ -7,12 +7,12 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
   const greetingName = input.name?.trim() ? input.name.trim() : "there";
   const safeUrl = input.resetUrl;
 
-  const subject = "Reset your Muscle Box Pro password";
+  const subject = "Reset your MuscleBoxPro password";
 
   const text = [
     `Hi ${greetingName},`,
     "",
-    "We received a request to reset your Muscle Box Pro password.",
+    "We received a request to reset your MuscleBoxPro password.",
     "Open the link below to set a new password:",
     safeUrl,
     "",
@@ -65,7 +65,7 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
                   <td style="padding:28px 32px 12px 32px;">
                     <h1 style="margin:0 0 12px 0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Reset your password</h1>
                     <p style="margin:0;color:#555555;font-size:16px;line-height:1.7;">
-                      Hi <strong style="color:#111111;">${greetingName}</strong>, we received a request to reset your Muscle Box Pro password. Click the button below to set a new one.
+                      Hi <strong style="color:#111111;">${greetingName}</strong>, we received a request to reset your MuscleBoxPro password. Click the button below to set a new one.
                     </p>
                   </td>
                 </tr>

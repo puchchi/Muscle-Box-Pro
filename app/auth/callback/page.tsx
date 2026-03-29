@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import AuthCallback from "@/pages/AuthCallback";
 
 export const metadata: Metadata = {
-  title: "Authentication Callback | Muscle Box Pro",
-  description: "Completing authentication for Muscle Box Pro.",
+  title: "Authentication Callback | MuscleBoxPro",
+  description: "Completing authentication for MuscleBoxPro.",
   alternates: { canonical: "/auth/callback" },
   robots: { index: false, follow: true },
 };
