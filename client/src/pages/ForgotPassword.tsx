@@ -32,11 +32,11 @@ function ForgotPasswordInner() {
     setNotice(null);
     try {
       setIsSubmitting(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/forgot-password`,
+      const { data, error } = await supabase.functions.invoke("forgot-password", {
+        body: { email },
       });
-      if (error) throw error;
-      setNotice({ type: "success", message: "If an account exists for this email, a password reset link has been sent." });
+      if (error) throw new Error(error.message || "Unable to send reset email right now.");
+      setNotice({ type: "success", message: (data as { message?: string } | null)?.message || "If an account exists for this email, a password reset link has been sent." });
     } catch (error) {
       setNotice({ type: "error", message: error instanceof Error ? error.message : "Unable to send reset email right now." });
     } finally {

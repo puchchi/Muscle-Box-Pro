@@ -26,8 +26,8 @@ export function getContactRequestEmailTemplate(
 <!doctype html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Message Received</title></head>
-<body style="margin:0;padding:0;background:#0d0d0d;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0d0d0d;padding:40px 16px;">
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:40px 16px;">
     <tr>
       <td align="center">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
@@ -39,7 +39,7 @@ export function getContactRequestEmailTemplate(
 
           <!-- Card -->
           <tr>
-            <td style="background:#1a1a1a;border:1px solid #2e2e2e;border-top:none;border-radius:0 0 16px 16px;overflow:hidden;">
+            <td style="background:#ffffff;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 16px 16px;overflow:hidden;">
 
               <!-- Header -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
@@ -58,7 +58,7 @@ export function getContactRequestEmailTemplate(
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding:0 32px;"><div style="height:1px;background:#2e2e2e;"></div></td>
+                  <td style="padding:0 32px;"><div style="height:1px;background:#e5e5e5;"></div></td>
                 </tr>
               </table>
 
@@ -66,9 +66,9 @@ export function getContactRequestEmailTemplate(
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="padding:28px 32px 12px 32px;">
-                    <h1 style="margin:0 0 12px 0;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Message received</h1>
-                    <p style="margin:0;color:#a0a0a0;font-size:16px;line-height:1.7;">
-                      Hi <strong style="color:#ffffff;">${input.name}</strong>, thanks for contacting us. Our support team will get back to you as soon as possible.
+                    <h1 style="margin:0 0 12px 0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Message received</h1>
+                    <p style="margin:0;color:#555555;font-size:16px;line-height:1.7;">
+                      Hi <strong style="color:#111111;">${input.name}</strong>, thanks for contacting us. Our support team will get back to you as soon as possible.
                     </p>
                   </td>
                 </tr>
@@ -76,26 +76,26 @@ export function getContactRequestEmailTemplate(
                 <!-- Message summary -->
                 <tr>
                   <td style="padding:16px 32px 0 32px;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#111111;border:1px solid #2e2e2e;border-radius:10px;overflow:hidden;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8f8f8;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;">
                       <tr>
                         <td style="padding:6px 0 2px 0;">
                           <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="padding:8px 18px;border-bottom:1px solid #222222;">
-                                <span style="color:#6b6b6b;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Name</span>
-                                <div style="color:#ffffff;font-size:14px;font-weight:600;margin-top:2px;">${input.name}</div>
+                              <td style="padding:8px 18px;border-bottom:1px solid #ebebeb;">
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Name</span>
+                                <div style="color:#111111;font-size:14px;font-weight:600;margin-top:2px;">${input.name}</div>
                               </td>
                             </tr>
                             <tr>
-                              <td style="padding:8px 18px;border-bottom:1px solid #222222;">
-                                <span style="color:#6b6b6b;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Email</span>
-                                <div style="color:#ffffff;font-size:14px;font-weight:600;margin-top:2px;">${input.email}</div>
+                              <td style="padding:8px 18px;border-bottom:1px solid #ebebeb;">
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Email</span>
+                                <div style="color:#111111;font-size:14px;font-weight:600;margin-top:2px;">${input.email}</div>
                               </td>
                             </tr>
                             <tr>
                               <td style="padding:8px 18px;">
-                                <span style="color:#6b6b6b;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Your Message</span>
-                                <div style="color:#a0a0a0;font-size:14px;margin-top:4px;line-height:1.6;">${input.message}</div>
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Your Message</span>
+                                <div style="color:#555555;font-size:14px;margin-top:4px;line-height:1.6;">${input.message}</div>
                               </td>
                             </tr>
                           </table>
@@ -108,11 +108,11 @@ export function getContactRequestEmailTemplate(
                 <!-- Footer -->
                 <tr>
                   <td style="padding:24px 32px 32px 32px;">
-                    <div style="height:1px;background:#2e2e2e;margin-bottom:20px;"></div>
+                    <div style="height:1px;background:#e5e5e5;margin-bottom:20px;"></div>
                     <p style="margin:0 0 6px 0;color:#6b6b6b;font-size:12px;line-height:1.5;">
                       This is an automated confirmation email from Muscle Box Pro.
                     </p>
-                    <p style="margin:0;color:#444444;font-size:11px;line-height:1.5;">
+                    <p style="margin:0;color:#bbbbbb;font-size:11px;line-height:1.5;">
                       &copy; 2026 MuscleBoxPro &mdash; BlendBox Innovations LLP &middot;
                       <a href="https://www.muscleboxpro.com" style="color:#FF512F;text-decoration:none;">muscleboxpro.com</a>
                     </p>

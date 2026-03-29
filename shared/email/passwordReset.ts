@@ -23,8 +23,8 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
 <!doctype html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reset your password</title></head>
-<body style="margin:0;padding:0;background:#0d0d0d;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0d0d0d;padding:40px 16px;">
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:40px 16px;">
     <tr>
       <td align="center">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
@@ -36,7 +36,7 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
 
           <!-- Card -->
           <tr>
-            <td style="background:#1a1a1a;border:1px solid #2e2e2e;border-top:none;border-radius:0 0 16px 16px;overflow:hidden;">
+            <td style="background:#ffffff;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 16px 16px;overflow:hidden;">
 
               <!-- Header -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
@@ -55,7 +55,7 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding:0 32px;"><div style="height:1px;background:#2e2e2e;"></div></td>
+                  <td style="padding:0 32px;"><div style="height:1px;background:#e5e5e5;"></div></td>
                 </tr>
               </table>
 
@@ -63,9 +63,9 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="padding:28px 32px 12px 32px;">
-                    <h1 style="margin:0 0 12px 0;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Reset your password</h1>
-                    <p style="margin:0;color:#a0a0a0;font-size:16px;line-height:1.7;">
-                      Hi <strong style="color:#ffffff;">${greetingName}</strong>, we received a request to reset your Muscle Box Pro password. Click the button below to set a new one.
+                    <h1 style="margin:0 0 12px 0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Reset your password</h1>
+                    <p style="margin:0;color:#555555;font-size:16px;line-height:1.7;">
+                      Hi <strong style="color:#111111;">${greetingName}</strong>, we received a request to reset your Muscle Box Pro password. Click the button below to set a new one.
                     </p>
                   </td>
                 </tr>
@@ -103,7 +103,7 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
                 <!-- Fallback link -->
                 <tr>
                   <td style="padding:20px 32px 0 32px;">
-                    <p style="margin:0 0 6px 0;color:#6b6b6b;font-size:12px;line-height:1.5;">
+                    <p style="margin:0 0 6px 0;color:#888888;font-size:12px;line-height:1.5;">
                       Button not working? Copy and paste this link into your browser:
                     </p>
                     <p style="margin:0;word-break:break-all;">
@@ -115,8 +115,8 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
                 <!-- Footer -->
                 <tr>
                   <td style="padding:24px 32px 32px 32px;">
-                    <div style="height:1px;background:#2e2e2e;margin-bottom:20px;"></div>
-                    <p style="margin:0;color:#444444;font-size:11px;line-height:1.5;">
+                    <div style="height:1px;background:#e5e5e5;margin-bottom:20px;"></div>
+                    <p style="margin:0;color:#bbbbbb;font-size:11px;line-height:1.5;">
                       &copy; 2026 MuscleBoxPro &mdash; BlendBox Innovations LLP &middot;
                       <a href="https://www.muscleboxpro.com" style="color:#FF512F;text-decoration:none;">muscleboxpro.com</a>
                     </p>
