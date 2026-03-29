@@ -28,7 +28,7 @@ const posts = [
       "The science behind post-workout protein timing. We compare whey and plant-based protein to help you find the perfect recovery drink.",
     readTime: "5 min read",
     date: "Jan 20, 2026",
-    image: "/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
+    image: "/images/chocolate_banana_milk_protein_shake.png",
     featured: false,
   },
   {
@@ -40,7 +40,7 @@ const posts = [
       "Adequate protein intake can stabilize blood sugar, preserve muscle mass, and improve long-term metabolic control in people with diabetes.",
     readTime: "7 min read",
     date: "Feb 1, 2026",
-    image: "/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
+    image: "/images/pure_vanilla_protein_shake_in_glass.png",
     featured: false,
   },
 ];

@@ -56,7 +56,7 @@ export default function BlogProteinDiabetes() {
             className="relative rounded-2xl overflow-hidden aspect-video border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]"
           >
             <Image
-              src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+              src="/images/pure_vanilla_protein_shake_in_glass.png"
               alt="Healthy protein sources for diabetes management"
               fill
               className="object-cover"

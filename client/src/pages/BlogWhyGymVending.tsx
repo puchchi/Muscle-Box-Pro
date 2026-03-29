@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "What is the average ROI for a protein vending machine?",
-    a: "Because the cost of ingredients is low and retail prices for fresh shakes are premium, gyms typically enjoy a 70%+ gross margin per shake, often recovering their investment within months.",
+    a: "Because the cost of ingredients is low and retail prices for fresh shakes are premium, MuscleBoxPro partner gyms have reported gross margins above 50% per shake, often recovering their installation costs within months (MuscleBoxPro internal partner data).",
   },
 ];
 
@@ -119,7 +119,7 @@ export default function BlogWhyGymVending() {
               <div>
                 <p className="font-bold text-gray-900 mb-1">Revenue Insight</p>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Gyms that install automated protein dispensers consistently outperform those relying on manual supplement sales at the front desk — driven by 24/7 availability, frictionless payments, and impulse-purchase positioning on the gym floor.
+                  Based on MuscleBoxPro partner data, gyms using automated protein dispensers generate higher shake revenue than those relying on manual front-desk supplement sales — driven by 24/7 availability, frictionless UPI payments, and impulse-purchase positioning on the gym floor.
                 </p>
               </div>
             </div>

@@ -55,7 +55,7 @@ export default function BlogBestProteinShake() {
             className="relative rounded-2xl overflow-hidden aspect-video border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]"
           >
             <Image
-              src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+              src="/images/chocolate_banana_milk_protein_shake.png"
               alt="The Best Protein Shake After a Workout: Whey vs. Plant"
               fill
               className="object-cover"
