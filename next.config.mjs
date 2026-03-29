@@ -87,10 +87,10 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-insights.com https://vitals.vercel-insights.com",
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob:",
-              "font-src 'self'",
-              "connect-src 'self' https://va.vercel-insights.com https://vitals.vercel-insights.com https://api.indexnow.org",
+              "font-src 'self' https://fonts.gstatic.com",
+              "connect-src 'self' https://va.vercel-insights.com https://vitals.vercel-insights.com https://api.indexnow.org https://esyfzbcoufjcnakloahc.supabase.co",
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",
