@@ -21,13 +21,14 @@ const breadcrumbSchema = {
 const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
+  "@id": "https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines#article",
   headline: "Why Every Gym Should Install a Protein Shake Vending Machine",
   description:
     "Discover why protein shake vending machines are becoming the most profitable and member-retaining asset for modern gyms.",
   url: "https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines",
   datePublished: "2026-01-15",
-  dateModified: "2026-03-17",
-  image: "https://www.muscleboxpro.com/assets/blog_gym_vending_machine.png",
+  dateModified: "2026-03-29",
+  image: "https://www.muscleboxpro.com/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
   inLanguage: "en",
   author: {
     "@type": "Person",

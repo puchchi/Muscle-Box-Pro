@@ -35,6 +35,7 @@ const productSchema = {
     price: "0",
     url: "https://www.muscleboxpro.com/protein-shake-vending-machine",
     availability: "https://schema.org/InStock",
+    priceValidUntil: "2026-12-31",
     seller: { "@type": "Organization", name: "MuscleBoxPro" },
   },
 };

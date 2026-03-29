@@ -30,6 +30,10 @@ const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/blog/best-protein-shake-after-workout",
   "https://www.muscleboxpro.com/blog/protein-for-diabetes",
   "https://www.muscleboxpro.com/blog/gym-member-retention",
+  "https://www.muscleboxpro.com/blog",
+  "https://www.muscleboxpro.com/vs/protein-shake-bar",
+  "https://www.muscleboxpro.com/vs/supplement-counter",
+  "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
 ];
 
 class IndexNowPlugin {

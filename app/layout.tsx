@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.png" },
   openGraph: {
     siteName: "MuscleBoxPro",
-    locale: "en_US",
+    locale: "en_IN",
     type: "website",
     images: [
       {
@@ -70,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <head>
         <script
           type="application/ld+json"

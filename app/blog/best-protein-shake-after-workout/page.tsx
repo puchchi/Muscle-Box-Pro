@@ -21,13 +21,14 @@ const breadcrumbSchema = {
 const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
+  "@id": "https://www.muscleboxpro.com/blog/best-protein-shake-after-workout#article",
   headline: "The Best Protein Shake After a Workout: Whey vs. Plant",
   description:
     "Discover the science behind the best post-workout protein shakes. Compare whey and plant protein to find the perfect recovery drink.",
   url: "https://www.muscleboxpro.com/blog/best-protein-shake-after-workout",
   datePublished: "2026-01-20",
-  dateModified: "2026-03-17",
-  image: "https://www.muscleboxpro.com/assets/blog_best_protein_shake.png",
+  dateModified: "2026-03-29",
+  image: "https://www.muscleboxpro.com/images/chocolate_banana_milk_protein_shake.png",
   inLanguage: "en",
   author: {
     "@type": "Person",

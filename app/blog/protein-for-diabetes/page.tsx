@@ -21,13 +21,14 @@ const breadcrumbSchema = {
 const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
+  "@id": "https://www.muscleboxpro.com/blog/protein-for-diabetes#article",
   headline: "Why Protein Is Important for Diabetes Management",
   description:
     "Discover how protein helps control blood sugar, the best protein sources for diabetes, and why it's a crucial part of diabetes management.",
   url: "https://www.muscleboxpro.com/blog/protein-for-diabetes",
   datePublished: "2026-02-01",
-  dateModified: "2026-03-17",
-  image: "https://www.muscleboxpro.com/assets/blog_diabetes_protein.png",
+  dateModified: "2026-03-29",
+  image: "https://www.muscleboxpro.com/images/pure_vanilla_protein_shake_in_glass.png",
   inLanguage: "en",
   author: {
     "@type": "Person",

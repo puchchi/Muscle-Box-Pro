@@ -34,11 +34,13 @@ export const metadata: Metadata = {
 const homeWebPageSchema = {
   "@context": "https://schema.org",
   "@type": "WebPage",
+  "@id": "https://www.muscleboxpro.com/#webpage",
   name: "Protein Shake Vending Machine for Gyms | MuscleBoxPro",
   url: "https://www.muscleboxpro.com/",
   description:
     "Automated protein shake vending machines for gyms and fitness centers.",
   inLanguage: "en",
+  isPartOf: { "@id": "https://www.muscleboxpro.com/#website" },
 };
 
 const homeServiceSchema = {

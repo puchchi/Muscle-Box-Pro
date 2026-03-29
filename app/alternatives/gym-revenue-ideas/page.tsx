@@ -54,6 +54,7 @@ const breadcrumbSchema = {
 const articleSchema = {
   "@context": "https://schema.org",
   "@type": "Article",
+  "@id": "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas#article",
   headline: "7 Ways Indian Gyms Generate Passive Revenue (Ranked by ROI)",
   description:
     "A comprehensive guide to passive and semi-passive revenue streams for Indian gym owners in 2026, ranked by ROI with investment requirements and realistic monthly income estimates.",
@@ -65,13 +66,17 @@ const articleSchema = {
   publisher: {
     "@type": "Organization",
     name: "MuscleBoxPro",
-    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/og-image.png" },
+    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png", width: 507, height: 520 },
   },
   datePublished: "2026-01-15",
   dateModified: "2026-03-29",
   url: "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
   image: "https://www.muscleboxpro.com/og-image.png",
   inLanguage: "en-IN",
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
+  },
   about: [
     { "@type": "Thing", name: "Gym Passive Income India" },
     { "@type": "Thing", name: "Gym Revenue Ideas" },
@@ -92,52 +97,73 @@ const itemListSchema = {
     {
       "@type": "ListItem",
       position: 1,
-      name: "Protein Shake Vending Machine (MuscleBoxPro)",
-      url: "https://www.muscleboxpro.com/protein-shake-vending-machine",
-      description:
-        "Zero-cost automated protein shake machine that generates passive shake revenue and advertising income 24/7. Supplied, installed, and maintained free by BlendBox Innovations LLP.",
+      item: {
+        "@type": "Thing",
+        name: "Protein Shake Vending Machine (MuscleBoxPro)",
+        url: "https://www.muscleboxpro.com/protein-shake-vending-machine",
+        description:
+          "Zero-cost automated protein shake machine that generates passive shake revenue and advertising income 24/7. Supplied, installed, and maintained free by BlendBox Innovations LLP.",
+      },
     },
     {
       "@type": "ListItem",
       position: 2,
-      name: "Branded Merchandise Sales",
-      description:
-        "Gym-branded T-shirts, bottles, bags, and accessories. Builds brand equity while generating secondary retail income.",
+      item: {
+        "@type": "Thing",
+        name: "Branded Merchandise Sales",
+        description:
+          "Gym-branded T-shirts, bottles, bags, and accessories. Builds brand equity while generating secondary retail income.",
+      },
     },
     {
       "@type": "ListItem",
       position: 3,
-      name: "Personal Training Upsells & Specialised Programmes",
-      description:
-        "Structured group PT programmes and transformation challenges that scale one trainer across many clients.",
+      item: {
+        "@type": "Thing",
+        name: "Personal Training Upsells & Specialised Programmes",
+        description:
+          "Structured group PT programmes and transformation challenges that scale one trainer across many clients.",
+      },
     },
     {
       "@type": "ListItem",
       position: 4,
-      name: "Locker Rentals",
-      description:
-        "Monthly or annual locker rentals — genuinely passive after installation with predictable recurring revenue.",
+      item: {
+        "@type": "Thing",
+        name: "Locker Rentals",
+        description:
+          "Monthly or annual locker rentals — genuinely passive after installation with predictable recurring revenue.",
+      },
     },
     {
       "@type": "ListItem",
       position: 5,
-      name: "Spa, Sauna & Recovery Services",
-      description:
-        "Premium wellness add-ons that command higher pricing and attract recovery-focused members.",
+      item: {
+        "@type": "Thing",
+        name: "Spa, Sauna & Recovery Services",
+        description:
+          "Premium wellness add-ons that command higher pricing and attract recovery-focused members.",
+      },
     },
     {
       "@type": "ListItem",
       position: 6,
-      name: "Parking Fees",
-      description:
-        "Charging for controlled gym parking — particularly effective in high-density metro markets.",
+      item: {
+        "@type": "Thing",
+        name: "Parking Fees",
+        description:
+          "Charging for controlled gym parking — particularly effective in high-density metro markets.",
+      },
     },
     {
       "@type": "ListItem",
       position: 7,
-      name: "Brand Sponsorships & In-Gym Advertising",
-      description:
-        "Selling advertising and sponsorship rights to brands seeking access to health-conscious gym members.",
+      item: {
+        "@type": "Thing",
+        name: "Brand Sponsorships & In-Gym Advertising",
+        description:
+          "Selling advertising and sponsorship rights to brands seeking access to health-conscious gym members.",
+      },
     },
   ],
 };

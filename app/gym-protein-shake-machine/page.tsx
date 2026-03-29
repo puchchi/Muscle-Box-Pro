@@ -32,7 +32,10 @@ const productSchema = {
   offers: {
     "@type": "Offer",
     priceCurrency: "INR",
+    price: "0",
+    url: "https://www.muscleboxpro.com/gym-protein-shake-machine",
     availability: "https://schema.org/InStock",
+    priceValidUntil: "2026-12-31",
     seller: { "@type": "Organization", name: "MuscleBoxPro" },
   },
 };

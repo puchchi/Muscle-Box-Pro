@@ -51,6 +51,7 @@ const breadcrumbSchema = {
 const articleSchema = {
   "@context": "https://schema.org",
   "@type": "Article",
+  "@id": "https://www.muscleboxpro.com/vs/protein-shake-bar#article",
   headline: "Protein Shake Vending Machine vs. Protein Shake Bar: Which Is Better for Your Gym?",
   description:
     "A balanced 10-dimension comparison of automated protein shake vending machines (MuscleBoxPro) vs. staffed protein shake bars for Indian gym owners in 2026.",
@@ -62,13 +63,17 @@ const articleSchema = {
   publisher: {
     "@type": "Organization",
     name: "MuscleBoxPro",
-    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/og-image.png" },
+    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png", width: 507, height: 520 },
   },
   datePublished: "2026-01-15",
   dateModified: "2026-03-29",
   url: "https://www.muscleboxpro.com/vs/protein-shake-bar",
   image: "https://www.muscleboxpro.com/og-image.png",
   inLanguage: "en-IN",
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": "https://www.muscleboxpro.com/vs/protein-shake-bar",
+  },
   about: [
     { "@type": "Thing", name: "Protein Shake Vending Machine" },
     { "@type": "Thing", name: "Protein Shake Bar" },

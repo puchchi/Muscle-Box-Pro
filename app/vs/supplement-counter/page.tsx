@@ -52,6 +52,7 @@ const breadcrumbSchema = {
 const articleSchema = {
   "@context": "https://schema.org",
   "@type": "Article",
+  "@id": "https://www.muscleboxpro.com/vs/supplement-counter#article",
   headline: "Vending Machine vs. Supplement Counter: ROI Analysis for Gym Owners India",
   description:
     "A balanced ROI analysis comparing automated protein shake vending machines (MuscleBoxPro) vs. traditional front-desk supplement retail counters for Indian gym owners in 2026.",
@@ -63,13 +64,17 @@ const articleSchema = {
   publisher: {
     "@type": "Organization",
     name: "MuscleBoxPro",
-    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/og-image.png" },
+    logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png", width: 507, height: 520 },
   },
   datePublished: "2026-01-15",
   dateModified: "2026-03-29",
   url: "https://www.muscleboxpro.com/vs/supplement-counter",
   image: "https://www.muscleboxpro.com/og-image.png",
   inLanguage: "en-IN",
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": "https://www.muscleboxpro.com/vs/supplement-counter",
+  },
   about: [
     { "@type": "Thing", name: "Protein Shake Vending Machine" },
     { "@type": "Thing", name: "Supplement Retail Counter" },
