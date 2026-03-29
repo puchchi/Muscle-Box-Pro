@@ -59,3 +59,12 @@ supabase/
   functions/     Supabase Edge Functions (Deno)
   migrations/    SQL migrations
 ```
+
+## Setup Supabase
+
+```
+supabase login
+supabase link --project-ref esyfzbcoufjcnakloahc
+supabase functions deploy
+supabase db push 
+```

@@ -11,8 +11,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { MailWarning, AlertCircle, CheckCircle2, Zap, Shield, Clock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -31,7 +31,6 @@ const brandPerks = [
 ];
 
 export default function Login() {
-  const { toast } = useToast();
   const router = useRouter();
   const [notice, setNotice] = useState<{
     type: "error" | "warning" | "success";
@@ -69,7 +68,7 @@ export default function Login() {
         return;
       }
 
-      toast({ title: "Welcome Back!", description: "You've been logged in successfully." });
+      await queryClient.invalidateQueries({ queryKey: ["supabase-session"] });
       router.push("/account");
     } finally {
       setIsSubmitting(false);
@@ -267,33 +266,54 @@ export default function Login() {
               />
 
               {notice && (
-                <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${
-                  notice.type === "warning"
-                    ? "border-amber-200 bg-amber-50 text-amber-700"
-                    : notice.type === "success"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-red-200 bg-red-50 text-red-700"
-                }`}>
-                  {notice.type === "warning"
-                    ? <MailWarning className="mt-0.5 h-4 w-4 shrink-0" />
-                    : notice.type === "success"
-                      ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                      : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />}
-                  <div className="space-y-2 flex-1">
-                    <p className="text-sm leading-relaxed">{notice.message}</p>
+                notice.type === "warning" ? (
+                  /* ── Warning: email not verified ── */
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
+                    <div className="flex items-start gap-3 px-4 pt-4 pb-3">
+                      <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                        <MailWarning className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-amber-800 mb-0.5">Email not verified</p>
+                        <p className="text-xs text-amber-700 leading-relaxed">{notice.message}</p>
+                      </div>
+                    </div>
                     {notice.canResend && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-8 text-xs border-current/30 hover:bg-black/5 cursor-pointer"
-                        onClick={handleResendVerification}
-                        disabled={isResending}
-                      >
-                        {isResending ? "Sending..." : "Resend verification link"}
-                      </Button>
+                      <div className="px-4 pb-4">
+                        <button
+                          type="button"
+                          onClick={handleResendVerification}
+                          disabled={isResending}
+                          className="w-full h-9 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          {isResending ? "Sending…" : "Resend verification email"}
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
+                ) : notice.type === "success" ? (
+                  /* ── Success: verification sent ── */
+                  <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-800 mb-0.5">Verification email sent!</p>
+                      <p className="text-xs text-emerald-700 leading-relaxed">{notice.message}</p>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Error ── */
+                  <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <AlertCircle className="w-4 h-4 text-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-red-700 mb-0.5">Sign in failed</p>
+                      <p className="text-xs text-red-600 leading-relaxed">{notice.message}</p>
+                    </div>
+                  </div>
+                )
               )}
 
               <Button

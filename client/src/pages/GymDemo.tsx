@@ -9,8 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { motion } from "framer-motion";
-import { CheckCircle2, Wrench, TrendingUp, Palette, ArrowRight, Star } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle2, Wrench, TrendingUp, Palette, ArrowRight, Star, AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -38,10 +38,8 @@ const trustStats = [
 
 export default function GymDemo() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [notice, setNotice] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,21 +47,15 @@ export default function GymDemo() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setNotice(null);
+    setError(null);
     try {
       setIsSubmitting(true);
-      const { data, error } = await supabase.functions.invoke("demo-request", { body: values });
-      if (error) throw error;
-      setNotice({
-        type: "success",
-        message: (data as { message?: string })?.message || "Thanks for your interest. We will contact you shortly to schedule your demo.",
-      });
+      const { error: invokeError } = await supabase.functions.invoke("demo-request", { body: values });
+      if (invokeError) throw invokeError;
+      setSubmitted(true);
       form.reset();
-    } catch (error) {
-      setNotice({
-        type: "error",
-        message: error instanceof Error ? error.message : "Unable to submit your request right now. Please try again.",
-      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to submit your request right now. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -174,129 +166,189 @@ export default function GymDemo() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 lg:p-10"
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
             >
-              <div className="mb-7">
-                <h2 className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1">
-                  Request a demo
-                </h2>
-                <p className="text-muted-foreground text-sm">
-                  Fill in your details and we'll reach out within 24 hours.
-                </p>
-              </div>
-
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  {notice && (
-                    <div className={
-                      notice.type === "success"
-                        ? "rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary"
-                        : "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                    }>
-                      {notice.message}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-sm font-semibold">Contact Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="John Doe" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="gymName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-sm font-semibold">Gym Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Iron Paradise" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700 text-sm font-semibold">Email Address</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="mobile"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-sm font-semibold">Mobile</FormLabel>
-                          <FormControl>
-                            <Input placeholder="+91 98765 43210" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700 text-sm font-semibold">Gym Location</FormLabel>
-                          <FormControl>
-                            <Input placeholder="City, State" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700 text-sm font-semibold">Additional Notes <span className="text-gray-400 font-normal">(Optional)</span></FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Tell us about your gym, member count, and preferred demo time."
-                            {...field}
-                            className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors rounded-xl min-h-[100px] resize-none"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full h-12 bg-primary text-white font-bold hover:bg-primary/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20 mt-2"
+              <AnimatePresence mode="wait">
+                {submitted ? (
+                  /* ── Success State ── */
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.3 }}
+                    className="p-8 lg:p-10 flex flex-col items-center text-center"
                   >
-                    {isSubmitting ? "Submitting..." : "Submit Request"}
-                    {!isSubmitting && <ArrowRight className="ml-2 w-4 h-4" />}
-                  </Button>
-                </form>
-              </Form>
+                    {/* Icon */}
+                    <div className="relative mb-6">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent/10 to-primary/10 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                          <CheckCircle2 className="w-7 h-7 text-white" strokeWidth={2.5} />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
+                    </div>
+
+                    <h2 className="font-display font-black text-gray-900 uppercase text-2xl mb-2 tracking-tight">
+                      Request Submitted!
+                    </h2>
+                    <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-6">
+                      Thanks for your interest. Our team will contact you shortly to schedule your free demo.
+                    </p>
+
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-4 py-2 mb-8">
+                      <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                      <span className="text-gray-600 text-xs font-medium">Our team will reach out within 24 hours</span>
+                    </div>
+
+                    <div className="w-full h-px bg-gray-100 mb-6" />
+
+                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                      <button
+                        onClick={() => setSubmitted(false)}
+                        className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:border-primary/40 hover:text-primary transition-colors cursor-pointer"
+                      >
+                        Submit Another Request
+                      </button>
+                      <a
+                        href="/"
+                        className="flex-1 h-11 rounded-xl bg-gradient-to-r from-accent to-primary text-white text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-md shadow-primary/20"
+                      >
+                        Back to Home <ArrowRight className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </motion.div>
+                ) : (
+                  /* ── Form State ── */
+                  <motion.div
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-8 lg:p-10"
+                  >
+                    <div className="mb-7">
+                      <h2 className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1">
+                        Request a demo
+                      </h2>
+                      <p className="text-muted-foreground text-sm">
+                        Fill in your details and we'll reach out within 24 hours.
+                      </p>
+                    </div>
+
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        {error && (
+                          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                            <p className="text-sm text-red-700">{error}</p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-gray-700 text-sm font-semibold">Contact Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="John Doe" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="gymName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-gray-700 text-sm font-semibold">Gym Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Iron Paradise" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-gray-700 text-sm font-semibold">Email Address</FormLabel>
+                              <FormControl>
+                                <Input type="email" placeholder="john@example.com" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="mobile"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-gray-700 text-sm font-semibold">Mobile</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="+91 98765 43210" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="location"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-gray-700 text-sm font-semibold">Gym Location</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="City, State" {...field} className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="message"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-gray-700 text-sm font-semibold">Additional Notes <span className="text-gray-400 font-normal">(Optional)</span></FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Tell us about your gym, member count, and preferred demo time."
+                                  {...field}
+                                  className="bg-gray-50 border-gray-200 focus:border-primary focus:bg-white transition-colors rounded-xl min-h-[100px] resize-none"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <Button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="w-full h-12 bg-primary text-white font-bold hover:bg-primary/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20 mt-2"
+                        >
+                          {isSubmitting ? "Submitting..." : "Submit Request"}
+                          {!isSubmitting && <ArrowRight className="ml-2 w-4 h-4" />}
+                        </Button>
+                      </form>
+                    </Form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </div>
         </section>

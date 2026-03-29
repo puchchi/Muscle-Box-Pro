@@ -3,8 +3,8 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
-import { Monitor, Users, TrendingUp, BarChart2, Zap, Target, ArrowRight, CheckCircle2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Monitor, Users, TrendingUp, BarChart2, Zap, Target, ArrowRight, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -50,38 +50,29 @@ export default function Advertiser() {
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [notice, setNotice] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCampaignRequest = async () => {
-    setNotice(null);
+    setError(null);
     const values = { brandName, email, mobile };
     try {
       setIsSubmitting(true);
-      const { data, error } = await supabase.functions.invoke(
+      const { error: invokeError } = await supabase.functions.invoke(
         "campaign-request",
         { body: values },
       );
-      if (error) throw error;
-      setNotice({
-        type: "success",
-        message:
-          (data as { message?: string })?.message ||
-          "Thank you! Our advertising team will contact you shortly.",
-      });
+      if (invokeError) throw invokeError;
+      setSubmitted(true);
       setBrandName("");
       setEmail("");
       setMobile("");
-    } catch (error) {
-      setNotice({
-        type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to submit inquiry right now. Please try again.",
-      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to submit inquiry right now. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -215,84 +206,146 @@ export default function Advertiser() {
             <div className="grid lg:grid-cols-2">
 
               {/* Form side */}
-              <div className="p-10 lg:p-14">
-                <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
-                  Get Started
-                </span>
-                <h2
-                  className="font-display font-black text-foreground uppercase mb-3"
-                  style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)" }}
-                >
-                  Start your campaign
-                </h2>
-                <p className="text-muted-foreground text-sm mb-8 leading-relaxed">
-                  Packages start at just ₹500/month per location network. Our team will get back within 24 hours.
-                </p>
-
-                <div className="space-y-4 mb-6">
-                  {benefits.map((b, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="text-gray-700 text-sm">{b}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-gray-100 pt-6 space-y-4">
-                  {notice && (
-                    <div
-                      className={
-                        notice.type === "success"
-                          ? "rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary"
-                          : "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                      }
+              <div className="p-10 lg:p-14 overflow-hidden">
+                <AnimatePresence mode="wait">
+                  {submitted ? (
+                    /* ── Success State ── */
+                    <motion.div
+                      key="success"
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col items-center text-center h-full justify-center py-8"
                     >
-                      {notice.message}
-                    </div>
+                      {/* Icon */}
+                      <div className="relative mb-6">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent/10 to-primary/10 flex items-center justify-center">
+                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                            <CheckCircle2 className="w-7 h-7 text-white" strokeWidth={2.5} />
+                          </div>
+                        </div>
+                        <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
+                      </div>
+
+                      <h2 className="font-display font-black text-gray-900 uppercase text-2xl mb-2 tracking-tight">
+                        Inquiry Received!
+                      </h2>
+                      <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-6">
+                        Thanks for your interest in advertising with us. Our team will reach out within 24 hours with pricing and next steps.
+                      </p>
+
+                      <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-4 py-2 mb-8">
+                        <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                        <span className="text-gray-600 text-xs font-medium">Our ad team will contact you within 24 hours</span>
+                      </div>
+
+                      <div className="w-full h-px bg-gray-100 mb-6" />
+
+                      <div className="flex flex-col sm:flex-row gap-3 w-full">
+                        <button
+                          onClick={() => setSubmitted(false)}
+                          className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:border-primary/40 hover:text-primary transition-colors cursor-pointer"
+                        >
+                          Submit Another Inquiry
+                        </button>
+                        <a
+                          href="/"
+                          className="flex-1 h-11 rounded-xl bg-gradient-to-r from-accent to-primary text-white text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-md shadow-primary/20"
+                        >
+                          Back to Home <ArrowRight className="w-4 h-4" />
+                        </a>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    /* ── Form State ── */
+                    <motion.div
+                      key="form"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
+                        Get Started
+                      </span>
+                      <h2
+                        className="font-display font-black text-foreground uppercase mb-3"
+                        style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)" }}
+                      >
+                        Start your campaign
+                      </h2>
+                      <p className="text-muted-foreground text-sm mb-8 leading-relaxed">
+                        Packages start at just ₹500/month per location network. Our team will get back within 24 hours.
+                      </p>
+
+                      <div className="space-y-4 mb-6">
+                        {benefits.map((b, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                            <span className="text-gray-700 text-sm">{b}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="border-t border-gray-100 pt-6 space-y-4">
+                        {error && (
+                          <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5">
+                            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                              <AlertCircle className="w-4 h-4 text-red-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-red-700 mb-0.5">Submission failed</p>
+                              <p className="text-xs text-red-600 leading-relaxed">{error}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Brand Name</label>
+                            <input
+                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
+                              placeholder="Nike, GymShark..."
+                              value={brandName}
+                              onChange={(e) => setBrandName(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Work Email</label>
+                            <input
+                              type="email"
+                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
+                              placeholder="marketing@brand.com"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Mobile Number</label>
+                          <input
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
+                            placeholder="+91 98765 43210"
+                            value={mobile}
+                            onChange={(e) => setMobile(e.target.value)}
+                          />
+                        </div>
+
+                        <Button
+                          size="lg"
+                          className="w-full h-12 bg-primary text-white font-bold hover:bg-primary/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20"
+                          onClick={handleCampaignRequest}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? "Submitting..." : "Contact for Pricing"}
+                          {!isSubmitting && <ArrowRight className="ml-2 w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </motion.div>
                   )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Brand Name</label>
-                      <input
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
-                        placeholder="Nike, GymShark..."
-                        value={brandName}
-                        onChange={(e) => setBrandName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Work Email</label>
-                      <input
-                        type="email"
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
-                        placeholder="marketing@brand.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Mobile Number</label>
-                    <input
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
-                      placeholder="+91 98765 43210"
-                      value={mobile}
-                      onChange={(e) => setMobile(e.target.value)}
-                    />
-                  </div>
-
-                  <Button
-                    size="lg"
-                    className="w-full h-12 bg-primary text-white font-bold hover:bg-primary/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20"
-                    onClick={handleCampaignRequest}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Submitting..." : "Contact for Pricing"}
-                    {!isSubmitting && <ArrowRight className="ml-2 w-4 h-4" />}
-                  </Button>
-                </div>
+                </AnimatePresence>
               </div>
 
               {/* Image side */}
