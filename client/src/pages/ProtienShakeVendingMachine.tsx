@@ -263,6 +263,35 @@ export default function ProteinShakeVendingMachine() {
           </div>
         </section>
 
+        {/* ── Compare ── */}
+        <section className="py-16 px-4 bg-gray-50 border-t border-gray-100">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="font-display font-black text-gray-900 uppercase mb-3" style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)" }}>
+              See How It Compares
+            </h2>
+            <p className="text-gray-500 text-sm mb-8">
+              Detailed comparisons to help you make the right choice for your gym.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Link href="/vs/protein-shake-bar" className="group flex flex-col items-center gap-2 bg-white border border-gray-200 hover:border-primary/40 rounded-2xl p-5 transition-colors">
+                <span className="font-semibold text-gray-800 group-hover:text-primary transition-colors text-sm">Vending Machine vs. Protein Shake Bar</span>
+                <span className="text-xs text-gray-400">Staff cost · hygiene · revenue</span>
+                <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+              <Link href="/vs/supplement-counter" className="group flex flex-col items-center gap-2 bg-white border border-gray-200 hover:border-primary/40 rounded-2xl p-5 transition-colors">
+                <span className="font-semibold text-gray-800 group-hover:text-primary transition-colors text-sm">Vending Machine vs. Supplement Counter</span>
+                <span className="text-xs text-gray-400">ROI · inventory risk · shrinkage</span>
+                <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+              <Link href="/alternatives/gym-revenue-ideas" className="group flex flex-col items-center gap-2 bg-white border border-gray-200 hover:border-primary/40 rounded-2xl p-5 transition-colors">
+                <span className="font-semibold text-gray-800 group-hover:text-primary transition-colors text-sm">7 Ways to Generate Gym Passive Revenue</span>
+                <span className="text-xs text-gray-400">Ranked by ROI for Indian gyms</span>
+                <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* ── CTA ── */}
         <section className="py-20 px-4 bg-gradient-to-r from-accent to-primary relative overflow-hidden">
           <motion.div
