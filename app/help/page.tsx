@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import HelpCenter from "@/pages/HelpCenter";
 
 export const metadata: Metadata = {
-  title: "Help Center | Muscle Box Pro",
+  title: "Help Center | MuscleBoxPro",
   description:
-    "Find answers to common questions about Muscle Box Pro accounts, machines, billing, and support.",
+    "Find answers to common questions about MuscleBoxPro accounts, machines, billing, and support.",
   alternates: { canonical: "/help" },
   openGraph: { type: "website", url: "/help" },
 };

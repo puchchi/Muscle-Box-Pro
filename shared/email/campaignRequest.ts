@@ -7,11 +7,11 @@ type CampaignRequestTemplateInput = {
 export function getCampaignRequestEmailTemplate(
   input: CampaignRequestTemplateInput,
 ) {
-  const subject = "Your Muscle Box Pro campaign inquiry is received";
+  const subject = "Your MuscleBoxPro campaign inquiry is received";
   const text = [
     `Hi ${input.brandName} team,`,
     "",
-    "Thanks for your interest in advertising with Muscle Box Pro.",
+    "Thanks for your interest in advertising with MuscleBoxPro.",
     "Our ad partnerships team will contact you shortly.",
     "",
     `Brand Name: ${input.brandName}`,
@@ -19,7 +19,7 @@ export function getCampaignRequestEmailTemplate(
     `Mobile: ${input.mobile}`,
     "",
     "Regards,",
-    "Muscle Box Pro Team",
+    "MuscleBoxPro Team",
   ].join("\n");
 
   const html = `
@@ -68,7 +68,7 @@ export function getCampaignRequestEmailTemplate(
                   <td style="padding:28px 32px 12px 32px;">
                     <h1 style="margin:0 0 12px 0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Campaign inquiry received</h1>
                     <p style="margin:0;color:#555555;font-size:16px;line-height:1.7;">
-                      Hi <strong style="color:#111111;">${input.brandName}</strong> team, thanks for your interest in advertising with Muscle Box Pro. Our ad partnerships team will be in touch shortly.
+                      Hi <strong style="color:#111111;">${input.brandName}</strong> team, thanks for your interest in advertising with MuscleBoxPro. Our ad partnerships team will be in touch shortly.
                     </p>
                   </td>
                 </tr>
@@ -124,7 +124,7 @@ export function getCampaignRequestEmailTemplate(
                   <td style="padding:24px 32px 32px 32px;">
                     <div style="height:1px;background:#e5e5e5;margin-bottom:20px;"></div>
                     <p style="margin:0 0 6px 0;color:#6b6b6b;font-size:12px;line-height:1.5;">
-                      This is an automated confirmation email from Muscle Box Pro.
+                      This is an automated confirmation email from MuscleBoxPro.
                     </p>
                     <p style="margin:0;color:#bbbbbb;font-size:11px;line-height:1.5;">
                       &copy; 2026 MuscleBoxPro &mdash; BlendBox Innovations LLP &middot;

@@ -23,7 +23,7 @@ export async function sendMail(options: SendMailOptions) {
 
   const from =
     options.from ||
-    optionalEnv("SMTP_FROM", "Muscle Box Pro <no-reply@muscleboxpro.com>");
+    optionalEnv("SMTP_FROM", "MuscleBoxPro <no-reply@muscleboxpro.com>");
 
   await transporter.sendMail({
     from,

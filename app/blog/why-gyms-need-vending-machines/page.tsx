@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import BlogWhyGymVending from "@/pages/BlogWhyGymVending";
 
 export const metadata: Metadata = {
-  title: "Why Every Gym Should Install a Protein Shake Vending Machine | Muscle Box Pro",
+  title: "Why Every Gym Should Install a Protein Shake Vending Machine | MuscleBoxPro",
   description: "Discover why protein shake vending machines are becoming the most profitable and member-retaining asset for modern gyms.",
   alternates: { canonical: "/blog/why-gyms-need-vending-machines" },
   openGraph: { type: "website", url: "/blog/why-gyms-need-vending-machines" },
@@ -36,7 +36,7 @@ const blogPostingSchema = {
   },
   publisher: {
     "@type": "Organization",
-    name: "Muscle Box Pro",
+    name: "MuscleBoxPro",
     logo: { "@type": "ImageObject", url: "https://www.muscleboxpro.com/favicon.png", width: 507, height: 520 },
   },
   mainEntityOfPage: {

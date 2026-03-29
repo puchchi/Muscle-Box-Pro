@@ -135,7 +135,7 @@ export default function MachineSpecs() {
               <div className="relative aspect-[3/4] max-w-md mx-auto rounded-3xl overflow-hidden shadow-[0_32px_80px_-12px_rgba(0,0,0,0.25),0_8px_24px_-4px_rgba(0,0,0,0.15)] border border-gray-100">
                 <img
                   src="/assets/machine-specs.png"
-                  alt="Muscle Box Pro Technical View"
+                  alt="MuscleBoxPro Technical View"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />

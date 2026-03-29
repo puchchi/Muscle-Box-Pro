@@ -93,7 +93,7 @@ describe("contact-request handler", () => {
     await handler(makeRequest(validBody));
     expect(mockSendMail).toHaveBeenCalledWith(
       expect.objectContaining({
-        subject: "We received your message - Muscle Box Pro",
+        subject: "We received your message - MuscleBoxPro",
       })
     );
   });

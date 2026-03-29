@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import GymProteinShakeMachine from "@/pages/GymProtienShakeMachine";
 
 export const metadata: Metadata = {
-  title: "Gym Protein Shake Machine | Muscle Box Pro",
+  title: "Gym Protein Shake Machine | MuscleBoxPro",
   description:
-    "Discover how Muscle Box Pro gym protein shake machines help gyms increase member convenience and generate additional recurring revenue.",
+    "Discover how MuscleBoxPro gym protein shake machines help gyms increase member convenience and generate additional recurring revenue.",
   alternates: { canonical: "/gym-protein-shake-machine" },
   openGraph: { type: "website", url: "/gym-protein-shake-machine" },
 };
@@ -24,7 +24,7 @@ const productSchema = {
   name: "MuscleBoxPro Gym Protein Shake Machine",
   description:
     "Automated gym protein shake machine that blends fresh whey and plant protein shakes in 60 seconds. Zero staff, 24/7 operation, cashless payments.",
-  brand: { "@type": "Brand", name: "Muscle Box Pro" },
+  brand: { "@type": "Brand", name: "MuscleBoxPro" },
   manufacturer: { "@type": "Organization", name: "BlendBox Innovations LLP" },
   image: "https://www.muscleboxpro.com/og-image.png",
   url: "https://www.muscleboxpro.com/gym-protein-shake-machine",
@@ -33,7 +33,7 @@ const productSchema = {
     "@type": "Offer",
     priceCurrency: "INR",
     availability: "https://schema.org/InStock",
-    seller: { "@type": "Organization", name: "Muscle Box Pro" },
+    seller: { "@type": "Organization", name: "MuscleBoxPro" },
   },
 };
 

@@ -28,29 +28,29 @@ export const metadata: Metadata = {
     "gym owner revenue",
     "automated fitness vending",
     "post workout protein shakes",
-    "Muscle Box Pro",
+    "MuscleBoxPro",
   ],
-  authors: [{ name: "Muscle Box Pro" }],
+  authors: [{ name: "MuscleBoxPro" }],
   icons: { icon: "/favicon.png" },
   openGraph: {
-    siteName: "Muscle Box Pro",
+    siteName: "MuscleBoxPro",
     locale: "en_US",
     type: "website",
     images: [
       {
         url: "/og-image.png",
-        alt: "Muscle Box Pro smart protein shake vending machine in a gym",
+        alt: "MuscleBoxPro smart protein shake vending machine in a gym",
       },
     ],
     description:
-    "Discover Muscle Box Pro, the premium protein shake vending machine designed to boost gym revenue with zero maintenance and high-resolution advertising displays.",
+    "Discover MuscleBoxPro, the premium protein shake vending machine designed to boost gym revenue with zero maintenance and high-resolution advertising displays.",
   },
   twitter: {
     card: "summary_large_image",
     images: [
       {
         url: "/og-image.png",
-        alt: "Muscle Box Pro smart protein shake vending machine in a gym",
+        alt: "MuscleBoxPro smart protein shake vending machine in a gym",
       },
     ],
   },
@@ -79,7 +79,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               "@id": "https://www.muscleboxpro.com/#organization",
-              name: "Muscle Box Pro",
+              name: "MuscleBoxPro",
               legalName: "BlendBox Innovations LLP",
               url: "https://www.muscleboxpro.com",
               logo: {
@@ -122,7 +122,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "ProfessionalService",
               "@id": "https://www.muscleboxpro.com/#localbusiness",
-              name: "Muscle Box Pro",
+              name: "MuscleBoxPro",
               description:
                 "Automated protein shake vending machines installed in gyms and fitness centers across India.",
               url: "https://www.muscleboxpro.com",
@@ -157,7 +157,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               "@id": "https://www.muscleboxpro.com/#website",
-              name: "Muscle Box Pro",
+              name: "MuscleBoxPro",
               url: "https://www.muscleboxpro.com",
             }),
           }}

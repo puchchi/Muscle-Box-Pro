@@ -29,6 +29,7 @@ const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines",
   "https://www.muscleboxpro.com/blog/best-protein-shake-after-workout",
   "https://www.muscleboxpro.com/blog/protein-for-diabetes",
+  "https://www.muscleboxpro.com/blog/gym-member-retention",
 ];
 
 class IndexNowPlugin {
