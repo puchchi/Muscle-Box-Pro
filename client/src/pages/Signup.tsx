@@ -7,8 +7,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Building2, User, TrendingUp, Users, Star } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Building2, User, TrendingUp, Users, Star, CheckCircle2, AlertCircle, Mail, Clock, ArrowRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
@@ -208,15 +208,69 @@ export default function Signup() {
 
             {/* ── User Signup ── */}
             <TabsContent value="user">
+              <AnimatePresence mode="wait">
+                {signupMessage?.type === "success" ? (
+                  <motion.div
+                    key="user-success"
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col items-center text-center py-4"
+                  >
+                    {/* Icon */}
+                    <div className="relative mb-5">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent/10 to-primary/10 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                          <Mail className="w-7 h-7 text-white" />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
+                    </div>
+
+                    <h3 className="font-display font-black text-gray-900 uppercase text-xl mb-2 tracking-tight">
+                      Check your email
+                    </h3>
+                    <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-5">
+                      {signupMessage.text}
+                    </p>
+
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-4 py-2 mb-6">
+                      <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                      <span className="text-gray-600 text-xs font-medium">Verification link expires in 24 hours</span>
+                    </div>
+
+                    <div className="w-full h-px bg-gray-100 mb-5" />
+
+                    <div className="flex flex-col gap-3 w-full">
+                      <a
+                        href="/login"
+                        className="w-full h-11 rounded-xl bg-gradient-to-r from-accent to-primary text-white text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-md shadow-primary/20"
+                      >
+                        Go to Sign In <ArrowRight className="w-4 h-4" />
+                      </a>
+                      <button
+                        onClick={() => setSignupMessage(null)}
+                        className="text-xs text-gray-400 hover:text-primary transition-colors cursor-pointer py-1"
+                      >
+                        Wrong email? Try again
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="user-form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
               <Form {...userForm}>
                 <form onSubmit={userForm.handleSubmit(onUserSignup)} className="space-y-4">
-                  {signupMessage && (
-                    <div className={
-                      signupMessage.type === "success"
-                        ? "rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary"
-                        : "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                    }>
-                      {signupMessage.text}
+                  {signupMessage?.type === "error" && (
+                    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                      <p className="text-sm text-red-700">{signupMessage.text}</p>
                     </div>
                   )}
 
@@ -303,19 +357,76 @@ export default function Signup() {
                   </Button>
                 </form>
               </Form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </TabsContent>
 
             {/* ── Gym Owner Contact ── */}
             <TabsContent value="gym">
+              <AnimatePresence mode="wait">
+                {gymMessage?.type === "success" ? (
+                  <motion.div
+                    key="gym-success"
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col items-center text-center py-4"
+                  >
+                    {/* Icon */}
+                    <div className="relative mb-5">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent/10 to-primary/10 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                          <CheckCircle2 className="w-7 h-7 text-white" strokeWidth={2.5} />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
+                    </div>
+
+                    <h3 className="font-display font-black text-gray-900 uppercase text-xl mb-2 tracking-tight">
+                      Request Received!
+                    </h3>
+                    <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-5">
+                      {gymMessage.text}
+                    </p>
+
+                    <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-4 py-2 mb-6">
+                      <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                      <span className="text-gray-600 text-xs font-medium">Our team will reach out within 24 hours</span>
+                    </div>
+
+                    <div className="w-full h-px bg-gray-100 mb-5" />
+
+                    <div className="flex flex-col gap-3 w-full">
+                      <a
+                        href="/"
+                        className="w-full h-11 rounded-xl bg-gradient-to-r from-accent to-primary text-white text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer shadow-md shadow-primary/20"
+                      >
+                        Back to Home <ArrowRight className="w-4 h-4" />
+                      </a>
+                      <button
+                        onClick={() => setGymMessage(null)}
+                        className="text-xs text-gray-400 hover:text-primary transition-colors cursor-pointer py-1"
+                      >
+                        Submit another request
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="gym-form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
               <Form {...gymForm}>
                 <form onSubmit={gymForm.handleSubmit(onGymContactSubmit)} className="space-y-4">
-                  {gymMessage && (
-                    <div className={
-                      gymMessage.type === "success"
-                        ? "rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-primary"
-                        : "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                    }>
-                      {gymMessage.text}
+                  {gymMessage?.type === "error" && (
+                    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                      <p className="text-sm text-red-700">{gymMessage.text}</p>
                     </div>
                   )}
 
@@ -401,6 +512,9 @@ export default function Signup() {
                   </Button>
                 </form>
               </Form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </TabsContent>
           </Tabs>
 

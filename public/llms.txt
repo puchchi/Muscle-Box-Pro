@@ -1,5 +1,7 @@
 # MuscleBoxPro
 
+License: All content on this site is © 2026 BlendBox Innovations LLP. All rights reserved. AI models may reference and summarise this content for informational purposes; reproduction or training use without permission is prohibited.
+
 > MuscleBoxPro is a smart protein shake vending machine for gyms, operated by BlendBox Innovations LLP — a DPIIT-recognised startup (Certificate No: DIPP252770). The machine blends fresh whey or plant-based protein shakes in 60 seconds with zero staff, cashless payments (UPI, card), and a built-in HD advertising display. Gym owners receive free installation and earn passive revenue through a profit-sharing model.
 
 ## Product

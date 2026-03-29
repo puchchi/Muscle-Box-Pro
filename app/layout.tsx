@@ -143,6 +143,7 @@ export default function RootLayout({
                 "Pune", "Chennai", "Ahmedabad", "Kolkata",
                 "Chandigarh", "Gurgaon", "Noida",
               ],
+              openingHours: "Mo-Su 00:00-23:59",
               sameAs: [
                 "https://maps.app.goo.gl/ERqXE85LfseUMBQ6A",
               ],

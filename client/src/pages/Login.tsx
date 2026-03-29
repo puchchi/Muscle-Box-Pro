@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { MailWarning, TriangleAlert, Zap, Shield, Clock } from "lucide-react";
+import { MailWarning, AlertCircle, CheckCircle2, Zap, Shield, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
@@ -267,31 +267,31 @@ export default function Login() {
               />
 
               {notice && (
-                <div className={
+                <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${
                   notice.type === "warning"
-                    ? "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-700"
+                    ? "border-amber-200 bg-amber-50 text-amber-700"
                     : notice.type === "success"
-                      ? "rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-primary"
-                      : "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700"
-                }>
-                  <div className="flex items-start gap-2">
-                    {notice.type === "warning"
-                      ? <MailWarning className="mt-0.5 h-4 w-4 shrink-0" />
-                      : <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />}
-                    <div className="space-y-2">
-                      <p className="text-sm">{notice.message}</p>
-                      {notice.canResend && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-8 text-xs border-current/30 hover:bg-black/5 cursor-pointer"
-                          onClick={handleResendVerification}
-                          disabled={isResending}
-                        >
-                          {isResending ? "Sending..." : "Resend verification link"}
-                        </Button>
-                      )}
-                    </div>
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-red-200 bg-red-50 text-red-700"
+                }`}>
+                  {notice.type === "warning"
+                    ? <MailWarning className="mt-0.5 h-4 w-4 shrink-0" />
+                    : notice.type === "success"
+                      ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                      : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+                  <div className="space-y-2 flex-1">
+                    <p className="text-sm leading-relaxed">{notice.message}</p>
+                    {notice.canResend && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 text-xs border-current/30 hover:bg-black/5 cursor-pointer"
+                        onClick={handleResendVerification}
+                        disabled={isResending}
+                      >
+                        {isResending ? "Sending..." : "Resend verification link"}
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}

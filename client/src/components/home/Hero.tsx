@@ -1,6 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { LazyMotion, m } from "framer-motion";
+
+const loadFeatures = () =>
+  import("framer-motion").then((mod) => mod.domAnimation);
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -16,6 +19,7 @@ const quickStats = [
 
 export default function Hero() {
   return (
+    <LazyMotion features={loadFeatures} strict>
     <section className="relative min-h-screen flex items-center overflow-hidden bg-background pt-16">
       {/* Right-half muted background panel — Airbnb split layout */}
       <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gray-50 hidden lg:block pointer-events-none" />
@@ -24,7 +28,7 @@ export default function Hero() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           {/* Left: Copy */}
-          <motion.div
+          <m.div
             initial={{ opacity: 1, x: 0 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -93,10 +97,10 @@ export default function Hero() {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </m.div>
 
           {/* Right: Machine image with floating chips */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
@@ -113,7 +117,7 @@ export default function Hero() {
             />
 
             {/* Floating chip: blend time */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.8 }}
@@ -126,10 +130,10 @@ export default function Hero() {
               >
                 60s
               </p>
-            </motion.div>
+            </m.div>
 
             {/* Floating chip: protein */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 1.0 }}
@@ -145,11 +149,12 @@ export default function Hero() {
               <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full w-[80%] bg-gradient-to-r from-accent to-primary rounded-full" />
               </div>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
 
         </div>
       </div>
     </section>
+    </LazyMotion>
   );
 }
