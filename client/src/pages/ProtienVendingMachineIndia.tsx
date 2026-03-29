@@ -6,12 +6,21 @@ import Link from "next/link";
 import { CheckCircle2, MapPin, IndianRupee, Zap, Shield, MousePointerClick, RotateCw, CupSoda, ArrowRight } from "lucide-react";
 import Footer from "@/components/footer";
 
+export type CityData = {
+  neighborhoods: string[];
+  localContext: string;
+  cityFaq: { q: string; a: string };
+  ctaNeighborhood: string;
+};
+
 type ProteinVendingMachineIndiaProps = {
   cityName?: string;
+  cityData?: CityData;
 };
 
 export default function ProteinVendingMachineIndia({
   cityName,
+  cityData,
 }: ProteinVendingMachineIndiaProps) {
   const locationLabel = cityName ?? "India";
   const isIndiaPage = !cityName;
@@ -110,6 +119,26 @@ export default function ProteinVendingMachineIndia({
               prepare fresh shakes using an automated blending system right before your eyes.
             </p>
           </div>
+
+          {/* City-specific local scene — only on city pages */}
+          {cityData && (
+            <div className="mb-16">
+              <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">Local Scene</span>
+              <h2 className="font-display font-black text-foreground uppercase mb-5" style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)" }}>
+                The {locationLabel} Fitness Scene
+              </h2>
+              <div className="flex flex-wrap gap-2 mb-6">
+                {cityData.neighborhoods.map((n) => (
+                  <span key={n} className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                    <MapPin className="h-3 w-3 text-primary flex-shrink-0" /> {n}
+                  </span>
+                ))}
+              </div>
+              {cityData.localContext.split("\n\n").map((para, i) => (
+                <p key={i} className="text-gray-600 leading-relaxed mb-4">{para.trim()}</p>
+              ))}
+            </div>
+          )}
 
           {/* Why gyms section */}
           <div className="mb-16">
@@ -280,6 +309,7 @@ export default function ProteinVendingMachineIndia({
                 { q: "Why install a protein vending machine in a gym?", a: "It provides convenient 24/7 post-workout nutrition for members, requires zero staff overhead, and creates a high-margin passive revenue stream for gym owners." },
                 { q: "Are the shakes made from powder or ready-to-drink bottles?", a: "The machine automatically mixes premium whey or plant-based protein powder with chilled water or milk on demand, ensuring a fresher and more customizable drink than pre-packaged bottles." },
                 { q: "How do members pay for the protein shakes?", a: "Our machines support multiple cashless payment options including UPI, credit/debit cards, and an integrated digital wallet through the MuscleBoxPro app." },
+                ...(cityData ? [cityData.cityFaq] : []),
               ].map((faq, i) => (
                 <motion.div
                   key={i}
@@ -317,7 +347,9 @@ export default function ProteinVendingMachineIndia({
               Install a Protein Vending Machine{isIndiaPage ? " in Your Gym" : ` in Your ${locationLabel} Gym`}
             </h2>
             <p className="text-white/80 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-              If you are a gym owner looking to offer fresh protein shakes to your members, MuscleBoxPro provides a complete automated protein vending solution designed for modern fitness centers.
+              {cityData
+                ? `Whether you run ${cityData.ctaNeighborhood} or elsewhere in ${locationLabel}, MuscleBoxPro provides a zero-upfront-cost protein vending solution with complete installation and maintenance included.`
+                : "If you are a gym owner looking to offer fresh protein shakes to your members, MuscleBoxPro provides a complete automated protein vending solution designed for modern fitness centers."}
             </p>
             <Link href="/gym-demo">
               <Button size="lg" className="h-14 px-10 rounded-full font-bold bg-white text-primary hover:bg-white/90 border-0 cursor-pointer text-base shadow-xl">

@@ -4,7 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/home/Hero";
 import Features from "@/components/home/Features";
 import ShakeVariants from "@/components/home/ShakeVariants";
-import { Monitor, TrendingUp, Users, Wrench, Heart, Percent, ArrowRight, Play, Wifi } from "lucide-react";
+import { Monitor, TrendingUp, Users, Wrench, Heart, Percent, ArrowRight, Play, Wifi, Smartphone, ShieldCheck, RefreshCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -44,6 +44,76 @@ export default function Home() {
         <Features />
 
         <ShakeVariants limit={3} />
+
+        {/* ── How It Works ── */}
+        <section className="py-24 bg-background relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-16"
+            >
+              <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
+                How it works
+              </span>
+              <h2
+                className="font-display font-black text-foreground leading-none uppercase mb-5"
+                style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
+              >
+                From machine to{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                  muscle in 60 seconds.
+                </span>
+              </h2>
+              <p className="text-muted-foreground text-base leading-relaxed max-w-2xl mx-auto">
+                MuscleBoxPro is India's first fully automated protein shake vending machine built exclusively for gyms. Members get a freshly blended, nutritionist-approved post-workout shake in under a minute, no staff, no mess, no waiting. Every machine stocks 12 high-protein blends ranging from classic whey chocolate to plant-based vanilla, covering every dietary preference and fitness goal your members have.
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                {
+                  icon: Smartphone,
+                  step: "01",
+                  title: "Choose & Pay",
+                  desc: "Members select their preferred blend on the touchscreen and pay instantly via UPI, card, or cash. The intuitive interface shows macros, ingredients, and allergen info for every shake  so members always know exactly what they're fueling with.",
+                },
+                {
+                  icon: RefreshCcw,
+                  step: "02",
+                  title: "Fresh Blend in 60s",
+                  desc: "The machine measures, blends, and serves a fresh, chilled protein shake in under 60 seconds. No pre-mixed powders sitting in scoops. No contamination risk. Every shake is made to order with pre-portioned, sealed ingredient pods for consistent quality every single time.",
+                },
+                {
+                  icon: ShieldCheck,
+                  step: "03",
+                  title: "We Handle Everything",
+                  desc: "Our team manages all restocking, sanitation, and maintenance on a fixed schedule. Gym owners never touch the machine, they simply earn revenue share on every shake sold. Real-time sales data is available on your owner dashboard so you can track performance anytime.",
+                },
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.12 }}
+                  className="relative bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default"
+                >
+                  <span className="text-[3rem] font-display font-black text-gray-100 leading-none absolute top-6 right-6 select-none">
+                    {item.step}
+                  </span>
+                  <div className="w-12 h-12 rounded-xl bg-primary/8 flex items-center justify-center mb-5">
+                    <item.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-lg mb-3">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* ── For Gym Owners ── */}
         <section className="py-24 bg-muted relative overflow-hidden">
@@ -167,7 +237,7 @@ export default function Home() {
                 </h2>
                 <p className="text-muted-foreground text-sm leading-relaxed mb-8 max-w-sm">
                   MuscleBoxPro machines include high-resolution 4K displays
-                  that advertise directly to gym members — a captive, high-intent audience.
+                  that advertise directly to gym members  a captive, high-intent audience.
                 </p>
 
                 <div className="space-y-4 mb-8">
@@ -238,7 +308,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── CTA Banner — full-bleed gradient, keeps working on light theme ── */}
+        {/* ── CTA Banner  full-bleed gradient, keeps working on light theme ── */}
         <section className="py-24 px-4 bg-gradient-to-r from-accent to-primary relative overflow-hidden">
           <div
             className="absolute inset-0 opacity-[0.07]"
