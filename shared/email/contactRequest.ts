@@ -24,50 +24,110 @@ export function getContactRequestEmailTemplate(
 
   const html = `
 <!doctype html>
-<html>
-  <body style="margin:0;padding:0;background:#11131b;font-family:Rajdhani,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#11131b;padding:36px 14px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#1b1f2b;border:1px solid #2f3647;border-radius:14px;overflow:hidden;">
-            <tr>
-              <td style="padding:30px 30px 16px 30px;">
-                <div style="font-family:'Russo One',Rajdhani,Arial,sans-serif;color:#ffffff;font-size:24px;line-height:1;letter-spacing:0.5px;">
-                  MUSCLE BOX<span style="color:#00cfff;">PRO</span>
-                </div>
-                <div style="height:1px;background:#2f3647;margin:14px 0 0 0;"></div>
-                <h1 style="margin:22px 0 12px 0;color:#ffffff;font-family:'Russo One',Rajdhani,Arial,sans-serif;font-size:28px;line-height:1.2;letter-spacing:0.4px;">Message received</h1>
-                <p style="margin:0;color:#aeb7cb;font-size:17px;line-height:1.6;">
-                  Hi <strong style="color:#ffffff;font-weight:700;">${input.name}</strong>, thanks for contacting us. Our support team will respond shortly.
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:8px 30px 8px 30px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#151925;border:1px solid #2f3647;border-radius:10px;">
-                  <tr>
-                    <td style="padding:12px 14px;color:#9aa7c7;font-size:13px;">
-                      <div><strong style="color:#ffffff;">Name:</strong> ${input.name}</div>
-                      <div style="margin-top:8px;"><strong style="color:#ffffff;">Email:</strong> ${input.email}</div>
-                      <div style="margin-top:8px;"><strong style="color:#ffffff;">Message:</strong> ${input.message}</div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:12px 30px 30px 30px;">
-                <div style="height:1px;background:#2f3647;margin:0 0 16px 0;"></div>
-                <p style="margin:0;color:#7c87a5;font-size:12px;line-height:1.5;">
-                  This is an automated confirmation email from Muscle Box Pro.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Message Received</title></head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0d0d0d;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+
+          <!-- Gradient accent bar -->
+          <tr>
+            <td style="background:linear-gradient(90deg,#DD2476,#FF512F);height:4px;border-radius:4px 4px 0 0;"></td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#1a1a1a;border:1px solid #2e2e2e;border-top:none;border-radius:0 0 16px 16px;overflow:hidden;">
+
+              <!-- Header -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding:28px 32px 20px 32px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:10px;">
+                          <img src="https://www.muscleboxpro.com/assets/logo_mini.png" alt="MuscleBoxPro" height="36" style="height:36px;width:auto;display:block;">
+                        </td>
+                        <td style="vertical-align:middle;">
+                          <span style="font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:900;letter-spacing:1.5px;color:#FF512F;line-height:1;">MUSCLEBOXPRO</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 32px;"><div style="height:1px;background:#2e2e2e;"></div></td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding:28px 32px 12px 32px;">
+                    <h1 style="margin:0 0 12px 0;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Message received</h1>
+                    <p style="margin:0;color:#a0a0a0;font-size:16px;line-height:1.7;">
+                      Hi <strong style="color:#ffffff;">${input.name}</strong>, thanks for contacting us. Our support team will get back to you as soon as possible.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Message summary -->
+                <tr>
+                  <td style="padding:16px 32px 0 32px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#111111;border:1px solid #2e2e2e;border-radius:10px;overflow:hidden;">
+                      <tr>
+                        <td style="padding:6px 0 2px 0;">
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="padding:8px 18px;border-bottom:1px solid #222222;">
+                                <span style="color:#6b6b6b;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Name</span>
+                                <div style="color:#ffffff;font-size:14px;font-weight:600;margin-top:2px;">${input.name}</div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding:8px 18px;border-bottom:1px solid #222222;">
+                                <span style="color:#6b6b6b;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Email</span>
+                                <div style="color:#ffffff;font-size:14px;font-weight:600;margin-top:2px;">${input.email}</div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding:8px 18px;">
+                                <span style="color:#6b6b6b;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Your Message</span>
+                                <div style="color:#a0a0a0;font-size:14px;margin-top:4px;line-height:1.6;">${input.message}</div>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding:24px 32px 32px 32px;">
+                    <div style="height:1px;background:#2e2e2e;margin-bottom:20px;"></div>
+                    <p style="margin:0 0 6px 0;color:#6b6b6b;font-size:12px;line-height:1.5;">
+                      This is an automated confirmation email from Muscle Box Pro.
+                    </p>
+                    <p style="margin:0;color:#444444;font-size:11px;line-height:1.5;">
+                      &copy; 2026 MuscleBoxPro &mdash; BlendBox Innovations LLP &middot;
+                      <a href="https://www.muscleboxpro.com" style="color:#FF512F;text-decoration:none;">muscleboxpro.com</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
 </html>`;
 
   return { subject, text, html };
