@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Read the official terms and conditions for using MuscleBoxPro services and platform features.",
   alternates: { canonical: "/terms" },
-  openGraph: { type: "article", url: "/terms" },
+  openGraph: {
+    type: "article",
+    url: "/terms",
+    title: "Terms & Conditions | MuscleBoxPro",
+    description: "Read the official terms and conditions for using MuscleBoxPro services and platform features.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+  },
 };
 
 const breadcrumbSchema = {

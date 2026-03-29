@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Explore our full menu of 12 scientifically formulated protein shake blends available in our automated vending machines.",
   alternates: { canonical: "/menu" },
-  openGraph: { type: "website", url: "/menu" },
+  openGraph: {
+    type: "website",
+    url: "/menu",
+    title: "Protein Shake Blend Menu | MuscleBoxPro",
+    description: "Explore our full menu of 12 scientifically formulated protein shake blends available in our automated vending machines.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro protein shake blends menu" }],
+  },
 };
 
 const breadcrumbSchema = {

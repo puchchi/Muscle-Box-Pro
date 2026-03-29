@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "Create your MuscleBoxPro account.",
   alternates: { canonical: "/signup" },
   robots: { index: false, follow: true },
+  openGraph: { type: "website", url: "/signup", title: "Sign Up | MuscleBoxPro", description: "Create your MuscleBoxPro account." },
 };
 
 export default function Page() {

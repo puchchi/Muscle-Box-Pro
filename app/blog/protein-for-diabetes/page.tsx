@@ -2,10 +2,16 @@ import type { Metadata } from "next";
 import BlogProteinDiabetes from "@/pages/BlogProteinDiabetes";
 
 export const metadata: Metadata = {
-  title: "Why Protein Is Important for Diabetes Management | Health & Nutrition",
+  title: "Why Protein Is Important for Diabetes Management | MuscleBoxPro",
   description: "Discover how protein helps control blood sugar, the best protein sources for diabetes, and why it's a crucial part of diabetes management.",
   alternates: { canonical: "/blog/protein-for-diabetes" },
-  openGraph: { type: "website", url: "/blog/protein-for-diabetes" },
+  openGraph: {
+    type: "article",
+    url: "/blog/protein-for-diabetes",
+    title: "Why Protein Is Important for Diabetes Management | MuscleBoxPro",
+    description: "Discover how protein helps control blood sugar, the best protein sources for diabetes, and why it's a crucial part of diabetes management.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "Protein importance for diabetes management" }],
+  },
 };
 
 const breadcrumbSchema = {

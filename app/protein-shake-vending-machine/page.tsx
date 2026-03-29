@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Discover how MuscleBoxPro protein shake vending machines help gyms increase member convenience and generate additional recurring revenue.",
   alternates: { canonical: "/protein-shake-vending-machine" },
-  openGraph: { type: "website", url: "/protein-shake-vending-machine" },
+  openGraph: {
+    type: "website",
+    url: "/protein-shake-vending-machine",
+    title: "Protein Shake Vending Machine | MuscleBoxPro",
+    description: "Discover how MuscleBoxPro protein shake vending machines help gyms increase member convenience and generate additional recurring revenue.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro protein shake vending machine" }],
+  },
 };
 
 const breadcrumbSchema = {

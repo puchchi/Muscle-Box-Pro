@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Contact MuscleBoxPro for partnerships, machine placement, support, and business inquiries.",
   alternates: { canonical: "/contact" },
-  openGraph: { type: "website", url: "/contact" },
+  openGraph: {
+    type: "website",
+    url: "/contact",
+    title: "Contact Us | MuscleBoxPro",
+    description: "Contact MuscleBoxPro for partnerships, machine placement, support, and business inquiries.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+  },
 };
 
 const breadcrumbSchema = {

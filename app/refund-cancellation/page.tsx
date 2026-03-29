@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Understand MuscleBoxPro refund and cancellation terms, timelines, and support process.",
   alternates: { canonical: "/refund-cancellation" },
-  openGraph: { type: "article", url: "/refund-cancellation" },
+  openGraph: {
+    type: "article",
+    url: "/refund-cancellation",
+    title: "Refund & Cancellation Policy | MuscleBoxPro",
+    description: "Understand MuscleBoxPro refund and cancellation terms, timelines, and support process.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+  },
 };
 
 const breadcrumbSchema = {

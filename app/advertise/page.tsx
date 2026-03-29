@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Reach health-focused gym audiences through high-visibility digital ad placements on MuscleBoxPro smart vending screens.",
   alternates: { canonical: "/advertise" },
-  openGraph: { type: "website", url: "/advertise" },
+  openGraph: {
+    type: "website",
+    url: "/advertise",
+    title: "Advertise With MuscleBoxPro",
+    description: "Reach health-focused gym audiences through high-visibility digital ad placements on MuscleBoxPro smart vending screens.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+  },
 };
 
 const breadcrumbSchema = {

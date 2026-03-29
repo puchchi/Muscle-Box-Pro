@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Review how MuscleBoxPro collects, uses, and protects your personal information.",
   alternates: { canonical: "/privacy" },
-  openGraph: { type: "article", url: "/privacy" },
+  openGraph: {
+    type: "article",
+    url: "/privacy",
+    title: "Privacy Policy | MuscleBoxPro",
+    description: "Review how MuscleBoxPro collects, uses, and protects your personal information.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+  },
 };
 
 const breadcrumbSchema = {

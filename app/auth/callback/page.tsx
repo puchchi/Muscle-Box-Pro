@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "Completing authentication for MuscleBoxPro.",
   alternates: { canonical: "/auth/callback" },
   robots: { index: false, follow: true },
+  openGraph: { type: "website", url: "/auth/callback", title: "Authentication | MuscleBoxPro", description: "Completing authentication for MuscleBoxPro." },
 };
 
 export default function Page() {

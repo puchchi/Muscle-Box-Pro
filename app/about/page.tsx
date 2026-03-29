@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Learn about MuscleBoxPro and our mission to deliver on-demand post-workout nutrition through smart gym vending technology.",
   alternates: { canonical: "/about" },
-  openGraph: { type: "website", url: "/about" },
+  openGraph: {
+    type: "website",
+    url: "/about",
+    title: "About Us | MuscleBoxPro",
+    description: "Learn about MuscleBoxPro and our mission to deliver on-demand post-workout nutrition through smart gym vending technology.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+  },
 };
 
 const breadcrumbSchema = {

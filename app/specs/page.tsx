@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Explore the technical specifications and capabilities of MuscleBoxPro smart protein shake vending machines for modern gyms.",
   alternates: { canonical: "/specs" },
-  openGraph: { type: "website", url: "/specs" },
+  openGraph: {
+    type: "website",
+    url: "/specs",
+    title: "Machine Specifications | MuscleBoxPro",
+    description: "Explore the technical specifications and capabilities of MuscleBoxPro smart protein shake vending machines for modern gyms.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+  },
 };
 
 const breadcrumbSchema = {

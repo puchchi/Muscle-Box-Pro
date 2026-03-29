@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "Discover how MuscleBoxPro gym protein shake machines help gyms increase member convenience and generate additional recurring revenue.",
   alternates: { canonical: "/gym-protein-shake-machine" },
-  openGraph: { type: "website", url: "/gym-protein-shake-machine" },
+  openGraph: {
+    type: "website",
+    url: "/gym-protein-shake-machine",
+    title: "Gym Protein Shake Machine | MuscleBoxPro",
+    description: "Discover how MuscleBoxPro gym protein shake machines help gyms increase member convenience and generate additional recurring revenue.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro gym protein shake machine" }],
+  },
 };
 
 const breadcrumbSchema = {

@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   description:
     "MuscleBoxPro offers automated protein vending machines for gyms in India. Serve fresh protein shakes instantly and generate additional revenue for fitness centers.",
   alternates: { canonical: "/protein-vending-machine-india" },
-  openGraph: { type: "website", url: "/protein-vending-machine-india" },
+  openGraph: {
+    type: "website",
+    url: "/protein-vending-machine-india",
+    title: "Protein Vending Machine India for Gyms | MuscleBoxPro",
+    description: "MuscleBoxPro offers automated protein vending machines for gyms in India. Serve fresh protein shakes instantly and generate additional revenue for fitness centers.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "Protein vending machine for gyms in India" }],
+  },
 };
 
 const breadcrumbSchema = {

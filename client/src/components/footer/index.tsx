@@ -46,7 +46,8 @@ export default function Footer() {
               <Link href="/protein-shake-vending-machine"><li className="hover:text-primary cursor-pointer transition-colors block">Vending Machine Business</li></Link>
               <Link href="/gym-protein-shake-machine"><li className="hover:text-primary cursor-pointer transition-colors block">Gym Shake Machine</li></Link>
               <Link href="/protein-vending-machine-india"><li className="hover:text-primary cursor-pointer transition-colors block">Vending Machine in India</li></Link>
-              <Link href="/blog/why-gyms-need-vending-machines"><li className="hover:text-primary cursor-pointer transition-colors block">Blog: Why Gyms Need This</li></Link>
+              <Link href="/blog"><li className="hover:text-primary cursor-pointer transition-colors block">Blog</li></Link>
+              <Link href="/blog/why-gyms-need-vending-machines"><li className="hover:text-primary cursor-pointer transition-colors block">Why Gyms Need This</li></Link>
               <Link href="/blog/best-protein-shake-after-workout"><li className="hover:text-primary cursor-pointer transition-colors block">Best Post-Workout Shake</li></Link>
               <Link href="/blog/protein-for-diabetes"><li className="hover:text-primary cursor-pointer transition-colors block">Protein & Diabetes</li></Link>
             </ul>
@@ -58,6 +59,7 @@ export default function Footer() {
               <Link href="/contact"><li className="hover:text-primary cursor-pointer transition-colors block">Contact Us</li></Link>
               <Link href="/terms"><li className="hover:text-primary cursor-pointer transition-colors block">Terms & Conditions</li></Link>
               <Link href="/privacy"><li className="hover:text-primary cursor-pointer transition-colors block">Privacy Policy</li></Link>
+              <Link href="/refund-cancellation"><li className="hover:text-primary cursor-pointer transition-colors block">Refund & Cancellation</li></Link>
             </ul>
           </div>
         </div>
