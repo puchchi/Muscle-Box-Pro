@@ -1,4 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+});
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Providers from "@/components/Providers";
@@ -63,16 +72,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
-          rel="stylesheet"
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -95,8 +94,11 @@ export default function RootLayout({
               telephone: "+91-8687247670",
               address: {
                 "@type": "PostalAddress",
-                addressCountry: "IN",
+                streetAddress: "Sector 75",
+                addressLocality: "Noida",
+                postalCode: "201301",
                 addressRegion: "Uttar Pradesh",
+                addressCountry: "IN",
               },
               contactPoint: {
                 "@type": "ContactPoint",
@@ -130,8 +132,11 @@ export default function RootLayout({
               priceRange: "₹₹",
               address: {
                 "@type": "PostalAddress",
-                addressCountry: "IN",
+                streetAddress: "Sector 75",
+                addressLocality: "Noida",
+                postalCode: "201301",
                 addressRegion: "Uttar Pradesh",
+                addressCountry: "IN",
               },
               areaServed: [
                 "Delhi", "Mumbai", "Bangalore", "Hyderabad",
@@ -157,7 +162,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body className={plusJakartaSans.variable}>
         <Providers>{children}</Providers>
         <Analytics />
         <SpeedInsights />

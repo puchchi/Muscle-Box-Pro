@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -31,12 +32,13 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link href="/">
             <span className="flex items-center gap-2 group cursor-pointer">
-              <img
+              <Image
                 src="/assets/logo.png"
                 alt="MuscleBoxPro"
                 width={160}
                 height={40}
                 className="h-10 w-auto flex-shrink-0 group-hover:opacity-90 transition-opacity"
+                priority
               />
               {/* <span className="font-display text-xl font-bold tracking-wider text-brand-gradient group-hover:opacity-90 transition-opacity">
                 MUSCLEBOXPRO
