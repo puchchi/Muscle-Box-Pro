@@ -43,6 +43,18 @@ const posts = [
     image: "/images/pure_vanilla_protein_shake_in_glass.png",
     featured: false,
   },
+  {
+    href: "/blog/gym-member-retention",
+    tag: "Retention",
+    tagColor: "text-emerald-700 bg-emerald-50",
+    title: "Gym Member Retention: The Role of On-Site Nutrition",
+    excerpt:
+      "50% of Indian gym members cancel within 90 days. Here's how on-site post-workout nutrition closes the habit loop and keeps members renewing.",
+    readTime: "7 min read",
+    date: "Mar 25, 2026",
+    image: "/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
+    featured: false,
+  },
 ];
 
 const featuredPost = posts[0];
