@@ -46,51 +46,11 @@ const productSchema = {
   },
 };
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "What is a protein shake vending machine?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "A protein shake vending machine is an automated unit that blends fresh protein shakes on-demand using whey isolate or plant protein, water or milk, and optional flavour add-ons — without any staff involvement.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How fast does the protein shake vending machine prepare a shake?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "MuscleBoxPro machines prepare a freshly blended protein shake in 60 seconds from ingredient selection to dispensing.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Which payment methods does the machine support?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "The machine supports UPI, PhonePe, debit cards, credit cards, and other popular digital payment options. No cash handling required.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can the machine be installed in any gym in India?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. MuscleBoxPro supports installations across major Indian cities including Delhi, Mumbai, Bangalore, Hyderabad, Pune, Chennai, Ahmedabad, Kolkata, Chandigarh, Gurgaon, and Noida.",
-      },
-    },
-  ],
-};
-
 export default function Page() {
   return (
     <>
       <ProteinShakeVendingMachine />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );

@@ -81,60 +81,11 @@ const articleSchema = {
   ],
 };
 
-/* ─── FAQ Schema ─── */
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "Can a gym run both a protein shake bar and a MuscleBoxPro machine?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes — some large gyms use a staffed bar for peak hours and a MuscleBoxPro machine for off-hours coverage. The machine handles early-morning and late-night members without additional staffing costs.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Does MuscleBoxPro charge the gym owner anything?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No upfront cost. MuscleBoxPro installs and maintains the machine for free. The gym earns a revenue share on every shake sold. There are no hidden rental or maintenance fees charged to the gym owner.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How hygienic is an automated protein shake machine compared to a human-operated bar?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "MuscleBoxPro machines include an automated pipe-cleaning system that runs consistently after each use. Human-operated bars rely on staff training and manual cleaning, which can vary. Both approaches can meet FSSAI hygiene standards when managed correctly.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Is a staffed protein shake bar more profitable than an automated machine?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "A well-run bar with high footfall keeps 100% of margin, but must absorb staff wages (₹24,000–₹44,000/month for two staff as of Q1 2026), spoilage, and equipment depreciation. MuscleBoxPro's revenue-share model delivers profit to the gym owner with zero operating overhead, making it more reliably profitable for small-to-mid-size gyms.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Which cities in India does MuscleBoxPro cover?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "As of Q1 2026, MuscleBoxPro installs machines in Delhi, Mumbai, Bangalore, Chennai, Hyderabad, Pune, Kolkata, Ahmedabad, Jaipur, Noida, and Gurugram.",
-      },
-    },
-  ],
-};
-
 export default function Page() {
   return (
     <>
       <VsProteinShakeBar />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );

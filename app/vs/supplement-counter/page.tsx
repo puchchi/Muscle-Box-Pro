@@ -82,60 +82,11 @@ const articleSchema = {
   ],
 };
 
-/* ─── FAQ Schema ─── */
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "Can I run both a supplement counter and a MuscleBoxPro machine in the same gym?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes, and many gyms do. The counter serves members looking to buy bulk supplements, while the machine captures post-workout impulse purchases. The products don't directly compete — a shake is a consumed service, a tub is a retail product.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Why do gyms struggle to sell supplements at the counter when big brands like Amazon dominate online?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Online platforms offer lower prices, broader selection, and subscription discounts that a gym counter simply can't match. Members who want to buy a tub typically do their research online. The counter works better for accessories and impulse items than for bulk tubs.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "What is shrinkage and why does it matter for supplement counters?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Shrinkage refers to inventory losses from theft, damage, or accounting errors. Open retail supplement shelving at a gym can see 1–3% shrinkage. At ₹30,000 GMV/month, that's ₹300–₹900 per month in direct losses — on top of tight margins.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Does MuscleBoxPro handle restocking and ingredient supply?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. BlendBox Innovations LLP manages the entire supply chain including ingredient procurement, canister refilling, and restocking logistics. The gym owner's only responsibility is ensuring the machine has access to power and running water.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How does the MuscleBoxPro advertising display generate revenue for gyms?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "The machine's HD display shows brand advertisements to gym members. Brands pay MuscleBoxPro for this captive audience placement, and the gym earns a share of that advertising income — creating a second passive revenue stream alongside shake sales.",
-      },
-    },
-  ],
-};
-
 export default function Page() {
   return (
     <>
       <VsSupplementCounter />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );
