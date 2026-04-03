@@ -116,6 +116,21 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.muscleboxpro.com/blog/protein-for-diabetes</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.muscleboxpro.com/blog/gym-member-retention</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.muscleboxpro.com/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>

@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -179,6 +179,12 @@ type GlucosePoint = { ts: number; value: number; label: string };
 function GlucoseChart() {
   const [data, setData] = useState<GlucosePoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [zoom, setZoom] = useState<{ left: number | "dataMin"; right: number | "dataMax" }>({
+    left: "dataMin", right: "dataMax",
+  });
+  const [selecting, setSelecting] = useState<{ start: number | null; end: number | null }>({
+    start: null, end: null,
+  });
 
   useEffect(() => {
     fetch("/assets/fix_hba1c/gurucose.csv")
@@ -203,18 +209,59 @@ function GlucoseChart() {
       .catch(() => setLoading(false));
   }, []);
 
-  const dayTicks: number[] = [];
-  const seenDays = new Set<string>();
-  data.forEach((d) => {
-    const day = new Date(d.ts).toDateString();
-    if (!seenDays.has(day)) {
-      seenDays.add(day);
-      dayTicks.push(d.ts);
-    }
-  });
+  const isZoomed = zoom.left !== "dataMin" || zoom.right !== "dataMax";
+
+  const visibleTicks = useMemo(() => {
+    const ticks: number[] = [];
+    const seen = new Set<string>();
+    const leftMs = typeof zoom.left === "number" ? zoom.left : -Infinity;
+    const rightMs = typeof zoom.right === "number" ? zoom.right : Infinity;
+    data.forEach((d) => {
+      if (d.ts < leftMs || d.ts > rightMs) return;
+      const day = new Date(d.ts).toDateString();
+      if (!seen.has(day)) { seen.add(day); ticks.push(d.ts); }
+    });
+    return ticks;
+  }, [data, zoom]);
 
   const formatTick = (ts: number) =>
     new Date(ts).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+
+  const stats = useMemo(() => {
+    if (!data.length) return null;
+    const values = data.map((d) => d.value);
+    const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+    const inRange = Math.round((values.filter((v) => v >= 70 && v <= 140).length / values.length) * 100);
+    const peak = Math.max(...values);
+    return { avg, inRange, peak };
+  }, [data]);
+
+  const handleMouseDown = (e: { activeLabel?: string | number }) => {
+    if (!e?.activeLabel) return;
+    setSelecting({ start: Number(e.activeLabel), end: null });
+  };
+
+  const handleMouseMove = (e: { activeLabel?: string | number }) => {
+    if (selecting.start === null || !e?.activeLabel) return;
+    setSelecting((s) => ({ ...s, end: Number(e.activeLabel) }));
+  };
+
+  const handleMouseUp = () => {
+    if (selecting.start === null || selecting.end === null) {
+      setSelecting({ start: null, end: null });
+      return;
+    }
+    const [l, r] = selecting.start < selecting.end
+      ? [selecting.start, selecting.end]
+      : [selecting.end, selecting.start];
+    // Only zoom if the selection is wide enough (>1 hour)
+    if (r - l > 3_600_000) {
+      setZoom({ left: l, right: r });
+    }
+    setSelecting({ start: null, end: null });
+  };
+
+  const resetZoom = () => setZoom({ left: "dataMin", right: "dataMax" });
 
   if (loading) {
     return (
@@ -234,55 +281,139 @@ function GlucoseChart() {
 
   return (
     <div className="w-full">
+      {/* Stats bar */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {[
+            { label: "Avg Glucose", value: `${stats.avg} mg/dL`, color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-100" },
+            { label: "Time in Range", value: `${stats.inRange}%`, color: stats.inRange >= 70 ? "text-green-600" : "text-amber-600", bg: stats.inRange >= 70 ? "bg-green-50 border-green-100" : "bg-amber-50 border-amber-100" },
+            { label: "Peak Reading", value: `${stats.peak} mg/dL`, color: stats.peak > 180 ? "text-red-600" : "text-amber-600", bg: stats.peak > 180 ? "bg-red-50 border-red-100" : "bg-amber-50 border-amber-100" },
+          ].map((s) => (
+            <div key={s.label} className={`rounded-xl border px-4 py-3 text-center ${s.bg}`}>
+              <div className={`text-lg font-black ${s.color}`}>{s.value}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-2 px-0.5">
+        <span className="text-[11px] text-gray-400 select-none">
+          {isZoomed ? "Zoomed in · drag to re-select" : "Drag to zoom in"}
+        </span>
+        {isZoomed && (
+          <button
+            onClick={resetZoom}
+            className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg px-3 py-1 transition-colors duration-150 cursor-pointer"
+          >
+            Reset zoom
+          </button>
+        )}
+      </div>
+
       <ResponsiveContainer width="100%" height={320}>
-        <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <ReferenceArea y1={70} y2={140} fill="#dcfce7" fillOpacity={0.4} />
-          <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="4 3" label={{ value: "Low 70", position: "insideTopLeft", fontSize: 11, fill: "#ef4444" }} />
-          <ReferenceLine y={140} stroke="#f59e0b" strokeDasharray="4 3" label={{ value: "High 140", position: "insideTopLeft", fontSize: 11, fill: "#f59e0b" }} />
+        <AreaChart
+          data={data}
+          margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          style={{ cursor: selecting.start !== null ? "col-resize" : "crosshair" }}
+        >
+          <defs>
+            <linearGradient id="glucoseFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.28} />
+              <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+          {/* Risk zone bands */}
+          <ReferenceArea y1={50} y2={70} fill="#fca5a5" fillOpacity={0.22} />
+          <ReferenceArea y1={70} y2={140} fill="#86efac" fillOpacity={0.18} />
+          <ReferenceArea y1={140} y2={200} fill="#fcd34d" fillOpacity={0.18} />
+          {/* Threshold lines */}
+          <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="4 3" strokeWidth={1.5}
+            label={{ value: "Low 70", position: "insideTopLeft", fontSize: 10, fill: "#ef4444" }} />
+          <ReferenceLine y={140} stroke="#d97706" strokeDasharray="4 3" strokeWidth={1.5}
+            label={{ value: "High 140", position: "insideTopLeft", fontSize: 10, fill: "#d97706" }} />
           <XAxis
             dataKey="ts"
             type="number"
-            domain={["dataMin", "dataMax"]}
-            ticks={dayTicks}
+            domain={[zoom.left, zoom.right]}
+            ticks={visibleTicks}
             tickFormatter={formatTick}
-            tick={{ fontSize: 11, fill: "#6b7280" }}
+            tick={{ fontSize: 10, fill: "#9ca3af" }}
             scale="time"
+            axisLine={false}
+            tickLine={false}
           />
           <YAxis
             domain={[50, 200]}
-            tick={{ fontSize: 11, fill: "#6b7280" }}
+            tick={{ fontSize: 10, fill: "#9ca3af" }}
             tickFormatter={(v) => `${v}`}
-            width={36}
+            width={32}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip
             content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
+              if (!active || !payload?.length || selecting.start !== null) return null;
               const d = payload[0].payload as GlucosePoint;
               const val = d.value;
-              const color = val > 140 ? "#f59e0b" : val < 70 ? "#ef4444" : "#16a34a";
+              const zone = val > 140
+                ? { label: "High", color: "#d97706", dot: "bg-amber-400" }
+                : val < 70
+                ? { label: "Low", color: "#dc2626", dot: "bg-red-400" }
+                : { label: "Normal", color: "#16a34a", dot: "bg-green-400" };
               return (
-                <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg text-xs">
-                  <p className="text-gray-500 mb-1">{d.label}</p>
-                  <p className="font-bold" style={{ color }}>{val} mg/dL</p>
+                <div className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-lg text-xs min-w-[130px]">
+                  <p className="text-gray-400 mb-1.5 text-[10px]">{d.label}</p>
+                  <p className="font-black text-base mb-1" style={{ color: zone.color }}>{val} mg/dL</p>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: zone.color }}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${zone.dot} inline-block`} />
+                    {zone.label}
+                  </span>
                 </div>
               );
             }}
           />
-          <Line
+          <Area
             type="monotone"
             dataKey="value"
             stroke="#6366f1"
-            strokeWidth={1.5}
+            strokeWidth={1.8}
+            fill="url(#glucoseFill)"
             dot={false}
-            activeDot={{ r: 4, fill: "#6366f1" }}
+            activeDot={selecting.start !== null ? false : { r: 4, fill: "#6366f1", strokeWidth: 0 }}
+            isAnimationActive={false}
           />
-        </LineChart>
+          {/* Drag-to-zoom selection overlay */}
+          {selecting.start !== null && selecting.end !== null && (
+            <ReferenceArea
+              x1={Math.min(selecting.start, selecting.end)}
+              x2={Math.max(selecting.start, selecting.end)}
+              fill="#6366f1"
+              fillOpacity={0.12}
+              stroke="#6366f1"
+              strokeOpacity={0.4}
+              strokeWidth={1}
+            />
+          )}
+        </AreaChart>
       </ResponsiveContainer>
-      <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-500 justify-center">
-        <span className="flex items-center gap-1.5"><span className="w-4 h-3 rounded-sm bg-green-100 border border-green-300 inline-block" /> Safe zone (70–140 mg/dL)</span>
-        <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-yellow-400 inline-block" /> High threshold (140)</span>
-        <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-red-400 inline-block" /> Low threshold (70)</span>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 text-xs text-gray-500 justify-center">
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-red-200 inline-block" /> Low (&lt;70)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-green-200 inline-block" /> Normal (70–140)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-amber-200 inline-block" /> High (&gt;140)
+        </span>
       </div>
     </div>
   );
