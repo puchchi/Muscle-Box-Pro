@@ -39,7 +39,7 @@ const blogPostingSchema = {
   description:
     "A borderline pre-diabetic shares 18 months of real lab reports, 14 days of continuous glucose data, and 12 dietary findings that reversed early diabetes without medication.",
   url: "https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c",
-  datePublished: "2025-10-15",
+  datePublished: "2026-04-20",
   dateModified: "2026-04-03",
   inLanguage: "en",
   author: {
