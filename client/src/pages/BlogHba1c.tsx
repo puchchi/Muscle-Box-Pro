@@ -179,12 +179,6 @@ type GlucosePoint = { ts: number; value: number; label: string };
 function GlucoseChart() {
   const [data, setData] = useState<GlucosePoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [zoom, setZoom] = useState<{ left: number | "dataMin"; right: number | "dataMax" }>({
-    left: "dataMin", right: "dataMax",
-  });
-  const [selecting, setSelecting] = useState<{ start: number | null; end: number | null }>({
-    start: null, end: null,
-  });
 
   useEffect(() => {
     fetch("/assets/fix_hba1c/gurucose.csv")
@@ -209,20 +203,15 @@ function GlucoseChart() {
       .catch(() => setLoading(false));
   }, []);
 
-  const isZoomed = zoom.left !== "dataMin" || zoom.right !== "dataMax";
-
   const visibleTicks = useMemo(() => {
-    const ticks: number[] = [];
     const seen = new Set<string>();
-    const leftMs = typeof zoom.left === "number" ? zoom.left : -Infinity;
-    const rightMs = typeof zoom.right === "number" ? zoom.right : Infinity;
+    const ticks: number[] = [];
     data.forEach((d) => {
-      if (d.ts < leftMs || d.ts > rightMs) return;
       const day = new Date(d.ts).toDateString();
       if (!seen.has(day)) { seen.add(day); ticks.push(d.ts); }
     });
     return ticks;
-  }, [data, zoom]);
+  }, [data]);
 
   const formatTick = (ts: number) =>
     new Date(ts).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
@@ -235,33 +224,6 @@ function GlucoseChart() {
     const peak = Math.max(...values);
     return { avg, inRange, peak };
   }, [data]);
-
-  const handleMouseDown = (e: { activeLabel?: string | number }) => {
-    if (!e?.activeLabel) return;
-    setSelecting({ start: Number(e.activeLabel), end: null });
-  };
-
-  const handleMouseMove = (e: { activeLabel?: string | number }) => {
-    if (selecting.start === null || !e?.activeLabel) return;
-    setSelecting((s) => ({ ...s, end: Number(e.activeLabel) }));
-  };
-
-  const handleMouseUp = () => {
-    if (selecting.start === null || selecting.end === null) {
-      setSelecting({ start: null, end: null });
-      return;
-    }
-    const [l, r] = selecting.start < selecting.end
-      ? [selecting.start, selecting.end]
-      : [selecting.end, selecting.start];
-    // Only zoom if the selection is wide enough (>1 hour)
-    if (r - l > 3_600_000) {
-      setZoom({ left: l, right: r });
-    }
-    setSelecting({ start: null, end: null });
-  };
-
-  const resetZoom = () => setZoom({ left: "dataMin", right: "dataMax" });
 
   if (loading) {
     return (
@@ -297,29 +259,10 @@ function GlucoseChart() {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-2 px-0.5">
-        <span className="text-[11px] text-gray-400 select-none">
-          {isZoomed ? "Zoomed in · drag to re-select" : "Drag to zoom in"}
-        </span>
-        {isZoomed && (
-          <button
-            onClick={resetZoom}
-            className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg px-3 py-1 transition-colors duration-150 cursor-pointer"
-          >
-            Reset zoom
-          </button>
-        )}
-      </div>
-
       <ResponsiveContainer width="100%" height={320}>
         <AreaChart
           data={data}
           margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          style={{ cursor: selecting.start !== null ? "col-resize" : "crosshair" }}
         >
           <defs>
             <linearGradient id="glucoseFill" x1="0" y1="0" x2="0" y2="1">
@@ -340,7 +283,7 @@ function GlucoseChart() {
           <XAxis
             dataKey="ts"
             type="number"
-            domain={[zoom.left, zoom.right]}
+            domain={["dataMin", "dataMax"]}
             ticks={visibleTicks}
             tickFormatter={formatTick}
             tick={{ fontSize: 10, fill: "#9ca3af" }}
@@ -358,7 +301,7 @@ function GlucoseChart() {
           />
           <Tooltip
             content={({ active, payload }) => {
-              if (!active || !payload?.length || selecting.start !== null) return null;
+              if (!active || !payload?.length) return null;
               const d = payload[0].payload as GlucosePoint;
               const val = d.value;
               const zone = val > 140
@@ -385,21 +328,9 @@ function GlucoseChart() {
             strokeWidth={1.8}
             fill="url(#glucoseFill)"
             dot={false}
-            activeDot={selecting.start !== null ? false : { r: 4, fill: "#6366f1", strokeWidth: 0 }}
+            activeDot={{ r: 4, fill: "#6366f1", strokeWidth: 0 }}
             isAnimationActive={false}
           />
-          {/* Drag-to-zoom selection overlay */}
-          {selecting.start !== null && selecting.end !== null && (
-            <ReferenceArea
-              x1={Math.min(selecting.start, selecting.end)}
-              x2={Math.max(selecting.start, selecting.end)}
-              fill="#6366f1"
-              fillOpacity={0.12}
-              stroke="#6366f1"
-              strokeOpacity={0.4}
-              strokeWidth={1}
-            />
-          )}
         </AreaChart>
       </ResponsiveContainer>
 
