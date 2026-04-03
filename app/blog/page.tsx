@@ -61,6 +61,12 @@ const blogListingSchema = {
       url: "https://www.muscleboxpro.com/blog/protein-for-diabetes",
       datePublished: "2026-02-01",
     },
+    {
+      "@type": "BlogPosting",
+      headline: "How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story",
+      url: "https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c",
+      datePublished: "2025-10-15",
+    },
   ],
 };
 
