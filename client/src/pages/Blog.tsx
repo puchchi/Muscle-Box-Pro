@@ -55,6 +55,18 @@ const posts = [
     image: "/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
     featured: false,
   },
+  {
+    href: "/blog/how-i-fixed-my-hba1c",
+    tag: "Personal Story",
+    tagColor: "text-green-700 bg-green-50",
+    title: "How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story",
+    excerpt:
+      "Real lab reports, 14 days of CGM glucose data, and 12 dietary findings from a borderline pre-diabetic who reversed it without medication.",
+    readTime: "10 min read",
+    date: "Oct 15, 2025",
+    image: "/assets/fix_hba1c/10_10_2025.png",
+    featured: false,
+  },
 ];
 
 const featuredPost = posts[0];
