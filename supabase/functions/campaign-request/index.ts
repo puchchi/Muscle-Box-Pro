@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
       brandName: values.brandName,
       email: values.email,
       mobile: values.mobile,
+      comment: values.comment,
     });
 
     await sendMail({

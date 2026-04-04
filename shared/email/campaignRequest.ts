@@ -2,12 +2,22 @@ type CampaignRequestTemplateInput = {
   brandName: string;
   email: string;
   mobile: string;
+  comment?: string;
 };
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 export function getCampaignRequestEmailTemplate(
   input: CampaignRequestTemplateInput,
 ) {
   const subject = "Your MuscleBoxPro campaign inquiry is received";
+  const safeComment = input.comment ? escapeHtml(input.comment) : null;
   const text = [
     `Hi ${input.brandName} team,`,
     "",
@@ -17,6 +27,7 @@ export function getCampaignRequestEmailTemplate(
     `Brand Name: ${input.brandName}`,
     `Work Email: ${input.email}`,
     `Mobile: ${input.mobile}`,
+    ...(input.comment ? [`Comments: ${input.comment}`] : []),
     "",
     "Regards,",
     "MuscleBoxPro Team",
@@ -93,11 +104,18 @@ export function getCampaignRequestEmailTemplate(
                               </td>
                             </tr>
                             <tr>
-                              <td style="padding:8px 18px;">
+                              <td style="padding:8px 18px;${safeComment ? "border-bottom:1px solid #ebebeb;" : ""}">
                                 <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Mobile</span>
                                 <div style="color:#111111;font-size:14px;font-weight:600;margin-top:2px;">${input.mobile}</div>
                               </td>
                             </tr>
+                            ${safeComment ? `
+                            <tr>
+                              <td style="padding:8px 18px;">
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Comments</span>
+                                <div style="color:#111111;font-size:14px;font-weight:600;margin-top:2px;white-space:pre-wrap;">${safeComment}</div>
+                              </td>
+                            </tr>` : ""}
                           </table>
                         </td>
                       </tr>

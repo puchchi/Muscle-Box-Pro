@@ -49,13 +49,14 @@ export default function Advertiser() {
   const [brandName, setBrandName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
+  const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleCampaignRequest = async () => {
     setError(null);
-    const values = { brandName, email, mobile };
+    const values = { brandName, email, mobile, comment };
     try {
       setIsSubmitting(true);
       const { error: invokeError } = await supabase.functions.invoke(
@@ -67,6 +68,7 @@ export default function Advertiser() {
       setBrandName("");
       setEmail("");
       setMobile("");
+      setComment("");
     } catch (err) {
       setError(
         err instanceof Error
@@ -330,6 +332,19 @@ export default function Advertiser() {
                             placeholder="+91 98765 43210"
                             value={mobile}
                             onChange={(e) => setMobile(e.target.value)}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-gray-700 text-sm font-semibold mb-1.5 block">
+                            Additional Comments <span className="text-gray-400 font-normal">(optional)</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors resize-none"
+                            placeholder="Tell us about your brand, campaign goals, target locations..."
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
                           />
                         </div>
 
