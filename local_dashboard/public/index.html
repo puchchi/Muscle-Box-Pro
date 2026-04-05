@@ -189,6 +189,21 @@
     .modal-close { width: 100%; margin-top: 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px; color: var(--text-2); font-size: 13px; cursor: pointer; transition: all .2s; }
     .modal-close:hover { border-color: var(--muted); color: var(--text); }
 
+    /* Preview modal */
+    .preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: none; align-items: center; justify-content: center; z-index: 150; }
+    .preview-overlay.open { display: flex; }
+    .preview-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: min(860px, 95vw); max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+    .preview-modal-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .preview-modal-header span { font-size: 13px; font-weight: 600; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+    .preview-modal-header span svg { color: var(--accent); }
+    .preview-close { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-size: 12px; padding: 5px 14px; cursor: pointer; transition: all .2s; }
+    .preview-close:hover { border-color: var(--muted); color: var(--text); }
+    .preview-modal-body { flex: 1; overflow-y: auto; background: #f4f4f5; }
+    .preview-modal-body iframe { width: 100%; min-height: 500px; border: none; display: block; }
+    .preview-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-size: 12px; font-weight: 600; padding: 6px 14px; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; margin-top: 4px; }
+    .preview-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .preview-btn svg { width: 13px; height: 13px; }
+
     /* Toast */
     .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; font-weight: 500; display: none; align-items: center; gap: 10px; z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
     .toast.show { display: flex; }
@@ -303,6 +318,22 @@
     <h3 id="modal-title">Request Detail</h3>
     <div id="modal-body"></div>
     <button class="modal-close" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<!-- Preview modal -->
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview(event)">
+  <div class="preview-modal">
+    <div class="preview-modal-header">
+      <span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Email Preview
+      </span>
+      <button class="preview-close" onclick="closePreview()">Close</button>
+    </div>
+    <div class="preview-modal-body">
+      <iframe id="preview-iframe" sandbox="allow-same-origin"></iframe>
+    </div>
   </div>
 </div>
 
@@ -651,6 +682,10 @@
           </div>
         `).join('')}
         <p class="tpl-hint">Edit fields above — the final message is built automatically when you send.</p>
+        <button class="preview-btn" onclick="previewTemplate()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview Email
+        </button>
       </div>
     `;
   }
@@ -713,6 +748,41 @@
 
   function sendIcon() {
     return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Reply`;
+  }
+
+  // ── Preview ────────────────────────────────────────────────────────────────
+
+  async function previewTemplate() {
+    const tpl = TEMPLATES[selectedTemplate];
+    if (!tpl) return;
+    const fields = {};
+    (tpl.fields || []).forEach(f => {
+      fields[f.key] = document.getElementById(`tpl-${f.key}`)?.value || '';
+    });
+
+    try {
+      const res = await api('/api/preview', {
+        method: 'POST',
+        body: JSON.stringify({ templateKey: selectedTemplate, fields }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      const iframe = document.getElementById('preview-iframe');
+      iframe.srcdoc = data.html;
+      iframe.onload = () => {
+        try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px'; } catch {}
+      };
+      document.getElementById('preview-overlay').classList.add('open');
+    } catch (err) {
+      showToast(err.message || 'Failed to load preview', 'error');
+    }
+  }
+
+  function closePreview(e) {
+    if (!e || e.target === document.getElementById('preview-overlay')) {
+      document.getElementById('preview-overlay').classList.remove('open');
+    }
   }
 
   // ── Stats ──────────────────────────────────────────────────────────────────

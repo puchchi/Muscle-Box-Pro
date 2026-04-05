@@ -210,6 +210,22 @@ app.get("/api/stats", requireAuth, async (req, res) => {
   }
 });
 
+// ─── POST /api/preview ───────────────────────────────────────────────────────
+
+app.post("/api/preview", requireAuth, (req, res) => {
+  const { templateKey, fields } = req.body;
+  if (!templateKey) return res.status(400).json({ message: "templateKey is required" });
+
+  const html = buildTemplateHtml(templateKey, fields || {});
+  if (!html) {
+    log.warn(`Preview requested for unknown template: ${templateKey}`);
+    return res.status(400).json({ message: `Unknown template: ${templateKey}` });
+  }
+
+  log.step(`Preview rendered for template: ${templateKey}`);
+  res.json({ html });
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => log.banner(PORT));
