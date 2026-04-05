@@ -153,8 +153,11 @@
     .tpl-field { display: flex; flex-direction: column; gap: 3px; }
     .tpl-field label { font-size: 11px; color: var(--text-3); }
     .tpl-field input, .tpl-field textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text); font-size: 13px; outline: none; font-family: inherit; transition: border-color .2s; }
+    .tpl-toolbar { display: flex; gap: 4px; margin-bottom: 2px; }
+    .tpl-fmt-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; color: var(--text-2); font-size: 12px; font-weight: 700; width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; font-family: Georgia, serif; }
+    .tpl-fmt-btn:hover { border-color: var(--accent); color: var(--accent); }
     .tpl-field input:focus, .tpl-field textarea:focus { border-color: var(--accent); }
-    .tpl-field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+    .tpl-field textarea { resize: vertical; min-height: 200px; line-height: 1.6; }
     .tpl-hint { font-size: 11px; color: var(--text-3); font-style: italic; }
 
     .reply-footer { padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
@@ -612,7 +615,7 @@
 
     if (!replyMode) {
       el.innerHTML = `
-        <div style="display:flex;flex-direction:column;height:100%">
+        <div style="display:flex;flex-direction:column;flex:1;min-height:0">
           ${emailPaneHtml(m)}
           <div class="viewer-actions">
             <button class="reply-btn" onclick="openReply()">
@@ -628,7 +631,7 @@
 
     // Split view: email on top, composer on bottom
     el.innerHTML = `
-      <div style="display:flex;flex-direction:column;height:100%">
+      <div style="display:flex;flex-direction:column;flex:1;min-height:0">
         <div class="email-split-top">${emailPaneHtml(m)}</div>
         <div class="email-split-bottom" id="reply-split-pane"></div>
       </div>
@@ -682,7 +685,7 @@
         <div class="reply-form" id="reply-form-body">
           <div class="form-group">
             <label>To</label>
-            <input type="text" id="reply-to" value="${m.from.address}" />
+            <input type="text" id="reply-to" value="" placeholder="Enter recipient email..." />
           </div>
           <div class="form-group">
             <label>Subject</label>
@@ -756,10 +759,19 @@
         ${tpl.fields.map(f => `
           <div class="tpl-field">
             <label>${f.label}</label>
-            ${f.type === 'textarea'
-              ? `<textarea id="tpl-${f.key}" oninput="updateTplSubject()">${f.default(m)}</textarea>`
-              : `<input type="text" id="tpl-${f.key}" value="${f.default(m)}" oninput="updateTplSubject()" />`
-            }
+            ${f.type === 'textarea' ? `
+              <div class="tpl-toolbar">
+                <button class="tpl-fmt-btn" title="Bold" onmousedown="event.preventDefault();applyFormat('tpl-${f.key}','bold')"><b>B</b></button>
+                <button class="tpl-fmt-btn" title="Italic" onmousedown="event.preventDefault();applyFormat('tpl-${f.key}','italic')"><i>I</i></button>
+                <button class="tpl-fmt-btn" title="Bullet list" onmousedown="event.preventDefault();applyFormat('tpl-${f.key}','bullet')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+                </button>
+                <button class="tpl-fmt-btn" title="Numbered list" onmousedown="event.preventDefault();applyFormat('tpl-${f.key}','numbered')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke-linecap="round"/><path d="M4 10h2" stroke-linecap="round"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <textarea id="tpl-${f.key}" oninput="updateTplSubject()">${f.default(m)}</textarea>
+            ` : `<input type="text" id="tpl-${f.key}" value="${f.default(m)}" oninput="updateTplSubject()" />`}
           </div>
         `).join('')}
         <p class="tpl-hint">Edit fields above — the final message is built automatically when you send.</p>
@@ -769,6 +781,31 @@
         </button>
       </div>
     `;
+  }
+
+  function applyFormat(id, format) {
+    const ta = document.getElementById(id);
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = ta.value.substring(start, end);
+    if (!selected) return;
+
+    let wrapped;
+    if (format === 'bullet' || format === 'numbered') {
+      const tag = format === 'bullet' ? 'ul' : 'ol';
+      const items = selected.split('\n').map(line => `  <li style="margin:0 0 2px 0;padding:0;color:#555555;font-size:15px;line-height:1.5;">${line.trim()}</li>`).join('\n');
+      wrapped = `<${tag} style="margin:4px 0 8px 0;padding-left:20px;color:#555555;font-size:15px;line-height:1.5;">\n${items}\n</${tag}>`;
+    } else {
+      const tags = { bold: ['<strong>', '</strong>'], italic: ['<em>', '</em>'] };
+      const [open, close] = tags[format];
+      wrapped = open + selected + close;
+    }
+
+    ta.value = ta.value.substring(0, start) + wrapped + ta.value.substring(end);
+    ta.selectionStart = start;
+    ta.selectionEnd = start + wrapped.length;
+    ta.focus();
   }
 
   function updateTplSubject() {
@@ -808,6 +845,7 @@
 
     api('/api/reply', { method: 'POST', body: JSON.stringify(payload) }).catch(() => {});
     setTimeout(() => {
+      if (btn) { btn.disabled = false; btn.innerHTML = sendIcon(); }
       closePreview();
       showToast('Reply sent!', 'success');
       replyMode = false;

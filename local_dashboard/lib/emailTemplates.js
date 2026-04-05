@@ -98,6 +98,39 @@ function signOff() {
     </tr>`;
 }
 
+// ─── Body renderer — handles plain text + inline HTML blocks (ul/ol/strong/em) ─
+
+const BLOCK_RE = /^<\/?(ul|ol|li|div|h[1-6]|blockquote)/i;
+const PARA_STYLE = `margin:0 0 8px 0;color:#555555;font-size:15px;line-height:1.75;`;
+
+function renderBody(text) {
+  const lines = text.split("\n");
+  const out = [];
+  let buf = [];
+
+  function flushBuf() {
+    if (!buf.length) return;
+    const content = buf.join("<br>");
+    out.push(`<p style="${PARA_STYLE}">${content}</p>`);
+    buf = [];
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (BLOCK_RE.test(trimmed)) {
+      flushBuf();
+      out.push(trimmed);
+    } else if (trimmed === "") {
+      flushBuf();
+    } else {
+      buf.push(trimmed);
+    }
+  }
+  flushBuf();
+
+  return out.join("\n");
+}
+
 // ─── Template definitions ─────────────────────────────────────────────────────
 // Each entry has:
 //   name     — display name in the UI dropdown
@@ -193,7 +226,7 @@ const TEMPLATES = {
       </tr>
       <tr>
         <td style="padding:16px 32px 0 32px;">
-          <p style="margin:0;color:#555555;font-size:15px;line-height:1.75;">${f.message.replace(/\n/g, "<br>")}</p>
+          ${renderBody(f.message)}
         </td>
       </tr>
       ${signOff()}`),
