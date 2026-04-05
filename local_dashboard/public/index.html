@@ -81,13 +81,15 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .email-items { flex: 1; overflow-y: auto; }
-    .email-item { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s; display: flex; gap: 10px; }
-    .email-item:hover { background: var(--surface); }
-    .email-item.selected { background: rgba(249,115,22,.08); }
+    .email-item { padding: 12px 12px 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s; display: flex; gap: 10px; border-left: 3px solid transparent; }
+    .email-item:hover { background: var(--surface); border-left-color: var(--muted); }
+    .email-item.selected { background: rgba(249,115,22,.12); border-left-color: var(--accent); }
+    .email-item.selected .email-sender { color: #fff; }
+    .email-item.selected .email-subject { color: var(--text); }
     .email-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .email-meta { flex: 1; min-width: 0; }
     .email-meta-row { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
-    .email-sender { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .email-sender { font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .email-sender.unread { color: #fff; }
     .email-date { font-size: 11px; color: var(--text-3); flex-shrink: 0; }
     .email-subject { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
@@ -333,7 +335,13 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Email Preview
       </span>
-      <button class="preview-close" onclick="closePreview()">Close</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="send-btn" id="preview-send-btn" style="padding:7px 18px;font-size:13px;border-radius:8px;" onclick="sendReply()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Reply
+        </button>
+        <button class="preview-close" onclick="closePreview()">Close</button>
+      </div>
     </div>
     <div class="preview-modal-body">
       <iframe id="preview-iframe" sandbox="allow-same-origin"></iframe>
@@ -664,15 +672,30 @@
           <div id="reply-mode-body"></div>
         </div>
 
-        <div class="reply-footer">
-          <button class="send-btn" id="send-btn" onclick="sendReply()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Send Reply
-          </button>
-        </div>
+        <div class="reply-footer" id="reply-footer"></div>
       </div>
     `;
     renderModeBody();
+  }
+
+  function renderFooter() {
+    const el = document.getElementById('reply-footer');
+    if (!el) return;
+    if (replyComposerMode === 'template') {
+      el.innerHTML = `
+        <button class="send-btn" id="send-btn" onclick="previewTemplate()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview Email
+        </button>
+      `;
+    } else {
+      el.innerHTML = `
+        <button class="send-btn" id="send-btn" onclick="sendReply()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Reply
+        </button>
+      `;
+    }
   }
 
   function renderModeBody() {
@@ -686,7 +709,6 @@
         </div>
       `;
     } else {
-      // Template selector
       const options = Object.entries(TEMPLATES).map(([key, t]) =>
         `<option value="${key}" ${key === selectedTemplate ? 'selected' : ''}>${t.name}</option>`
       ).join('');
@@ -699,6 +721,7 @@
       `;
       renderTemplateFields();
     }
+    renderFooter();
   }
 
   function renderTemplateFields() {
@@ -745,9 +768,9 @@
 
     if (!to) { showToast('Recipient is empty', 'error'); return; }
 
-    const btn = document.getElementById('send-btn');
-    btn.disabled = true;
-    btn.textContent = 'Sending...';
+    // Disable whichever send button is visible (footer or preview modal)
+    const btn = document.getElementById('preview-send-btn') || document.getElementById('send-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
 
     let payload;
 
@@ -775,13 +798,13 @@
       const res = await api('/api/reply', { method: 'POST', body: JSON.stringify(payload) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+      closePreview();
       showToast('Reply sent!', 'success');
       replyMode = false;
       renderViewer();
     } catch (err) {
       showToast(err.message || 'Failed to send', 'error');
-      btn.disabled = false;
-      btn.innerHTML = sendIcon();
+      if (btn) { btn.disabled = false; btn.innerHTML = sendIcon(); }
     }
   }
 
