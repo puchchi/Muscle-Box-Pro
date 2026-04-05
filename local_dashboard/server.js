@@ -161,38 +161,41 @@ app.post("/api/reply", requireAuth, async (req, res) => {
     const info = await transporter.sendMail(mailOptions);
     log.ok(`Reply sent  →  ${to}  (messageId: ${info.messageId})`);
 
-    // ── Append to Sent folder via IMAP ──────────────────────────────────────
-    try {
-      const raw = await new Promise((resolve, reject) =>
-        new MailComposer(mailOptions).compile().build((err, buf) => err ? reject(err) : resolve(buf))
-      );
-
-      const imapClient = new ImapFlow({
-        host:   process.env.IMAP_HOST || "imap.secureserver.net",
-        port:   Number(process.env.IMAP_PORT || 993),
-        secure: true,
-        auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-        logger: false,
-      });
-
-      await imapClient.connect();
-      const sentFolders = ["Sent", "Sent Items", "INBOX.Sent"];
-      let appended = false;
-      for (const folder of sentFolders) {
-        try {
-          await imapClient.append(folder, raw, ["\\Seen"], new Date());
-          log.ok(`Saved to Sent folder: ${folder}`);
-          appended = true;
-          break;
-        } catch {}
-      }
-      if (!appended) log.warn("Could not save to any Sent folder — skipping");
-      await imapClient.logout().catch(() => {});
-    } catch (appendErr) {
-      log.warn(`Sent folder append failed: ${appendErr.message}`);
-    }
-
+    // Respond immediately — don't block on IMAP append
     res.json({ message: "Reply sent" });
+
+    // ── Append to Sent folder in background ────────────────────────────────
+    (async () => {
+      try {
+        const raw = await new Promise((resolve, reject) =>
+          new MailComposer(mailOptions).compile().build((err, buf) => err ? reject(err) : resolve(buf))
+        );
+
+        const imapClient = new ImapFlow({
+          host:   process.env.IMAP_HOST || "imap.secureserver.net",
+          port:   Number(process.env.IMAP_PORT || 993),
+          secure: true,
+          auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+          logger: false,
+        });
+
+        await imapClient.connect();
+        const sentFolders = ["Sent", "Sent Items", "INBOX.Sent"];
+        let appended = false;
+        for (const folder of sentFolders) {
+          try {
+            await imapClient.append(folder, raw, ["\\Seen"], new Date());
+            log.ok(`Saved to Sent folder: ${folder}`);
+            appended = true;
+            break;
+          } catch {}
+        }
+        if (!appended) log.warn("Could not save to any Sent folder — skipping");
+        await imapClient.logout().catch(() => {});
+      } catch (appendErr) {
+        log.warn(`Sent folder append failed: ${appendErr.message}`);
+      }
+    })();
   } catch (err) {
     log.error(`SMTP error: ${err.message}`);
     console.error(err);
@@ -214,21 +217,19 @@ app.get("/api/stats", requireAuth, async (req, res) => {
   try {
     log.step("Running 4 parallel queries");
 
-    const [demoCount, campaignCount, demoRecent, campaignRecent] = await Promise.all([
-      supabase.from("demo_requests").select("*", { count: "exact", head: true }),
-      supabase.from("campaign_requests").select("*", { count: "exact", head: true }),
+    const [demoRecent, campaignRecent] = await Promise.all([
       supabase.from("demo_requests")
         .select("id, name, gym_name, email, mobile, location, message, created_at")
-        .order("created_at", { ascending: false }).limit(50),
+        .order("created_at", { ascending: false }),
       supabase.from("campaign_requests")
-        .select("id, brand_name, email, mobile, created_at")
-        .order("created_at", { ascending: false }).limit(50),
+        .select("id, brand_name, email, mobile, comment, created_at")
+        .order("created_at", { ascending: false }),
     ]);
+    const demoCount    = { count: demoRecent.data?.length ?? 0,    error: demoRecent.error };
+    const campaignCount = { count: campaignRecent.data?.length ?? 0, error: campaignRecent.error };
 
-    if (demoCount.error)      throw new Error(`demo_requests count: ${demoCount.error.message}`);
-    if (campaignCount.error)  throw new Error(`campaign_requests count: ${campaignCount.error.message}`);
-    if (demoRecent.error)     throw new Error(`demo_requests recent: ${demoRecent.error.message}`);
-    if (campaignRecent.error) throw new Error(`campaign_requests recent: ${campaignRecent.error.message}`);
+    if (demoRecent.error)     throw new Error(`demo_requests: ${demoRecent.error.message}`);
+    if (campaignRecent.error) throw new Error(`campaign_requests: ${campaignRecent.error.message}`);
 
     log.ok(`Stats ready  —  ${demoCount.count} demo requests, ${campaignCount.count} campaign requests`);
 
