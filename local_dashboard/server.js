@@ -7,6 +7,9 @@ const nodemailer = require("nodemailer");
 const { createClient } = require("@supabase/supabase-js");
 const { simpleParser } = require("mailparser");
 
+const log = require("./lib/logger");
+const { buildTemplateHtml } = require("./lib/emailTemplates");
+
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -14,35 +17,10 @@ app.use(express.static(path.join(__dirname, "public")));
 const PORT = process.env.PORT || 4000;
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || "admin";
 
-// ─── Logger ───────────────────────────────────────────────────────────────────
-
-const RESET  = "\x1b[0m";
-const DIM    = "\x1b[2m";
-const BOLD   = "\x1b[1m";
-const CYAN   = "\x1b[36m";
-const GREEN  = "\x1b[32m";
-const YELLOW = "\x1b[33m";
-const RED    = "\x1b[31m";
-const MAGENTA = "\x1b[35m";
-
-function ts() {
-  return DIM + new Date().toLocaleTimeString("en-IN", { hour12: false }) + RESET;
-}
-
-const log = {
-  info:    (msg) => console.log(`${ts()}  ${CYAN}ℹ${RESET}  ${msg}`),
-  ok:      (msg) => console.log(`${ts()}  ${GREEN}✔${RESET}  ${msg}`),
-  warn:    (msg) => console.log(`${ts()}  ${YELLOW}⚠${RESET}  ${msg}`),
-  error:   (msg) => console.log(`${ts()}  ${RED}✖${RESET}  ${msg}`),
-  step:    (msg) => console.log(`${ts()}  ${MAGENTA}→${RESET}  ${DIM}${msg}${RESET}`),
-  req:     (method, path) => console.log(`${ts()}  ${BOLD}${method.padEnd(4)}${RESET} ${path}`),
-};
-
 // ─── Request logger middleware ─────────────────────────────────────────────────
 
 app.use((req, _res, next) => {
-  if (!req.path.startsWith("/api")) return next(); // skip static
-  log.req(req.method, req.path);
+  if (req.path.startsWith("/api")) log.req(req.method, req.path);
   next();
 });
 
@@ -82,10 +60,7 @@ app.get("/api/inbox", requireAuth, async (req, res) => {
     host,
     port,
     secure: true,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     logger: false,
   });
 
@@ -104,29 +79,21 @@ app.get("/api/inbox", requireAuth, async (req, res) => {
         const start = Math.max(1, total - 49);
         log.step(`Fetching messages ${start}–${total}`);
 
-        for await (const msg of client.fetch(`${start}:${total}`, {
-          uid: true,
-          flags: true,
-          source: true,
-        })) {
+        for await (const msg of client.fetch(`${start}:${total}`, { uid: true, flags: true, source: true })) {
           const parsed = await simpleParser(msg.source);
           const from = parsed.from?.value?.[0];
-
           messages.push({
-            uid: msg.uid,
+            uid:       msg.uid,
             messageId: parsed.messageId ?? "",
-            subject: parsed.subject ?? "(no subject)",
-            from: {
-              name: from?.name ?? "",
-              address: from?.address ?? "",
-            },
-            to:  (parsed.to?.value  ?? []).map(a => ({ name: a.name ?? "", address: a.address ?? "" })),
-            cc:  (parsed.cc?.value  ?? []).map(a => ({ name: a.name ?? "", address: a.address ?? "" })),
-            bcc: (parsed.bcc?.value ?? []).map(a => ({ name: a.name ?? "", address: a.address ?? "" })),
-            date: parsed.date?.toISOString() ?? "",
-            textBody: parsed.text ?? "",
-            htmlBody: parsed.html || "",
-            seen: msg.flags?.has("\\Seen") ?? false,
+            subject:   parsed.subject ?? "(no subject)",
+            from:      { name: from?.name ?? "", address: from?.address ?? "" },
+            to:        (parsed.to?.value  ?? []).map(a => ({ name: a.name ?? "", address: a.address ?? "" })),
+            cc:        (parsed.cc?.value  ?? []).map(a => ({ name: a.name ?? "", address: a.address ?? "" })),
+            bcc:       (parsed.bcc?.value ?? []).map(a => ({ name: a.name ?? "", address: a.address ?? "" })),
+            date:      parsed.date?.toISOString() ?? "",
+            textBody:  parsed.text ?? "",
+            htmlBody:  parsed.html || "",
+            seen:      msg.flags?.has("\\Seen") ?? false,
           });
         }
       }
@@ -136,7 +103,6 @@ app.get("/api/inbox", requireAuth, async (req, res) => {
 
     await client.logout();
     messages.reverse();
-
     log.ok(`Returning ${messages.length} message(s) to client`);
     res.json({ messages });
   } catch (err) {
@@ -150,11 +116,26 @@ app.get("/api/inbox", requireAuth, async (req, res) => {
 // ─── POST /api/reply ──────────────────────────────────────────────────────────
 
 app.post("/api/reply", requireAuth, async (req, res) => {
-  const { to, subject, html, inReplyTo, references } = req.body;
+  const { to, subject, html: rawHtml, inReplyTo, references, templateKey, fields } = req.body;
 
-  if (!to || !subject || !html) {
-    log.warn("Reply rejected — missing to/subject/html");
-    return res.status(400).json({ message: "to, subject and html are required" });
+  if (!to || !subject) {
+    log.warn("Reply rejected — missing to/subject");
+    return res.status(400).json({ message: "to and subject are required" });
+  }
+
+  let html = rawHtml;
+  if (templateKey) {
+    log.step(`Rendering template: ${templateKey}`);
+    html = buildTemplateHtml(templateKey, fields || {});
+    if (!html) {
+      log.warn(`Unknown template key: ${templateKey}`);
+      return res.status(400).json({ message: `Unknown template: ${templateKey}` });
+    }
+  }
+
+  if (!html) {
+    log.warn("Reply rejected — no html or templateKey provided");
+    return res.status(400).json({ message: "html or templateKey is required" });
   }
 
   log.step(`Sending reply  →  ${to}`);
@@ -162,21 +143,16 @@ app.post("/api/reply", requireAuth, async (req, res) => {
   if (inReplyTo) log.step(`In-Reply-To: ${inReplyTo}`);
 
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 465),
+    host:   process.env.SMTP_HOST,
+    port:   Number(process.env.SMTP_PORT || 465),
     secure: (process.env.SMTP_SECURE || "true") === "true",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
+    auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
   });
 
   try {
     const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || "MuscleBoxPro <contact@muscleboxpro.com>",
-      to,
-      subject,
-      html,
+      from:    process.env.SMTP_FROM || "MuscleBoxPro <contact@muscleboxpro.com>",
+      to, subject, html,
       ...(inReplyTo  ? { inReplyTo }  : {}),
       ...(references ? { references } : {}),
     });
@@ -201,32 +177,30 @@ app.get("/api/stats", requireAuth, async (req, res) => {
   );
 
   try {
-    log.step("Running 4 parallel queries (demo count, campaign count, recent demos, recent campaigns)");
+    log.step("Running 4 parallel queries");
 
     const [demoCount, campaignCount, demoRecent, campaignRecent] = await Promise.all([
       supabase.from("demo_requests").select("*", { count: "exact", head: true }),
       supabase.from("campaign_requests").select("*", { count: "exact", head: true }),
       supabase.from("demo_requests")
         .select("id, name, gym_name, email, mobile, location, message, created_at")
-        .order("created_at", { ascending: false })
-        .limit(50),
+        .order("created_at", { ascending: false }).limit(50),
       supabase.from("campaign_requests")
         .select("id, brand_name, email, mobile, created_at")
-        .order("created_at", { ascending: false })
-        .limit(50),
+        .order("created_at", { ascending: false }).limit(50),
     ]);
 
-    if (demoCount.error)     throw new Error(`demo_requests count: ${demoCount.error.message}`);
-    if (campaignCount.error) throw new Error(`campaign_requests count: ${campaignCount.error.message}`);
-    if (demoRecent.error)    throw new Error(`demo_requests recent: ${demoRecent.error.message}`);
+    if (demoCount.error)      throw new Error(`demo_requests count: ${demoCount.error.message}`);
+    if (campaignCount.error)  throw new Error(`campaign_requests count: ${campaignCount.error.message}`);
+    if (demoRecent.error)     throw new Error(`demo_requests recent: ${demoRecent.error.message}`);
     if (campaignRecent.error) throw new Error(`campaign_requests recent: ${campaignRecent.error.message}`);
 
     log.ok(`Stats ready  —  ${demoCount.count} demo requests, ${campaignCount.count} campaign requests`);
 
     res.json({
-      demoRequestCount:     demoCount.count ?? 0,
-      campaignRequestCount: campaignCount.count ?? 0,
-      recentDemoRequests:   demoRecent.data ?? [],
+      demoRequestCount:       demoCount.count ?? 0,
+      campaignRequestCount:   campaignCount.count ?? 0,
+      recentDemoRequests:     demoRecent.data ?? [],
       recentCampaignRequests: campaignRecent.data ?? [],
     });
   } catch (err) {
@@ -238,12 +212,4 @@ app.get("/api/stats", requireAuth, async (req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
-  console.log();
-  console.log(`  ${BOLD}${CYAN}MuscleBoxPro Local Dashboard${RESET}`);
-  console.log(`  ${DIM}Running at${RESET} ${GREEN}http://localhost:${PORT}${RESET}`);
-  console.log(`  ${DIM}IMAP${RESET}  ${process.env.IMAP_HOST}:${process.env.IMAP_PORT || 993}`);
-  console.log(`  ${DIM}SMTP${RESET}  ${process.env.SMTP_HOST}:${process.env.SMTP_PORT || 465}`);
-  console.log(`  ${DIM}DB  ${RESET}  ${process.env.SUPABASE_URL}`);
-  console.log();
-});
+app.listen(PORT, () => log.banner(PORT));
