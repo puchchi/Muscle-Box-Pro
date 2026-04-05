@@ -126,14 +126,31 @@
     .reply-composer-header span { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--accent); }
     .back-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-size: 12px; padding: 5px 12px; cursor: pointer; transition: all .2s; }
     .back-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    /* Mode toggle */
+    .mode-toggle { display: flex; gap: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+    .mode-btn { background: none; border: none; border-radius: 6px; padding: 5px 14px; font-size: 12px; font-weight: 600; color: var(--text-3); cursor: pointer; transition: all .2s; }
+    .mode-btn.active { background: var(--surface); color: var(--text); }
+
     .reply-form { flex: 1; display: flex; flex-direction: column; padding: 16px 20px; gap: 12px; overflow-y: auto; }
     .form-group { display: flex; flex-direction: column; gap: 4px; }
     .form-group label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; }
-    .form-group input, .form-group textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; font-family: inherit; transition: border-color .2s; }
-    .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
-    .form-group textarea { resize: vertical; min-height: 220px; line-height: 1.7; }
-    .template-row { display: flex; justify-content: flex-end; }
-    .template-btn { background: none; border: none; color: var(--accent); font-size: 12px; cursor: pointer; padding: 0; text-decoration: underline; }
+    .form-group input, .form-group textarea, .form-group select { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; font-family: inherit; transition: border-color .2s; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
+    .form-group textarea { resize: vertical; min-height: 200px; line-height: 1.7; }
+    .form-group select { cursor: pointer; }
+    .form-group select option { background: var(--surface); }
+
+    /* Template fields */
+    .tpl-fields { display: flex; flex-direction: column; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .tpl-fields-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .tpl-field { display: flex; flex-direction: column; gap: 3px; }
+    .tpl-field label { font-size: 11px; color: var(--text-3); }
+    .tpl-field input, .tpl-field textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text); font-size: 13px; outline: none; font-family: inherit; transition: border-color .2s; }
+    .tpl-field input:focus, .tpl-field textarea:focus { border-color: var(--accent); }
+    .tpl-field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+    .tpl-hint { font-size: 11px; color: var(--text-3); font-style: italic; }
+
     .reply-footer { padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
     .send-btn { width: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); border: none; border-radius: 10px; padding: 11px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .send-btn:hover { opacity: .9; }
@@ -302,6 +319,36 @@
   let allEmails = [];
   let selectedEmail = null;
   let replyMode = false;
+  let replyComposerMode = 'basic'; // 'basic' | 'template'
+  let selectedTemplate = 'region'; // template key
+
+  // ── Templates ─────────────────────────────────────────────────────────────
+
+  const TEMPLATES = {
+    region: {
+      name: 'Region Not Operational',
+      subject: (m) => `Re: ${m.subject.replace(/^Re:\s*/i, '')}`,
+      fields: [
+        { key: 'name',   label: 'Recipient Name',  type: 'input',    default: (m) => m.from.name || m.from.address.split('@')[0] },
+        { key: 'region', label: 'Region / State',  type: 'input',    default: () => 'Andhra Pradesh' },
+        { key: 'extra',  label: 'Additional note (optional)', type: 'textarea', default: () => '' },
+      ],
+      build: (f) =>
+        `Hi ${f.name},\n\nThank you for your interest in MuscleBoxPro and for requesting a demo. We truly appreciate your enthusiasm for bringing a protein shake vending solution to your gym.\n\nAt present, our operations are focused on select regions, and we have not yet started operations in ${f.region}. However, we are actively evaluating expansion into new states in the future.\n\nThat said, if you are interested in setting up a protein shake vending machine independently, we can certainly assist you in procuring a suitable machine and guiding you on setup and operation. This arrangement would be managed directly by you and would not operate under the MuscleBoxPro brand.\n\nIf this option interests you, please let us know, and we can share further details regarding machine specifications, cost, and supplier options.${f.extra ? '\n\n' + f.extra : ''}\n\nWe sincerely appreciate your interest and hope to collaborate in some capacity.\n\nBest regards,\nMuscleBoxPro Team`,
+    },
+    followup: {
+      name: 'General Follow-up',
+      subject: (m) => `Re: ${m.subject.replace(/^Re:\s*/i, '')}`,
+      fields: [
+        { key: 'name',    label: 'Recipient Name',    type: 'input',    default: (m) => m.from.name || m.from.address.split('@')[0] },
+        { key: 'context', label: 'Context / Purpose', type: 'input',    default: () => 'your recent inquiry' },
+        { key: 'action',  label: 'Next Action',       type: 'input',    default: () => 'schedule a call at your convenience' },
+        { key: 'extra',   label: 'Additional details (optional)', type: 'textarea', default: () => '' },
+      ],
+      build: (f) =>
+        `Hi ${f.name},\n\nThank you for reaching out regarding ${f.context}. We appreciate you taking the time to connect with us.\n\nWe would love to ${f.action}. Please let us know what works best for you.${f.extra ? '\n\n' + f.extra : ''}\n\nLooking forward to hearing from you.\n\nBest regards,\nMuscleBoxPro Team`,
+    },
+  };
 
   // ── Auth ───────────────────────────────────────────────────────────────────
 
@@ -501,15 +548,23 @@
 
   function openReply() {
     replyMode = true;
+    replyComposerMode = 'basic';
     renderViewer();
+  }
+
+  function setReplyMode(mode) {
+    replyComposerMode = mode;
+    renderReply();
+  }
+
+  function setTemplate(key) {
+    selectedTemplate = key;
+    renderTemplateFields();
   }
 
   function renderReply() {
     const m = selectedEmail;
     const el = document.getElementById('email-viewer');
-    const name = m.from.name || m.from.address.split('@')[0];
-    const defaultBody = `Hi ${name},\n\nThank you for your interest in MuscleBoxPro and for requesting a demo. We truly appreciate your enthusiasm for bringing a protein shake vending solution to your gym.\n\nAt present, our operations are focused on select regions, and we have not yet started operations in your area. However, we are actively evaluating expansion into new states in the future.\n\nThat said, if you are interested in setting up a protein shake vending machine independently, we can certainly assist you in procuring a suitable machine and guiding you on setup and operation. This arrangement would be managed directly by you and would not operate under the MuscleBoxPro brand.\n\nIf this option interests you, please let us know, and we can share further details regarding machine specifications, cost, and supplier options.\n\nWe sincerely appreciate your interest and hope to collaborate in some capacity.\n\nBest regards,\nMuscleBoxPro Team`;
-
     el.innerHTML = `
       <div class="reply-composer">
         <div class="reply-composer-header">
@@ -517,25 +572,28 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
             Reply to ${m.from.name || m.from.address}
           </span>
-          <button class="back-btn" onclick="replyMode=false;renderViewer()">← Back</button>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="mode-toggle">
+              <button class="mode-btn ${replyComposerMode === 'basic' ? 'active' : ''}" onclick="setReplyMode('basic')">Basic</button>
+              <button class="mode-btn ${replyComposerMode === 'template' ? 'active' : ''}" onclick="setReplyMode('template')">Template</button>
+            </div>
+            <button class="back-btn" onclick="replyMode=false;renderViewer()">← Back</button>
+          </div>
         </div>
-        <div class="reply-form">
+
+        <div class="reply-form" id="reply-form-body">
+          <!-- To / Subject always shown -->
           <div class="form-group">
             <label>To</label>
             <input type="text" id="reply-to" value="${m.from.address}" />
           </div>
           <div class="form-group">
             <label>Subject</label>
-            <input type="text" id="reply-subject" value="Re: ${m.subject.replace(/^Re:\s*/i, '')}" />
+            <input type="text" id="reply-subject" value="${TEMPLATES[selectedTemplate]?.subject(m) || 'Re: ' + m.subject.replace(/^Re:\s*/i,'')}" />
           </div>
-          <div class="form-group">
-            <div class="template-row">
-              <button class="template-btn" onclick="fillTemplate()">Use region-not-operational template</button>
-            </div>
-            <label>Message</label>
-            <textarea id="reply-body" placeholder="Write your reply...">${defaultBody}</textarea>
-          </div>
+          <div id="reply-mode-body"></div>
         </div>
+
         <div class="reply-footer">
           <button class="send-btn" id="send-btn" onclick="sendReply()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -544,18 +602,89 @@
         </div>
       </div>
     `;
+    renderModeBody();
   }
 
-  function fillTemplate() {
+  function renderModeBody() {
+    const el = document.getElementById('reply-mode-body');
+    if (!el) return;
+    if (replyComposerMode === 'basic') {
+      el.innerHTML = `
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="reply-body" placeholder="Write your reply..." style="min-height:240px;"></textarea>
+        </div>
+      `;
+    } else {
+      // Template selector
+      const options = Object.entries(TEMPLATES).map(([key, t]) =>
+        `<option value="${key}" ${key === selectedTemplate ? 'selected' : ''}>${t.name}</option>`
+      ).join('');
+      el.innerHTML = `
+        <div class="form-group">
+          <label>Select Template</label>
+          <select onchange="setTemplate(this.value)">${options}</select>
+        </div>
+        <div id="tpl-fields-container"></div>
+      `;
+      renderTemplateFields();
+    }
+  }
+
+  function renderTemplateFields() {
+    const container = document.getElementById('tpl-fields-container');
+    if (!container) return;
+    const tpl = TEMPLATES[selectedTemplate];
+    if (!tpl) return;
     const m = selectedEmail;
-    const name = m.from.name || m.from.address.split('@')[0];
-    document.getElementById('reply-body').value = `Hi ${name},\n\nThank you for your interest in MuscleBoxPro and for requesting a demo. We truly appreciate your enthusiasm for bringing a protein shake vending solution to your gym.\n\nAt present, our operations are focused on select regions, and we have not yet started operations in your area. However, we are actively evaluating expansion into new states in the future.\n\nThat said, if you are interested in setting up a protein shake vending machine independently, we can certainly assist you in procuring a suitable machine and guiding you on setup and operation. This arrangement would be managed directly by you and would not operate under the MuscleBoxPro brand.\n\nIf this option interests you, please let us know, and we can share further details regarding machine specifications, cost, and supplier options.\n\nWe sincerely appreciate your interest and hope to collaborate in some capacity.\n\nBest regards,\nMuscleBoxPro Team`;
+
+    container.innerHTML = `
+      <div class="tpl-fields">
+        <div class="tpl-fields-label">Template Variables</div>
+        ${tpl.fields.map(f => `
+          <div class="tpl-field">
+            <label>${f.label}</label>
+            ${f.type === 'textarea'
+              ? `<textarea id="tpl-${f.key}" oninput="updateTplSubject()">${f.default(m)}</textarea>`
+              : `<input type="text" id="tpl-${f.key}" value="${f.default(m)}" oninput="updateTplSubject()" />`
+            }
+          </div>
+        `).join('')}
+        <p class="tpl-hint">Edit fields above — the final message is built automatically when you send.</p>
+      </div>
+    `;
+  }
+
+  function updateTplSubject() {
+    // Keep subject in sync if user hasn't manually edited it
+    const m = selectedEmail;
+    const tpl = TEMPLATES[selectedTemplate];
+    if (tpl) {
+      const subjectEl = document.getElementById('reply-subject');
+      if (subjectEl) subjectEl.value = tpl.subject(m);
+    }
+  }
+
+  function getReplyBody() {
+    if (replyComposerMode === 'basic') {
+      return document.getElementById('reply-body')?.value || '';
+    }
+    // Build from template fields
+    const tpl = TEMPLATES[selectedTemplate];
+    if (!tpl) return '';
+    const fields = {};
+    tpl.fields.forEach(f => {
+      fields[f.key] = document.getElementById(`tpl-${f.key}`)?.value || '';
+    });
+    return tpl.build(fields);
   }
 
   async function sendReply() {
-    const to = document.getElementById('reply-to').value;
-    const subject = document.getElementById('reply-subject').value;
-    const body = document.getElementById('reply-body').value;
+    const to = document.getElementById('reply-to').value.trim();
+    const subject = document.getElementById('reply-subject').value.trim();
+    const body = getReplyBody();
+
+    if (!to) { showToast('Recipient is empty', 'error'); return; }
     if (!body.trim()) { showToast('Message is empty', 'error'); return; }
 
     const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.75;color:#333;">${body.split('\n').map(l => l ? `<p style="margin:0 0 10px 0;">${l}</p>` : '<p style="margin:0 0 10px 0;">&nbsp;</p>').join('')}</div>`;
