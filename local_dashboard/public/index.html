@@ -1024,7 +1024,6 @@
                 <th>Brand</th>
                 <th>Email</th>
                 <th>Mobile</th>
-                <th>Comment</th>
                 <th>Submitted</th>
               </tr>
             </thead>
@@ -1061,7 +1060,6 @@
         <td class="bold">${r.brand_name}</td>
         <td>${r.email}</td>
         <td>${r.mobile}</td>
-        <td class="wrap" style="max-width:180px;color:var(--text-3);font-size:11px;">${r.comment || '—'}</td>
         <td class="muted">${fmtDateLong(r.created_at)}</td>
       </tr>
     `).join('');
@@ -1077,7 +1075,7 @@
       renderDemoRows(filtered);
     } else {
       const filtered = q ? dbData.recentCampaignRequests.filter(r =>
-        [r.brand_name, r.email, r.mobile, r.comment].join(' ').toLowerCase().includes(lower)
+        [r.brand_name, r.email, r.mobile].join(' ').toLowerCase().includes(lower)
       ) : dbData.recentCampaignRequests;
       renderCampaignRows(filtered);
     }
@@ -1105,7 +1103,6 @@
       ['Brand', r.brand_name],
       ['Email', r.email],
       ['Mobile', r.mobile],
-      ['Comment', r.comment || '—'],
       ['Submitted', fmtDateLong(r.created_at)],
     ].map(([l, v]) => `<div class="modal-row"><span class="modal-label">${l}</span><span class="modal-value">${v}</span></div>`).join('');
     document.getElementById('modal-overlay').classList.add('open');

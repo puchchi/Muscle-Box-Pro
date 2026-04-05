@@ -222,7 +222,7 @@ app.get("/api/stats", requireAuth, async (req, res) => {
         .select("id, name, gym_name, email, mobile, location, message, created_at")
         .order("created_at", { ascending: false }),
       supabase.from("campaign_requests")
-        .select("id, brand_name, email, mobile, comment, created_at")
+        .select("id, brand_name, email, mobile, created_at")
         .order("created_at", { ascending: false }),
     ]);
     const demoCount    = { count: demoRecent.data?.length ?? 0,    error: demoRecent.error };
