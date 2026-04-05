@@ -12,6 +12,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "imapflow": "^1.0.169",
+    "mailparser": "^3.9.6",
     "nodemailer": "^6.9.9"
   }
 }

@@ -5,6 +5,7 @@ const path = require("path");
 const { ImapFlow } = require("imapflow");
 const nodemailer = require("nodemailer");
 const { createClient } = require("@supabase/supabase-js");
+const { simpleParser } = require("mailparser");
 
 const app = express();
 app.use(express.json());
@@ -59,26 +60,23 @@ app.get("/api/inbox", requireAuth, async (req, res) => {
         const start = Math.max(1, total - 49);
         for await (const msg of client.fetch(`${start}:${total}`, {
           uid: true,
-          envelope: true,
           flags: true,
-          bodyParts: ["text", "html"],
+          source: true,
         })) {
-          const env = msg.envelope;
-          const from = env?.from?.[0];
-          const textPart = msg.bodyParts?.get("text");
-          const htmlPart = msg.bodyParts?.get("html");
+          const parsed = await simpleParser(msg.source);
+          const from = parsed.from?.value?.[0];
 
           messages.push({
             uid: msg.uid,
-            messageId: env?.messageId ?? "",
-            subject: env?.subject ?? "(no subject)",
+            messageId: parsed.messageId ?? "",
+            subject: parsed.subject ?? "(no subject)",
             from: {
               name: from?.name ?? "",
               address: from?.address ?? "",
             },
-            date: env?.date?.toISOString() ?? "",
-            textBody: textPart ? Buffer.from(textPart).toString("utf8") : "",
-            htmlBody: htmlPart ? Buffer.from(htmlPart).toString("utf8") : "",
+            date: parsed.date?.toISOString() ?? "",
+            textBody: parsed.text ?? "",
+            htmlBody: parsed.html || "",
             seen: msg.flags?.has("\\Seen") ?? false,
           });
         }
