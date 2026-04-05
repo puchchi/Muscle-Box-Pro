@@ -107,6 +107,10 @@
     .viewer-from-name { font-size: 13px; font-weight: 600; }
     .viewer-from-email { font-size: 11px; color: var(--text-3); }
     .viewer-date { font-size: 11px; color: var(--text-3); }
+    .viewer-recipients { margin-top: 10px; display: flex; flex-direction: column; gap: 3px; }
+    .viewer-recipient-row { display: flex; gap: 8px; font-size: 12px; }
+    .viewer-recipient-label { color: var(--text-3); width: 28px; flex-shrink: 0; }
+    .viewer-recipient-value { color: var(--text-2); }
     .reply-btn { background: linear-gradient(90deg, var(--accent-2), var(--accent)); border: none; border-radius: 8px; color: #fff; padding: 7px 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity .2s; }
     .reply-btn:hover { opacity: .85; }
 
@@ -402,11 +406,14 @@
   function filterEmails() {
     const q = document.getElementById('search-input').value.toLowerCase();
     const filtered = q
-      ? allEmails.filter(m =>
-          m.subject.toLowerCase().includes(q) ||
-          m.from.address.toLowerCase().includes(q) ||
-          m.from.name.toLowerCase().includes(q)
-        )
+      ? allEmails.filter(m => {
+          const addrList = [
+            m.from.name, m.from.address,
+            ...(m.to || []).flatMap(a => [a.name, a.address]),
+            ...(m.cc || []).flatMap(a => [a.name, a.address]),
+          ].join(' ').toLowerCase();
+          return addrList.includes(q) || m.subject.toLowerCase().includes(q);
+        })
       : allEmails;
     renderEmailList(filtered);
   }
@@ -436,10 +443,7 @@
   function selectEmail(uid) {
     selectedEmail = allEmails.find(m => m.uid === uid);
     replyMode = false;
-    renderEmailList(allEmails.filter(m => {
-      const q = document.getElementById('search-input').value.toLowerCase();
-      return !q || m.subject.toLowerCase().includes(q) || m.from.address.toLowerCase().includes(q) || m.from.name.toLowerCase().includes(q);
-    }));
+    filterEmails();
     renderViewer();
   }
 
@@ -463,6 +467,11 @@
               <div class="viewer-from-email">${m.from.address}</div>
             </div>
             <div class="viewer-date">${fmtDate(m.date)}</div>
+          </div>
+          <div class="viewer-recipients">
+            ${m.to?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">To</span><span class="viewer-recipient-value">${m.to.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+            ${m.cc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">CC</span><span class="viewer-recipient-value">${m.cc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+            ${m.bcc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">BCC</span><span class="viewer-recipient-value">${m.bcc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
           </div>
         </div>
         <div class="email-body-area">
@@ -513,7 +522,7 @@
         <div class="reply-form">
           <div class="form-group">
             <label>To</label>
-            <input type="text" id="reply-to" value="${m.from.address}" readonly />
+            <input type="text" id="reply-to" value="${m.from.address}" />
           </div>
           <div class="form-group">
             <label>Subject</label>
