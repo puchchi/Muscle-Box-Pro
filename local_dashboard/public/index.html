@@ -120,6 +120,10 @@
 
     .viewer-actions { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; flex-shrink: 0; }
 
+    /* Split view */
+    .email-split-top { flex: 0 0 42%; overflow-y: auto; border-bottom: 2px solid var(--border); display: flex; flex-direction: column; }
+    .email-split-bottom { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
     /* Reply composer */
     .reply-composer { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     .reply-composer-header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
@@ -351,7 +355,7 @@
   let selectedEmail = null;
   let replyMode = false;
   let replyComposerMode = 'basic'; // 'basic' | 'template'
-  let selectedTemplate = 'region'; // template key
+  let selectedTemplate = 'simple'; // template key
 
   // ── Templates ─────────────────────────────────────────────────────────────
 
@@ -366,6 +370,15 @@
       ],
       build: (f) =>
         `Hi ${f.name},\n\nThank you for your interest in MuscleBoxPro and for requesting a demo. We truly appreciate your enthusiasm for bringing a protein shake vending solution to your gym.\n\nAt present, our operations are focused on select regions, and we have not yet started operations in ${f.region}. However, we are actively evaluating expansion into new states in the future.\n\nThat said, if you are interested in setting up a protein shake vending machine independently, we can certainly assist you in procuring a suitable machine and guiding you on setup and operation. This arrangement would be managed directly by you and would not operate under the MuscleBoxPro brand.\n\nIf this option interests you, please let us know, and we can share further details regarding machine specifications, cost, and supplier options.${f.extra ? '\n\n' + f.extra : ''}\n\nWe sincerely appreciate your interest and hope to collaborate in some capacity.\n\nBest regards,\nMuscleBoxPro Team`,
+    },
+    simple: {
+      name: 'Simple Message',
+      subject: (m) => `Re: ${m.subject.replace(/^Re:\s*/i, '')}`,
+      fields: [
+        { key: 'name',    label: 'Recipient Name', type: 'input',    default: (m) => m.from.name || m.from.address.split('@')[0] },
+        { key: 'message', label: 'Message Body',   type: 'textarea', default: () => '' },
+      ],
+      build: (f) => `Hi ${f.name},\n\n${f.message}\n\nBest regards,\nMuscleBoxPro Team`,
     },
     followup: {
       name: 'General Follow-up',
@@ -525,54 +538,76 @@
     renderViewer();
   }
 
+  function emailPaneHtml(m) {
+    return `
+      <div class="email-viewer-header">
+        <h3>${m.subject}</h3>
+        <div class="email-from-row">
+          <div class="viewer-avatar">${initials(m.from.name, m.from.address)}</div>
+          <div class="viewer-from-info">
+            <div class="viewer-from-name">${m.from.name || m.from.address}</div>
+            <div class="viewer-from-email">${m.from.address}</div>
+          </div>
+          <div class="viewer-date">${fmtDate(m.date)}</div>
+        </div>
+        <div class="viewer-recipients">
+          ${m.to?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">To</span><span class="viewer-recipient-value">${m.to.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+          ${m.cc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">CC</span><span class="viewer-recipient-value">${m.cc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+          ${m.bcc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">BCC</span><span class="viewer-recipient-value">${m.bcc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+        </div>
+      </div>
+      <div class="email-body-area">
+        ${m.htmlBody
+          ? `<iframe id="email-iframe" sandbox="allow-same-origin" srcdoc="${m.htmlBody.replace(/"/g, '&quot;')}"></iframe>`
+          : `<div class="email-body-text">${m.textBody || '(empty)'}</div>`
+        }
+      </div>
+    `;
+  }
+
+  function attachIframeResize() {
+    const iframe = document.getElementById('email-iframe');
+    if (iframe) {
+      iframe.onload = () => {
+        try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px'; } catch {}
+      };
+    }
+  }
+
   function renderViewer() {
     const el = document.getElementById('email-viewer');
     if (!selectedEmail) {
       el.innerHTML = `<div class="empty-state" style="height:100%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>Select an email to read</span></div>`;
       return;
     }
-    if (replyMode) { renderReply(); return; }
 
     const m = selectedEmail;
+
+    if (!replyMode) {
+      el.innerHTML = `
+        <div style="display:flex;flex-direction:column;height:100%">
+          ${emailPaneHtml(m)}
+          <div class="viewer-actions">
+            <button class="reply-btn" onclick="openReply()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
+              Reply
+            </button>
+          </div>
+        </div>
+      `;
+      attachIframeResize();
+      return;
+    }
+
+    // Split view: email on top, composer on bottom
     el.innerHTML = `
       <div style="display:flex;flex-direction:column;height:100%">
-        <div class="email-viewer-header">
-          <h3>${m.subject}</h3>
-          <div class="email-from-row">
-            <div class="viewer-avatar">${initials(m.from.name, m.from.address)}</div>
-            <div class="viewer-from-info">
-              <div class="viewer-from-name">${m.from.name || m.from.address}</div>
-              <div class="viewer-from-email">${m.from.address}</div>
-            </div>
-            <div class="viewer-date">${fmtDate(m.date)}</div>
-          </div>
-          <div class="viewer-recipients">
-            ${m.to?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">To</span><span class="viewer-recipient-value">${m.to.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
-            ${m.cc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">CC</span><span class="viewer-recipient-value">${m.cc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
-            ${m.bcc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">BCC</span><span class="viewer-recipient-value">${m.bcc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
-          </div>
-        </div>
-        <div class="email-body-area">
-          ${m.htmlBody
-            ? `<iframe id="email-iframe" sandbox="allow-same-origin" srcdoc="${m.htmlBody.replace(/"/g, '&quot;')}"></iframe>`
-            : `<div class="email-body-text">${m.textBody || '(empty)'}</div>`
-          }
-        </div>
-        <div class="viewer-actions">
-          <button class="reply-btn" onclick="openReply()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
-            Reply
-          </button>
-        </div>
+        <div class="email-split-top">${emailPaneHtml(m)}</div>
+        <div class="email-split-bottom" id="reply-split-pane"></div>
       </div>
     `;
-
-    if (m.htmlBody) {
-      const iframe = document.getElementById('email-iframe');
-      iframe.onload = () => {
-        try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px'; } catch {}
-      };
-    }
+    attachIframeResize();
+    renderReply();
   }
 
   // ── Reply ──────────────────────────────────────────────────────────────────
@@ -585,7 +620,11 @@
 
   function setReplyMode(mode) {
     replyComposerMode = mode;
-    renderReply();
+    if (document.getElementById('reply-split-pane')) {
+      renderReply();
+    } else {
+      renderViewer();
+    }
   }
 
   function setTemplate(key) {
@@ -595,25 +634,25 @@
 
   function renderReply() {
     const m = selectedEmail;
-    const el = document.getElementById('email-viewer');
+    const el = document.getElementById('reply-split-pane');
+    if (!el) return;
     el.innerHTML = `
       <div class="reply-composer">
         <div class="reply-composer-header">
           <span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
-            Reply to ${m.from.name || m.from.address}
+            Reply
           </span>
           <div style="display:flex;align-items:center;gap:10px;">
             <div class="mode-toggle">
               <button class="mode-btn ${replyComposerMode === 'basic' ? 'active' : ''}" onclick="setReplyMode('basic')">Basic</button>
               <button class="mode-btn ${replyComposerMode === 'template' ? 'active' : ''}" onclick="setReplyMode('template')">Template</button>
             </div>
-            <button class="back-btn" onclick="replyMode=false;renderViewer()">← Back</button>
+            <button class="back-btn" onclick="replyMode=false;renderViewer()">✕ Close</button>
           </div>
         </div>
 
         <div class="reply-form" id="reply-form-body">
-          <!-- To / Subject always shown -->
           <div class="form-group">
             <label>To</label>
             <input type="text" id="reply-to" value="${m.from.address}" />

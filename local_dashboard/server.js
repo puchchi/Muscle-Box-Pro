@@ -4,6 +4,7 @@ const express = require("express");
 const path = require("path");
 const { ImapFlow } = require("imapflow");
 const nodemailer = require("nodemailer");
+const MailComposer = require("nodemailer/lib/mail-composer");
 const { createClient } = require("@supabase/supabase-js");
 const { simpleParser } = require("mailparser");
 
@@ -149,14 +150,48 @@ app.post("/api/reply", requireAuth, async (req, res) => {
     auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
   });
 
+  const mailOptions = {
+    from:    process.env.SMTP_FROM || "MuscleBoxPro <contact@muscleboxpro.com>",
+    to, subject, html,
+    ...(inReplyTo  ? { inReplyTo }  : {}),
+    ...(references ? { references } : {}),
+  };
+
   try {
-    const info = await transporter.sendMail({
-      from:    process.env.SMTP_FROM || "MuscleBoxPro <contact@muscleboxpro.com>",
-      to, subject, html,
-      ...(inReplyTo  ? { inReplyTo }  : {}),
-      ...(references ? { references } : {}),
-    });
+    const info = await transporter.sendMail(mailOptions);
     log.ok(`Reply sent  →  ${to}  (messageId: ${info.messageId})`);
+
+    // ── Append to Sent folder via IMAP ──────────────────────────────────────
+    try {
+      const raw = await new Promise((resolve, reject) =>
+        new MailComposer(mailOptions).compile().build((err, buf) => err ? reject(err) : resolve(buf))
+      );
+
+      const imapClient = new ImapFlow({
+        host:   process.env.IMAP_HOST || "imap.secureserver.net",
+        port:   Number(process.env.IMAP_PORT || 993),
+        secure: true,
+        auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+        logger: false,
+      });
+
+      await imapClient.connect();
+      const sentFolders = ["Sent", "Sent Items", "INBOX.Sent"];
+      let appended = false;
+      for (const folder of sentFolders) {
+        try {
+          await imapClient.append(folder, raw, ["\\Seen"], new Date());
+          log.ok(`Saved to Sent folder: ${folder}`);
+          appended = true;
+          break;
+        } catch {}
+      }
+      if (!appended) log.warn("Could not save to any Sent folder — skipping");
+      await imapClient.logout().catch(() => {});
+    } catch (appendErr) {
+      log.warn(`Sent folder append failed: ${appendErr.message}`);
+    }
+
     res.json({ message: "Reply sent" });
   } catch (err) {
     log.error(`SMTP error: ${err.message}`);

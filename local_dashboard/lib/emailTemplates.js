@@ -170,6 +170,35 @@ const TEMPLATES = {
       ${signOff()}`),
   },
 
+  simple: {
+    name: "Simple Message",
+    subject: (m) => `Re: ${m.subject.replace(/^Re:\s*/i, "")}`,
+    fields: [
+      { key: "name",    label: "Recipient Name", type: "input",    default: (m) => m.from.name || m.from.address.split("@")[0] },
+      { key: "message", label: "Message Body",   type: "textarea", default: () => "" },
+    ],
+    build: (f) => [
+      `Hi ${f.name},`,
+      "",
+      f.message,
+      "",
+      "Best regards,",
+      "MuscleBoxPro Team",
+    ].join("\n"),
+    buildHtml: (f) => wrapCard(`
+      <tr>
+        <td style="padding:28px 32px 0 32px;">
+          <p style="margin:0;color:#555555;font-size:16px;line-height:1.7;">Hi <strong style="color:#111111;">${f.name}</strong>,</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px 32px 0 32px;">
+          <p style="margin:0;color:#555555;font-size:15px;line-height:1.75;">${f.message.replace(/\n/g, "<br>")}</p>
+        </td>
+      </tr>
+      ${signOff()}`),
+  },
+
   followup: {
     name: "General Follow-up",
     subject: (m) => `Re: ${m.subject.replace(/^Re:\s*/i, "")}`,
@@ -195,7 +224,6 @@ const TEMPLATES = {
     buildHtml: (f) => wrapCard(`
       <tr>
         <td style="padding:28px 32px 12px 32px;">
-          <h1 style="margin:0 0 12px 0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:900;line-height:1.2;letter-spacing:0.3px;">Following up with you</h1>
           <p style="margin:0;color:#555555;font-size:16px;line-height:1.7;">
             Hi <strong style="color:#111111;">${f.name}</strong>, thank you for reaching out regarding <strong style="color:#111111;">${f.context}</strong>. We appreciate you taking the time to connect with us.
           </p>
@@ -203,7 +231,7 @@ const TEMPLATES = {
       </tr>
       <tr>
         <td style="padding:16px 32px 0 32px;">
-          ${darkBox("Next Step", `We would love to <strong style="color:#e0a060;">${f.action}</strong>. Please let us know what works best for you.`)}
+          <p style="margin:0;color:#555555;font-size:15px;line-height:1.75;">We would love to <strong style="color:#111111;">${f.action}</strong>. Please let us know what works best for you.</p>
         </td>
       </tr>
       ${f.extra ? `<tr><td style="padding:20px 32px 0 32px;"><p style="margin:0;color:#555555;font-size:15px;line-height:1.75;">${f.extra.replace(/\n/g, "<br>")}</p></td></tr>` : ""}
