@@ -59,9 +59,9 @@ const articleSchema = {
   description:
     "A comprehensive guide to passive and semi-passive revenue streams for Indian gym owners in 2026, ranked by ROI with investment requirements and realistic monthly income estimates.",
   author: {
-    "@type": "Organization",
-    name: "BlendBox Innovations LLP",
-    url: "https://www.muscleboxpro.com",
+    "@type": "Person",
+    name: "Anurag Singh",
+    url: "https://www.muscleboxpro.com/about",
   },
   publisher: {
     "@type": "Organization",

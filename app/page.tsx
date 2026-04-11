@@ -39,7 +39,7 @@ const homeWebPageSchema = {
   url: "https://www.muscleboxpro.com/",
   description:
     "Automated protein shake vending machines for gyms and fitness centers.",
-  inLanguage: "en",
+  inLanguage: "en-IN",
   isPartOf: { "@id": "https://www.muscleboxpro.com/#website" },
 };
 

@@ -32,7 +32,7 @@ const contactPageSchema = {
   url: "https://www.muscleboxpro.com/contact",
   description:
     "Contact MuscleBoxPro for partnerships, machine placement, support, and business inquiries.",
-  inLanguage: "en",
+  inLanguage: "en-IN",
   isPartOf: { "@id": "https://www.muscleboxpro.com/#website" },
   mainEntity: { "@id": "https://www.muscleboxpro.com/#organization" },
 };

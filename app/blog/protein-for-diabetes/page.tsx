@@ -35,7 +35,7 @@ const blogPostingSchema = {
   datePublished: "2026-02-01",
   dateModified: "2026-03-29",
   image: "https://www.muscleboxpro.com/images/pure_vanilla_protein_shake_in_glass.png",
-  inLanguage: "en",
+  inLanguage: "en-IN",
   author: {
     "@type": "Person",
     name: "Rishi Raj Sharma",

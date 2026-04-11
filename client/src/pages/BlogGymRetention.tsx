@@ -192,7 +192,7 @@ export default function BlogGymRetention() {
             Acquiring a new gym member in India costs between ₹800–₹2,500 in marketing and promotional spend, depending on the city and channel. Retaining an existing member for an additional six months has a marginal cost close to zero  but generates the same (or higher) revenue as the acquisition. The maths is straightforward: a 10% improvement in retention is worth more than a 10% increase in new sign-ups.
           </p>
           <p className="text-gray-600 leading-relaxed mb-8">
-            An automated protein machine from MuscleBoxPro costs the gym nothing to install or maintain. It generates passive shake revenue (typically ₹3,000–₹12,000 per month for a mid-size gym) while simultaneously nudging members toward faster results and stronger attendance habits. The return on investment is not just financial  it is compounded through the retention it drives.
+            An automated protein machine from MuscleBoxPro costs the gym nothing to install or maintain. It generates passive shake revenue — typically ₹3,000–₹12,000 per month as the gym's revenue share (total machine revenue ranges from ₹15,000–₹70,000+ depending on footfall and shake volume) — while simultaneously nudging members toward faster results and stronger attendance habits. The return on investment is not just financial  it is compounded through the retention it drives.
           </p>
 
           {/* Revenue callout */}

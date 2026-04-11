@@ -57,9 +57,9 @@ const articleSchema = {
   description:
     "A balanced ROI analysis comparing automated protein shake vending machines (MuscleBoxPro) vs. traditional front-desk supplement retail counters for Indian gym owners in 2026.",
   author: {
-    "@type": "Organization",
-    name: "BlendBox Innovations LLP",
-    url: "https://www.muscleboxpro.com",
+    "@type": "Person",
+    name: "Anurag Singh",
+    url: "https://www.muscleboxpro.com/about",
   },
   publisher: {
     "@type": "Organization",

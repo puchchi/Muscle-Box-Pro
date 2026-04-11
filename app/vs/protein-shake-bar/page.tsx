@@ -56,9 +56,9 @@ const articleSchema = {
   description:
     "A balanced 10-dimension comparison of automated protein shake vending machines (MuscleBoxPro) vs. staffed protein shake bars for Indian gym owners in 2026.",
   author: {
-    "@type": "Organization",
-    name: "BlendBox Innovations LLP",
-    url: "https://www.muscleboxpro.com",
+    "@type": "Person",
+    name: "Anurag Singh",
+    url: "https://www.muscleboxpro.com/about",
   },
   publisher: {
     "@type": "Organization",

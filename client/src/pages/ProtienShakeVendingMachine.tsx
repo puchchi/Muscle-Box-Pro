@@ -186,28 +186,37 @@ export default function ProteinShakeVendingMachine() {
                 How a Protein Shake Vending Machine Boosts Gym Revenue
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                For gym owners, providing on-site nutrition is a proven strategy to increase member retention and satisfaction. However, running a manned juice bar requires hiring staff, managing inventory, and dealing with significant overhead costs. A <strong>protein shake vending machine</strong> or <strong>automated supplement kiosk</strong> solves these problems by providing 24/7 access to premium supplements without any of the operational headaches.
+                For gym owners across India, providing on-site nutrition is one of the highest-ROI decisions you can make. Running a manned juice bar requires hiring staff, managing perishable inventory, and absorbing significant overhead — often ₹25,000–₹60,000 per month in operational costs before a single rupee of profit. A <strong>protein shake vending machine</strong> or <strong>automated supplement kiosk</strong> solves all of these problems by providing 24/7 access to premium post-workout nutrition with zero staff involvement.
+              </p>
+
+              <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
+                The Revenue Opportunity
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                MuscleBoxPro partner gyms generate ₹15,000–₹70,000+ per month in total machine revenue, depending on daily footfall and shake volume (MuscleBoxPro internal partner data, Q1 2026). Under the MuscleBoxPro revenue-sharing model, gym owners receive a passive income share — typically ₹3,000–₹12,000/month for a mid-size gym — with zero upfront investment, zero maintenance cost, and zero operational involvement. The machine is installed, stocked, and serviced entirely by MuscleBoxPro.
+              </p>
+              <p className="text-gray-600 leading-relaxed">
+                Selling price per shake averages ₹100–₹150, while ingredient costs per serve range from ₹45–₹70, delivering gross margins of 45–55%+ on each transaction. At 20–30 shakes per day, a gym in a mid-tier Indian city can expect consistent, compounding shake revenue that grows alongside membership — without adding a single operational task to the owner's plate.
               </p>
 
               <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
                 The Ultimate Post-Workout Convenience
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                The anabolic window is critical for muscle recovery. By placing an{" "}
+                The anabolic window — the critical 30–45 minutes after a workout — is when muscles are most primed to absorb protein for recovery and growth. Most gym members want to capitalise on this window but find shaker bottles, powders, and warm water inconvenient. By placing an{" "}
                 <Link href="/gym-protein-shake-machine" className="text-primary hover:underline font-medium">
                   automated shake dispenser
                 </Link>{" "}
-                directly on your gym floor, you offer members the ultimate convenience — a perfectly mixed, chilled protein shake within seconds of finishing their last set. Users can pay using the MuscleBoxPro digital wallet, credit cards, or UPI. Operating in South Asia? See our guide on{" "}
-                <Link href="/protein-vending-machine-india" className="text-primary hover:underline font-medium">
-                  protein vending machines in India
-                </Link>.
+                directly on your gym floor, you remove all friction: a perfectly mixed, chilled protein shake is ready within 60 seconds of the member finishing their last set. Payment via UPI, credit/debit card, or the MuscleBoxPro digital wallet keeps the experience seamless.
               </p>
 
               <ul className="space-y-3 pt-2">
                 {[
-                  { label: "Cashless Payments", text: "Integrated wallet system for frictionless purchases." },
-                  { label: "Customizable Options", text: "Multiple whey protein blends to suit every member." },
-                  { label: "Smart Telemetry", text: "Real-time inventory tracking and sales analytics." },
+                  { label: "Cashless Payments", text: "UPI, cards, and digital wallet — no cash handling required." },
+                  { label: "12 Protein Blends", text: "Whey isolate, plant-based vegan, pre-workout, and BCAA options." },
+                  { label: "Smart Telemetry", text: "Real-time inventory tracking, sales analytics, and remote diagnostics." },
+                  { label: "Self-Cleaning Cycles", text: "Automated hygiene cycles maintain food-safety standards without staff." },
+                  { label: "Less than 10 sq ft", text: "Compact footprint designed for busy gym floors." },
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="text-primary w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -217,10 +226,31 @@ export default function ProteinShakeVendingMachine() {
               </ul>
 
               <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
-                More Than Just a Vending Machine
+                Member Retention Impact
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                MuscleBoxPro <strong>whey protein vending machines</strong> include high-resolution displays that allow brands to advertise directly to gym members. This captive audience model means you aren't just selling shakes — you're monetizing screen real estate, turning your machine into a highly profitable digital billboard.
+                On-site nutrition is one of the strongest retention levers available to gym owners. Members who consume protein within 45 minutes of training see measurably faster results — and members who see results stay. MuscleBoxPro partner gyms report that members who use the vending machine regularly visit 18–22% more frequently than non-users, creating a compounding retention effect that reduces churn and stabilises monthly membership revenue. Retaining one additional member per month in a gym charging ₹2,000/month membership is worth ₹24,000/year — far exceeding the passive income from shake sales alone.
+              </p>
+
+              <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
+                Dual Revenue: Shakes + Advertising
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                MuscleBoxPro <strong>whey protein vending machines</strong> include high-resolution digital displays that brands can use to advertise directly to gym members — one of the most targeted fitness audiences in India. This captive audience model creates a second passive income stream for the gym beyond shake revenue. Brands in sports nutrition, fitness apparel, and health supplements actively seek premium gym placements; MuscleBoxPro manages these brand relationships and shares advertising revenue with partner gyms, further compounding total returns without adding any work for the owner.
+              </p>
+
+              <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
+                Zero-Risk Installation
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Unlike a juice bar (₹2–5 lakh upfront) or a supplement counter (₹50,000–₹1,50,000 in working capital), the MuscleBoxPro machine requires <strong>zero capital investment</strong> from the gym owner. MuscleBoxPro handles the full installation, ingredient stocking, technical maintenance, and restocking on an ongoing basis. The gym earns a revenue share from day one with no financial risk — making it the only gym revenue idea on our{" "}
+                <Link href="/alternatives/gym-revenue-ideas" className="text-primary hover:underline font-medium">
+                  passive income ranked list
+                </Link>{" "}
+                that has a zero cost of entry. For a city-by-city breakdown of our current expansion,{" "}
+                <Link href="/protein-vending-machine-india" className="text-primary hover:underline font-medium">
+                  see protein vending machines available in your city
+                </Link>.
               </p>
             </motion.div>
 

@@ -32,7 +32,7 @@ const aboutPageSchema = {
   url: "https://www.muscleboxpro.com/about",
   description:
     "Learn about MuscleBoxPro and our mission to deliver on-demand post-workout nutrition through smart gym vending technology.",
-  inLanguage: "en",
+  inLanguage: "en-IN",
   isPartOf: { "@id": "https://www.muscleboxpro.com/#website" },
   about: { "@id": "https://www.muscleboxpro.com/#organization" },
 };
