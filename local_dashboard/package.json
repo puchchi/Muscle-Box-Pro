@@ -1,0 +1,18 @@
+{
+  "name": "muscleboxpro-local-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.18.2",
+    "imapflow": "^1.0.169",
+    "mailparser": "^3.9.6",
+    "nodemailer": "^6.9.9"
+  }
+}

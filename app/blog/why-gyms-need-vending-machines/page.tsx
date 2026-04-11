@@ -35,7 +35,7 @@ const blogPostingSchema = {
   datePublished: "2026-01-15",
   dateModified: "2026-03-29",
   image: "https://www.muscleboxpro.com/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
-  inLanguage: "en",
+  inLanguage: "en-IN",
   author: {
     "@type": "Person",
     name: "Anurag Singh",

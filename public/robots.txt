@@ -43,4 +43,10 @@ Allow: /
 User-agent: anthropic-ai
 Allow: /
 
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
 Sitemap: https://www.muscleboxpro.com/sitemap.xml

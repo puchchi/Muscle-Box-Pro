@@ -2,10 +2,22 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CheckCircle2, TrendingUp, Zap, Shield, Monitor, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import {
+  CheckCircle2,
+  TrendingUp,
+  Zap,
+  Shield,
+  Monitor,
+  ArrowRight,
+  IndianRupee,
+  Clock,
+  ChevronDown,
+  Layers,
+} from "lucide-react";
 
 const features = [
   {
@@ -38,6 +50,13 @@ const features = [
   },
 ];
 
+const heroStats = [
+  { icon: IndianRupee, val: "₹0", label: "Upfront investment" },
+  { icon: Zap, val: "60s", label: "Blend time" },
+  { icon: Clock, val: "24/7", label: "Automated operation" },
+  { icon: Layers, val: "12+", label: "Protein blends" },
+];
+
 const faqs = [
   {
     q: "Is a protein shake vending machine profitable?",
@@ -52,6 +71,55 @@ const faqs = [
     a: "No, our smart vending machines can be configured to dispense whey isolate, plant-based vegan protein, pre-workouts, and BCAAs.",
   },
 ];
+
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className="border border-gray-200 rounded-2xl overflow-hidden"
+      itemScope
+      itemProp="mainEntity"
+      itemType="https://schema.org/Question"
+    >
+      <button
+        className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+      >
+        <span className="font-bold text-gray-900 text-sm pr-4" itemProp="name">{q}</span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex-shrink-0"
+        >
+          <ChevronDown className="w-4 h-4 text-gray-400" />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+            itemScope
+            itemProp="acceptedAnswer"
+            itemType="https://schema.org/Answer"
+          >
+            <p
+              className="px-6 pb-5 pt-3 text-gray-600 text-sm leading-relaxed border-t border-gray-100"
+              itemProp="text"
+            >
+              {a}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function ProteinShakeVendingMachine() {
   return (
@@ -71,7 +139,7 @@ export default function ProteinShakeVendingMachine() {
               transition={{ duration: 0.7 }}
               className="flex-1"
             >
-              <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
+              <span className="inline-block px-4 py-1.5 rounded-full border border-white/20 text-white/70 text-xs font-bold tracking-[0.25em] uppercase mb-6">
                 The Future of Gym Revenue
               </span>
               <h1
@@ -83,7 +151,7 @@ export default function ProteinShakeVendingMachine() {
                   Vending Machine
                 </span>
               </h1>
-              <p className="text-white/55 text-base leading-relaxed max-w-lg mb-8">
+              <p className="text-white/65 text-base leading-relaxed max-w-lg mb-8">
                 Transform unused floor space into a passive income stream. Our fully automated machines deliver premium post-workout nutrition with zero staff required.
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -112,19 +180,45 @@ export default function ProteinShakeVendingMachine() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.7, delay: 0.15 }}
-              className="mt-10 lg:mt-0 lg:w-[380px] flex-shrink-0"
+              className="mt-10 lg:mt-0 lg:w-[340px] flex-shrink-0"
             >
               <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
                 <img
                   src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
                   alt="MuscleBoxPro protein shake vending machine in a modern gym"
-                  className="w-full aspect-video object-cover"
+                  className="w-full aspect-[4/5] object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />
               </div>
             </motion.div>
 
           </div>
+        </div>
+      </section>
+
+      {/* ── Stats Row ── */}
+      <section className="py-10 px-4 bg-gray-50 border-b border-gray-100">
+        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+          {heroStats.map((s, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.07 }}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm py-5 px-4 text-center"
+            >
+              <div className="w-9 h-9 bg-primary/8 rounded-xl flex items-center justify-center mx-auto mb-2.5">
+                <s.icon className="w-4 h-4 text-primary" />
+              </div>
+              <p
+                className="font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary leading-none mb-1"
+                style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)" }}
+              >
+                {s.val}
+              </p>
+              <p className="text-gray-500 text-xs font-medium">{s.label}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -175,7 +269,6 @@ export default function ProteinShakeVendingMachine() {
         {/* ── SEO Content Section ── */}
         <section className="py-20 px-4 bg-gray-50 border-t border-gray-100">
           <div className="max-w-3xl mx-auto">
-
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -186,28 +279,50 @@ export default function ProteinShakeVendingMachine() {
                 How a Protein Shake Vending Machine Boosts Gym Revenue
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                For gym owners, providing on-site nutrition is a proven strategy to increase member retention and satisfaction. However, running a manned juice bar requires hiring staff, managing inventory, and dealing with significant overhead costs. A <strong>protein shake vending machine</strong> or <strong>automated supplement kiosk</strong> solves these problems by providing 24/7 access to premium supplements without any of the operational headaches.
+                For gym owners across India, providing on-site nutrition is one of the highest-ROI decisions you can make. Running a manned juice bar requires hiring staff, managing perishable inventory, and absorbing significant overhead — often ₹25,000–₹60,000 per month in operational costs before a single rupee of profit. A <strong>protein shake vending machine</strong> or <strong>automated supplement kiosk</strong> solves all of these problems by providing 24/7 access to premium post-workout nutrition with zero staff involvement.
+              </p>
+
+              <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
+                The Revenue Opportunity
+              </h3>
+
+              {/* Revenue callout */}
+              <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6 not-prose">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center flex-shrink-0">
+                    <IndianRupee className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-black text-gray-900 text-lg mb-1">₹15,000–₹70,000+ per month</p>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      MuscleBoxPro partner gyms generate this in total machine revenue depending on daily footfall. Under our revenue-sharing model, gym owners receive <strong>₹3,000–₹12,000/month</strong> passive income — with zero upfront investment and zero maintenance cost.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-gray-600 leading-relaxed">
+                Selling price per shake averages ₹100–₹150, while ingredient costs per serve range from ₹45–₹70, delivering gross margins of 45–55%+ on each transaction. At 20–30 shakes per day, a gym in a mid-tier Indian city can expect consistent, compounding shake revenue that grows alongside membership — without adding a single operational task to the owner's plate.
               </p>
 
               <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
                 The Ultimate Post-Workout Convenience
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                The anabolic window is critical for muscle recovery. By placing an{" "}
+                The anabolic window — the critical 30–45 minutes after a workout — is when muscles are most primed to absorb protein for recovery and growth. Most gym members want to capitalise on this window but find shaker bottles, powders, and warm water inconvenient. By placing an{" "}
                 <Link href="/gym-protein-shake-machine" className="text-primary hover:underline font-medium">
                   automated shake dispenser
                 </Link>{" "}
-                directly on your gym floor, you offer members the ultimate convenience — a perfectly mixed, chilled protein shake within seconds of finishing their last set. Users can pay using the MuscleBoxPro digital wallet, credit cards, or UPI. Operating in South Asia? See our guide on{" "}
-                <Link href="/protein-vending-machine-india" className="text-primary hover:underline font-medium">
-                  protein vending machines in India
-                </Link>.
+                directly on your gym floor, you remove all friction: a perfectly mixed, chilled protein shake is ready within 60 seconds of the member finishing their last set. Payment via UPI, credit/debit card, or the MuscleBoxPro digital wallet keeps the experience seamless.
               </p>
 
               <ul className="space-y-3 pt-2">
                 {[
-                  { label: "Cashless Payments", text: "Integrated wallet system for frictionless purchases." },
-                  { label: "Customizable Options", text: "Multiple whey protein blends to suit every member." },
-                  { label: "Smart Telemetry", text: "Real-time inventory tracking and sales analytics." },
+                  { label: "Cashless Payments", text: "UPI, cards, and digital wallet — no cash handling required." },
+                  { label: "12 Protein Blends", text: "Whey isolate, plant-based vegan, pre-workout, and BCAA options." },
+                  { label: "Smart Telemetry", text: "Real-time inventory tracking, sales analytics, and remote diagnostics." },
+                  { label: "Self-Cleaning Cycles", text: "Automated hygiene cycles maintain food-safety standards without staff." },
+                  { label: "Less than 10 sq ft", text: "Compact footprint designed for busy gym floors." },
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="text-primary w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -217,13 +332,33 @@ export default function ProteinShakeVendingMachine() {
               </ul>
 
               <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
-                More Than Just a Vending Machine
+                Member Retention Impact
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                MuscleBoxPro <strong>whey protein vending machines</strong> include high-resolution displays that allow brands to advertise directly to gym members. This captive audience model means you aren't just selling shakes — you're monetizing screen real estate, turning your machine into a highly profitable digital billboard.
+                On-site nutrition is one of the strongest retention levers available to gym owners. Members who consume protein within 45 minutes of training see measurably faster results — and members who see results stay. MuscleBoxPro partner gyms report that members who use the vending machine regularly visit 18–22% more frequently than non-users, creating a compounding retention effect that reduces churn and stabilises monthly membership revenue. Retaining one additional member per month in a gym charging ₹2,000/month membership is worth ₹24,000/year — far exceeding the passive income from shake sales alone.
+              </p>
+
+              <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
+                Dual Revenue: Shakes + Advertising
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                MuscleBoxPro <strong>whey protein vending machines</strong> include high-resolution digital displays that brands can use to advertise directly to gym members — one of the most targeted fitness audiences in India. This captive audience model creates a second passive income stream for the gym beyond shake revenue. Brands in sports nutrition, fitness apparel, and health supplements actively seek premium gym placements; MuscleBoxPro manages these brand relationships and shares advertising revenue with partner gyms, further compounding total returns without adding any work for the owner.
+              </p>
+
+              <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
+                Zero-Risk Installation
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Unlike a juice bar (₹2–5 lakh upfront) or a supplement counter (₹50,000–₹1,50,000 in working capital), the MuscleBoxPro machine requires <strong>zero capital investment</strong> from the gym owner. MuscleBoxPro handles the full installation, ingredient stocking, technical maintenance, and restocking on an ongoing basis. The gym earns a revenue share from day one with no financial risk — making it the only gym revenue idea on our{" "}
+                <Link href="/alternatives/gym-revenue-ideas" className="text-primary hover:underline font-medium">
+                  passive income ranked list
+                </Link>{" "}
+                that has a zero cost of entry. For a city-by-city breakdown of our current expansion,{" "}
+                <Link href="/protein-vending-machine-india" className="text-primary hover:underline font-medium">
+                  see protein vending machines available in your city
+                </Link>.
               </p>
             </motion.div>
-
           </div>
         </section>
 
@@ -239,8 +374,7 @@ export default function ProteinShakeVendingMachine() {
                 Frequently Asked Questions
               </h2>
             </div>
-
-            <div className="space-y-4" itemScope itemType="https://schema.org/FAQPage">
+            <div className="space-y-3" itemScope itemType="https://schema.org/FAQPage">
               {faqs.map((faq, i) => (
                 <motion.div
                   key={i}
@@ -248,15 +382,8 @@ export default function ProteinShakeVendingMachine() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.07 }}
-                  className="bg-gray-50 border border-gray-100 rounded-2xl p-6 hover:border-primary/20 transition-colors"
-                  itemScope
-                  itemProp="mainEntity"
-                  itemType="https://schema.org/Question"
                 >
-                  <h3 className="font-bold text-gray-900 mb-2" itemProp="name">{faq.q}</h3>
-                  <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
-                    <p className="text-gray-600 text-sm leading-relaxed m-0" itemProp="text">{faq.a}</p>
-                  </div>
+                  <FAQItem q={faq.q} a={faq.a} />
                 </motion.div>
               ))}
             </div>
@@ -273,21 +400,21 @@ export default function ProteinShakeVendingMachine() {
               Detailed comparisons to help you make the right choice for your gym.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Link href="/vs/protein-shake-bar" className="group flex flex-col items-center gap-2 bg-white border border-gray-200 hover:border-primary/40 rounded-2xl p-5 transition-colors">
-                <span className="font-semibold text-gray-800 group-hover:text-primary transition-colors text-sm">Vending Machine vs. Protein Shake Bar</span>
-                <span className="text-xs text-gray-400">Staff cost · hygiene · revenue</span>
-                <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
-              <Link href="/vs/supplement-counter" className="group flex flex-col items-center gap-2 bg-white border border-gray-200 hover:border-primary/40 rounded-2xl p-5 transition-colors">
-                <span className="font-semibold text-gray-800 group-hover:text-primary transition-colors text-sm">Vending Machine vs. Supplement Counter</span>
-                <span className="text-xs text-gray-400">ROI · inventory risk · shrinkage</span>
-                <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
-              <Link href="/alternatives/gym-revenue-ideas" className="group flex flex-col items-center gap-2 bg-white border border-gray-200 hover:border-primary/40 rounded-2xl p-5 transition-colors">
-                <span className="font-semibold text-gray-800 group-hover:text-primary transition-colors text-sm">7 Ways to Generate Gym Passive Revenue</span>
-                <span className="text-xs text-gray-400">Ranked by ROI for Indian gyms</span>
-                <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
+              {[
+                { href: "/vs/protein-shake-bar", title: "Vending Machine vs. Protein Shake Bar", sub: "Staff cost · hygiene · revenue" },
+                { href: "/vs/supplement-counter", title: "Vending Machine vs. Supplement Counter", sub: "ROI · inventory risk · shrinkage" },
+                { href: "/alternatives/gym-revenue-ideas", title: "7 Ways to Generate Gym Passive Revenue", sub: "Ranked by ROI for Indian gyms" },
+              ].map((card) => (
+                <Link
+                  key={card.href}
+                  href={card.href}
+                  className="group flex flex-col items-center gap-2 bg-white border border-gray-200 hover:border-primary/40 hover:shadow-md rounded-2xl p-5 transition-all duration-200 cursor-pointer"
+                >
+                  <span className="font-semibold text-gray-800 group-hover:text-primary transition-colors text-sm">{card.title}</span>
+                  <span className="text-xs text-gray-400">{card.sub}</span>
+                  <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+              ))}
             </div>
           </div>
         </section>

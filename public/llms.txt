@@ -23,10 +23,11 @@ License: All content on this site is © 2026 BlendBox Innovations LLP. All right
 
 ## Blog
 
-- [Why Every Gym Should Install a Protein Shake Vending Machine](https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines): Business case for gym owners — revenue, member retention, and post-workout nutrition science.
-- [The Best Protein Shake After a Workout: Whey vs. Plant](https://www.muscleboxpro.com/blog/best-protein-shake-after-workout): Comparison of whey isolate and plant protein for post-workout recovery, citing peer-reviewed research.
-- [Why Protein Is Important for Diabetes Management](https://www.muscleboxpro.com/blog/protein-for-diabetes): Evidence-based guide on protein's role in blood sugar control and muscle preservation for people with diabetes.
-- [Gym Member Retention: The Role of On-Site Nutrition](https://www.muscleboxpro.com/blog/gym-member-retention): Data-backed guide on how on-site post-workout protein dispensers reduce churn and strengthen the gym habit loop.
+- [Why Every Gym Should Install a Protein Shake Vending Machine](https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines): Business case for gym owners — revenue, member retention, and post-workout nutrition science. [Markdown](https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines.md)
+- [The Best Protein Shake After a Workout: Whey vs. Plant](https://www.muscleboxpro.com/blog/best-protein-shake-after-workout): Comparison of whey isolate and plant protein for post-workout recovery, citing peer-reviewed research. [Markdown](https://www.muscleboxpro.com/blog/best-protein-shake-after-workout.md)
+- [Why Protein Is Important for Diabetes Management](https://www.muscleboxpro.com/blog/protein-for-diabetes): Evidence-based guide on protein's role in blood sugar control and muscle preservation for people with diabetes. [Markdown](https://www.muscleboxpro.com/blog/protein-for-diabetes.md)
+- [Gym Member Retention: The Role of On-Site Nutrition](https://www.muscleboxpro.com/blog/gym-member-retention): Data-backed guide on how on-site post-workout protein dispensers reduce churn and strengthen the gym habit loop. [Markdown](https://www.muscleboxpro.com/blog/gym-member-retention.md)
+- [How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story](https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c): 18 months of real lab reports, 14 days of CGM glucose data, and 12 dietary findings that reversed early pre-diabetes without medication. [Markdown](https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c.md)
 
 ## Comparisons
 

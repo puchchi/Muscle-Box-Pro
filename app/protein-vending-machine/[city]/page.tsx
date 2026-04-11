@@ -237,6 +237,8 @@ export default async function ProteinVendingMachineCityPage({
       price: "0",
       priceCurrency: "INR",
       description: "Free machine installation with revenue-sharing model",
+      availability: "https://schema.org/InStock",
+      priceValidUntil: "2027-03-31",
     },
   };
 

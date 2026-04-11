@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MuscleBoxPro Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f10;
+      --surface: #18181b;
+      --border: #27272a;
+      --muted: #3f3f46;
+      --text: #fafafa;
+      --text-2: #a1a1aa;
+      --text-3: #71717a;
+      --accent: #f97316;
+      --accent-2: #db2777;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Login ── */
+    #login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; }
+    .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 340px; }
+    .login-card .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+    .login-card .logo span { font-size: 16px; font-weight: 900; letter-spacing: 2px; color: var(--accent); }
+    .login-card h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .login-card p { color: var(--text-2); margin-bottom: 24px; font-size: 13px; }
+    .login-card input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; }
+    .login-card input:focus { border-color: var(--accent); }
+    .login-card button { width: 100%; margin-top: 14px; background: linear-gradient(90deg, var(--accent-2), var(--accent)); border: none; border-radius: 10px; padding: 11px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .2s; }
+    .login-card button:hover { opacity: .9; }
+    .login-error { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
+
+    /* ── App shell ── */
+    #app { display: none; flex-direction: column; height: 100vh; }
+
+    /* Top bar */
+    .topbar { height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 14px; flex-shrink: 0; }
+    .topbar .logo { display: flex; align-items: center; gap: 8px; }
+    .topbar .logo span { font-size: 14px; font-weight: 900; letter-spacing: 2px; color: var(--accent); }
+    .topbar .divider { width: 1px; height: 18px; background: var(--border); }
+    .topbar .tag { font-size: 11px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .topbar .spacer { flex: 1; }
+    .topbar .signout-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-size: 12px; padding: 5px 12px; cursor: pointer; transition: all .2s; }
+    .topbar .signout-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    /* Main layout */
+    .main { display: flex; flex: 1; min-height: 0; }
+
+    /* Sidebar */
+    .sidebar { width: 52px; border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; flex-shrink: 0; }
+    .sidebar-btn { width: 38px; height: 38px; border-radius: 10px; border: none; background: none; color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .sidebar-btn:hover { background: var(--surface); color: var(--text-2); }
+    .sidebar-btn.active { background: rgba(249,115,22,.15); color: var(--accent); }
+    .sidebar-btn svg { width: 18px; height: 18px; }
+
+    /* Content panels */
+    .panel { flex: 1; display: none; flex-direction: column; min-width: 0; min-height: 0; }
+    .panel.active { display: flex; }
+    .panel-header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .panel-header h2 { font-size: 13px; font-weight: 600; }
+    .panel-header .icon { color: var(--accent); }
+
+    /* ── Inbox ── */
+    .inbox-layout { display: flex; flex: 1; min-height: 0; }
+
+    /* Email list */
+    .email-list { width: 300px; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+    .email-list-toolbar { padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
+    .email-list-toolbar input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-size: 13px; outline: none; }
+    .email-list-toolbar input:focus { border-color: var(--accent); }
+    .refresh-btn { background: none; border: 1px solid var(--border); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; color: var(--text-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .2s; }
+    .refresh-btn:hover { border-color: var(--muted); color: var(--text); }
+    .refresh-btn svg { width: 14px; height: 14px; }
+    .refresh-btn.spinning svg { animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .email-items { flex: 1; overflow-y: auto; }
+    .email-item { padding: 12px 12px 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s; display: flex; gap: 10px; border-left: 3px solid transparent; }
+    .email-item:hover { background: var(--surface); border-left-color: var(--muted); }
+    .email-item.selected { background: rgba(249,115,22,.12); border-left-color: var(--accent); }
+    .email-item.selected .email-sender { color: #fff; }
+    .email-item.selected .email-subject { color: var(--text); }
+    .email-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .email-meta { flex: 1; min-width: 0; }
+    .email-meta-row { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+    .email-sender { font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .email-sender.unread { color: #fff; }
+    .email-date { font-size: 11px; color: var(--text-3); flex-shrink: 0; }
+    .email-subject { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .email-preview { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+    .unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 4px; }
+
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-3); gap: 10px; }
+    .empty-state svg { width: 40px; height: 40px; opacity: .4; }
+
+    /* Email viewer */
+    .email-viewer { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+    .email-viewer-header { padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .email-viewer-header h3 { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+    .email-from-row { display: flex; align-items: center; gap: 10px; }
+    .viewer-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-2), var(--accent)); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .viewer-from-info { flex: 1; }
+    .viewer-from-name { font-size: 13px; font-weight: 600; }
+    .viewer-from-email { font-size: 11px; color: var(--text-3); }
+    .viewer-date { font-size: 11px; color: var(--text-3); }
+    .viewer-recipients { margin-top: 10px; display: flex; flex-direction: column; gap: 3px; }
+    .viewer-recipient-row { display: flex; gap: 8px; font-size: 12px; }
+    .viewer-recipient-label { color: var(--text-3); width: 28px; flex-shrink: 0; }
+    .viewer-recipient-value { color: var(--text-2); }
+    .reply-btn { background: linear-gradient(90deg, var(--accent-2), var(--accent)); border: none; border-radius: 8px; color: #fff; padding: 7px 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity .2s; }
+    .reply-btn:hover { opacity: .85; }
+
+    .email-body-area { flex: 1; overflow-y: auto; padding: 20px; }
+    .email-body-area iframe { width: 100%; min-height: 400px; border: none; background: #fff; border-radius: 10px; }
+    .email-body-text { font-size: 13px; line-height: 1.8; color: var(--text-2); white-space: pre-wrap; }
+
+    .viewer-actions { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; flex-shrink: 0; }
+
+    /* Split view */
+    .email-split-top { flex: 0 0 42%; overflow-y: auto; border-bottom: 2px solid var(--border); display: flex; flex-direction: column; }
+    .email-split-bottom { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+    /* Reply composer */
+    .reply-composer { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .reply-composer-header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .reply-composer-header span { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--accent); }
+    .back-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-size: 12px; padding: 5px 12px; cursor: pointer; transition: all .2s; }
+    .back-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    /* Mode toggle */
+    .mode-toggle { display: flex; gap: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+    .mode-btn { background: none; border: none; border-radius: 6px; padding: 5px 14px; font-size: 12px; font-weight: 600; color: var(--text-3); cursor: pointer; transition: all .2s; }
+    .mode-btn.active { background: var(--surface); color: var(--text); }
+
+    .reply-form { flex: 1; display: flex; flex-direction: column; padding: 16px 20px; gap: 12px; overflow-y: auto; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; }
+    .form-group input, .form-group textarea, .form-group select { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; font-family: inherit; transition: border-color .2s; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
+    .form-group textarea { resize: vertical; min-height: 200px; line-height: 1.7; }
+    .form-group select { cursor: pointer; }
+    .form-group select option { background: var(--surface); }
+
+    /* Template fields */
+    .tpl-fields { display: flex; flex-direction: column; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .tpl-fields-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .tpl-field { display: flex; flex-direction: column; gap: 3px; }
+    .tpl-field label { font-size: 11px; color: var(--text-3); }
+    .tpl-field input, .tpl-field textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text); font-size: 13px; outline: none; font-family: inherit; transition: border-color .2s; }
+    .tpl-toolbar { display: flex; gap: 4px; margin-bottom: 2px; }
+    .tpl-fmt-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; color: var(--text-2); font-size: 12px; font-weight: 700; width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; font-family: Georgia, serif; }
+    .tpl-fmt-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .tpl-field input:focus, .tpl-field textarea:focus { border-color: var(--accent); }
+    .tpl-field textarea { resize: vertical; min-height: 200px; line-height: 1.6; }
+    .tpl-hint { font-size: 11px; color: var(--text-3); font-style: italic; }
+
+    .reply-footer { padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .send-btn { width: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); border: none; border-radius: 10px; padding: 11px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .send-btn:hover { opacity: .9; }
+    .send-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Database panel ── */
+    .db-layout { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .db-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 20px; flex-shrink: 0; }
+    .db-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-3); font-size: 13px; font-weight: 600; padding: 12px 16px; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px; margin-bottom: -1px; }
+    .db-tab:hover { color: var(--text-2); }
+    .db-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .db-tab .tab-count { background: var(--muted); color: var(--text-3); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+    .db-tab.active .tab-count { background: rgba(249,115,22,.2); color: var(--accent); }
+
+    .db-panel { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .db-panel.active { display: flex; }
+
+    /* Overview */
+    .overview-content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .stat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; cursor: pointer; transition: border-color .2s; }
+    .stat-card:hover { border-color: var(--accent); }
+    .stat-card-label { display: flex; align-items: center; gap: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-3); margin-bottom: 8px; }
+    .stat-card-label svg { width: 14px; height: 14px; }
+    .stat-card-value { font-size: 36px; font-weight: 900; }
+    .stat-card-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+    /* Table view */
+    .table-toolbar { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+    .table-toolbar input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; color: var(--text); font-size: 13px; outline: none; }
+    .table-toolbar input:focus { border-color: var(--accent); }
+    .table-toolbar .row-count { font-size: 12px; color: var(--text-3); flex-shrink: 0; }
+
+    .table-wrap { flex: 1; overflow: auto; }
+    table.db-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.db-table th { position: sticky; top: 0; background: var(--surface); color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: .8px; font-weight: 700; padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.db-table td { padding: 10px 16px; border-bottom: 1px solid rgba(39,39,42,.5); color: var(--text-2); vertical-align: top; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    table.db-table tr:last-child td { border-bottom: none; }
+    table.db-table tr:hover td { background: rgba(249,115,22,.04); }
+    table.db-table td.bold { color: var(--text); font-weight: 600; }
+    table.db-table td.muted { color: var(--text-3); font-size: 11px; }
+    table.db-table td.wrap { white-space: normal; word-break: break-word; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .badge-demo { background: rgba(249,115,22,.15); color: var(--accent); }
+    .badge-campaign { background: rgba(219,39,119,.15); color: var(--accent-2); }
+
+    /* Detail modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 440px; max-width: 95vw; }
+    .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+    .modal-row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .modal-label { width: 80px; font-size: 12px; color: var(--text-3); flex-shrink: 0; }
+    .modal-value { font-size: 13px; color: var(--text); word-break: break-word; }
+    .modal-close { width: 100%; margin-top: 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px; color: var(--text-2); font-size: 13px; cursor: pointer; transition: all .2s; }
+    .modal-close:hover { border-color: var(--muted); color: var(--text); }
+
+    /* Preview modal */
+    .preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: none; align-items: center; justify-content: center; z-index: 150; }
+    .preview-overlay.open { display: flex; }
+    .preview-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: min(860px, 95vw); max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+    .preview-modal-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .preview-modal-header span { font-size: 13px; font-weight: 600; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+    .preview-modal-header span svg { color: var(--accent); }
+    .preview-close { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-size: 12px; padding: 5px 14px; cursor: pointer; transition: all .2s; }
+    .preview-close:hover { border-color: var(--muted); color: var(--text); }
+    .preview-modal-body { flex: 1; overflow-y: auto; background: #f4f4f5; }
+    .preview-modal-body iframe { width: 100%; min-height: 500px; border: none; display: block; }
+    .preview-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-size: 12px; font-weight: 600; padding: 6px 14px; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px; width: 100%; justify-content: center; margin-top: 4px; }
+    .preview-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .preview-btn svg { width: 13px; height: 13px; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; font-weight: 500; display: none; align-items: center; gap: 10px; z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+    .toast.show { display: flex; }
+    .toast.success { border-color: var(--green); }
+    .toast.error { border-color: var(--red); }
+    .toast .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .toast.error .toast-dot { background: var(--red); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
+
+    /* Skeleton */
+    .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--muted) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 8px; }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#f97316"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-weight="900" font-size="20">M</text></svg>
+      <span>MUSCLEBOXPRO</span>
+    </div>
+    <h1>Admin Dashboard</h1>
+    <p>Enter your password to continue</p>
+    <input type="password" id="password-input" placeholder="Password" autocomplete="current-password" />
+    <button onclick="login()">Sign In</button>
+    <div class="login-error" id="login-error">Wrong password. Try again.</div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="8" fill="#f97316"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-weight="900" font-size="20">M</text></svg>
+      <span>MUSCLEBOXPRO</span>
+    </div>
+    <div class="divider"></div>
+    <span class="tag">Admin</span>
+    <div class="spacer"></div>
+    <button class="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <button class="sidebar-btn active" id="nav-inbox" onclick="switchTab('inbox')" title="Inbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+      </button>
+      <button class="sidebar-btn" id="nav-stats" onclick="switchTab('stats')" title="Database">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      </button>
+    </nav>
+
+    <!-- Inbox panel -->
+    <div class="panel active" id="panel-inbox">
+      <div class="inbox-layout">
+
+        <!-- Email list -->
+        <div class="email-list">
+          <div class="email-list-toolbar">
+            <input type="text" id="search-input" placeholder="Search..." oninput="filterEmails()" />
+            <button class="refresh-btn" id="refresh-btn" onclick="loadInbox()" title="Refresh">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            </button>
+          </div>
+          <div class="email-items" id="email-items">
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+              <span>Loading inbox...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Viewer area -->
+        <div class="email-viewer" id="email-viewer">
+          <div class="empty-state" style="height:100%">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span>Select an email to read</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Stats panel -->
+    <div class="panel" id="panel-stats">
+      <div class="panel-header">
+        <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        <h2>Database</h2>
+      </div>
+      <div class="db-layout" id="stats-content">
+        <div class="empty-state" style="height:200px"><span>Loading...</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <h3 id="modal-title">Request Detail</h3>
+    <div id="modal-body"></div>
+    <button class="modal-close" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<!-- Preview modal -->
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview(event)">
+  <div class="preview-modal">
+    <div class="preview-modal-header">
+      <span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Email Preview
+      </span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="send-btn" id="preview-send-btn" style="padding:7px 18px;font-size:13px;border-radius:8px;" onclick="sendReply()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Reply
+        </button>
+        <button class="preview-close" onclick="closePreview()">Close</button>
+      </div>
+    </div>
+    <div class="preview-modal-body">
+      <iframe id="preview-iframe" sandbox="allow-same-origin"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+
+  let password = '';
+  let allEmails = [];
+  let selectedEmail = null;
+  let replyMode = false;
+  let replyComposerMode = 'basic'; // 'basic' | 'template'
+  let selectedTemplate = 'simple'; // template key
+
+  // ── Templates ─────────────────────────────────────────────────────────────
+
+  const TEMPLATES = {
+    region: {
+      name: 'Region Not Operational',
+      subject: (m) => `Re: ${m.subject.replace(/^Re:\s*/i, '')}`,
+      fields: [
+        { key: 'name',   label: 'Recipient Name',  type: 'input',    default: (m) => m.from.name || m.from.address.split('@')[0] },
+        { key: 'region', label: 'Region / State',  type: 'input',    default: () => 'Andhra Pradesh' },
+        { key: 'extra',  label: 'Additional note (optional)', type: 'textarea', default: () => '' },
+      ],
+      build: (f) =>
+        `Hi ${f.name},\n\nThank you for your interest in MuscleBoxPro and for requesting a demo. We truly appreciate your enthusiasm for bringing a protein shake vending solution to your gym.\n\nAt present, our operations are focused on select regions, and we have not yet started operations in ${f.region}. However, we are actively evaluating expansion into new states in the future.\n\nThat said, if you are interested in setting up a protein shake vending machine independently, we can certainly assist you in procuring a suitable machine and guiding you on setup and operation. This arrangement would be managed directly by you and would not operate under the MuscleBoxPro brand.\n\nIf this option interests you, please let us know, and we can share further details regarding machine specifications, cost, and supplier options.${f.extra ? '\n\n' + f.extra : ''}\n\nWe sincerely appreciate your interest and hope to collaborate in some capacity.\n\nBest regards,\nMuscleBoxPro Team`,
+    },
+    simple: {
+      name: 'Simple Message',
+      subject: (m) => `Re: ${m.subject.replace(/^Re:\s*/i, '')}`,
+      fields: [
+        { key: 'name',    label: 'Recipient Name', type: 'input',    default: (m) => m.from.name || m.from.address.split('@')[0] },
+        { key: 'message', label: 'Message Body',   type: 'textarea', default: () => '' },
+      ],
+      build: (f) => `Hi ${f.name},\n\n${f.message}\n\nBest regards,\nMuscleBoxPro Team`,
+    },
+    followup: {
+      name: 'General Follow-up',
+      subject: (m) => `Re: ${m.subject.replace(/^Re:\s*/i, '')}`,
+      fields: [
+        { key: 'name',    label: 'Recipient Name',    type: 'input',    default: (m) => m.from.name || m.from.address.split('@')[0] },
+        { key: 'context', label: 'Context / Purpose', type: 'input',    default: () => 'your recent inquiry' },
+        { key: 'action',  label: 'Next Action',       type: 'input',    default: () => 'schedule a call at your convenience' },
+        { key: 'extra',   label: 'Additional details (optional)', type: 'textarea', default: () => '' },
+      ],
+      build: (f) =>
+        `Hi ${f.name},\n\nThank you for reaching out regarding ${f.context}. We appreciate you taking the time to connect with us.\n\nWe would love to ${f.action}. Please let us know what works best for you.${f.extra ? '\n\n' + f.extra : ''}\n\nLooking forward to hearing from you.\n\nBest regards,\nMuscleBoxPro Team`,
+    },
+  };
+
+  // ── Auth ───────────────────────────────────────────────────────────────────
+
+  async function login() {
+    const pwd = document.getElementById('password-input').value.trim();
+    if (!pwd) return;
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd }),
+    });
+    if (res.ok) {
+      password = pwd;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      loadInbox();
+    } else {
+      document.getElementById('login-error').style.display = 'block';
+    }
+  }
+
+  document.getElementById('password-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') login();
+  });
+
+  function signOut() {
+    password = '';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('password-input').value = '';
+  }
+
+  function api(path, options = {}) {
+    return fetch(path, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-dashboard-password': password,
+        ...(options.headers || {}),
+      },
+    });
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+
+  function switchTab(tab) {
+    ['inbox', 'stats'].forEach(t => {
+      document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+      document.getElementById(`nav-${t}`).classList.toggle('active', t === tab);
+    });
+    if (tab === 'stats') loadStats();
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+
+  let toastTimer;
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.className = `toast show ${type}`;
+    document.getElementById('toast-msg').textContent = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  function initials(name, address) {
+    return (name || address || '?').slice(0, 2).toUpperCase();
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const now = new Date();
+    if (now - d < 86400000) return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  }
+
+  function fmtDateLong(iso) {
+    return new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  // ── Inbox ──────────────────────────────────────────────────────────────────
+
+  async function loadInbox() {
+    const btn = document.getElementById('refresh-btn');
+    btn.classList.add('spinning');
+    try {
+      const res = await api('/api/inbox');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      allEmails = data.messages || [];
+      renderEmailList(allEmails);
+    } catch (err) {
+      showToast(err.message || 'Failed to load inbox', 'error');
+      document.getElementById('email-items').innerHTML = `<div class="empty-state"><span>Failed to load inbox</span></div>`;
+    } finally {
+      btn.classList.remove('spinning');
+    }
+  }
+
+  function filterEmails() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const filtered = q
+      ? allEmails.filter(m => {
+          const addrList = [
+            m.from.name, m.from.address,
+            ...(m.to || []).flatMap(a => [a.name, a.address]),
+            ...(m.cc || []).flatMap(a => [a.name, a.address]),
+          ].join(' ').toLowerCase();
+          return addrList.includes(q) || m.subject.toLowerCase().includes(q);
+        })
+      : allEmails;
+    renderEmailList(filtered);
+  }
+
+  function renderEmailList(emails) {
+    const el = document.getElementById('email-items');
+    if (!emails.length) {
+      el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg><span>No emails found</span></div>`;
+      return;
+    }
+    el.innerHTML = emails.map(m => `
+      <div class="email-item ${selectedEmail?.uid === m.uid ? 'selected' : ''}" onclick="selectEmail(${m.uid})">
+        <div class="email-avatar">${initials(m.from.name, m.from.address)}</div>
+        <div class="email-meta">
+          <div class="email-meta-row">
+            <span class="email-sender ${m.seen ? '' : 'unread'}">${m.from.name || m.from.address}</span>
+            <span class="email-date">${fmtDate(m.date)}</span>
+          </div>
+          <div class="email-subject">${m.subject}</div>
+          <div class="email-preview">${(m.textBody || '').slice(0, 60)}</div>
+        </div>
+        ${!m.seen ? '<div class="unread-dot"></div>' : ''}
+      </div>
+    `).join('');
+  }
+
+  function selectEmail(uid) {
+    selectedEmail = allEmails.find(m => m.uid === uid);
+    replyMode = false;
+    filterEmails();
+    renderViewer();
+  }
+
+  function emailPaneHtml(m) {
+    return `
+      <div class="email-viewer-header">
+        <h3>${m.subject}</h3>
+        <div class="email-from-row">
+          <div class="viewer-avatar">${initials(m.from.name, m.from.address)}</div>
+          <div class="viewer-from-info">
+            <div class="viewer-from-name">${m.from.name || m.from.address}</div>
+            <div class="viewer-from-email">${m.from.address}</div>
+          </div>
+          <div class="viewer-date">${fmtDate(m.date)}</div>
+        </div>
+        <div class="viewer-recipients">
+          ${m.to?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">To</span><span class="viewer-recipient-value">${m.to.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+          ${m.cc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">CC</span><span class="viewer-recipient-value">${m.cc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+          ${m.bcc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">BCC</span><span class="viewer-recipient-value">${m.bcc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+        </div>
+      </div>
+      <div class="email-body-area">
+        ${m.htmlBody
+          ? `<iframe id="email-iframe" sandbox="allow-same-origin" srcdoc="${m.htmlBody.replace(/"/g, '&quot;')}"></iframe>`
+          : `<div class="email-body-text">${m.textBody || '(empty)'}</div>`
+        }
+      </div>
+    `;
+  }
+
+  function attachIframeResize() {
+    const iframe = document.getElementById('email-iframe');
+    if (iframe) {
+      iframe.onload = () => {
+        try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px'; } catch {}
+      };
+    }
+  }
+
+  function renderViewer() {
+    const el = document.getElementById('email-viewer');
+    if (!selectedEmail) {
+      el.innerHTML = `<div class="empty-state" style="height:100%"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>Select an email to read</span></div>`;
+      return;
+    }
+
+    const m = selectedEmail;
+
+    if (!replyMode) {
+      el.innerHTML = `
+        <div style="display:flex;flex-direction:column;flex:1;min-height:0">
+          ${emailPaneHtml(m)}
+          <div class="viewer-actions">
+            <button class="reply-btn" onclick="openReply()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
+              Reply
+            </button>
+          </div>
+        </div>
+      `;
+      attachIframeResize();
+      return;
+    }
+
+    // Split view: email on top, composer on bottom
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <div class="email-split-top">${emailPaneHtml(m)}</div>
+        <div class="email-split-bottom" id="reply-split-pane"></div>
+      </div>
+    `;
+    attachIframeResize();
+    renderReply();
+  }
+
+  // ── Reply ──────────────────────────────────────────────────────────────────
+
+  function openReply() {
+    replyMode = true;
+    replyComposerMode = 'basic';
+    renderViewer();
+  }
+
+  function setReplyMode(mode) {
+    replyComposerMode = mode;
+    if (document.getElementById('reply-split-pane')) {
+      renderReply();
+    } else {
+      renderViewer();
+    }
+  }
+
+  function setTemplate(key) {
+    selectedTemplate = key;
+    renderTemplateFields();
+  }
+
+  function renderReply() {
+    const m = selectedEmail;
+    const el = document.getElementById('reply-split-pane');
+    if (!el) return;
+    el.innerHTML = `
+      <div class="reply-composer">
+        <div class="reply-composer-header">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
+            Reply
+          </span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="mode-toggle">
+              <button class="mode-btn ${replyComposerMode === 'basic' ? 'active' : ''}" onclick="setReplyMode('basic')">Basic</button>
+              <button class="mode-btn ${replyComposerMode === 'template' ? 'active' : ''}" onclick="setReplyMode('template')">Template</button>
+            </div>
+            <button class="back-btn" onclick="replyMode=false;renderViewer()">✕ Close</button>
+          </div>
+        </div>
+
+        <div class="reply-form" id="reply-form-body">
+          <div class="form-group">
+            <label>To</label>
+            <input type="text" id="reply-to" value="" placeholder="Enter recipient email..." />
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <input type="text" id="reply-subject" value="${TEMPLATES[selectedTemplate]?.subject(m) || 'Re: ' + m.subject.replace(/^Re:\s*/i,'')}" />
+          </div>
+          <div id="reply-mode-body"></div>
+        </div>
+
+        <div class="reply-footer" id="reply-footer"></div>
+      </div>
+    `;
+    renderModeBody();
+  }
+
+  function renderFooter() {
+    const el = document.getElementById('reply-footer');
+    if (!el) return;
+    if (replyComposerMode === 'template') {
+      el.innerHTML = `
+        <button class="send-btn" id="send-btn" onclick="previewTemplate()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview Email
+        </button>
+      `;
+    } else {
+      el.innerHTML = `
+        <button class="send-btn" id="send-btn" onclick="sendReply()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Reply
+        </button>
+      `;
+    }
+  }
+
+  function renderModeBody() {
+    const el = document.getElementById('reply-mode-body');
+    if (!el) return;
+    if (replyComposerMode === 'basic') {
+      el.innerHTML = `
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="reply-body" placeholder="Write your reply..." style="min-height:240px;"></textarea>
+        </div>
+      `;
+    } else {
+      const options = Object.entries(TEMPLATES).map(([key, t]) =>
+        `<option value="${key}" ${key === selectedTemplate ? 'selected' : ''}>${t.name}</option>`
+      ).join('');
+      el.innerHTML = `
+        <div class="form-group">
+          <label>Select Template</label>
+          <select onchange="setTemplate(this.value)">${options}</select>
+        </div>
+        <div id="tpl-fields-container"></div>
+      `;
+      renderTemplateFields();
+    }
+    renderFooter();
+  }
+
+  function renderTemplateFields() {
+    const container = document.getElementById('tpl-fields-container');
+    if (!container) return;
+    const tpl = TEMPLATES[selectedTemplate];
+    if (!tpl) return;
+    const m = selectedEmail;
+
+    container.innerHTML = `
+      <div class="tpl-fields">
+        <div class="tpl-fields-label">Template Variables</div>
+        ${tpl.fields.map(f => `
+          <div class="tpl-field">
+            <label>${f.label}</label>
+            ${f.type === 'textarea' ? `
+              <div class="tpl-toolbar">
+                <button class="tpl-fmt-btn" title="Bold" onmousedown="event.preventDefault();applyFormat('tpl-${f.key}','bold')"><b>B</b></button>
+                <button class="tpl-fmt-btn" title="Italic" onmousedown="event.preventDefault();applyFormat('tpl-${f.key}','italic')"><i>I</i></button>
+                <button class="tpl-fmt-btn" title="Bullet list" onmousedown="event.preventDefault();applyFormat('tpl-${f.key}','bullet')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+                </button>
+                <button class="tpl-fmt-btn" title="Numbered list" onmousedown="event.preventDefault();applyFormat('tpl-${f.key}','numbered')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke-linecap="round"/><path d="M4 10h2" stroke-linecap="round"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <textarea id="tpl-${f.key}" oninput="updateTplSubject()">${f.default(m)}</textarea>
+            ` : `<input type="text" id="tpl-${f.key}" value="${f.default(m)}" oninput="updateTplSubject()" />`}
+          </div>
+        `).join('')}
+        <p class="tpl-hint">Edit fields above — the final message is built automatically when you send.</p>
+        <button class="preview-btn" onclick="previewTemplate()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview Email
+        </button>
+      </div>
+    `;
+  }
+
+  function applyFormat(id, format) {
+    const ta = document.getElementById(id);
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = ta.value.substring(start, end);
+    if (!selected) return;
+
+    let wrapped;
+    if (format === 'bullet' || format === 'numbered') {
+      const tag = format === 'bullet' ? 'ul' : 'ol';
+      const items = selected.split('\n').map(line => `  <li style="margin:0 0 2px 0;padding:0;color:#555555;font-size:15px;line-height:1.5;">${line.trim()}</li>`).join('\n');
+      wrapped = `<${tag} style="margin:4px 0 8px 0;padding-left:20px;color:#555555;font-size:15px;line-height:1.5;">\n${items}\n</${tag}>`;
+    } else {
+      const tags = { bold: ['<strong>', '</strong>'], italic: ['<em>', '</em>'] };
+      const [open, close] = tags[format];
+      wrapped = open + selected + close;
+    }
+
+    ta.value = ta.value.substring(0, start) + wrapped + ta.value.substring(end);
+    ta.selectionStart = start;
+    ta.selectionEnd = start + wrapped.length;
+    ta.focus();
+  }
+
+  function updateTplSubject() {
+    // Keep subject in sync if user hasn't manually edited it
+    const m = selectedEmail;
+    const tpl = TEMPLATES[selectedTemplate];
+    if (tpl) {
+      const subjectEl = document.getElementById('reply-subject');
+      if (subjectEl) subjectEl.value = tpl.subject(m);
+    }
+  }
+
+  async function sendReply() {
+    const to = document.getElementById('reply-to').value.trim();
+    const subject = document.getElementById('reply-subject').value.trim();
+
+    if (!to) { showToast('Recipient is empty', 'error'); return; }
+
+    let payload;
+
+    if (replyComposerMode === 'basic') {
+      const body = document.getElementById('reply-body')?.value || '';
+      if (!body.trim()) { showToast('Message is empty', 'error'); return; }
+      const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.75;color:#333;">${body.split('\n').map(l => l ? `<p style="margin:0 0 10px 0;">${l}</p>` : '<p style="margin:0 0 10px 0;">&nbsp;</p>').join('')}</div>`;
+      payload = { to, subject, html, inReplyTo: selectedEmail.messageId, references: selectedEmail.messageId };
+    } else {
+      const tpl = TEMPLATES[selectedTemplate];
+      const fields = {};
+      (tpl?.fields || []).forEach(f => {
+        fields[f.key] = document.getElementById(`tpl-${f.key}`)?.value || '';
+      });
+      payload = { to, subject, templateKey: selectedTemplate, fields, inReplyTo: selectedEmail.messageId, references: selectedEmail.messageId };
+    }
+
+    const btn = document.getElementById('preview-send-btn') || document.getElementById('send-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+    api('/api/reply', { method: 'POST', body: JSON.stringify(payload) }).catch(() => {});
+    setTimeout(() => {
+      if (btn) { btn.disabled = false; btn.innerHTML = sendIcon(); }
+      closePreview();
+      showToast('Reply sent!', 'success');
+      replyMode = false;
+      renderViewer();
+    }, 2000);
+  }
+
+  function sendIcon() {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Reply`;
+  }
+
+  // ── Preview ────────────────────────────────────────────────────────────────
+
+  async function previewTemplate() {
+    const tpl = TEMPLATES[selectedTemplate];
+    if (!tpl) return;
+    const fields = {};
+    (tpl.fields || []).forEach(f => {
+      fields[f.key] = document.getElementById(`tpl-${f.key}`)?.value || '';
+    });
+
+    try {
+      const res = await api('/api/preview', {
+        method: 'POST',
+        body: JSON.stringify({ templateKey: selectedTemplate, fields }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      const iframe = document.getElementById('preview-iframe');
+      iframe.srcdoc = data.html;
+      iframe.onload = () => {
+        try { iframe.style.height = iframe.contentDocument.body.scrollHeight + 'px'; } catch {}
+      };
+      document.getElementById('preview-overlay').classList.add('open');
+    } catch (err) {
+      showToast(err.message || 'Failed to load preview', 'error');
+    }
+  }
+
+  function closePreview(e) {
+    if (!e || e.target === document.getElementById('preview-overlay')) {
+      document.getElementById('preview-overlay').classList.remove('open');
+    }
+  }
+
+  // ── Stats ──────────────────────────────────────────────────────────────────
+
+  // ── Database / Stats ───────────────────────────────────────────────────────
+
+  let dbData = null;
+  let activeDbTab = 'overview';
+
+  async function loadStats() {
+    const el = document.getElementById('stats-content');
+    el.innerHTML = `<div class="empty-state" style="height:200px"><span>Loading...</span></div>`;
+    try {
+      const res = await api('/api/stats');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      dbData = data;
+      renderDb();
+    } catch (err) {
+      showToast(err.message || 'Failed to load stats', 'error');
+      el.innerHTML = `<div class="empty-state" style="height:200px"><span>Failed to load data</span></div>`;
+    }
+  }
+
+  function switchDbTab(tab) {
+    activeDbTab = tab;
+    document.querySelectorAll('.db-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.db-panel').forEach(p => p.classList.toggle('active', p.id === `db-panel-${tab}`));
+  }
+
+  function renderDb() {
+    const el = document.getElementById('stats-content');
+    const d = dbData;
+    el.innerHTML = `
+      <div class="db-tabs">
+        <button class="db-tab active" data-tab="overview" onclick="switchDbTab('overview')">
+          Overview
+        </button>
+        <button class="db-tab" data-tab="demo" onclick="switchDbTab('demo')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Demo Requests
+          <span class="tab-count">${d.demoRequestCount}</span>
+        </button>
+        <button class="db-tab" data-tab="campaign" onclick="switchDbTab('campaign')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Campaign Requests
+          <span class="tab-count">${d.campaignRequestCount}</span>
+        </button>
+      </div>
+
+      <!-- Overview -->
+      <div class="db-panel active" id="db-panel-overview">
+        <div class="overview-content">
+          <div class="stat-cards">
+            <div class="stat-card" onclick="switchDbTab('demo')">
+              <div class="stat-card-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                Demo Requests
+              </div>
+              <div class="stat-card-value">${d.demoRequestCount}</div>
+              <div class="stat-card-sub">Click to view all →</div>
+            </div>
+            <div class="stat-card" onclick="switchDbTab('campaign')">
+              <div class="stat-card-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#db2777" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                Campaign Requests
+              </div>
+              <div class="stat-card-value">${d.campaignRequestCount}</div>
+              <div class="stat-card-sub">Click to view all →</div>
+            </div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text-2);">Latest Activity</div>
+            ${[...d.recentDemoRequests.slice(0,5).map(r => ({...r, _type:'demo'})),
+               ...d.recentCampaignRequests.slice(0,5).map(r => ({...r, _type:'campaign'}))]
+              .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+              .slice(0,8)
+              .map(r => r._type === 'demo' ? `
+                <div style="padding:10px 16px;border-bottom:1px solid rgba(39,39,42,.5);display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="showDemoDetail(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+                  <span class="badge badge-demo">Demo</span>
+                  <span style="flex:1;font-size:13px;color:var(--text);font-weight:600;">${r.name}</span>
+                  <span style="font-size:11px;color:var(--text-3);">${r.gym_name} · ${r.location}</span>
+                  <span style="font-size:11px;color:var(--text-3);flex-shrink:0;margin-left:8px;">${fmtDate(r.created_at)}</span>
+                </div>` : `
+                <div style="padding:10px 16px;border-bottom:1px solid rgba(39,39,42,.5);display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="showCampaignDetail(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+                  <span class="badge badge-campaign">Campaign</span>
+                  <span style="flex:1;font-size:13px;color:var(--text);font-weight:600;">${r.brand_name}</span>
+                  <span style="font-size:11px;color:var(--text-3);">${r.email}</span>
+                  <span style="font-size:11px;color:var(--text-3);flex-shrink:0;margin-left:8px;">${fmtDate(r.created_at)}</span>
+                </div>`
+              ).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- Demo Requests -->
+      <div class="db-panel" id="db-panel-demo">
+        <div class="table-toolbar">
+          <input type="text" placeholder="Search by name, gym, email, location..." oninput="filterTable('demo', this.value)" />
+          <span class="row-count" id="demo-row-count">${d.recentDemoRequests.length} records</span>
+        </div>
+        <div class="table-wrap">
+          <table class="db-table" id="demo-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Gym</th>
+                <th>Email</th>
+                <th>Mobile</th>
+                <th>Location</th>
+                <th>Message</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody id="demo-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Campaign Requests -->
+      <div class="db-panel" id="db-panel-campaign">
+        <div class="table-toolbar">
+          <input type="text" placeholder="Search by brand, email..." oninput="filterTable('campaign', this.value)" />
+          <span class="row-count" id="campaign-row-count">${d.recentCampaignRequests.length} records</span>
+        </div>
+        <div class="table-wrap">
+          <table class="db-table" id="campaign-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Brand</th>
+                <th>Email</th>
+                <th>Mobile</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody id="campaign-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    renderDemoRows(d.recentDemoRequests);
+    renderCampaignRows(d.recentCampaignRequests);
+  }
+
+  function renderDemoRows(rows) {
+    document.getElementById('demo-tbody').innerHTML = rows.map((r, i) => `
+      <tr style="cursor:pointer;" onclick="showDemoDetail(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+        <td class="muted">${i + 1}</td>
+        <td class="bold">${r.name}</td>
+        <td>${r.gym_name}</td>
+        <td>${r.email}</td>
+        <td>${r.mobile}</td>
+        <td>${r.location}</td>
+        <td class="wrap" style="max-width:160px;color:var(--text-3);font-size:11px;">${r.message || '—'}</td>
+        <td class="muted">${fmtDateLong(r.created_at)}</td>
+      </tr>
+    `).join('');
+    document.getElementById('demo-row-count').textContent = `${rows.length} records`;
+  }
+
+  function renderCampaignRows(rows) {
+    document.getElementById('campaign-tbody').innerHTML = rows.map((r, i) => `
+      <tr style="cursor:pointer;" onclick="showCampaignDetail(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+        <td class="muted">${i + 1}</td>
+        <td class="bold">${r.brand_name}</td>
+        <td>${r.email}</td>
+        <td>${r.mobile}</td>
+        <td class="muted">${fmtDateLong(r.created_at)}</td>
+      </tr>
+    `).join('');
+    document.getElementById('campaign-row-count').textContent = `${rows.length} records`;
+  }
+
+  function filterTable(type, q) {
+    const lower = q.toLowerCase();
+    if (type === 'demo') {
+      const filtered = q ? dbData.recentDemoRequests.filter(r =>
+        [r.name, r.gym_name, r.email, r.mobile, r.location, r.message].join(' ').toLowerCase().includes(lower)
+      ) : dbData.recentDemoRequests;
+      renderDemoRows(filtered);
+    } else {
+      const filtered = q ? dbData.recentCampaignRequests.filter(r =>
+        [r.brand_name, r.email, r.mobile].join(' ').toLowerCase().includes(lower)
+      ) : dbData.recentCampaignRequests;
+      renderCampaignRows(filtered);
+    }
+  }
+
+  // ── Modal ──────────────────────────────────────────────────────────────────
+
+  function showDemoDetail(r) {
+    document.getElementById('modal-title').textContent = 'Demo Request';
+    document.getElementById('modal-body').innerHTML = [
+      ['Name', r.name],
+      ['Gym', r.gym_name],
+      ['Email', r.email],
+      ['Mobile', r.mobile],
+      ['Location', r.location],
+      ['Message', r.message || '—'],
+      ['Submitted', fmtDateLong(r.created_at)],
+    ].map(([l, v]) => `<div class="modal-row"><span class="modal-label">${l}</span><span class="modal-value">${v}</span></div>`).join('');
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function showCampaignDetail(r) {
+    document.getElementById('modal-title').textContent = 'Campaign Request';
+    document.getElementById('modal-body').innerHTML = [
+      ['Brand', r.brand_name],
+      ['Email', r.email],
+      ['Mobile', r.mobile],
+      ['Submitted', fmtDateLong(r.created_at)],
+    ].map(([l, v]) => `<div class="modal-row"><span class="modal-label">${l}</span><span class="modal-value">${v}</span></div>`).join('');
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (!e || e.target === document.getElementById('modal-overlay')) {
+      document.getElementById('modal-overlay').classList.remove('open');
+    }
+  }
+</script>
+</body>
+</html>

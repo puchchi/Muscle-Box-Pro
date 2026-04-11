@@ -35,7 +35,7 @@ const blogPostingSchema = {
   datePublished: "2026-01-20",
   dateModified: "2026-03-29",
   image: "https://www.muscleboxpro.com/images/chocolate_banana_milk_protein_shake.png",
-  inLanguage: "en",
+  inLanguage: "en-IN",
   author: {
     "@type": "Person",
     name: "Rishi Raj Sharma",

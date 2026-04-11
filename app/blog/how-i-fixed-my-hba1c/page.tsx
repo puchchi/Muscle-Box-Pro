@@ -41,7 +41,7 @@ const blogPostingSchema = {
   url: "https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c",
   datePublished: "2026-04-20",
   dateModified: "2026-04-03",
-  inLanguage: "en",
+  inLanguage: "en-IN",
   author: {
     "@type": "Person",
     name: "Anurag Singh",

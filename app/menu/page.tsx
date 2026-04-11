@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Menu from "@/pages/Menu";
 
 export const metadata: Metadata = {
-  title: "Protien Shake Blend Menu | Protein Shake Vending Machine | MuscleBoxPro",
+  title: "Protein Shake Blend Menu | Protein Shake Vending Machine | MuscleBoxPro",
   description:
     "Explore our full menu of 12 scientifically formulated protein shake blends available in our automated vending machines.",
   alternates: { canonical: "/menu" },

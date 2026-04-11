@@ -33,6 +33,7 @@ const breadcrumbSchema = {
 const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
+  "@id": "https://www.muscleboxpro.com/blog/gym-member-retention#article",
   headline: "Gym Member Retention: The Role of On-Site Nutrition",
   description:
     "Discover how on-site protein nutrition reduces gym member churn in India. Data-backed strategies to improve retention through post-workout convenience.",
@@ -40,7 +41,7 @@ const blogPostingSchema = {
   datePublished: "2026-03-25",
   dateModified: "2026-03-25",
   image: "https://www.muscleboxpro.com/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
-  inLanguage: "en",
+  inLanguage: "en-IN",
   author: {
     "@type": "Person",
     name: "Anurag Singh",
