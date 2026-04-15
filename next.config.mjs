@@ -76,6 +76,12 @@ const nextConfig = {
         destination: "/protein-vending-machine-:city",
         permanent: true,
       },
+      // TEMP: /specs hidden while payment gateway pending — remove this redirect to restore
+      {
+        source: "/specs",
+        destination: "/",
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Wrench, TrendingUp, Palette, ArrowRight, Star, AlertCircle, Clock } from "lucide-react";
+import { CheckCircle2, ArrowRight, Star, AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -23,12 +23,6 @@ const formSchema = z.object({
   message: z.string().optional(),
 });
 
-const benefits = [
-  { icon: CheckCircle2, text: "Free Installation", color: "text-primary", bg: "bg-primary/10" },
-  { icon: TrendingUp, text: "Revenue Share Model", color: "text-accent", bg: "bg-accent/10" },
-  { icon: Wrench, text: "Zero Maintenance", color: "text-blue-500", bg: "bg-blue-50" },
-  { icon: Palette, text: "Custom Branding", color: "text-purple-500", bg: "bg-purple-50" },
-];
 
 const trustStats = [
   { val: "60s", label: "Blend time" },
@@ -82,8 +76,8 @@ export default function GymDemo() {
               >
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
                   <img
-                    src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
-                    alt="MuscleBoxPro machine in a modern gym"
+                    src="/images/chocolate_banana_milk_protein_shake.png"
+                    alt="Fresh protein shake blended in 60 seconds"
                     className="w-full aspect-video object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-950/70 via-transparent to-transparent" />
@@ -113,33 +107,12 @@ export default function GymDemo() {
                   className="font-display font-black text-white uppercase leading-none mb-4"
                   style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
                 >
-                  Get a machine<br />
+                  Fresh protein shakes<br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                     for your gym.
                   </span>
                 </h1>
-                <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm">
-                  Increase member satisfaction and generate passive revenue. We handle stocking, cleaning, and service.
-                </p>
-
-                <div className="grid grid-cols-2 gap-2.5">
-                  {benefits.map((b, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.35 + i * 0.07 }}
-                      className="flex items-center gap-2.5 bg-white/5 border border-white/8 rounded-xl p-3"
-                    >
-                      <div className={`w-7 h-7 ${b.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                        <b.icon className={`w-3.5 h-3.5 ${b.color}`} />
-                      </div>
-                      <span className="text-white/80 text-xs font-medium">{b.text}</span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <motion.div
+<motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.75 }}
