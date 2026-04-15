@@ -6,62 +6,55 @@ import { motion } from "framer-motion";
 
 const sections = [
   {
-    title: "1. Order Cancellation",
-    content:
-      "Orders placed through MuscleBoxPro vending machines are processed instantly and therefore cannot be cancelled once the preparation of the beverage has started.",
+    title: "1. Shipping Coverage",
+    content: "MuscleBoxPro, operated by BlendBox Innovations LLP, currently ships within India only. We do not offer international shipping at this time.",
   },
   {
-    title: "2. Eligible Refund Cases",
-    content:
-      "Refunds may be issued when payment is successfully deducted but the vending machine fails to dispense the product, when the beverage is only partially dispensed due to a machine malfunction, or when a technical error occurs during payment processing.",
+    title: "2. Delivery Timelines",
+    content: "Orders are typically delivered within 2–3 hours of confirmation, subject to availability and your location. Delivery timelines may vary during peak hours or adverse weather conditions.",
   },
   {
-    title: "3. Refund Request Window",
-    content:
-      "Users must report refund requests within 24 hours of the transaction through the customer support contact provided on the website.",
+    title: "3. Shipping Charges",
+    content: "Shipping is free on orders above ₹999. For orders below ₹999, a flat shipping fee of ₹79 applies. Charges are calculated and displayed at checkout before payment.",
   },
   {
-    title: "4. Verification Process",
-    content:
-      "Refund requests will be reviewed based on transaction records and machine logs.",
+    title: "4. Order Tracking",
+    content: "Once your order is dispatched, you will receive a tracking number via email and SMS. You can use this to track your shipment on the courier partner's website.",
   },
   {
-    title: "5. Refund Processing Timeline",
-    content:
-      "Approved refunds will be processed within 3–5 business days to the original payment method used during the transaction.",
+    title: "5. Damaged or Incorrect Orders",
+    content: "If your order arrives damaged, tampered with, or incorrect, please contact us within 48 hours of delivery at contact@muscleboxpro.com with your order number and photos. We will arrange a replacement or refund as applicable.",
   },
   {
-    title: "6. Refund Decision Rights",
-    content:
-      "MuscleBoxPro reserves the right to decline refund requests where transaction records indicate successful dispensing of the product.",
+    title: "6. Undelivered or Returned Shipments",
+    content: "If a shipment is returned to us due to an incorrect address or failed delivery attempts, we will contact you to reship. Additional shipping charges may apply for re-dispatch.",
   },
   {
-    title: "7. No Returns Policy",
-    content:
-      "All sales are final. MuscleBoxPro does not accept returns of any products once dispensed or delivered. Given the perishable and consumable nature of our products, returns cannot be accepted under any circumstances. Refunds, where applicable, are governed exclusively by the conditions outlined in this policy.",
+    title: "7. Policy Updates",
+    content: "MuscleBoxPro may update this Shipping Policy from time to time. Any changes will be published on this page with an updated effective date.",
   },
 ];
 
 const faqs = [
   {
-    q: "Can I cancel my order after the shake has started blending?",
-    a: "No. Orders are processed instantly and cannot be cancelled once beverage preparation has begun. The machine starts blending immediately after payment confirmation.",
+    q: "How long does delivery take?",
+    a: "Orders are typically delivered within 2–3 hours of confirmation. You will receive a tracking update once your order is dispatched.",
   },
   {
-    q: "What should I do if I paid but didn't receive my shake?",
-    a: "Contact our support team at contact@muscleboxpro.com within 24 hours of the transaction with your transaction ID. We will review machine logs and process a refund if verified.",
+    q: "Is shipping free?",
+    a: "Yes, shipping is free on orders above ₹999. A flat fee of ₹79 applies to orders below ₹999.",
   },
   {
-    q: "How long does a refund take to reach my account?",
-    a: "Approved refunds are processed within 3–5 business days and credited back to the original payment method (UPI, card, or wallet).",
+    q: "Do you ship outside India?",
+    a: "No. We currently ship within India only. International shipping is not available at this time.",
   },
   {
-    q: "What evidence is needed for a refund request?",
-    a: "Provide your transaction ID, date and time of purchase, and the gym location. Our team will cross-check with machine dispensing logs to verify the claim.",
+    q: "What should I do if my order arrives damaged?",
+    a: "Contact us within 48 hours of delivery at contact@muscleboxpro.com with your order number and photos of the damaged item. We will arrange a replacement or refund.",
   },
 ];
 
-export default function RefundCancellationPolicy() {
+export default function ShippingPolicy() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -82,12 +75,12 @@ export default function RefundCancellationPolicy() {
               className="font-display font-black text-white uppercase leading-none mb-4"
               style={{ fontSize: "clamp(2.2rem, 5vw, 3.5rem)" }}
             >
-              Refund &{" "}
+              Shipping{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-                Cancellation
+                Policy
               </span>
             </h1>
-            <p className="text-white/40 text-sm italic">Last Updated: March 03, 2026</p>
+            <p className="text-white/40 text-sm italic">Last Updated: April 16, 2026</p>
           </motion.div>
         </div>
       </section>
@@ -141,11 +134,15 @@ export default function RefundCancellationPolicy() {
 
           {/* Contact box */}
           <div className="bg-gray-50 border border-gray-100 rounded-2xl p-7">
-            <h3 className="font-bold text-gray-900 mb-2">Need refund support?</h3>
+            <h3 className="font-bold text-gray-900 mb-2">Questions About Your Order?</h3>
             <p className="text-gray-600 text-sm leading-relaxed mb-5">
-              For refund or cancellation assistance, please contact our support team at{" "}
+              For any questions about shipping or your delivery, contact our team at{" "}
               <a href="mailto:contact@muscleboxpro.com" className="text-primary hover:underline font-medium">
                 contact@muscleboxpro.com
+              </a>{" "}
+              or call{" "}
+              <a href="tel:+918687247670" className="text-primary hover:underline font-medium">
+                +91-8687247670
               </a>.
             </p>
             <a

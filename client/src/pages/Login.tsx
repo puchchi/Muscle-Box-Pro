@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { MailWarning, AlertCircle, CheckCircle2, Zap, Shield, Clock } from "lucide-react";
+import { MailWarning, AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { queryClient } from "@/lib/queryClient";
 import { useState } from "react";
@@ -23,12 +23,6 @@ const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   remember: z.boolean().default(false),
 });
-
-const brandPerks = [
-  { icon: Zap, text: "Track your shake history & wallet balance" },
-  { icon: Shield, text: "Secure UPI & card payments saved" },
-  { icon: Clock, text: "60-second blends, ready when you are" },
-];
 
 export default function Login() {
   const router = useRouter();
@@ -110,69 +104,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
 
-      {/* ── Left Brand Panel ── */}
-      <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-br from-accent via-primary to-orange-500 flex-col justify-between p-12 relative overflow-hidden">
-        {/* Background texture */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 rounded-full bg-white -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-white translate-x-1/3 translate-y-1/3" />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative z-10"
-        >
-          <Link href="/">
-            <img src="/assets/logo.png" alt="MuscleBoxPro" className="h-12 w-auto brightness-0 invert cursor-pointer" />
-          </Link>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          className="relative z-10"
-        >
-          <h2 className="font-display font-black text-white uppercase leading-none mb-4"
-            style={{ fontSize: "clamp(2.2rem, 3.5vw, 3.2rem)" }}>
-            Fuel your<br />
-            <span className="text-white/80">every rep.</span>
-          </h2>
-          <p className="text-white/70 text-base leading-relaxed mb-10 max-w-xs">
-            Sign in to manage your wallet, track your shakes, and access your gym's nutrition machine.
-          </p>
-
-          <div className="space-y-4">
-            {brandPerks.map((perk, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-                className="flex items-center gap-3"
-              >
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <perk.icon className="w-4 h-4 text-white" />
-                </div>
-                <p className="text-white/90 text-sm font-medium">{perk.text}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="relative z-10 text-white/40 text-xs"
-        >
-          © 2026 MuscleBoxPro. All rights reserved.
-        </motion.p>
-      </div>
-
-      {/* ── Right Form Panel ── */}
       <div className="flex-1 flex items-center justify-center px-6 py-12 bg-white">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
