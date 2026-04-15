@@ -82,8 +82,8 @@ export default function GymDemo() {
               >
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
                   <img
-                    src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
-                    alt="MuscleBoxPro machine in a modern gym"
+                    src="/images/chocolate_banana_milk_protein_shake.png"
+                    alt="Fresh protein shake blended in 60 seconds"
                     className="w-full aspect-video object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-950/70 via-transparent to-transparent" />
@@ -113,7 +113,7 @@ export default function GymDemo() {
                   className="font-display font-black text-white uppercase leading-none mb-4"
                   style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
                 >
-                  Get a machine<br />
+                  Fresh protein shakes<br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                     for your gym.
                   </span>

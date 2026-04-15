@@ -4,7 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/home/Hero";
 import Features from "@/components/home/Features";
 import ShakeVariants from "@/components/home/ShakeVariants";
-import { Monitor, TrendingUp, Users, Wrench, Heart, Percent, ArrowRight, Play, Wifi, Smartphone, ShieldCheck, RefreshCcw } from "lucide-react";
+import { Wrench, Heart, Percent, Smartphone, ShieldCheck, RefreshCcw } from "lucide-react"; // ArrowRight removed TEMP (specs button hidden)
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -28,11 +28,6 @@ const revenueFeatures = [
   },
 ];
 
-const adFeatures = [
-  { icon: Users, title: "Captive audience", text: "Users spend 45s watching while their shake blends." },
-  { icon: Monitor, title: "HD 4K displays", text: "Stunning visual impact in premium gym environments." },
-  { icon: TrendingUp, title: "Targeted reach", text: "Connect with fitness enthusiasts at the point of sale." },
-];
 
 export default function Home() {
   return (
@@ -62,13 +57,13 @@ export default function Home() {
                 className="font-display font-black text-foreground leading-none uppercase mb-5"
                 style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
               >
-                From machine to{" "}
+                From blend to{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                   muscle in 60 seconds.
                 </span>
               </h2>
               <p className="text-muted-foreground text-base leading-relaxed max-w-2xl mx-auto">
-                MuscleBoxPro is India's first fully automated protein shake vending machine built exclusively for gyms. Members get a freshly blended, nutritionist-approved post-workout shake in under a minute, no staff, no mess, no waiting. Every machine stocks 12 high-protein blends ranging from classic whey chocolate to plant-based vanilla, covering every dietary preference and fitness goal your members have.
+                MuscleBoxPro brings fresh protein shakes directly to your gym. Members get a freshly blended, nutritionist-approved post-workout shake in under a minute — no staff, no mess, no waiting. We stock 12 high-protein blends ranging from classic whey chocolate to plant-based vanilla, covering every dietary preference and fitness goal your members have.
               </p>
             </motion.div>
 
@@ -143,8 +138,8 @@ export default function Home() {
                   </span>
                 </h2>
                 <p className="text-muted-foreground text-sm leading-relaxed max-w-xs lg:text-right">
-                  Zero staff required. Passive income from an automated
-                  protein shake machine inside your gym.
+                  Zero staff required. Passive income from fresh
+                  protein shakes inside your gym.
                 </p>
               </div>
             </motion.div>
@@ -210,104 +205,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Advertise ── */}
-        <section className="py-24 bg-background relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="grid lg:grid-cols-2 gap-14 items-center">
-
-              {/* Left: Text */}
-              <motion.div
-                initial={{ opacity: 0, x: -24 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.7 }}
-              >
-                <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
-                  Advertising opportunities
-                </span>
-                <h2
-                  className="font-display font-black text-foreground leading-none uppercase mb-5"
-                  style={{ fontSize: "clamp(2rem, 4.5vw, 3.5rem)" }}
-                >
-                  Your brand on
-                  <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-                    every screen.
-                  </span>
-                </h2>
-                <p className="text-muted-foreground text-sm leading-relaxed mb-8 max-w-sm">
-                  MuscleBoxPro machines include high-resolution 4K displays
-                  that advertise directly to gym members  a captive, high-intent audience.
-                </p>
-
-                <div className="space-y-4 mb-8">
-                  {adFeatures.map((item, i) => (
-                    <div key={i} className="flex gap-3 items-start">
-                      <div className="mt-0.5 w-9 h-9 rounded-xl bg-primary/8 flex items-center justify-center flex-shrink-0">
-                        <item.icon size={16} className="text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-0.5">{item.title}</h4>
-                        <p className="text-muted-foreground text-sm">{item.text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Link href="/advertise">
-                  <Button
-                    className="h-12 px-7 rounded-full font-semibold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer"
-                  >
-                    Become a partner
-                  </Button>
-                </Link>
-              </motion.div>
-
-              {/* Right: Screen mockup */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.94 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="relative aspect-video rounded-2xl overflow-hidden shadow-[0_24px_60px_-8px_rgba(0,0,0,0.18),0_8px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100"
-              >
-                {/* Screen background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-
-                {/* Grid overlay */}
-                <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
-
-                {/* Content area */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg">
-                    <Play className="w-7 h-7 text-white fill-white" />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-display font-black text-white text-xl tracking-[0.2em] uppercase mb-1">
-                      Your Ad Here
-                    </p>
-                    <p className="text-white/50 text-xs tracking-wider uppercase">
-                      HD display · 45 seconds · Captive audience
-                    </p>
-                  </div>
-                </div>
-
-                {/* Bottom status bar */}
-                <div className="absolute bottom-0 left-0 right-0 h-10 bg-black/40 backdrop-blur-sm border-t border-white/10 flex items-center px-4 justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-white/60 text-xs font-medium">LIVE</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-white/40">
-                    <Wifi className="w-3 h-3" />
-                    <span className="text-xs">MuscleBoxPro Network</span>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
         {/* ── CTA Banner  full-bleed gradient, keeps working on light theme ── */}
         <section className="py-24 px-4 bg-gradient-to-r from-accent to-primary relative overflow-hidden">
           <div
@@ -333,7 +230,7 @@ export default function Home() {
             </h2>
             <p className="text-white/80 text-lg mb-10 max-w-lg mx-auto leading-relaxed">
               Join gyms across India already generating passive revenue with
-              MuscleBoxPro's automated protein shake machines.
+              MuscleBoxPro's fresh protein shake service.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/gym-demo">
@@ -344,6 +241,7 @@ export default function Home() {
                   Request a demo
                 </Button>
               </Link>
+              {/* TEMP: "View machine specs" button hidden while payment gateway pending
               <Link href="/specs">
                 <Button
                   size="lg"
@@ -352,6 +250,7 @@ export default function Home() {
                   View machine specs <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
+              */}
             </div>
           </motion.div>
         </section>

@@ -4,14 +4,14 @@ import GymDemo from "@/pages/GymDemo";
 export const metadata: Metadata = {
   title: "Gym Demo | MuscleBoxPro",
   description:
-    "See how MuscleBoxPro works inside gyms and how smart shake vending improves member experience and boosts recurring revenue.",
+    "See how MuscleBoxPro works inside gyms and how fresh on-demand protein shakes improve member experience and boost recurring revenue.",
   alternates: { canonical: "/gym-demo" },
   openGraph: {
     type: "website",
     url: "/gym-demo",
     title: "Gym Demo | MuscleBoxPro",
-    description: "See how MuscleBoxPro works inside gyms and how smart shake vending improves member experience and boosts recurring revenue.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+    description: "See how MuscleBoxPro works inside gyms and how fresh on-demand protein shakes improve member experience and boost recurring revenue.",
+    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake dispenser in a modern gym" }],
   },
 };
 

@@ -107,8 +107,8 @@ export default function Hero() {
             className="relative flex items-center justify-center"
           >
             <Image
-              src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
-              alt="Protein shake vending machine for gyms"
+              src="/images/fresh_banana_date_protein_shake_advertising_shot.png"
+              alt="Fresh protein shake blended in 60 seconds"
               width={800}
               height={600}
               priority
