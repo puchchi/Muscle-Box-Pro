@@ -20,7 +20,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "Home", path: "/" },
-    { name: "Gym Demo", path: "/gym-demo" },
+    // { name: "Gym Demo", path: "/gym-demo" },
     // { name: "Specs", path: "/specs" },  // TEMP: hidden while payment gateway pending
     { name: "My Account", path: "/account" },
     { name: "Advertise", path: "/advertise" },
