@@ -25,11 +25,6 @@ export default function Footer() {
             <h4 className="text-gray-900 font-bold mb-6 text-sm uppercase tracking-widest">Company</h4>
             <ul className="space-y-4 text-sm text-gray-500">
               <Link href="/about"><li className="hover:text-primary cursor-pointer transition-colors block">About Us</li></Link>
-              <Link href="/blog"><li className="hover:text-primary cursor-pointer transition-colors block">Blog</li></Link>
-              <Link href="/blog/why-gyms-need-vending-machines"><li className="hover:text-primary cursor-pointer transition-colors block">Why Gyms Need This</li></Link>
-              <Link href="/blog/best-protein-shake-after-workout"><li className="hover:text-primary cursor-pointer transition-colors block">Best Post-Workout Shake</li></Link>
-              <Link href="/blog/protein-for-diabetes"><li className="hover:text-primary cursor-pointer transition-colors block">Protein & Diabetes</li></Link>
-              <Link href="/blog/how-i-fixed-my-hba1c"><li className="hover:text-primary cursor-pointer transition-colors block">How I Fixed My HbA1C</li></Link>
             </ul>
           </div>
           <div>
