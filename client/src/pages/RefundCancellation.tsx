@@ -35,6 +35,11 @@ const sections = [
     content:
       "MuscleBoxPro reserves the right to decline refund requests where transaction records indicate successful dispensing of the product.",
   },
+  {
+    title: "7. No Returns Policy",
+    content:
+      "All sales are final. MuscleBoxPro does not accept returns of any products once dispensed or delivered. Given the perishable and consumable nature of our products, returns cannot be accepted under any circumstances. Refunds, where applicable, are governed exclusively by the conditions outlined in this policy.",
+  },
 ];
 
 const faqs = [
