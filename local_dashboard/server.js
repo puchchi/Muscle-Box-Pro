@@ -246,6 +246,70 @@ app.get("/api/stats", requireAuth, async (req, res) => {
   }
 });
 
+// ─── POST /api/mark-read ─────────────────────────────────────────────────────
+
+app.post("/api/mark-read", requireAuth, async (req, res) => {
+  const { uid } = req.body;
+  if (!uid) return res.status(400).json({ message: "uid is required" });
+
+  const client = new ImapFlow({
+    host:   process.env.IMAP_HOST || "imap.secureserver.net",
+    port:   Number(process.env.IMAP_PORT || 993),
+    secure: true,
+    auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    logger: false,
+  });
+
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock("INBOX");
+    try {
+      await client.messageFlagsAdd({ uid }, ["\\Seen"], { uid: true });
+      log.ok(`Marked UID ${uid} as read`);
+    } finally {
+      lock.release();
+    }
+    await client.logout();
+    res.json({ ok: true });
+  } catch (err) {
+    await client.logout().catch(() => {});
+    log.error(`mark-read error: ${err.message}`);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ─── POST /api/mark-unread ───────────────────────────────────────────────────
+
+app.post("/api/mark-unread", requireAuth, async (req, res) => {
+  const { uid } = req.body;
+  if (!uid) return res.status(400).json({ message: "uid is required" });
+
+  const client = new ImapFlow({
+    host:   process.env.IMAP_HOST || "imap.secureserver.net",
+    port:   Number(process.env.IMAP_PORT || 993),
+    secure: true,
+    auth:   { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    logger: false,
+  });
+
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock("INBOX");
+    try {
+      await client.messageFlagsRemove({ uid }, ["\\Seen"], { uid: true });
+      log.ok(`Marked UID ${uid} as unread`);
+    } finally {
+      lock.release();
+    }
+    await client.logout();
+    res.json({ ok: true });
+  } catch (err) {
+    await client.logout().catch(() => {});
+    log.error(`mark-unread error: ${err.message}`);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ─── POST /api/preview ───────────────────────────────────────────────────────
 
 app.post("/api/preview", requireAuth, (req, res) => {

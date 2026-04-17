@@ -564,6 +564,28 @@
   function selectEmail(uid) {
     selectedEmail = allEmails.find(m => m.uid === uid);
     replyMode = false;
+
+    if (selectedEmail && !selectedEmail.seen) {
+      selectedEmail.seen = true;
+      fetch('/api/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-dashboard-password': password },
+        body: JSON.stringify({ uid }),
+      }).catch(() => {});
+    }
+
+    filterEmails();
+    renderViewer();
+  }
+
+  function markUnread() {
+    if (!selectedEmail || !selectedEmail.seen) return;
+    selectedEmail.seen = false;
+    fetch('/api/mark-unread', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-password': password },
+      body: JSON.stringify({ uid: selectedEmail.uid }),
+    }).catch(() => {});
     filterEmails();
     renderViewer();
   }
@@ -580,10 +602,16 @@
           </div>
           <div class="viewer-date">${fmtDate(m.date)}</div>
         </div>
-        <div class="viewer-recipients">
-          ${m.to?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">To</span><span class="viewer-recipient-value">${m.to.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
-          ${m.cc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">CC</span><span class="viewer-recipient-value">${m.cc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
-          ${m.bcc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">BCC</span><span class="viewer-recipient-value">${m.bcc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;">
+          <div class="viewer-recipients" style="flex:1;margin-bottom:0;">
+            ${m.to?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">To</span><span class="viewer-recipient-value">${m.to.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+            ${m.cc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">CC</span><span class="viewer-recipient-value">${m.cc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+            ${m.bcc?.length ? `<div class="viewer-recipient-row"><span class="viewer-recipient-label">BCC</span><span class="viewer-recipient-value">${m.bcc.map(a => a.name ? `${a.name} &lt;${a.address}&gt;` : a.address).join(', ')}</span></div>` : ''}
+          </div>
+          ${m.seen ? `<button onclick="markUnread()" style="flex-shrink:0;display:flex;align-items:center;gap:5px;background:none;border:1px solid var(--border);border-radius:7px;color:var(--text-3);font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;transition:all .2s;" onmouseover="this.style.borderColor='var(--muted)';this.style.color='var(--text-2)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-3)'">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="5"/></svg>
+            Mark as Unread
+          </button>` : ''}
         </div>
       </div>
       <div class="email-body-area">
