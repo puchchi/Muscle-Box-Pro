@@ -32,22 +32,12 @@ export default function Hero() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            {/* Live pill badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/20 text-primary text-sm font-semibold mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-              Now live in gyms across India
-            </div>
-
             {/* Headline */}
             <h1
               className="font-display font-black text-foreground leading-[0.88] mb-6 uppercase"
               style={{ fontSize: "clamp(3rem, 6vw, 5rem)" }}
             >
               Protein shakes.
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-                Right in your gym.
-              </span>
             </h1>
 
             <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md">

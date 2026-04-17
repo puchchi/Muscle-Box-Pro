@@ -112,11 +112,7 @@ export default function GymDemo() {
                     for your gym.
                   </span>
                 </h1>
-                <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm">
-                  Increase member satisfaction and generate passive revenue. We handle stocking, cleaning, and service.
-                </p>
-
-                <motion.div
+<motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.75 }}
