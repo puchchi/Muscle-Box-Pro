@@ -10,31 +10,27 @@ const sections = [
     content: "MuscleBoxPro, operated by BlendBox Innovations LLP, currently ships within India only. We do not offer international shipping at this time.",
   },
   {
-    title: "2. Processing Time",
-    content: "Orders are processed within 1–2 business days of payment confirmation. Orders placed on weekends or public holidays will be processed on the next business day.",
+    title: "2. Delivery Timelines",
+    content: "Orders are typically delivered within 2–3 hours of confirmation, subject to availability and your location. Delivery timelines may vary during peak hours or adverse weather conditions.",
   },
   {
-    title: "3. Delivery Timelines",
-    content: "Standard delivery takes 4–7 business days depending on your location. Metro cities (Delhi, Mumbai, Bangalore, Hyderabad, Pune, Chennai) typically receive orders within 3–5 business days. Remote or non-serviceable areas may take longer.",
-  },
-  {
-    title: "4. Shipping Charges",
+    title: "3. Shipping Charges",
     content: "Shipping is free on orders above ₹999. For orders below ₹999, a flat shipping fee of ₹79 applies. Charges are calculated and displayed at checkout before payment.",
   },
   {
-    title: "5. Order Tracking",
+    title: "4. Order Tracking",
     content: "Once your order is dispatched, you will receive a tracking number via email and SMS. You can use this to track your shipment on the courier partner's website.",
   },
   {
-    title: "6. Damaged or Incorrect Orders",
+    title: "5. Damaged or Incorrect Orders",
     content: "If your order arrives damaged, tampered with, or incorrect, please contact us within 48 hours of delivery at contact@muscleboxpro.com with your order number and photos. We will arrange a replacement or refund as applicable.",
   },
   {
-    title: "7. Undelivered or Returned Shipments",
+    title: "6. Undelivered or Returned Shipments",
     content: "If a shipment is returned to us due to an incorrect address or failed delivery attempts, we will contact you to reship. Additional shipping charges may apply for re-dispatch.",
   },
   {
-    title: "8. Policy Updates",
+    title: "7. Policy Updates",
     content: "MuscleBoxPro may update this Shipping Policy from time to time. Any changes will be published on this page with an updated effective date.",
   },
 ];
@@ -42,7 +38,7 @@ const sections = [
 const faqs = [
   {
     q: "How long does delivery take?",
-    a: "Standard delivery takes 4–7 business days. Metro cities typically receive orders in 3–5 business days. You will receive a tracking number once your order is dispatched.",
+    a: "Orders are typically delivered within 2–3 hours of confirmation. You will receive a tracking update once your order is dispatched.",
   },
   {
     q: "Is shipping free?",
@@ -55,10 +51,6 @@ const faqs = [
   {
     q: "What should I do if my order arrives damaged?",
     a: "Contact us within 48 hours of delivery at contact@muscleboxpro.com with your order number and photos of the damaged item. We will arrange a replacement or refund.",
-  },
-  {
-    q: "Can I change my delivery address after placing an order?",
-    a: "Address changes can be requested within 12 hours of placing the order by contacting us at contact@muscleboxpro.com or +91-8687247670. Once the order is dispatched, the address cannot be changed.",
   },
 ];
 
