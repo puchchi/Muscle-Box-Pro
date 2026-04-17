@@ -333,6 +333,7 @@ app.post("/api/preview", requireAuth, (req, res) => {
 const PHONEPE_CLIENT_ID      = process.env.PHONEPE_CLIENT_ID;
 const PHONEPE_CLIENT_SECRET  = process.env.PHONEPE_CLIENT_SECRET;
 const PHONEPE_CLIENT_VERSION = parseInt(process.env.PHONEPE_CLIENT_VERSION || "1", 10);
+const PHONEPE_VPA            = process.env.PHONEPE_VPA || "";
 const PHONEPE_IS_PROD        = process.env.PHONEPE_ENV === "production";
 
 const PHONEPE_TOKEN_URL = PHONEPE_IS_PROD
@@ -409,8 +410,8 @@ app.post("/api/phonepe/pay", async (req, res) => {
 });
 
 // ─── POST /api/phonepe/qr ─────────────────────────────────────────────────────
-// Creates a payment order and returns a QR code of the checkout URL.
-// Scanning opens PhonePe's hosted checkout page on mobile.
+// Generates a native UPI QR (upi://pay) using the merchant VPA.
+// Scanning opens PhonePe / GPay / Paytm directly with amount pre-filled.
 
 app.post("/api/phonepe/qr", async (req, res) => {
   const { amount } = req.body;
@@ -419,14 +420,14 @@ app.post("/api/phonepe/qr", async (req, res) => {
 
   log.step(`PhonePe QR  ₹${amount}`);
   try {
-    const { orderId, redirectUrl } = await createOrder(amount);
-    const qrImage = await QRCode.toDataURL(redirectUrl, { width: 300, margin: 2 });
-    log.ok(`PhonePe QR generated  order=${orderId}`);
-    res.json({ qrImage, orderId });
+    const orderId   = `MBPQR${Date.now()}`;
+    const upiString = `upi://pay?pa=${PHONEPE_VPA}&pn=MuscleBoxPro&am=${parseFloat(amount).toFixed(2)}&cu=INR&tr=${orderId}&tn=MuscleBoxPro+Payment`;
+    const qrImage   = await QRCode.toDataURL(upiString, { width: 300, margin: 2 });
+    log.ok(`UPI QR generated  vpa=${PHONEPE_VPA}  order=${orderId}`);
+    res.json({ qrImage, orderId, upiString });
   } catch (err) {
-    const msg = err.response?.data?.message || err.message;
-    log.error(`PhonePe QR error: ${msg}`);
-    res.status(500).json({ message: msg });
+    log.error(`PhonePe QR error: ${err.message}`);
+    res.status(500).json({ message: err.message });
   }
 });
 
