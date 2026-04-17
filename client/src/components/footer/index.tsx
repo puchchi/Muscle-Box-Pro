@@ -18,7 +18,7 @@ export default function Footer() {
             </span>
             <p className="text-gray-500 max-w-sm text-sm leading-relaxed">
               The ultimate on-demand nutrition solution for modern fitness centers.
-              Premium shakes, zero maintenance, maximum impact.
+              Premium shakes, maximum impact.
             </p>
           </div>
           <div>

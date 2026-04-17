@@ -11,7 +11,6 @@ import Link from "next/link";
 const categories = ["All Blends", "Classic", "Banana", "Chocolate", "Milk-Based", "Premium"];
 
 const quickStats = [
-  { val: "60s", label: "blend time" },
   { val: "12", label: "blends" },
   { val: "₹120", label: "from" },
   { val: "UPI", label: "payments" },

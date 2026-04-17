@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export default function Navbar() {
     // { name: "Gym Demo", path: "/gym-demo" },
     // { name: "Specs", path: "/specs" },  // TEMP: hidden while payment gateway pending
     { name: "My Account", path: "/account" },
-    { name: "Advertise", path: "/advertise" },
+    // { name: "Advertise", path: "/advertise" },
   ];
 
   return (
