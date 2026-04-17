@@ -1,7 +1,10 @@
 require("dotenv").config();
 
+const crypto  = require("crypto");
 const express = require("express");
-const path = require("path");
+const path    = require("path");
+const axios   = require("axios");
+const QRCode  = require("qrcode");
 const { ImapFlow } = require("imapflow");
 const nodemailer = require("nodemailer");
 const MailComposer = require("nodemailer/lib/mail-composer");
@@ -324,6 +327,116 @@ app.post("/api/preview", requireAuth, (req, res) => {
 
   log.step(`Preview rendered for template: ${templateKey}`);
   res.json({ html });
+});
+
+// ─── PhonePe config ───────────────────────────────────────────────────────────
+
+const PHONEPE_MERCHANT_ID = process.env.PHONEPE_MERCHANT_ID || "PGTESTPAYUAT";
+const PHONEPE_SALT_KEY    = process.env.PHONEPE_SALT_KEY    || "099eb0cd-02cf-4dc2-a804-bb1e95a7c5a1";
+const PHONEPE_SALT_INDEX  = process.env.PHONEPE_SALT_INDEX  || "1";
+const PHONEPE_BASE_URL    = process.env.PHONEPE_ENV === "production"
+  ? "https://api.phonepe.com/apis/pg"
+  : "https://api-preprod.phonepe.com/apis/pgsandbox";
+
+function phonePeChecksum(base64Payload, endpoint) {
+  const hash = crypto.createHash("sha256")
+    .update(base64Payload + endpoint + PHONEPE_SALT_KEY)
+    .digest("hex");
+  return `${hash}###${PHONEPE_SALT_INDEX}`;
+}
+
+async function initiatePay(amount, type) {
+  const txnId  = `MBP${type === "QR" ? "QR" : "PG"}${Date.now()}`;
+  const payload = {
+    merchantId:            PHONEPE_MERCHANT_ID,
+    merchantTransactionId: txnId,
+    merchantUserId:        "TESTUSER001",
+    amount:                Math.round(parseFloat(amount) * 100), // paise
+    redirectUrl:           `http://localhost:${PORT}/phonepe-test.html?txn=${txnId}&status=redirect`,
+    redirectMode:          "GET",
+    callbackUrl:           `http://localhost:${PORT}/api/phonepe/callback`,
+    paymentInstrument:     { type: type === "QR" ? "UPI_QR" : "PAY_PAGE" },
+  };
+
+  const base64Payload = Buffer.from(JSON.stringify(payload)).toString("base64");
+  const checksum      = phonePeChecksum(base64Payload, "/pg/v1/pay");
+
+  const { data } = await axios.post(
+    `${PHONEPE_BASE_URL}/pg/v1/pay`,
+    { request: base64Payload },
+    { headers: { "Content-Type": "application/json", "X-VERIFY": checksum } },
+  );
+
+  return { data, txnId };
+}
+
+// ─── POST /api/phonepe/pay ────────────────────────────────────────────────────
+
+app.post("/api/phonepe/pay", async (req, res) => {
+  const { amount } = req.body;
+  if (!amount || isNaN(amount) || parseFloat(amount) <= 0)
+    return res.status(400).json({ message: "Valid amount is required" });
+
+  log.step(`PhonePe Pay  ₹${amount}`);
+  try {
+    const { data, txnId } = await initiatePay(amount, "PAY_PAGE");
+    const redirectUrl = data?.data?.instrumentResponse?.redirectInfo?.url;
+    if (!redirectUrl) throw new Error("No redirect URL in PhonePe response");
+
+    log.ok(`PhonePe Pay initiated  txn=${txnId}`);
+    res.json({ redirectUrl, txnId });
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    log.error(`PhonePe Pay error: ${msg}`);
+    res.status(500).json({ message: msg });
+  }
+});
+
+// ─── POST /api/phonepe/qr ─────────────────────────────────────────────────────
+
+app.post("/api/phonepe/qr", async (req, res) => {
+  const { amount } = req.body;
+  if (!amount || isNaN(amount) || parseFloat(amount) <= 0)
+    return res.status(400).json({ message: "Valid amount is required" });
+
+  log.step(`PhonePe QR  ₹${amount}`);
+  try {
+    const { data, txnId } = await initiatePay(amount, "QR");
+    const qrData = data?.data?.instrumentResponse?.qrData;
+
+    let qrImageDataUrl;
+    if (qrData) {
+      // PhonePe returned a UPI intent string — convert to QR image
+      qrImageDataUrl = await QRCode.toDataURL(qrData, { width: 300, margin: 2 });
+    } else {
+      // Sandbox fallback: build a generic UPI QR from merchant ID
+      const upiString = `upi://pay?pa=${PHONEPE_MERCHANT_ID}@ybl&pn=MuscleBoxPro&am=${parseFloat(amount).toFixed(2)}&cu=INR&tr=${txnId}`;
+      qrImageDataUrl = await QRCode.toDataURL(upiString, { width: 300, margin: 2 });
+    }
+
+    log.ok(`PhonePe QR generated  txn=${txnId}`);
+    res.json({ qrImage: qrImageDataUrl, txnId });
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    log.error(`PhonePe QR error: ${msg}`);
+    res.status(500).json({ message: msg });
+  }
+});
+
+// ─── POST /api/phonepe/callback ───────────────────────────────────────────────
+
+app.post("/api/phonepe/callback", (req, res) => {
+  const { response } = req.body;
+  if (response) {
+    try {
+      const decoded = JSON.parse(Buffer.from(response, "base64").toString("utf8"));
+      log.ok(`PhonePe callback  txn=${decoded?.data?.merchantTransactionId}  state=${decoded?.data?.state}`);
+      console.log("[PhonePe Callback]", JSON.stringify(decoded, null, 2));
+    } catch {
+      log.warn("PhonePe callback — could not decode response");
+    }
+  }
+  res.json({ success: true });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────

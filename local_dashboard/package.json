@@ -9,10 +9,12 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
+    "axios": "^1.15.0",
     "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "imapflow": "^1.0.169",
     "mailparser": "^3.9.6",
-    "nodemailer": "^6.9.9"
+    "nodemailer": "^6.9.9",
+    "qrcode": "^1.5.4"
   }
 }

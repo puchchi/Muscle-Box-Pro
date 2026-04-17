@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhonePe Test — MBP</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f10;
+      --surface:  #18181b;
+      --border:   #27272a;
+      --muted:    #3f3f46;
+      --text:     #fafafa;
+      --text-2:   #a1a1aa;
+      --text-3:   #71717a;
+      --accent:   #f97316;
+      --accent-2: #db2777;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --purple:   #a855f7;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+    .topbar a { text-decoration: none; }
+    .topbar .logo { display: flex; align-items: center; gap: 8px; }
+    .topbar .logo span { font-size: 14px; font-weight: 900; letter-spacing: 2px; color: var(--accent); }
+    .topbar .divider { width: 1px; height: 18px; background: var(--border); }
+    .topbar .tag { font-size: 11px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .topbar .spacer { flex: 1; }
+    .back-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-2);
+      font-size: 12px;
+      padding: 5px 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .back-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── Env badge ── */
+    .env-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: rgba(168,85,247,.15);
+      color: var(--purple);
+      border: 1px solid rgba(168,85,247,.3);
+    }
+
+    /* ── Page content ── */
+    .page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      gap: 32px;
+    }
+
+    .page-title {
+      text-align: center;
+    }
+    .page-title h1 {
+      font-size: 24px;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--accent-2), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .page-title p { color: var(--text-2); margin-top: 6px; font-size: 13px; }
+
+    /* ── Cards grid ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 760px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card-header { display: flex; align-items: flex-start; gap: 14px; }
+    .card-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 22px;
+    }
+    .card-icon.orange { background: rgba(249,115,22,.15); }
+    .card-icon.purple { background: rgba(168,85,247,.15); }
+
+    .card-meta h2 { font-size: 16px; font-weight: 700; }
+    .card-meta p  { color: var(--text-2); font-size: 12px; margin-top: 4px; line-height: 1.5; }
+
+    /* ── Amount input ── */
+    .amount-group { display: flex; flex-direction: column; gap: 8px; }
+    .amount-group label { font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: .5px; text-transform: uppercase; }
+    .amount-wrap { position: relative; }
+    .amount-wrap .currency {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--text-2); font-size: 15px; font-weight: 600; pointer-events: none;
+    }
+    .amount-wrap input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px 11px 34px;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 700;
+      outline: none;
+      transition: border-color .2s;
+      -moz-appearance: textfield;
+    }
+    .amount-wrap input::-webkit-inner-spin-button,
+    .amount-wrap input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .amount-wrap input:focus { border-color: var(--accent); }
+
+    /* ── Quick amounts ── */
+    .quick-amounts { display: flex; gap: 8px; flex-wrap: wrap; }
+    .quick-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-2);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .quick-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Primary button ── */
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(90deg, var(--accent-2), var(--accent));
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: .88; }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-primary.purple-grad {
+      background: linear-gradient(90deg, var(--purple), #6366f1);
+    }
+
+    /* ── Result area ── */
+    .result { display: none; flex-direction: column; gap: 12px; }
+    .result.visible { display: flex; }
+
+    .result-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    /* Transaction ID chip */
+    .txn-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--text-2);
+      word-break: break-all;
+    }
+
+    /* QR box */
+    .qr-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .qr-box img { border-radius: 8px; max-width: 260px; width: 100%; }
+    .qr-hint { font-size: 12px; color: var(--text-3); text-align: center; }
+
+    /* Pay link button */
+    .pay-link-btn {
+      width: 100%;
+      background: rgba(34,197,94,.12);
+      border: 1px solid rgba(34,197,94,.3);
+      border-radius: 10px;
+      padding: 11px;
+      color: var(--green);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all .2s;
+    }
+    .pay-link-btn:hover { background: rgba(34,197,94,.2); }
+
+    /* Status feedback */
+    .status-msg {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .status-msg.visible { display: flex; }
+    .status-msg.loading { background: rgba(249,115,22,.1); color: var(--accent); border: 1px solid rgba(249,115,22,.25); }
+    .status-msg.error   { background: rgba(239,68,68,.1);  color: var(--red);    border: 1px solid rgba(239,68,68,.25); }
+    .status-msg.success { background: rgba(34,197,94,.1);  color: var(--green);  border: 1px solid rgba(34,197,94,.25); }
+
+    /* spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* ── Info footer ── */
+    .info-footer {
+      max-width: 760px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .info-item { display: flex; flex-direction: column; gap: 3px; }
+    .info-item .k { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+    .info-item .v { font-size: 12px; color: var(--text-2); font-family: monospace; }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="20" x2="20" y2="20"/></svg>
+      <span>MBP</span>
+    </div>
+    <div class="divider"></div>
+    <span class="tag">PhonePe Test</span>
+    <span class="env-badge">Sandbox</span>
+    <div class="spacer"></div>
+    <a class="back-btn" href="/">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Dashboard
+    </a>
+  </div>
+
+  <!-- Page -->
+  <div class="page">
+
+    <div class="page-title">
+      <h1>PhonePe Payment Test</h1>
+      <p>Sandbox environment — use test cards &amp; UPI IDs only</p>
+    </div>
+
+    <div class="cards">
+
+      <!-- ── Method 1: Standard Checkout ── -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon orange">💳</div>
+          <div class="card-meta">
+            <h2>Standard Checkout</h2>
+            <p>Enter an amount and redirect to PhonePe's hosted payment page. Supports UPI, Cards &amp; NetBanking.</p>
+          </div>
+        </div>
+
+        <div class="amount-group">
+          <label>Amount (₹)</label>
+          <div class="amount-wrap">
+            <span class="currency">₹</span>
+            <input id="pay-amount" type="number" min="1" step="1" placeholder="0" />
+          </div>
+          <div class="quick-amounts">
+            <button class="quick-btn" onclick="setAmount('pay-amount', 10)">₹10</button>
+            <button class="quick-btn" onclick="setAmount('pay-amount', 100)">₹100</button>
+            <button class="quick-btn" onclick="setAmount('pay-amount', 499)">₹499</button>
+            <button class="quick-btn" onclick="setAmount('pay-amount', 999)">₹999</button>
+          </div>
+        </div>
+
+        <div class="status-msg" id="pay-status"></div>
+
+        <button class="btn-primary" id="pay-btn" onclick="handlePay()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Pay Now
+        </button>
+
+        <div class="result" id="pay-result">
+          <span class="result-label">Transaction ID</span>
+          <div class="txn-chip" id="pay-txn"></div>
+          <a class="pay-link-btn" id="pay-link" href="#" target="_blank" rel="noopener">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open PhonePe Checkout
+          </a>
+        </div>
+      </div>
+
+      <!-- ── Method 2: UPI QR Code ── -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon purple">📲</div>
+          <div class="card-meta">
+            <h2>UPI QR Code</h2>
+            <p>Generate a scannable QR code from the backend. Scan with any UPI app to complete the payment.</p>
+          </div>
+        </div>
+
+        <div class="amount-group">
+          <label>Amount (₹)</label>
+          <div class="amount-wrap">
+            <span class="currency">₹</span>
+            <input id="qr-amount" type="number" min="1" step="1" placeholder="0" />
+          </div>
+          <div class="quick-amounts">
+            <button class="quick-btn" onclick="setAmount('qr-amount', 10)">₹10</button>
+            <button class="quick-btn" onclick="setAmount('qr-amount', 100)">₹100</button>
+            <button class="quick-btn" onclick="setAmount('qr-amount', 499)">₹499</button>
+            <button class="quick-btn" onclick="setAmount('qr-amount', 999)">₹999</button>
+          </div>
+        </div>
+
+        <div class="status-msg" id="qr-status"></div>
+
+        <button class="btn-primary purple-grad" id="qr-btn" onclick="handleQR()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/><path d="M17 17h4"/><path d="M17 20v1"/><path d="M20 14v3"/></svg>
+          Generate QR Code
+        </button>
+
+        <div class="result" id="qr-result">
+          <span class="result-label">Transaction ID</span>
+          <div class="txn-chip" id="qr-txn"></div>
+          <div class="qr-box">
+            <img id="qr-image" src="" alt="UPI QR Code" />
+            <span class="qr-hint">Scan with PhonePe, GPay, Paytm or any UPI app</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Sandbox info strip -->
+    <div class="info-footer">
+      <div class="info-item">
+        <span class="k">Environment</span>
+        <span class="v">Sandbox</span>
+      </div>
+      <div class="info-item">
+        <span class="k">Merchant ID</span>
+        <span class="v">PGTESTPAYUAT</span>
+      </div>
+      <div class="info-item">
+        <span class="k">Test UPI ID</span>
+        <span class="v">success@ybl</span>
+      </div>
+      <div class="info-item">
+        <span class="k">Test Card</span>
+        <span class="v">4111 1111 1111 1111</span>
+      </div>
+      <div class="info-item">
+        <span class="k">Callback</span>
+        <span class="v">localhost:4000/api/phonepe/callback</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    function setAmount(inputId, val) {
+      document.getElementById(inputId).value = val;
+    }
+
+    function setStatus(prefix, type, text) {
+      const el = document.getElementById(`${prefix}-status`);
+      el.className = `status-msg visible ${type}`;
+      el.innerHTML = type === "loading"
+        ? `<div class="spinner"></div>${text}`
+        : `<span>${type === "error" ? "✗" : "✓"}</span> ${text}`;
+    }
+
+    function clearStatus(prefix) {
+      const el = document.getElementById(`${prefix}-status`);
+      el.className = "status-msg";
+    }
+
+    function showResult(prefix) {
+      document.getElementById(`${prefix}-result`).classList.add("visible");
+    }
+
+    function hideResult(prefix) {
+      document.getElementById(`${prefix}-result`).classList.remove("visible");
+    }
+
+    function setLoading(prefix, loading) {
+      const btn = document.getElementById(`${prefix}-btn`);
+      btn.disabled = loading;
+    }
+
+    // ── Method 1: Standard Checkout ───────────────────────────────────────────
+
+    async function handlePay() {
+      const amount = document.getElementById("pay-amount").value.trim();
+      if (!amount || parseFloat(amount) <= 0) {
+        setStatus("pay", "error", "Please enter a valid amount");
+        return;
+      }
+
+      hideResult("pay");
+      setLoading("pay", true);
+      setStatus("pay", "loading", "Initiating payment with PhonePe…");
+
+      try {
+        const res = await fetch("/api/phonepe/pay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message || "Server error");
+
+        document.getElementById("pay-txn").textContent = json.txnId;
+        document.getElementById("pay-link").href = json.redirectUrl;
+        setStatus("pay", "success", "Payment initiated — click below to proceed");
+        showResult("pay");
+      } catch (err) {
+        setStatus("pay", "error", err.message);
+      } finally {
+        setLoading("pay", false);
+      }
+    }
+
+    // ── Method 2: UPI QR Code ─────────────────────────────────────────────────
+
+    async function handleQR() {
+      const amount = document.getElementById("qr-amount").value.trim();
+      if (!amount || parseFloat(amount) <= 0) {
+        setStatus("qr", "error", "Please enter a valid amount");
+        return;
+      }
+
+      hideResult("qr");
+      setLoading("qr", true);
+      setStatus("qr", "loading", "Generating QR code from backend…");
+
+      try {
+        const res = await fetch("/api/phonepe/qr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message || "Server error");
+
+        document.getElementById("qr-txn").textContent = json.txnId;
+        document.getElementById("qr-image").src = json.qrImage;
+        setStatus("qr", "success", "QR code ready — scan to pay");
+        showResult("qr");
+      } catch (err) {
+        setStatus("qr", "error", err.message);
+      } finally {
+        setLoading("qr", false);
+      }
+    }
+
+    // ── Handle redirect return (after PhonePe checkout) ───────────────────────
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("txn") && params.get("status") === "redirect") {
+      document.getElementById("pay-txn").textContent = params.get("txn");
+      setStatus("pay", "success", "Returned from PhonePe checkout — check server logs for callback status");
+      showResult("pay");
+      document.getElementById("pay-link").style.display = "none";
+    }
+  </script>
+</body>
+</html>
