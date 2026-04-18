@@ -281,6 +281,30 @@
       flex-shrink: 0;
     }
 
+    /* ── Poll bar ── */
+    .poll-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-2);
+    }
+    .poll-bar.visible  { display: flex; }
+    .poll-bar.checking { border-color: rgba(249,115,22,.3); color: var(--accent); background: rgba(249,115,22,.06); }
+    .poll-bar.paid     { border-color: rgba(34,197,94,.3);  color: var(--green);  background: rgba(34,197,94,.08); }
+    .poll-bar.failed   { border-color: rgba(239,68,68,.3);  color: var(--red);    background: rgba(239,68,68,.08); }
+    .poll-bar .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor; flex-shrink: 0;
+    }
+    .poll-bar.checking .dot { animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
     /* ── Info footer ── */
     .info-footer {
       max-width: 760px;
@@ -368,6 +392,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             Open PhonePe Checkout
           </a>
+          <div class="poll-bar" id="pay-poll"></div>
         </div>
       </div>
 
@@ -409,6 +434,7 @@
             <img id="qr-image" src="" alt="UPI QR Code" />
             <span class="qr-hint">Scan with PhonePe, GPay, Paytm or any UPI app</span>
           </div>
+          <div class="poll-bar" id="qr-poll"></div>
         </div>
       </div>
 
@@ -473,6 +499,55 @@
       btn.disabled = loading;
     }
 
+    // ── Payment status polling ────────────────────────────────────────────────
+
+    const _pollTimers = {};
+
+    function stopPolling(prefix) {
+      clearInterval(_pollTimers[prefix]);
+      delete _pollTimers[prefix];
+    }
+
+    function setPollBar(prefix, state, text) {
+      const el = document.getElementById(`${prefix}-poll`);
+      el.className = `poll-bar visible ${state}`;
+      el.innerHTML = `<div class="dot"></div>${text}`;
+    }
+
+    function startPolling(prefix, orderId) {
+      stopPolling(prefix);
+      let attempts = 0;
+      const MAX = 200; // 200 × 3s = 10 min timeout
+
+      setPollBar(prefix, "checking", "Checking payment status…");
+
+      _pollTimers[prefix] = setInterval(async () => {
+        attempts++;
+        if (attempts > MAX) {
+          stopPolling(prefix);
+          setPollBar(prefix, "failed", "Timed out — no payment detected after 10 min");
+          return;
+        }
+        try {
+          const res  = await fetch(`/api/phonepe/status/${orderId}`);
+          const data = await res.json();
+          const state = data.state;
+
+          if (state === "COMPLETED") {
+            stopPolling(prefix);
+            setPollBar(prefix, "paid", `Payment successful ✓  —  ${data.paymentDetails?.[0]?.paymentMode || "UPI"}`);
+          } else if (state === "FAILED") {
+            stopPolling(prefix);
+            setPollBar(prefix, "failed", `Payment failed  —  ${data.errorCode || "unknown error"}`);
+          } else {
+            setPollBar(prefix, "checking", `Checking payment status… (${attempts})`);
+          }
+        } catch {
+          // network hiccup — keep polling
+        }
+      }, 3000);
+    }
+
     // ── Method 1: Standard Checkout ───────────────────────────────────────────
 
     async function handlePay() {
@@ -500,6 +575,7 @@
         document.getElementById("pay-link").href = json.redirectUrl;
         setStatus("pay", "success", "Scan QR on mobile or click below to open in browser");
         showResult("pay");
+        startPolling("pay", json.orderId);
       } catch (err) {
         setStatus("pay", "error", err.message);
       } finally {
@@ -529,10 +605,11 @@
         const json = await res.json();
         if (!res.ok) throw new Error(json.message || "Server error");
 
-        document.getElementById("qr-txn").textContent = json.txnId;
+        document.getElementById("qr-txn").textContent = json.orderId;
         document.getElementById("qr-image").src = json.qrImage;
         setStatus("qr", "success", "QR code ready — scan to pay");
         showResult("qr");
+        startPolling("qr", json.orderId);
       } catch (err) {
         setStatus("qr", "error", err.message);
       } finally {
@@ -540,15 +617,6 @@
       }
     }
 
-    // ── Handle redirect return (after PhonePe checkout) ───────────────────────
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("orderId") && params.get("status") === "redirect") {
-      document.getElementById("pay-txn").textContent = params.get("orderId");
-      setStatus("pay", "success", "Returned from PhonePe checkout — check server logs for callback status");
-      showResult("pay");
-      document.getElementById("pay-link").style.display = "none";
-    }
   </script>
 </body>
 </html>

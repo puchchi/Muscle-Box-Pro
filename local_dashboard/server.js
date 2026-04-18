@@ -375,7 +375,7 @@ async function createOrder(amount) {
     paymentFlow: {
       type: "PG_CHECKOUT",
       merchantUrls: {
-        redirectUrl: `http://localhost:${PORT}/phonepe-test.html?orderId=${orderId}&status=redirect`,
+        redirectUrl: `http://localhost:${PORT}/phonepe-test.html`,
       },
     },
   };
