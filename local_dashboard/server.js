@@ -333,20 +333,9 @@ app.post("/api/preview", requireAuth, (req, res) => {
 const PHONEPE_CLIENT_ID      = process.env.PHONEPE_CLIENT_ID;
 const PHONEPE_CLIENT_SECRET  = process.env.PHONEPE_CLIENT_SECRET;
 const PHONEPE_CLIENT_VERSION = parseInt(process.env.PHONEPE_CLIENT_VERSION || "1", 10);
-const PHONEPE_VPA            = process.env.PHONEPE_VPA || "";
-const PHONEPE_IS_PROD        = process.env.PHONEPE_ENV === "production";
-
-const PHONEPE_TOKEN_URL = PHONEPE_IS_PROD
-  ? "https://api.phonepe.com/apis/identity-manager/v1/oauth/token"
-  : "https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token";
-
-const PHONEPE_PAY_URL = PHONEPE_IS_PROD
-  ? "https://api.phonepe.com/apis/pg/checkout/v2/pay"
-  : "https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/pay";
-
-const PHONEPE_STATUS_URL = PHONEPE_IS_PROD
-  ? "https://api.phonepe.com/apis/pg/checkout/v2/order"
-  : "https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/order";
+const PHONEPE_TOKEN_URL  = process.env.PHONEPE_TOKEN_URL;
+const PHONEPE_PAY_URL    = process.env.PHONEPE_PAY_URL;
+const PHONEPE_STATUS_URL = process.env.PHONEPE_STATUS_URL;
 
 // Token cache — reuse until 60 s before expiry
 let _tokenCache = { token: null, expiresAt: 0 };
@@ -361,12 +350,19 @@ async function getPhonePeToken() {
     client_version: String(PHONEPE_CLIENT_VERSION),
     grant_type:     "client_credentials",
   });
-  const { data } = await axios.post(PHONEPE_TOKEN_URL, params.toString(), {
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  });
-  _tokenCache = { token: data.access_token, expiresAt: data.expires_at * 1000 };
-  log.ok("PhonePe token refreshed");
-  return _tokenCache.token;
+  log.step(`PhonePe token  →  ${PHONEPE_TOKEN_URL}`);
+  log.step(`client_id=${PHONEPE_CLIENT_ID}  version=${PHONEPE_CLIENT_VERSION}`);
+  try {
+    const { data } = await axios.post(PHONEPE_TOKEN_URL, params.toString(), {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    _tokenCache = { token: data.access_token, expiresAt: data.expires_at * 1000 };
+    log.ok("PhonePe token refreshed");
+    return _tokenCache.token;
+  } catch (err) {
+    log.error(`Token fetch failed: ${err.response?.status} — ${JSON.stringify(err.response?.data)}`);
+    throw err;
+  }
 }
 
 async function createOrder(amount) {
@@ -410,8 +406,8 @@ app.post("/api/phonepe/pay", async (req, res) => {
 });
 
 // ─── POST /api/phonepe/qr ─────────────────────────────────────────────────────
-// Generates a native UPI QR (upi://pay) using the merchant VPA.
-// Scanning opens PhonePe / GPay / Paytm directly with amount pre-filled.
+// Creates a PhonePe order and returns a QR code of the checkout URL.
+// Scanning opens PhonePe's hosted checkout on mobile — order is fully trackable.
 
 app.post("/api/phonepe/qr", async (req, res) => {
   const { amount } = req.body;
@@ -420,14 +416,14 @@ app.post("/api/phonepe/qr", async (req, res) => {
 
   log.step(`PhonePe QR  ₹${amount}`);
   try {
-    const orderId   = `MBPQR${Date.now()}`;
-    const upiString = `upi://pay?pa=${PHONEPE_VPA}&pn=MuscleBoxPro&am=${parseFloat(amount).toFixed(2)}&cu=INR&tr=${orderId}&tn=MuscleBoxPro+Payment`;
-    const qrImage   = await QRCode.toDataURL(upiString, { width: 300, margin: 2 });
-    log.ok(`UPI QR generated  vpa=${PHONEPE_VPA}  order=${orderId}`);
-    res.json({ qrImage, orderId, upiString });
+    const { orderId, redirectUrl } = await createOrder(amount);
+    const qrImage = await QRCode.toDataURL(redirectUrl, { width: 300, margin: 2, errorCorrectionLevel: "M" });
+    log.ok(`PhonePe QR generated  order=${orderId}`);
+    res.json({ qrImage, orderId });
   } catch (err) {
-    log.error(`PhonePe QR error: ${err.message}`);
-    res.status(500).json({ message: err.message });
+    const msg = err.response?.data?.message || err.message;
+    log.error(`PhonePe QR error: ${msg}`);
+    res.status(500).json({ message: msg });
   }
 });
 
