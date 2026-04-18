@@ -360,6 +360,10 @@
         <div class="result" id="pay-result">
           <span class="result-label">Transaction ID</span>
           <div class="txn-chip" id="pay-txn"></div>
+          <div class="qr-box">
+            <img id="pay-qr-image" src="" alt="PhonePe Checkout QR" />
+            <span class="qr-hint">Scan to open PhonePe checkout on mobile</span>
+          </div>
           <a class="pay-link-btn" id="pay-link" href="#" target="_blank" rel="noopener">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             Open PhonePe Checkout
@@ -491,9 +495,10 @@
         const json = await res.json();
         if (!res.ok) throw new Error(json.message || "Server error");
 
-        document.getElementById("pay-txn").textContent = json.txnId;
+        document.getElementById("pay-txn").textContent = json.orderId;
+        document.getElementById("pay-qr-image").src = json.qrImage;
         document.getElementById("pay-link").href = json.redirectUrl;
-        setStatus("pay", "success", "Payment initiated — click below to proceed");
+        setStatus("pay", "success", "Scan QR on mobile or click below to open in browser");
         showResult("pay");
       } catch (err) {
         setStatus("pay", "error", err.message);
@@ -538,8 +543,8 @@
     // ── Handle redirect return (after PhonePe checkout) ───────────────────────
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get("txn") && params.get("status") === "redirect") {
-      document.getElementById("pay-txn").textContent = params.get("txn");
+    if (params.get("orderId") && params.get("status") === "redirect") {
+      document.getElementById("pay-txn").textContent = params.get("orderId");
       setStatus("pay", "success", "Returned from PhonePe checkout — check server logs for callback status");
       showResult("pay");
       document.getElementById("pay-link").style.display = "none";

@@ -382,7 +382,8 @@ async function createOrder(amount) {
   const { data } = await axios.post(PHONEPE_PAY_URL, body, {
     headers: { "Content-Type": "application/json", Authorization: `O-Bearer ${token}` },
   });
-  return { orderId, redirectUrl: data.redirectUrl };
+  console.log("data", data);
+  return { orderId, phonepeOrderId: data.orderId, redirectUrl: data.redirectUrl };
 }
 
 // ─── POST /api/phonepe/pay ────────────────────────────────────────────────────
@@ -396,8 +397,9 @@ app.post("/api/phonepe/pay", async (req, res) => {
   try {
     const { orderId, redirectUrl } = await createOrder(amount);
     if (!redirectUrl) throw new Error("No redirect URL in PhonePe response");
+    const qrImage = await QRCode.toDataURL(redirectUrl, { width: 260, margin: 2, errorCorrectionLevel: "M" });
     log.ok(`PhonePe Pay initiated  order=${orderId}`);
-    res.json({ redirectUrl, orderId });
+    res.json({ redirectUrl, qrImage, orderId });
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
     log.error(`PhonePe Pay error: ${msg}`);
@@ -416,7 +418,7 @@ app.post("/api/phonepe/qr", async (req, res) => {
 
   log.step(`PhonePe QR  ₹${amount}`);
   try {
-    const orderId      = `MBPQR${Date.now()}`;
+    const { orderId, phonepeOrderId } = await createOrder(amount);
     const merchantName = process.env.PHONEPE_MERCHANT_NAME || "MuscleBoxPro";
     const amountStr    = parseFloat(amount).toFixed(2);
     const upiString    = `upi://pay`
@@ -429,9 +431,10 @@ app.post("/api/phonepe/qr", async (req, res) => {
       + `&mc=${process.env.PHONEPE_MC || "5122"}`
       + `&mode=22`
       + `&purpose=00`;
-    const qrImage   = await QRCode.toDataURL(upiString, { width: 300, margin: 2, errorCorrectionLevel: "M" });
-    log.ok(`UPI QR generated  vpa=${process.env.PHONEPE_VPA}  order=${orderId}`);
-    res.json({ qrImage, orderId });
+    // const upiString    = "upi://pay?pa=M23UR7B42SNT0@ybl&pn=Blendbox%20Innovations%20LLP&am=1.1&mam=1.1&tr=OM2604181208390218502269V&tn=Payment%20for%20OMPL2604181208041892156837V&mc=5122&mode=22&purpose=00"
+    const qrImage = await QRCode.toDataURL(upiString, { width: 300, margin: 2, errorCorrectionLevel: "M" });
+    log.ok(`UPI QR generated  vpa=${process.env.PHONEPE_VPA}  merchantOrder=${orderId}  phonepeOrder=${phonepeOrderId}`);
+    res.json({ qrImage, orderId, phonepeOrderId });
   } catch (err) {
     log.error(`PhonePe QR error: ${err.message}`);
     res.status(500).json({ message: err.message });
