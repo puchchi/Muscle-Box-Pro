@@ -6,10 +6,10 @@ import { motion } from "framer-motion";
 const features = [
   {
     icon: Zap,
-    title: "Blended fresh to order",
+    title: "Ready in 60 seconds",
     desc: "Touch the screen and your shake is blending. No clumps, perfectly smooth every time.",
-    stat: "12",
-    statLabel: "Blends",
+    stat: "60s",
+    statLabel: "Blend Time",
   },
   {
     icon: Leaf,

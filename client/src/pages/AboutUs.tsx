@@ -3,10 +3,33 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import { motion } from "framer-motion";
-import { Target, Users, ArrowRight, Award, Download } from "lucide-react";
+import { Target, Users, Zap, Shield, ArrowRight, Award, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+const values = [
+  {
+    icon: Zap,
+    title: "Speed",
+    desc: "Fresh protein shakes ready in 60 seconds with zero wait, zero compromise.",
+    color: "text-accent",
+    bg: "bg-accent/10",
+  },
+  {
+    icon: Shield,
+    title: "Quality",
+    desc: "Premium whey isolate and natural ingredients, hygienically dispensed every time.",
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+  },
+  {
+    icon: Target,
+    title: "Purpose",
+    desc: "Built for serious gym-goers who demand the best post-workout nutrition.",
+    color: "text-primary",
+    bg: "bg-primary/10",
+  },
+];
 
 export default function AboutUs() {
   return (
@@ -138,6 +161,42 @@ export default function AboutUs() {
               </p>
             </motion.div>
 
+          </div>
+        </section>
+
+        {/* ── Values ── */}
+        <section className="py-16 px-4 bg-gray-50 border-t border-gray-100">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-10">
+              <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
+                What drives us
+              </span>
+              <h2
+                className="font-display font-black text-foreground uppercase"
+                style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)" }}
+              >
+                Built on three principles
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-5">
+              {values.map((v, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-white border border-gray-100 shadow-sm rounded-2xl p-7 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default"
+                >
+                  <div className={`w-11 h-11 ${v.bg} rounded-xl flex items-center justify-center mb-4`}>
+                    <v.icon className={`w-5 h-5 ${v.color}`} />
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-lg mb-2">{v.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{v.desc}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 

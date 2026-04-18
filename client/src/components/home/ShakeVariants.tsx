@@ -305,6 +305,24 @@ export default function ShakeVariants({ limit }: { limit?: number }) {
           </div>
         )}
 
+        {/* Full menu: custom blend note */}
+        {!limit && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mt-16 p-8 rounded-2xl border border-gray-200 bg-gray-50 text-center"
+          >
+            <h3 className="font-display font-black text-2xl text-foreground uppercase mb-2">
+              Custom blends available
+            </h3>
+            <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">
+              Want a combination not listed? Our machines support unlimited customization.
+              Ask your gym staff about custom blend options.
+            </p>
+          </motion.div>
+        )}
       </div>
     </section>
   );

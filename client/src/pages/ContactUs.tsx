@@ -115,6 +115,18 @@ export default function ContactUs() {
                 </div>
               </div>
 
+              <div className="bg-gradient-to-br from-accent/10 to-primary/10 border border-primary/10 rounded-2xl p-6">
+                <p className="font-bold text-gray-900 text-sm mb-1">Looking to install a machine?</p>
+                <p className="text-gray-600 text-xs leading-relaxed mb-3">
+                  Gym owners can request a free demo directly from our Gym Demo page.
+                </p>
+                <a
+                  href="/gym-demo"
+                  className="inline-flex items-center gap-1.5 text-primary text-xs font-bold hover:underline"
+                >
+                  Request a Demo <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </motion.div>
 
             {/* ── Right: Form / Success ── */}
