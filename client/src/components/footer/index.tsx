@@ -42,6 +42,7 @@ export default function Footer() {
             <h4 className="text-gray-900 font-bold mb-6 text-sm uppercase tracking-widest">Company</h4>
             <ul className="space-y-4 text-sm text-gray-500">
               <Link href="/about"><li className="hover:text-primary cursor-pointer transition-colors block">About Us</li></Link>
+              <Link href="/invest"><li className="hover:text-primary cursor-pointer transition-colors block">Invest in Us</li></Link>
               <Link href="/specs"><li className="hover:text-primary cursor-pointer transition-colors block">Our Machine</li></Link>
               <Link href="/protein-shake-vending-machine"><li className="hover:text-primary cursor-pointer transition-colors block">Vending Machine Business</li></Link>
               <Link href="/gym-protein-shake-machine"><li className="hover:text-primary cursor-pointer transition-colors block">Gym Shake Machine</li></Link>
