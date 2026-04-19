@@ -4,7 +4,7 @@ import AboutUs from "@/pages/AboutUs";
 export const metadata: Metadata = {
   title: "About Us | MuscleBoxPro",
   description:
-    "Learn about MuscleBoxPro and our mission to deliver on-demand post-workout nutrition through smart gym vending technology.",
+    "Learn about MuscleBoxPro — the company behind the Muscle Box Pro smart vending machine. Our mission: on-demand post-workout nutrition for every gym in India.",
   alternates: { canonical: "/about" },
   openGraph: {
     type: "website",
@@ -31,7 +31,7 @@ const aboutPageSchema = {
   name: "About MuscleBoxPro",
   url: "https://www.muscleboxpro.com/about",
   description:
-    "Learn about MuscleBoxPro and our mission to deliver on-demand post-workout nutrition through smart gym vending technology.",
+    "Learn about MuscleBoxPro — the company behind the Muscle Box Pro smart vending machine. Our mission: on-demand post-workout nutrition for every gym in India.",
   inLanguage: "en-IN",
   isPartOf: { "@id": "https://www.muscleboxpro.com/#website" },
   about: { "@id": "https://www.muscleboxpro.com/#organization" },

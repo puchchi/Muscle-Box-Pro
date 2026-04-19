@@ -4,7 +4,7 @@ import ProteinShakeVendingMachine from "@/pages/ProtienShakeVendingMachine";
 export const metadata: Metadata = {
   title: "Protein Shake Vending Machine | MuscleBoxPro",
   description:
-    "Discover how MuscleBoxPro protein shake vending machines help gyms increase member convenience and generate additional recurring revenue.",
+    "Discover the Muscle Box Pro — India's automated protein shake vending machine for gyms. Zero upfront cost, zero staff, and recurring revenue from day one.",
   alternates: { canonical: "/protein-shake-vending-machine" },
   openGraph: {
     type: "website",
