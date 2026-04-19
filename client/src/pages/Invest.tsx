@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import {
   TrendingUp,
   IndianRupee,
@@ -63,6 +64,7 @@ const whyNow = [
 ];
 
 const investorTypes = ["Angel Investor", "Venture Capital", "Family Office", "Strategic Partner", "Other"];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Invest() {
   const [name, setName] = useState("");
@@ -70,22 +72,38 @@ export default function Invest() {
   const [firm, setFirm] = useState("");
   const [investorType, setInvestorType] = useState("");
   const [message, setMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const validate = () => {
+    const errs: { name?: string; email?: string } = {};
+    if (!name.trim() || name.trim().length < 2) errs.name = "Please enter your name.";
+    if (!EMAIL_RE.test(email.trim())) errs.email = "Please enter a valid email address.";
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = async () => {
+    if (!validate()) return;
     setError(null);
     try {
       setIsSubmitting(true);
       const { error: invokeError } = await supabase.functions.invoke("investor-request", {
         body: { name, email, firm: firm || undefined, investorType: investorType || undefined, message: message || undefined },
       });
-      if (invokeError) throw invokeError;
+      if (invokeError) {
+        if (invokeError instanceof FunctionsHttpError) {
+          const body = await invokeError.context.json().catch(() => null);
+          throw new Error(body?.message ?? "Something went wrong. Please try again.");
+        }
+        throw invokeError;
+      }
       setSubmitted(true);
-      setName(""); setEmail(""); setFirm(""); setInvestorType(""); setMessage("");
+      setName(""); setEmail(""); setFirm(""); setInvestorType(""); setMessage(""); setFieldErrors({});
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to submit right now. Please try again.");
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -379,7 +397,16 @@ export default function Invest() {
                           {error && (
                             <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5">
                               <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                              <p className="text-xs text-red-600 leading-relaxed">{error}</p>
+                              <div>
+                                <p className="text-sm font-semibold text-red-700 mb-0.5">Submission failed</p>
+                                <p className="text-xs text-red-600 leading-relaxed">{error}</p>
+                                <p className="text-xs text-red-500 mt-1.5">
+                                  Need help?{" "}
+                                  <a href="mailto:contact@muscleboxpro.com" className="underline underline-offset-2 hover:text-red-700 transition-colors">
+                                    Email us directly
+                                  </a>
+                                </p>
+                              </div>
                             </div>
                           )}
 
@@ -387,21 +414,23 @@ export default function Invest() {
                             <div>
                               <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Your Name</label>
                               <input
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
+                                className={`w-full bg-gray-50 border rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:bg-white focus:outline-none transition-colors ${fieldErrors.name ? "border-red-400 focus:border-red-400" : "border-gray-200 focus:border-primary"}`}
                                 placeholder="Rahul Sharma"
                                 value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => { setName(e.target.value); setFieldErrors((f) => ({ ...f, name: undefined })); }}
                               />
+                              {fieldErrors.name && <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>}
                             </div>
                             <div>
                               <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Email</label>
                               <input
                                 type="email"
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
+                                className={`w-full bg-gray-50 border rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:bg-white focus:outline-none transition-colors ${fieldErrors.email ? "border-red-400 focus:border-red-400" : "border-gray-200 focus:border-primary"}`}
                                 placeholder="rahul@fund.com"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={(e) => { setEmail(e.target.value); setFieldErrors((f) => ({ ...f, email: undefined })); }}
                               />
+                              {fieldErrors.email && <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>}
                             </div>
                           </div>
 

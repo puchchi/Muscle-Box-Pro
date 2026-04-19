@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from "../_shared/supabase.ts";
 import { sendMail } from "../_shared/email.ts";
 import { optionalEnv } from "../../../lib/env.ts";
 import { investorRequestSchema } from "../_shared/validation/investor.ts";
-import { getInvestorRequestEmailTemplate } from "../../../shared/email/investorRequest.ts";
+import { getInvestorRequestEmailTemplate, getInvestorNotificationEmailTemplate } from "../../../shared/email/investorRequest.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -38,23 +38,19 @@ Deno.serve(async (req) => {
     );
   }
 
-  try {
-    const { subject, html } = getInvestorRequestEmailTemplate({
-      name: values.name,
-      email: values.email,
-      firm: values.firm,
-      investorType: values.investorType,
-      message: values.message,
-    });
+  const emailData = {
+    name: values.name,
+    email: values.email,
+    firm: values.firm,
+    investorType: values.investorType,
+    message: values.message,
+  };
 
-    await sendMail({
-      to: values.email,
-      cc: optionalEnv("INVESTOR_REQUEST_CC", "contact@muscleboxpro.com"),
-      subject,
-      html,
-    });
+  try {
+    const { subject, html } = getInvestorRequestEmailTemplate(emailData);
+    await sendMail({ to: values.email, subject, html });
   } catch (emailError) {
-    console.error("Investor request email failed:", emailError);
+    console.error("Investor confirmation email failed:", emailError);
     return jsonResponse(
       {
         message:
@@ -64,6 +60,14 @@ Deno.serve(async (req) => {
       },
       500,
     );
+  }
+
+  try {
+    const { subject, html } = getInvestorNotificationEmailTemplate(emailData);
+    const notifyTo = optionalEnv("INVESTOR_REQUEST_CC", "contact@muscleboxpro.com");
+    await sendMail({ to: notifyTo, subject, html });
+  } catch (notifyError) {
+    console.error("Investor notification email failed:", notifyError);
   }
 
   return jsonResponse({

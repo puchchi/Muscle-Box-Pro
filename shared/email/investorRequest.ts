@@ -180,3 +180,128 @@ export function getInvestorRequestEmailTemplate(input: InvestorRequestTemplateIn
 
   return { subject, text, html };
 }
+
+export function getInvestorNotificationEmailTemplate(input: InvestorRequestTemplateInput) {
+  const subject = `New investor inquiry from ${input.name}${input.firm ? ` (${input.firm})` : ""}`;
+
+  const safeName = escapeHtml(input.name);
+  const safeEmail = escapeHtml(input.email);
+  const safeFirm = input.firm ? escapeHtml(input.firm) : null;
+  const safeInvestorType = input.investorType ? escapeHtml(input.investorType) : null;
+  const safeMessage = input.message ? escapeHtml(input.message) : null;
+
+  const html = `
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>New Investor Inquiry</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f4f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+
+          <tr>
+            <td style="background:linear-gradient(90deg,#DD2476,#FF512F);height:4px;border-radius:4px 4px 0 0;"></td>
+          </tr>
+
+          <tr>
+            <td style="background:#ffffff;border:1px solid #e5e5e5;border-top:none;border-radius:0 0 16px 16px;overflow:hidden;">
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding:28px 32px 20px 32px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:10px;">
+                          <img src="https://www.muscleboxpro.com/assets/logo_mini.png" alt="MuscleBoxPro" height="36" style="height:36px;width:auto;display:block;">
+                        </td>
+                        <td style="vertical-align:middle;">
+                          <span style="font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:900;letter-spacing:1.5px;color:#FF512F;line-height:1;">MUSCLEBOXPRO</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 32px;"><div style="height:1px;background:#e5e5e5;"></div></td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding:28px 32px 12px 32px;">
+                    <h1 style="margin:0 0 8px 0;color:#111111;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:900;line-height:1.2;">New investor inquiry</h1>
+                    <p style="margin:0;color:#555555;font-size:14px;line-height:1.6;">
+                      <strong style="color:#111111;">${safeName}</strong>${safeFirm ? ` from <strong style="color:#111111;">${safeFirm}</strong>` : ""} has submitted an investor inquiry on muscleboxpro.com.
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 32px 0 32px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8f8f8;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;">
+                      <tr>
+                        <td style="padding:6px 0 2px 0;">
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="padding:8px 18px;border-bottom:1px solid #ebebeb;">
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Name</span>
+                                <div style="color:#111111;font-size:14px;font-weight:600;margin-top:2px;">${safeName}</div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding:8px 18px;${safeFirm || safeInvestorType || safeMessage ? "border-bottom:1px solid #ebebeb;" : ""}">
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Email</span>
+                                <div style="margin-top:2px;"><a href="mailto:${safeEmail}" style="color:#FF512F;font-size:14px;font-weight:600;text-decoration:none;">${safeEmail}</a></div>
+                              </td>
+                            </tr>
+                            ${safeFirm ? `
+                            <tr>
+                              <td style="padding:8px 18px;${safeInvestorType || safeMessage ? "border-bottom:1px solid #ebebeb;" : ""}">
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Firm / Organisation</span>
+                                <div style="color:#111111;font-size:14px;font-weight:600;margin-top:2px;">${safeFirm}</div>
+                              </td>
+                            </tr>` : ""}
+                            ${safeInvestorType ? `
+                            <tr>
+                              <td style="padding:8px 18px;${safeMessage ? "border-bottom:1px solid #ebebeb;" : ""}">
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Investor Type</span>
+                                <div style="color:#111111;font-size:14px;font-weight:600;margin-top:2px;">${safeInvestorType}</div>
+                              </td>
+                            </tr>` : ""}
+                            ${safeMessage ? `
+                            <tr>
+                              <td style="padding:8px 18px;">
+                                <span style="color:#999999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">Message</span>
+                                <div style="color:#555555;font-size:14px;margin-top:2px;line-height:1.5;">${safeMessage}</div>
+                              </td>
+                            </tr>` : ""}
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:24px 32px 32px 32px;">
+                    <div style="height:1px;background:#e5e5e5;margin-bottom:20px;"></div>
+                    <p style="margin:0;color:#bbbbbb;font-size:11px;line-height:1.5;">
+                      Internal notification &mdash; MuscleBoxPro investor inquiry system
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  return { subject, html };
+}
