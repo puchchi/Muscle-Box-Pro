@@ -305,7 +305,16 @@
     .response-status-text { font-size: 11px; font-weight: 600; color: var(--text-2); }
     .response-body { padding: 14px; font-family: monospace; font-size: 12px; color: #7dd3fc; line-height: 1.75; white-space: pre; overflow-x: auto; min-height: 80px; }
     .response-placeholder { color: var(--text-3); font-style: italic; font-family: inherit; }
+
+    .qr-section { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
+    .qr-canvas-wrap { background: #fff; padding: 10px; border-radius: 8px; }
+    .qr-url-label { font-size: 10px; color: var(--text-3); text-align: center; word-break: break-all; max-width: 320px; font-family: monospace; }
+    .action-buttons-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .action-btn { padding: 8px 16px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: all .15s; }
+    .action-btn:hover { background: rgba(59,130,246,.15); border-color: #3b82f6; color: #60a5fa; }
+    .action-btn:disabled { opacity: .5; cursor: not-allowed; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -1271,6 +1280,7 @@
   let activeEndpointId = null;
   let tunnelUrl = null;
   const epResponses = {};
+  const actionResponses = {};
 
   async function loadTunnelUrl() {
     try {
@@ -1391,8 +1401,11 @@
             }</div>
           </div>
         </div>
+        ${ep.id === 'order-create' ? renderQrSection(resp) : ''}
+        ${ep.id === 'order-create' ? renderOrderActions() : ''}
       </div>
     `;
+    initQrCode();
   }
 
   async function sendEndpointRequest() {
@@ -1417,10 +1430,106 @@
       });
       const data = await res.json();
       epResponses[ep.id] = { ok: res.ok, status: res.status, data };
+      if (ep.id === 'order-create') Object.keys(actionResponses).forEach(k => delete actionResponses[k]);
       showToast(res.ok ? 'Request successful' : `Error ${res.status}`, res.ok ? 'success' : 'error');
     } catch (err) {
       epResponses[ep.id] = { ok: false, status: 0, data: { error: err.message } };
       showToast('Request failed: ' + err.message, 'error');
+    }
+
+    renderEndpointDetail();
+  }
+
+  function renderQrSection(resp) {
+    if (!resp?.ok || !resp.data?.data?.qrUrl) return '';
+    return `
+      <div>
+        <div class="ep-section-title">QR Code</div>
+        <div class="qr-section">
+          <div class="qr-canvas-wrap" id="qr-canvas-wrap"></div>
+          <div class="qr-url-label">${resp.data.data.qrUrl}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function initQrCode() {
+    if (activeEndpointId !== 'order-create') return;
+    const resp = epResponses['order-create'];
+    if (!resp?.ok || !resp.data?.data?.qrUrl) return;
+    const wrap = document.getElementById('qr-canvas-wrap');
+    if (!wrap || wrap.childElementCount > 0) return;
+    new QRCode(wrap, { text: resp.data.data.qrUrl, width: 200, height: 200 });
+  }
+
+  function renderOrderActions() {
+    const resp = epResponses['order-create'];
+    if (!resp?.ok || !resp.data?.data) return '';
+    const actions = [
+      { key: 'status',   label: 'Check Status' },
+      { key: 'complete', label: 'Complete' },
+      { key: 'refund',   label: 'Refund' },
+      { key: 'cancel',   label: 'Cancel' },
+    ];
+    return `
+      <div>
+        <div class="ep-section-title">Order Actions</div>
+        <div class="action-buttons-row">
+          ${actions.map(a => `<button class="action-btn" id="act-${a.key}-btn" onclick="doOrderAction('${a.key}')">${a.label}</button>`).join('')}
+        </div>
+        ${actions.filter(a => actionResponses[a.key]).map(a => `
+          <div style="margin-top:12px;">
+            <div class="ep-section-title">${a.label} Response</div>
+            <div class="response-area">
+              <div class="response-header">
+                <div class="response-status-dot ${actionResponses[a.key] ? (actionResponses[a.key].ok ? 'dot-success' : 'dot-error') : 'dot-idle'}"></div>
+                <span class="response-status-text">${actionResponses[a.key].ok ? actionResponses[a.key].status + ' OK' : actionResponses[a.key].status + ' Error'}</span>
+              </div>
+              <div class="response-body">${JSON.stringify(actionResponses[a.key].data, null, 2)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  async function doOrderAction(action) {
+    const resp = epResponses['order-create'];
+    if (!resp?.data?.data) return;
+    const d = resp.data.data;
+    const orderNo = document.getElementById('ep-orderNo')?.value || '';
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+    let path, body;
+    if (action === 'status') {
+      path = '/order/status';
+      body = { orderNo, thirdOrderNo: d.thirdOrderNo };
+    } else if (action === 'complete') {
+      path = '/order/complete';
+      body = { orderNo, thirdOrderNo: d.thirdOrderNo, success: true, orderStatus: '2', outStockStatus: '2', outStockTime: now };
+    } else if (action === 'refund') {
+      path = '/order/refund';
+      body = { refundNo: 'REF' + Date.now(), orderNo, thirdOrderNo: d.thirdOrderNo, refundAmount: document.getElementById('ep-totalAmount')?.value || '10.00' };
+    } else if (action === 'cancel') {
+      path = '/order/cancel';
+      body = { orderNo, thirdOrderNo: d.thirdOrderNo, orderStatus: '0', cancelTime: now };
+    }
+
+    const btn = document.getElementById(`act-${action}-btn`);
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      actionResponses[action] = { ok: res.ok, status: res.status, data };
+      showToast(res.ok ? `${action} successful` : `${action} failed`, res.ok ? 'success' : 'error');
+    } catch (err) {
+      actionResponses[action] = { ok: false, status: 0, data: { error: err.message } };
+      showToast(`${action} failed: ` + err.message, 'error');
     }
 
     renderEndpointDetail();
