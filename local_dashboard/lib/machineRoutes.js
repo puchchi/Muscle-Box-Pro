@@ -1,6 +1,8 @@
 const { Router } = require("express");
 const log     = require("./logger");
-const phonepe = require("./phonepe");
+const { createOrder, getOrderStatus, cancelOrder, getOrderAgeMs } = require("./phonepe");
+
+const STATUS_HARD_FAIL_MS = 5 * 60 * 1000;
 
 const router = Router();
 
@@ -60,7 +62,7 @@ router.post("/qr", async (req, res) => {
   try {
     log.step(`[Machine:QR] Initiating PhonePe order for ${body.orderNo}  amount=₹${body.totalAmount}`);
 
-    const result = await phonepe.createOrder({
+    const result = await createOrder({
       merchantOrderId: body.orderNo,
       amount:          body.totalAmount,
       subject:         body.subject,
@@ -92,10 +94,28 @@ router.post("/status", async (req, res) => {
   const bad = missing(["orderNo", "thirdOrderNo"], body);
   if (bad.length) return reject400("STATUS", res, bad);
 
+  const ageMs = getOrderAgeMs(body.orderNo);
+  if (ageMs !== null && ageMs > STATUS_HARD_FAIL_MS) {
+    log.warn(`[Machine:STATUS] Order ${body.orderNo} is ${Math.floor(ageMs / 1000)}s old — returning FAILED without PhonePe call`);
+    const now = nowStr();
+    return res.json({
+      code: 200, message: "success",
+      data: {
+        orderNo:       body.orderNo,
+        thirdOrderNo:  body.thirdOrderNo,
+        orderStatus:   "3",
+        orderTime:     now,
+        payTime:       now,
+        totalAmount:   "",
+        channelUserId: "",
+      },
+    });
+  }
+
   try {
     log.step(`[Machine:STATUS] Querying PhonePe for orderNo=${body.orderNo}`);
 
-    const result = await phonepe.getOrderStatus(body.orderNo);
+    const result = await getOrderStatus(body.orderNo);
 
     const data = {
       orderNo:       body.orderNo,
@@ -187,7 +207,7 @@ router.post("/complete", (req, res) => {
 
 // ─── POST /order/cancel — Order Cancel ───────────────────────────────────────
 
-router.post("/cancel", (req, res) => {
+router.post("/cancel", async (req, res) => {
   const body = req.body;
   log.step(bodyDump(["orderNo", "thirdOrderNo", "orderStatus", "remark", "cancelTime"], body));
 
@@ -200,6 +220,8 @@ router.post("/cancel", (req, res) => {
     log.step(`[Machine:CANCEL] Cancelling orderNo=${body.orderNo}  thirdOrderNo=${body.thirdOrderNo}`);
     log.step(`[Machine:CANCEL] cancelTime=${body.cancelTime}  remark=${body.remark || "(none)"}`);
 
+    await cancelOrder(body.orderNo);
+
     const data = {
       orderNo:      body.orderNo,
       thirdOrderNo: body.thirdOrderNo,
@@ -210,8 +232,8 @@ router.post("/cancel", (req, res) => {
     log.ok(`[Machine:CANCEL] Confirmed — orderNo=${body.orderNo}  status=0 (Cancel Payment)  at=${body.cancelTime}`);
     res.json({ code: 200, message: "success", data });
   } catch (err) {
-    log.error(`[Machine:CANCEL] Unexpected error: ${err.message}`);
-    res.status(500).json({ code: 500, message: "Internal error" });
+    log.error(`[Machine:CANCEL] PhonePe error: ${err.message}`);
+    res.status(500).json({ code: 500, message: err.message });
   }
 });
 

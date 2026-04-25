@@ -1200,7 +1200,7 @@
       id: 'order-create',
       name: 'Order Create',
       method: 'POST',
-      path: '/order/qr',
+      path: '/qr',
       desc: 'Create a new payment order and get a QR code link',
       fields: [
         { key: 'orderNo',      type: 'String',  required: true,  default: () => 'ORD' + Date.now() },
@@ -1215,7 +1215,7 @@
       id: 'order-query',
       name: 'Order Query',
       method: 'POST',
-      path: '/order/status',
+      path: '/status',
       desc: 'Query the payment status of an existing order',
       fields: [
         { key: 'orderNo',      type: 'String',  required: true,  default: () => '' },
@@ -1226,7 +1226,7 @@
       id: 'order-refund',
       name: 'Order Refund',
       method: 'POST',
-      path: '/order/refund',
+      path: '/refund',
       desc: 'Initiate a refund for a completed order',
       fields: [
         { key: 'refundNo',       type: 'String',  required: true,  default: () => 'REF' + Date.now() },
@@ -1241,7 +1241,7 @@
       id: 'order-complete',
       name: 'Order Complete',
       method: 'POST',
-      path: '/order/complete',
+      path: '/complete',
       desc: 'Notify third party upon completion of beverage preparation',
       fields: [
         { key: 'orderNo',        type: 'String',  required: true,  default: () => '' },
@@ -1256,7 +1256,7 @@
       id: 'order-cancel',
       name: 'Order Cancel',
       method: 'POST',
-      path: '/order/cancel',
+      path: '/cancel',
       desc: 'Notify third party upon cancellation of payment',
       fields: [
         { key: 'orderNo',      type: 'String',  required: true,  default: () => '' },

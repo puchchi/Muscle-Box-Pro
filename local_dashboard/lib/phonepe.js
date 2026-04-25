@@ -79,7 +79,7 @@ async function createOrder({ merchantOrderId, amount, subject, notifyUrl, device
   if (!res.ok) throw new Error(`PhonePe create order failed ${res.status}: ${text}`);
 
   const data  = JSON.parse(text);
-  const qrUrl = data.paymentFlow?.redirectUrl ?? null;
+  const qrUrl = data.redirectUrl ?? null;
 
   orderCreatedAt.set(merchantOrderId, Date.now());
   log.ok(`[PhonePe] Order created — phonepeOrderId=${data.orderId}  state=${data.state}`);
@@ -147,8 +147,39 @@ async function getOrderStatus(merchantOrderId) {
   };
 }
 
+// ─── Cancel order ─────────────────────────────────────────────────────────────
+
+async function cancelOrder(merchantOrderId) {
+  const token = await getToken();
+  const url   = `${process.env.PHONEPE_STATUS_URL}/${merchantOrderId}/cancel`;
+
+  log.step(`[PhonePe] POST ${url}`);
+
+  const res = await fetch(url, {
+    method:  "POST",
+    headers: {
+      "Content-Type":  "application/json",
+      "Authorization": `O-Bearer ${token}`,
+    },
+    body: JSON.stringify({}),
+  });
+
+  const text = await res.text();
+  log.step(`[PhonePe] Cancel response (${res.status}): ${text}`);
+
+  if (!res.ok) throw new Error(`PhonePe cancel failed ${res.status}: ${text}`);
+
+  log.ok(`[PhonePe] Order ${merchantOrderId} cancelled`);
+  return JSON.parse(text);
+}
+
+function getOrderAgeMs(merchantOrderId) {
+  const createdAt = orderCreatedAt.get(merchantOrderId);
+  return createdAt ? Date.now() - createdAt : null;
+}
+
 function msToStr(ms) {
   return new Date(ms).toISOString().replace("T", " ").slice(0, 19);
 }
 
-module.exports = { getToken, createOrder, getOrderStatus };
+module.exports = { getToken, createOrder, getOrderStatus, cancelOrder, getOrderAgeMs };
