@@ -3,6 +3,8 @@ const log = require("./logger");
 
 const router = Router();
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function genThirdOrderNo() {
   return "TP" + Date.now() + Math.random().toString(36).slice(2, 6).toUpperCase();
 }
@@ -11,106 +13,205 @@ function nowStr() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
 
-// POST /order/qr — Order Create
+function callerIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  return forwarded ? forwarded.split(",")[0].trim() : (req.socket?.remoteAddress ?? "unknown");
+}
+
+function bodyDump(keys, body) {
+  return keys
+    .map(k => `${k}=${body[k] != null && body[k] !== "" ? JSON.stringify(body[k]) : "(missing)"}`)
+    .join("  ");
+}
+
+function missing(required, body) {
+  return required.filter(k => body[k] == null || body[k] === "");
+}
+
+function reject400(tag, res, fields) {
+  log.warn(`[Machine:${tag}] Validation failed — missing: ${fields.join(", ")}`);
+  return res.status(400).json({ code: 400, message: `Missing required fields: ${fields.join(", ")}` });
+}
+
+// ─── Request / Response header logger ────────────────────────────────────────
+
+router.use((req, res, next) => {
+  const pad = (s) => s.padEnd(26);
+
+  log.info(`[Machine] ── INCOMING REQUEST ───────────────────────`);
+  log.step(`${req.method} ${req.originalUrl}  from ${callerIp(req)}`);
+  Object.entries(req.headers).forEach(([k, v]) => log.step(`  ${pad(k)} ${v}`));
+
+  res.on("finish", () => {
+    log.info(`[Machine] ── OUTGOING RESPONSE ──────────────────────`);
+    log.step(`${res.statusCode} ${res.statusMessage ?? ""}`);
+    Object.entries(res.getHeaders()).forEach(([k, v]) => log.step(`  ${pad(k)} ${v}`));
+  });
+
+  next();
+});
+
+// ─── POST /order/qr — Order Create ───────────────────────────────────────────
+
 router.post("/qr", (req, res) => {
-  const { orderNo, subject, totalAmount, notifyUrl } = req.body;
-  if (!orderNo || !subject || !totalAmount || !notifyUrl) {
-    return res.status(400).json({ code: 400, message: "Missing required fields: orderNo, subject, totalAmount, notifyUrl" });
-  }
-  const thirdOrderNo = genThirdOrderNo();
-  log.ok(`[Machine] Order QR created: ${orderNo} → ${thirdOrderNo}`);
-  res.json({
-    code: 200,
-    message: "success",
-    data: {
+  const body = req.body;
+  log.step(bodyDump(["orderNo", "objectId", "subject", "attach", "totalAmount", "notifyUrl"], body));
+
+  const bad = missing(["orderNo", "subject", "totalAmount", "notifyUrl"], body);
+  if (bad.length) return reject400("QR", res, bad);
+
+  try {
+    const thirdOrderNo = genThirdOrderNo();
+    log.step(`[Machine:QR] Generated thirdOrderNo: ${thirdOrderNo}`);
+
+    const data = {
       qrUrl: `https://pay.example.com/qr/${thirdOrderNo}`,
       orderStatus: 1,
       thirdOrderNo,
-    },
-  });
+    };
+
+    log.ok(`[Machine:QR] Success — orderNo=${body.orderNo}  thirdOrderNo=${thirdOrderNo}  amount=${body.totalAmount}`);
+    log.step(`[Machine:QR] Response → qrUrl=${data.qrUrl}  orderStatus=1 (Pending Payment)`);
+    res.json({ code: 200, message: "success", data });
+  } catch (err) {
+    log.error(`[Machine:QR] Unexpected error: ${err.message}`);
+    res.status(500).json({ code: 500, message: "Internal error" });
+  }
 });
 
-// POST /order/status — Order Query
+// ─── POST /order/status — Order Query ────────────────────────────────────────
+
 router.post("/status", (req, res) => {
-  const { orderNo, thirdOrderNo } = req.body;
-  if (!orderNo || !thirdOrderNo) {
-    return res.status(400).json({ code: 400, message: "Missing required fields: orderNo, thirdOrderNo" });
+  const body = req.body;
+  log.step(bodyDump(["orderNo", "thirdOrderNo"], body));
+
+  const bad = missing(["orderNo", "thirdOrderNo"], body);
+  if (bad.length) return reject400("STATUS", res, bad);
+
+  try {
+    const orderTime = nowStr();
+    const payTime   = nowStr();
+    const channelUserId = "usr_" + Math.random().toString(36).slice(2, 10);
+
+    log.step(`[Machine:STATUS] Querying order: ${body.orderNo} / ${body.thirdOrderNo}`);
+
+    const data = {
+      orderNo:       body.orderNo,
+      thirdOrderNo:  body.thirdOrderNo,
+      orderStatus:   "2",
+      orderTime,
+      payTime,
+      totalAmount:   body.totalAmount || "10.00",
+      channelUserId,
+    };
+
+    log.ok(`[Machine:STATUS] Success — orderNo=${body.orderNo}  status=2 (Payment Successful)`);
+    log.step(`[Machine:STATUS] Response → orderTime=${orderTime}  payTime=${payTime}  channelUserId=${channelUserId}`);
+    res.json({ code: 200, message: "success", data });
+  } catch (err) {
+    log.error(`[Machine:STATUS] Unexpected error: ${err.message}`);
+    res.status(500).json({ code: 500, message: "Internal error" });
   }
-  log.ok(`[Machine] Order status query: ${orderNo}`);
-  res.json({
-    code: 200,
-    message: "success",
-    data: {
-      orderNo,
-      thirdOrderNo,
-      orderStatus: "2",
-      orderTime: nowStr(),
-      payTime: nowStr(),
-      totalAmount: req.body.totalAmount || "10.00",
-      channelUserId: "usr_" + Math.random().toString(36).slice(2, 10),
-    },
-  });
 });
 
-// POST /order/refund — Order Refund
+// ─── POST /order/refund — Order Refund ───────────────────────────────────────
+
 router.post("/refund", (req, res) => {
-  const { refundNo, orderNo, thirdOrderNo, refundAmount } = req.body;
-  if (!refundNo || !orderNo || !thirdOrderNo || !refundAmount) {
-    return res.status(400).json({ code: 400, message: "Missing required fields: refundNo, orderNo, thirdOrderNo, refundAmount" });
+  const body = req.body;
+  log.step(bodyDump(["refundNo", "orderNo", "thirdOrderNo", "refundAmount", "refundReason", "refundNotifyUrl"], body));
+
+  const bad = missing(["refundNo", "orderNo", "thirdOrderNo", "refundAmount"], body);
+  if (bad.length) return reject400("REFUND", res, bad);
+
+  try {
+    const thirdRefundNo = "RF" + Date.now();
+    const refundTime    = nowStr();
+
+    log.step(`[Machine:REFUND] Processing refund: ${body.refundNo} for order ${body.orderNo}`);
+    log.step(`[Machine:REFUND] Generated thirdRefundNo: ${thirdRefundNo}`);
+
+    const data = {
+      refundNo:      body.refundNo,
+      orderNo:       body.orderNo,
+      thirdOrderNo:  body.thirdOrderNo,
+      thirdRefundNo,
+      refundStatus:  "success",
+      refundTime,
+      totalAmount:   body.totalAmount || body.refundAmount,
+      refundAmount:  body.refundAmount,
+    };
+
+    log.ok(`[Machine:REFUND] Success — refundNo=${body.refundNo}  orderNo=${body.orderNo}  amount=${body.refundAmount}  status=success`);
+    log.step(`[Machine:REFUND] Response → thirdRefundNo=${thirdRefundNo}  refundTime=${refundTime}`);
+    res.json({ code: 200, message: "success", data });
+  } catch (err) {
+    log.error(`[Machine:REFUND] Unexpected error: ${err.message}`);
+    res.status(500).json({ code: 500, message: "Internal error" });
   }
-  log.ok(`[Machine] Refund created: ${refundNo} for order ${orderNo}`);
-  res.json({
-    code: 200,
-    message: "success",
-    data: {
-      refundNo,
-      orderNo,
-      thirdOrderNo,
-      thirdRefundNo: "RF" + Date.now(),
-      refundStatus: "success",
-      refundTime: nowStr(),
-      totalAmount: req.body.totalAmount || refundAmount,
-      refundAmount,
-    },
-  });
 });
 
-// POST /order/complete — Order Complete
+// ─── POST /order/complete — Order Complete ────────────────────────────────────
+
 router.post("/complete", (req, res) => {
-  const { orderNo, thirdOrderNo, success, orderStatus, outStockStatus } = req.body;
-  if (!orderNo || !thirdOrderNo || success === undefined || !orderStatus || !outStockStatus) {
-    return res.status(400).json({ code: 400, message: "Missing required fields: orderNo, thirdOrderNo, success, orderStatus, outStockStatus" });
+  const body = req.body;
+  log.step(bodyDump(["orderNo", "thirdOrderNo", "success", "orderStatus", "outStockStatus", "outStockTime"], body));
+
+  const bad = missing(["orderNo", "thirdOrderNo", "orderStatus", "outStockStatus"], body);
+  // success field checked separately since false is valid
+  if (body.success === undefined || body.success === "") bad.push("success");
+  if (bad.length) return reject400("COMPLETE", res, bad);
+
+  try {
+    const successFlag = body.success === true || body.success === "true";
+    const stockStatus = { "1": "Not shipped yet", "2": "Already shipped" }[body.outStockStatus] ?? body.outStockStatus;
+
+    log.step(`[Machine:COMPLETE] orderNo=${body.orderNo}  success=${successFlag}  outStockStatus=${stockStatus}`);
+    if (body.outStockTime) log.step(`[Machine:COMPLETE] outStockTime=${body.outStockTime}`);
+    if (!successFlag) log.warn(`[Machine:COMPLETE] Beverage preparation FAILED for order ${body.orderNo}`);
+
+    const data = {
+      orderNo:      body.orderNo,
+      thirdOrderNo: body.thirdOrderNo,
+      returnCode:   "success",
+      returnMsg:    "Order completion notified successfully",
+    };
+
+    log.ok(`[Machine:COMPLETE] Notified — orderNo=${body.orderNo}  makingSuccess=${successFlag}  delivery=${stockStatus}`);
+    res.json({ code: 200, message: "success", data });
+  } catch (err) {
+    log.error(`[Machine:COMPLETE] Unexpected error: ${err.message}`);
+    res.status(500).json({ code: 500, message: "Internal error" });
   }
-  log.ok(`[Machine] Order complete: ${orderNo}, success=${success}`);
-  res.json({
-    code: 200,
-    message: "success",
-    data: {
-      orderNo,
-      thirdOrderNo,
-      returnCode: "success",
-      returnMsg: "Order completion notified successfully",
-    },
-  });
 });
 
-// POST /order/cancel — Order Cancel
+// ─── POST /order/cancel — Order Cancel ───────────────────────────────────────
+
 router.post("/cancel", (req, res) => {
-  const { orderNo, thirdOrderNo, orderStatus, cancelTime } = req.body;
-  if (!orderNo || !thirdOrderNo || orderStatus === undefined || !cancelTime) {
-    return res.status(400).json({ code: 400, message: "Missing required fields: orderNo, thirdOrderNo, orderStatus, cancelTime" });
+  const body = req.body;
+  log.step(bodyDump(["orderNo", "thirdOrderNo", "orderStatus", "remark", "cancelTime"], body));
+
+  const bad = missing(["orderNo", "thirdOrderNo", "cancelTime"], body);
+  // orderStatus=0 is falsy, check explicitly
+  if (body.orderStatus === undefined || body.orderStatus === "") bad.push("orderStatus");
+  if (bad.length) return reject400("CANCEL", res, bad);
+
+  try {
+    log.step(`[Machine:CANCEL] Cancelling orderNo=${body.orderNo}  thirdOrderNo=${body.thirdOrderNo}`);
+    log.step(`[Machine:CANCEL] cancelTime=${body.cancelTime}  remark=${body.remark || "(none)"}`);
+
+    const data = {
+      orderNo:      body.orderNo,
+      thirdOrderNo: body.thirdOrderNo,
+      returnCode:   "success",
+      returnMsg:    "Order cancelled successfully",
+    };
+
+    log.ok(`[Machine:CANCEL] Confirmed — orderNo=${body.orderNo}  status=0 (Cancel Payment)  at=${body.cancelTime}`);
+    res.json({ code: 200, message: "success", data });
+  } catch (err) {
+    log.error(`[Machine:CANCEL] Unexpected error: ${err.message}`);
+    res.status(500).json({ code: 500, message: "Internal error" });
   }
-  log.ok(`[Machine] Order cancelled: ${orderNo}`);
-  res.json({
-    code: 200,
-    message: "success",
-    data: {
-      orderNo,
-      thirdOrderNo,
-      returnCode: "success",
-      returnMsg: "Order cancelled successfully",
-    },
-  });
 });
 
 module.exports = router;
