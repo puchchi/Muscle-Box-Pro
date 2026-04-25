@@ -1,13 +1,10 @@
 const { Router } = require("express");
-const log = require("./logger");
+const log     = require("./logger");
+const phonepe = require("./phonepe");
 
 const router = Router();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function genThirdOrderNo() {
-  return "TP" + Date.now() + Math.random().toString(36).slice(2, 6).toUpperCase();
-}
 
 function nowStr() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
@@ -51,9 +48,9 @@ router.use((req, res, next) => {
   next();
 });
 
-// ─── POST /order/qr — Order Create ───────────────────────────────────────────
+// ─── POST /order/qr — Order Create (PhonePe) ─────────────────────────────────
 
-router.post("/qr", (req, res) => {
+router.post("/qr", async (req, res) => {
   const body = req.body;
   log.step(bodyDump(["orderNo", "objectId", "subject", "attach", "totalAmount", "notifyUrl"], body));
 
@@ -61,27 +58,34 @@ router.post("/qr", (req, res) => {
   if (bad.length) return reject400("QR", res, bad);
 
   try {
-    const thirdOrderNo = genThirdOrderNo();
-    log.step(`[Machine:QR] Generated thirdOrderNo: ${thirdOrderNo}`);
+    log.step(`[Machine:QR] Initiating PhonePe order for ${body.orderNo}  amount=₹${body.totalAmount}`);
+
+    const result = await phonepe.createOrder({
+      merchantOrderId: body.orderNo,
+      amount:          body.totalAmount,
+      subject:         body.subject,
+      notifyUrl:       body.notifyUrl,
+      deviceInfo:      body.attach,
+    });
 
     const data = {
-      qrUrl: `https://pay.example.com/qr/${thirdOrderNo}`,
-      orderStatus: 1,
-      thirdOrderNo,
+      qrUrl:        result.qrUrl,
+      orderStatus:  1,
+      thirdOrderNo: result.phonepeOrderId,
     };
 
-    log.ok(`[Machine:QR] Success — orderNo=${body.orderNo}  thirdOrderNo=${thirdOrderNo}  amount=${body.totalAmount}`);
-    log.step(`[Machine:QR] Response → qrUrl=${data.qrUrl}  orderStatus=1 (Pending Payment)`);
+    log.ok(`[Machine:QR] Done — orderNo=${body.orderNo}  thirdOrderNo=${result.phonepeOrderId}  state=${result.state}`);
+    log.step(`[Machine:QR] qrUrl=${result.qrUrl}`);
     res.json({ code: 200, message: "success", data });
   } catch (err) {
-    log.error(`[Machine:QR] Unexpected error: ${err.message}`);
-    res.status(500).json({ code: 500, message: "Internal error" });
+    log.error(`[Machine:QR] PhonePe error: ${err.message}`);
+    res.status(500).json({ code: 500, message: err.message });
   }
 });
 
-// ─── POST /order/status — Order Query ────────────────────────────────────────
+// ─── POST /order/status — Order Query (PhonePe) ──────────────────────────────
 
-router.post("/status", (req, res) => {
+router.post("/status", async (req, res) => {
   const body = req.body;
   log.step(bodyDump(["orderNo", "thirdOrderNo"], body));
 
@@ -89,28 +93,25 @@ router.post("/status", (req, res) => {
   if (bad.length) return reject400("STATUS", res, bad);
 
   try {
-    const orderTime = nowStr();
-    const payTime   = nowStr();
-    const channelUserId = "usr_" + Math.random().toString(36).slice(2, 10);
+    log.step(`[Machine:STATUS] Querying PhonePe for orderNo=${body.orderNo}`);
 
-    log.step(`[Machine:STATUS] Querying order: ${body.orderNo} / ${body.thirdOrderNo}`);
+    const result = await phonepe.getOrderStatus(body.orderNo);
 
     const data = {
       orderNo:       body.orderNo,
       thirdOrderNo:  body.thirdOrderNo,
-      orderStatus:   "2",
-      orderTime,
-      payTime,
-      totalAmount:   body.totalAmount || "10.00",
-      channelUserId,
+      orderStatus:   result.orderStatus,
+      orderTime:     result.orderTime ?? nowStr(),
+      payTime:       result.payTime   ?? nowStr(),
+      totalAmount:   result.totalAmount,
+      channelUserId: result.channelUserId,
     };
 
-    log.ok(`[Machine:STATUS] Success — orderNo=${body.orderNo}  status=2 (Payment Successful)`);
-    log.step(`[Machine:STATUS] Response → orderTime=${orderTime}  payTime=${payTime}  channelUserId=${channelUserId}`);
+    log.ok(`[Machine:STATUS] Done — orderNo=${body.orderNo}  orderStatus=${result.orderStatus}`);
     res.json({ code: 200, message: "success", data });
   } catch (err) {
-    log.error(`[Machine:STATUS] Unexpected error: ${err.message}`);
-    res.status(500).json({ code: 500, message: "Internal error" });
+    log.error(`[Machine:STATUS] PhonePe error: ${err.message}`);
+    res.status(500).json({ code: 500, message: err.message });
   }
 });
 
