@@ -10,6 +10,7 @@ const { simpleParser } = require("mailparser");
 
 const log = require("./lib/logger");
 const { buildTemplateHtml } = require("./lib/emailTemplates");
+const machineRoutes = require("./lib/machineRoutes");
 
 const app = express();
 app.use(express.json());
@@ -261,6 +262,10 @@ app.post("/api/preview", requireAuth, (req, res) => {
   log.step(`Preview rendered for template: ${templateKey}`);
   res.json({ html });
 });
+
+// ─── Machine Endpoint Simulators ──────────────────────────────────────────────
+
+app.use("/order", machineRoutes);
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
