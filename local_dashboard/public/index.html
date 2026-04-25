@@ -249,6 +249,16 @@
     .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--muted) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 8px; }
     @keyframes shimmer { to { background-position: -200% 0; } }
 
+    /* ── Tunnel banner ── */
+    .tunnel-banner { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 12px; flex-shrink: 0; min-height: 36px; }
+    .tunnel-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .tunnel-dot-on { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,.5); }
+    .tunnel-dot-off { background: var(--muted); }
+    .tunnel-label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-2); flex-shrink: 0; }
+    .tunnel-url { font-family: monospace; font-size: 12px; color: #22c55e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .tunnel-copy-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-3); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .15s; }
+    .tunnel-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
     /* ── Machine Endpoints ── */
     .machine-layout { display: flex; flex: 1; min-height: 0; }
 
@@ -382,6 +392,7 @@
         <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
         <h2>Machine Endpoints</h2>
       </div>
+      <div class="tunnel-banner" id="tunnel-banner"></div>
       <div class="machine-layout">
         <div class="endpoint-list" id="endpoint-list"></div>
         <div class="endpoint-detail" id="endpoint-detail">
@@ -1258,7 +1269,49 @@
   ];
 
   let activeEndpointId = null;
+  let tunnelUrl = null;
   const epResponses = {};
+
+  async function loadTunnelUrl() {
+    try {
+      const res = await api('/api/tunnel-url');
+      const data = await res.json();
+      tunnelUrl = data.url || null;
+    } catch {
+      tunnelUrl = null;
+    }
+    renderTunnelBanner();
+    if (activeEndpointId) renderEndpointDetail();
+  }
+
+  function renderTunnelBanner() {
+    const el = document.getElementById('tunnel-banner');
+    if (!el) return;
+    if (tunnelUrl) {
+      el.innerHTML = `
+        <div class="tunnel-dot tunnel-dot-on"></div>
+        <span class="tunnel-label">Public URL</span>
+        <span class="tunnel-url" id="tunnel-url-text">${tunnelUrl}</span>
+        <button class="tunnel-copy-btn" onclick="copyTunnelUrl()" title="Copy">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="tunnel-dot tunnel-dot-off"></div>
+        <span class="tunnel-label" style="color:var(--text-3)">No tunnel active</span>
+        <span style="font-size:11px;color:var(--text-3)">— add <code style="background:var(--bg);padding:1px 5px;border-radius:4px;font-size:11px;">NGROK_AUTHTOKEN</code> to .env and restart</span>
+        <button class="tunnel-copy-btn" onclick="loadTunnelUrl()" title="Refresh" style="margin-left:auto;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        </button>
+      `;
+    }
+  }
+
+  function copyTunnelUrl() {
+    if (!tunnelUrl) return;
+    navigator.clipboard.writeText(tunnelUrl).then(() => showToast('Tunnel URL copied!', 'success'));
+  }
 
   function initMachinePanel() {
     const list = document.getElementById('endpoint-list');
@@ -1267,12 +1320,13 @@
       ${MACHINE_ENDPOINTS.map(ep => `
         <div class="endpoint-item ${activeEndpointId === ep.id ? 'ep-active' : ''}" onclick="selectEndpoint('${ep.id}')">
           <span class="method-badge method-post">${ep.method}</span>
-          <div class="endpoint-path">${ep.path}</div>
+          <div class="endpoint-path">/order${ep.path}</div>
           <div class="endpoint-desc">${ep.desc}</div>
         </div>
       `).join('')}
     `;
     if (activeEndpointId) renderEndpointDetail();
+    loadTunnelUrl();
   }
 
   function selectEndpoint(id) {
@@ -1286,11 +1340,24 @@
     const el = document.getElementById('endpoint-detail');
     if (!ep) return;
     const resp = epResponses[ep.id];
+    const localUrl = `http://localhost:${window.location.port || 4000}/order${ep.path}`;
+    const publicUrl = tunnelUrl ? `${tunnelUrl}/order${ep.path}` : null;
 
     el.innerHTML = `
       <div class="endpoint-url-bar">
         <span class="url-method-badge">${ep.method}</span>
-        <div class="url-path-display">http://localhost:${window.location.port || 4000}${ep.path}</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;">
+          <div class="url-path-display">${localUrl}</div>
+          ${publicUrl ? `
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:#22c55e;font-weight:700;flex-shrink:0;">PUBLIC</span>
+              <div class="url-path-display" style="font-size:12px;color:#22c55e;border-color:rgba(34,197,94,.3);">${publicUrl}</div>
+              <button class="tunnel-copy-btn" onclick="navigator.clipboard.writeText('${publicUrl}').then(()=>showToast('Copied!','success'))" title="Copy public URL">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
+            </div>
+          ` : ''}
+        </div>
         <button class="send-endpoint-btn" id="send-ep-btn" onclick="sendEndpointRequest()">Send</button>
       </div>
       <div class="endpoint-sections">
@@ -1343,7 +1410,7 @@
     });
 
     try {
-      const res = await fetch(ep.path, {
+      const res = await fetch(`/order${ep.path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

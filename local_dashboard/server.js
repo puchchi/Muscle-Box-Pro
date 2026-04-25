@@ -11,6 +11,7 @@ const { simpleParser } = require("mailparser");
 const log = require("./lib/logger");
 const { buildTemplateHtml } = require("./lib/emailTemplates");
 const machineRoutes = require("./lib/machineRoutes");
+const { startTunnel, getTunnelUrl } = require("./lib/tunnel");
 
 const app = express();
 app.use(express.json());
@@ -267,6 +268,15 @@ app.post("/api/preview", requireAuth, (req, res) => {
 
 app.use("/order", machineRoutes);
 
+// ─── GET /api/tunnel-url ─────────────────────────────────────────────────────
+
+app.get("/api/tunnel-url", requireAuth, (_req, res) => {
+  res.json({ url: getTunnelUrl() });
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => log.banner(PORT));
+app.listen(PORT, () => {
+  log.banner(PORT);
+  startTunnel(PORT);
+});
