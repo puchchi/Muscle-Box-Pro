@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const log     = require("./logger");
-const { createOrder, getOrderStatus, cancelOrder, getOrderAgeMs } = require("./phonepe");
+const { createOrder, getOrderStatus, getOrderAgeMs } = require("./phonepe");
 
 const STATUS_HARD_FAIL_MS = 5 * 60 * 1000;
 
@@ -220,7 +220,8 @@ router.post("/cancel", async (req, res) => {
     log.step(`[Machine:CANCEL] Cancelling orderNo=${body.orderNo}  thirdOrderNo=${body.thirdOrderNo}`);
     log.step(`[Machine:CANCEL] cancelTime=${body.cancelTime}  remark=${body.remark || "(none)"}`);
 
-    await cancelOrder(body.orderNo);
+    // PhonePe has no cancel API — order expires naturally; just acknowledge
+    log.step(`[Machine:CANCEL] Skipping PhonePe call (no cancel API) — order will expire`);
 
     const data = {
       orderNo:      body.orderNo,

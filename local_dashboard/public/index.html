@@ -1429,7 +1429,7 @@
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      epResponses[ep.id] = { ok: res.ok, status: res.status, data };
+      epResponses[ep.id] = { ok: res.ok, status: res.status, data, req: body };
       if (ep.id === 'order-create') Object.keys(actionResponses).forEach(k => delete actionResponses[k]);
       showToast(res.ok ? 'Request successful' : `Error ${res.status}`, res.ok ? 'success' : 'error');
     } catch (err) {
@@ -1497,7 +1497,7 @@
     const resp = epResponses['order-create'];
     if (!resp?.data?.data) return;
     const d = resp.data.data;
-    const orderNo = document.getElementById('ep-orderNo')?.value || '';
+    const orderNo = resp.req?.orderNo || '';
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
     let path, body;
@@ -1509,7 +1509,7 @@
       body = { orderNo, thirdOrderNo: d.thirdOrderNo, success: true, orderStatus: '2', outStockStatus: '2', outStockTime: now };
     } else if (action === 'refund') {
       path = '/order/refund';
-      body = { refundNo: 'REF' + Date.now(), orderNo, thirdOrderNo: d.thirdOrderNo, refundAmount: document.getElementById('ep-totalAmount')?.value || '10.00' };
+      body = { refundNo: 'REF' + Date.now(), orderNo, thirdOrderNo: d.thirdOrderNo, refundAmount: resp.req?.totalAmount || '10.00' };
     } else if (action === 'cancel') {
       path = '/order/cancel';
       body = { orderNo, thirdOrderNo: d.thirdOrderNo, orderStatus: '0', cancelTime: now };
