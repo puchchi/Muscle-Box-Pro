@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const log     = require("./logger");
 const { createOrder, getOrderStatus, getOrderAgeMs } = require("./phonepe");
+const { gsAuth, redactHeaders } = require("./gsAuth");
 
 const STATUS_HARD_FAIL_MS = 5 * 60 * 1000;
 
@@ -27,9 +28,21 @@ function missing(required, body) {
   return required.filter(k => body[k] == null || body[k] === "");
 }
 
+// Vendor spec §3.2.2 names the envelope field `msg`; we shipped `message`. Emit both until a real
+// machine request confirms which one the firmware reads, then drop the other.
+function ok(res, data) {
+  return res.json({ code: 200, msg: "success", message: "success", data });
+}
+
+// Spec defines only 200 and 400 — there is no 500 in the protocol, so a business error must be 400
+// or the machine sees an undefined code.
+function fail400(res, text) {
+  return res.status(400).json({ code: 400, msg: text, message: text });
+}
+
 function reject400(tag, res, fields) {
   log.warn(`[Machine:${tag}] Validation failed — missing: ${fields.join(", ")}`);
-  return res.status(400).json({ code: 400, message: `Missing required fields: ${fields.join(", ")}` });
+  return fail400(res, `Missing required fields: ${fields.join(", ")}`);
 }
 
 // ─── Request / Response header logger ────────────────────────────────────────
@@ -39,7 +52,8 @@ router.use((req, res, next) => {
 
   log.info(`[Machine] ── INCOMING REQUEST ───────────────────────`);
   log.step(`${req.method} ${req.originalUrl}  from ${callerIp(req)}`);
-  Object.entries(req.headers).forEach(([k, v]) => log.step(`  ${pad(k)} ${v}`));
+  // redactHeaders masks `key` / `key-md5` — this used to write working credentials to the log.
+  Object.entries(redactHeaders(req.headers)).forEach(([k, v]) => log.step(`  ${pad(k)} ${v}`));
 
   res.on("finish", () => {
     log.info(`[Machine] ── OUTGOING RESPONSE ──────────────────────`);
@@ -49,6 +63,10 @@ router.use((req, res, next) => {
 
   next();
 });
+
+// Auth runs *after* the logger so rejected requests are still visible in the console — that log is
+// how we learn the real `key-md5` construction. Defaults to observe mode; see lib/gsAuth.js.
+router.use(gsAuth);
 
 // ─── POST /order/qr — Order Create (PhonePe) ─────────────────────────────────
 
@@ -78,10 +96,10 @@ router.post("/qr", async (req, res) => {
 
     log.ok(`[Machine:QR] Done — orderNo=${body.orderNo}  thirdOrderNo=${result.phonepeOrderId}  state=${result.state}`);
     log.step(`[Machine:QR] qrUrl=${result.qrUrl}`);
-    res.json({ code: 200, message: "success", data });
+    ok(res, data);
   } catch (err) {
     log.error(`[Machine:QR] PhonePe error: ${err.message}`);
-    res.status(500).json({ code: 500, message: err.message });
+    fail400(res, err.message);
   }
 });
 
@@ -98,17 +116,19 @@ router.post("/status", async (req, res) => {
   if (ageMs !== null && ageMs > STATUS_HARD_FAIL_MS) {
     log.warn(`[Machine:STATUS] Order ${body.orderNo} is ${Math.floor(ageMs / 1000)}s old — returning FAILED without PhonePe call`);
     const now = nowStr();
-    return res.json({
-      code: 200, message: "success",
-      data: {
-        orderNo:       body.orderNo,
-        thirdOrderNo:  body.thirdOrderNo,
-        orderStatus:   "3",
-        orderTime:     now,
-        payTime:       now,
-        totalAmount:   "",
-        channelUserId: "",
-      },
+    // KNOWN DEFECT (TODO Track B): this reports FAILED without asking PhonePe, so a payment that
+    // landed at 4:59 is disowned at 5:01 — we keep the money and dispense nothing. Also, the spec's
+    // code for a timeout is "6" (Time Exceeded), not "3" (Transaction Failed). Both are deliberately
+    // left alone here: the fix needs durable order state (the in-memory Map dies on restart) and
+    // changing what the firmware sees on timeout must not be guessed at on a live machine.
+    return ok(res, {
+      orderNo:       body.orderNo,
+      thirdOrderNo:  body.thirdOrderNo,
+      orderStatus:   "3",
+      orderTime:     now,
+      payTime:       now,
+      totalAmount:   "",
+      channelUserId: "",
     });
   }
 
@@ -128,10 +148,10 @@ router.post("/status", async (req, res) => {
     };
 
     log.ok(`[Machine:STATUS] Done — orderNo=${body.orderNo}  orderStatus=${result.orderStatus}`);
-    res.json({ code: 200, message: "success", data });
+    ok(res, data);
   } catch (err) {
     log.error(`[Machine:STATUS] PhonePe error: ${err.message}`);
-    res.status(500).json({ code: 500, message: err.message });
+    fail400(res, err.message);
   }
 });
 
@@ -164,10 +184,10 @@ router.post("/refund", (req, res) => {
 
     log.ok(`[Machine:REFUND] Success — refundNo=${body.refundNo}  orderNo=${body.orderNo}  amount=${body.refundAmount}  status=success`);
     log.step(`[Machine:REFUND] Response → thirdRefundNo=${thirdRefundNo}  refundTime=${refundTime}`);
-    res.json({ code: 200, message: "success", data });
+    ok(res, data);
   } catch (err) {
     log.error(`[Machine:REFUND] Unexpected error: ${err.message}`);
-    res.status(500).json({ code: 500, message: "Internal error" });
+    fail400(res, "Internal error");
   }
 });
 
@@ -198,10 +218,10 @@ router.post("/complete", (req, res) => {
     };
 
     log.ok(`[Machine:COMPLETE] Notified — orderNo=${body.orderNo}  makingSuccess=${successFlag}  delivery=${stockStatus}`);
-    res.json({ code: 200, message: "success", data });
+    ok(res, data);
   } catch (err) {
     log.error(`[Machine:COMPLETE] Unexpected error: ${err.message}`);
-    res.status(500).json({ code: 500, message: "Internal error" });
+    fail400(res, "Internal error");
   }
 });
 
@@ -231,10 +251,10 @@ router.post("/cancel", async (req, res) => {
     };
 
     log.ok(`[Machine:CANCEL] Confirmed — orderNo=${body.orderNo}  status=0 (Cancel Payment)  at=${body.cancelTime}`);
-    res.json({ code: 200, message: "success", data });
+    ok(res, data);
   } catch (err) {
     log.error(`[Machine:CANCEL] PhonePe error: ${err.message}`);
-    res.status(500).json({ code: 500, message: err.message });
+    fail400(res, err.message);
   }
 });
 
