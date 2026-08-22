@@ -21,7 +21,7 @@ const sections = [
 const faqs = [
   { q: "What personal information does MuscleBoxPro collect?", a: "MuscleBoxPro may collect your name, email address, mobile number, payment transaction details, and machine usage data when you register, place an order, or interact with the platform." },
   { q: "How is my payment information secured?", a: "Payments are processed through third-party providers such as PhonePe. MuscleBoxPro does not store your card or UPI credentials." },
-  { q: "Can I request deletion of my personal data?", a: "Yes. You may request access, correction, or deletion of your personal information by contacting our team at contact@muscleboxpro.com or +91-8687247670." },
+  { q: "Can I request deletion of my personal data?", a: "Yes. You may request access, correction, or deletion of your personal information by contacting our team at contact@muscleboxpro.com." },
   { q: "Does MuscleBoxPro share my data with third parties?", a: "Personal data may be shared with trusted service providers only when necessary to process payments or operate services. It is never sold to third parties." },
   { q: "How long is my data retained?", a: "Personal data is retained only as long as necessary for business operations or as required by applicable law." },
 ];
@@ -111,10 +111,6 @@ export default function PrivacyPolicy() {
               If you have any questions or concerns about our privacy practices, please contact our data protection team at{" "}
               <a href="mailto:contact@muscleboxpro.com" className="text-primary hover:underline font-medium">
                 contact@muscleboxpro.com
-              </a>{" "}
-              or call us at{" "}
-              <a href="tel:+918687247670" className="text-primary hover:underline font-medium">
-                +91-8687247670
               </a>.
             </p>
             <a

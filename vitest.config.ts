@@ -12,6 +12,14 @@ export default defineConfig({
       "client/src/**/*.test.{ts,tsx}",
       "supabase/functions/__tests__/**/*.test.ts",
     ],
+    // Consumer auth (login/signup/account) was removed with the gym-portal work.
+    // The pages are kept for reference but must not compile or run — see
+    // docs/gym-onboarding.md §10. Mirrored in tsconfig.json "exclude".
+    exclude: [
+      "**/node_modules/**",
+      "client/src/pages/_archive/**",
+      "client/src/__tests__/_archive/**",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],

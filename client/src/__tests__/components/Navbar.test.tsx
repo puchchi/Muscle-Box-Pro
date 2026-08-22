@@ -37,30 +37,41 @@ describe("Navbar", () => {
     mockHasToken.mockReturnValue(false);
   });
 
-  it("renders the brand logo text", () => {
+  // The wordmark next to the logo is commented out in Navbar.tsx; the image is
+  // the only brand element rendered.
+  it("renders the brand logo", () => {
     render(<Navbar />);
-    expect(screen.getAllByText(/MUSCLE BOX/i).length).toBeGreaterThan(0);
+    expect(screen.getByAltText("MuscleBoxPro")).toBeInTheDocument();
   });
 
-  it("renders all 5 navigation links", () => {
+  it("renders all 4 navigation links", () => {
     render(<Navbar />);
     expect(screen.getAllByText("HOME").length).toBeGreaterThan(0);
     expect(screen.getAllByText("GYM DEMO").length).toBeGreaterThan(0);
     expect(screen.getAllByText("SPECS").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("MY ACCOUNT").length).toBeGreaterThan(0);
     expect(screen.getAllByText("ADVERTISE").length).toBeGreaterThan(0);
   });
 
-  it("shows LOGIN button when user is not logged in", () => {
-    mockHasToken.mockReturnValue(false);
+  it("no longer links to the removed consumer account page", () => {
     render(<Navbar />);
-    expect(screen.getByRole("button", { name: /login/i })).toBeInTheDocument();
+    expect(screen.queryByText("MY ACCOUNT")).not.toBeInTheDocument();
+    const accountLink = screen
+      .getAllByRole("link")
+      .find((el) => el.getAttribute("href") === "/account");
+    expect(accountLink).toBeUndefined();
   });
 
-  it("hides LOGIN button when user is logged in", () => {
+  it("shows GYM LOGIN button when user is not logged in", () => {
+    mockHasToken.mockReturnValue(false);
+    render(<Navbar />);
+    expect(screen.getByRole("button", { name: /gym login/i })).toBeInTheDocument();
+  });
+
+  it("shows DASHBOARD instead of GYM LOGIN when user is logged in", () => {
     mockHasToken.mockReturnValue(true);
     render(<Navbar />);
-    expect(screen.queryByRole("button", { name: /login/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /gym login/i })).not.toBeInTheDocument();
   });
 
   it("marks the active route link with text-primary class", () => {
@@ -106,13 +117,22 @@ describe("Navbar", () => {
     expect(logoLinks.length).toBeGreaterThan(0);
   });
 
-  it("the LOGIN button links to '/login'", () => {
+  it("the GYM LOGIN button links to '/gym/login'", () => {
     mockHasToken.mockReturnValue(false);
     render(<Navbar />);
     const loginLink = screen
       .getAllByRole("link")
-      .find((el) => el.getAttribute("href") === "/login");
+      .find((el) => el.getAttribute("href") === "/gym/login");
     expect(loginLink).toBeInTheDocument();
+  });
+
+  it("points at '/gym/dashboard' once logged in", () => {
+    mockHasToken.mockReturnValue(true);
+    render(<Navbar />);
+    const dashLink = screen
+      .getAllByRole("link")
+      .find((el) => el.getAttribute("href") === "/gym/dashboard");
+    expect(dashLink).toBeInTheDocument();
   });
 
   it("renders the mobile menu trigger button", () => {

@@ -52,19 +52,22 @@ entirely on RLS, and there is no RLS. Repo has **zero** `enable row level securi
       INSERT/UPDATE/DELETE were likely open too — someone could have wiped the pipeline.
       Not tested (would have written to prod). Enabling RLS closes reads and writes together.
 
-### A2. Users can set their own `wallet_balance`
+### A2. Users can set their own `wallet_balance` — CLOSED 2026-08-22
 
-`client/src/pages/Account.tsx:107-117` reads `wallet_balance`, `monthly_shakes`,
+`client/src/pages/Account.tsx:107-117` read `wallet_balance`, `monthly_shakes`,
 `favorite_blend`, and a `transactions[]` array out of `user_metadata`.
-`supabase.auth.updateUser({ data })` writes `user_metadata` with the *user's own* token —
-already used at `client/src/pages/ForgotPassword.tsx:59`, so the capability is live.
-
-**A user can grant themselves money from the browser console.** Not a Supabase flaw —
+`supabase.auth.updateUser({ data })` writes `user_metadata` with the *user's own* token,
+so **a user could grant themselves money from the browser console.** Not a Supabase flaw —
 `user_metadata` is documented as user-writable. Design mistake in this repo.
 
-- [ ] Move business state to a real `members` table (or `app_metadata`, which is *not*
-      user-writable), read via an authenticated endpoint.
-- [ ] Keep only identity in the token: `full_name`, `mobile`, `account_type`.
+Closed by removing consumer auth outright: there are no member accounts any more, and the
+vulnerable read left with the file. `Account.tsx` is at `client/src/pages/_archive/` and is
+excluded from both `tsconfig.json` and `vitest.config.ts`, so it no longer compiles.
+
+- [x] Vulnerable code path removed with the page (no `members` table needed — the feature is gone)
+- [ ] **Constraint for the replacement:** the gym portal must keep business state in Postgres
+      behind an authenticated endpoint. Identity only in the token. See
+      `docs/gym-onboarding.md` §10 and the §17 checklist.
 
 ### A3. `send-email` is an open spam relay
 

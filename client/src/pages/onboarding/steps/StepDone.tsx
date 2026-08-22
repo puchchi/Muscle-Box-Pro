@@ -1,0 +1,301 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { CheckCircle2, Clock, FileText, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { portalPasswordSchema } from "@shared/onboarding/schema";
+import { formatAgreementDate } from "@shared/onboarding/agreementFields";
+import { formatInr } from "@shared/partnership/summary";
+import type { StepViewProps } from "../types";
+
+/**
+ * Step 5 — You're set up.
+ *
+ * Three jobs, in this order: confirm what was just signed, say what the deposit is
+ * doing, and turn the token into a real login. The password is set here rather than
+ * in a separate "activate your account" email because a second email is a second
+ * chance to lose someone, and the token in the URL has already proved the same thing
+ * a magic link would.
+ *
+ * The "what happens next" list at the bottom is not filler. Signing is where a gym
+ * owner's expectations are least anchored — the honest answer is that a survey and an
+ * installation visit come before a single cup is sold, and that there is a *second*
+ * signature at installation (Schedule A, §6). Saying so here costs one paragraph;
+ * not saying it costs a support call per gym.
+ */
+export default function StepDone({ state, readOnly, isSubmitting, actions }: StepViewProps) {
+  const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const isActive = state.status === "active";
+  const email = state.details.noticesEmail || "your email";
+  const signedAt = state.timestamps.signedAt;
+
+  async function createAccount() {
+    // Validated here as well as server-side so a short password costs no round
+    // trip. The server check is the real one; this is only courtesy.
+    const parsed = portalPasswordSchema.safeParse(password);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Choose a longer password");
+      return;
+    }
+    setError(null);
+    if (await actions.createAccount(parsed.data)) {
+      router.push("/gym/dashboard");
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* ── What just happened ─────────────────────────────────────────────── */}
+      <div
+        className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5"
+        data-testid="signed-confirmation"
+      >
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-foreground">
+              Signed. {state.gymDisplayName} is on board.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+              {signedAt ? `Signed on ${formatAgreementDate(signedAt)} by ` : "Signed by "}
+              {state.details.signatoryName || "your signatory"}
+              {state.details.signatoryDesignation ? `, ${state.details.signatoryDesignation}` : ""}.
+              A copy is on its way to <strong className="text-foreground">{email}</strong> — keep it,
+              because §41 makes that address the one we serve notices to.
+            </p>
+          </div>
+        </div>
+
+        {state.agreement && (
+          <dl
+            className="mt-4 pt-3 border-t border-primary/15 grid grid-cols-2 gap-3"
+            data-testid="agreement-record"
+          >
+            <div>
+              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">
+                Version
+              </dt>
+              <dd className="text-xs text-foreground font-semibold mt-0.5">
+                {state.agreement.version}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">
+                Document fingerprint
+              </dt>
+              {/*
+                The first twelve characters, not all sixty-four. Enough to match
+                against the record in the emailed copy, short enough to read out on
+                a phone call, and the full hash is in the PDF for anyone who wants
+                to verify the whole thing.
+              */}
+              <dd
+                className="text-xs text-foreground font-mono mt-0.5 truncate"
+                data-testid="agreement-hash-short"
+                title={state.agreement.contentHash}
+              >
+                {state.agreement.contentHash.slice(0, 12)}…
+              </dd>
+            </div>
+          </dl>
+        )}
+      </div>
+
+      {/*
+        Honest about what does not exist yet. The signature and its hash are real and
+        stored; the countersigned PDF and its permanent home are build items 9 and 8.
+        A "Download" button that 404s would be worse than this sentence.
+      */}
+      <p
+        className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2"
+        data-testid="agreement-copy-note"
+      >
+        <FileText className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+        <span>
+          Your countersigned PDF is generated and emailed once we counter-sign, usually the same
+          working day. It will also live permanently in your dashboard under Agreement, so you never
+          have to search your inbox for it.
+        </span>
+      </p>
+
+      {/* ── The deposit ────────────────────────────────────────────────────── */}
+      <DepositCard state={state} />
+
+      {/* ── The account ────────────────────────────────────────────────────── */}
+      {isActive ? (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+          <p className="text-sm font-bold text-foreground">Your dashboard is ready</p>
+          <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+            Sign in at <strong className="text-foreground">{email}</strong> with the password you
+            chose.
+          </p>
+          <Link href="/gym/dashboard">
+            <Button
+              type="button"
+              className="h-11 px-6 rounded-xl font-bold text-sm mt-4 w-full sm:w-auto"
+              data-testid="link-dashboard"
+            >
+              Open my dashboard
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        !readOnly && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
+            <div>
+              <label
+                htmlFor="portal-password"
+                className="text-sm font-bold text-foreground block mb-1"
+              >
+                Choose a password for your dashboard
+              </label>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                It shows cups sold, revenue, your share and every payout statement. You'll sign in
+                with <strong className="text-foreground">{email}</strong>.
+              </p>
+            </div>
+            <input
+              id="portal-password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="At least 8 characters"
+              className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm focus:border-primary focus:bg-white focus:outline-none transition-colors"
+              data-testid="input-portal-password"
+            />
+            {error && (
+              <p className="text-xs text-red-600" data-testid="error-portal-password">
+                {error}
+              </p>
+            )}
+            <Button
+              type="button"
+              onClick={createAccount}
+              disabled={isSubmitting}
+              className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto"
+              data-testid="button-continue"
+            >
+              {isSubmitting ? "Creating..." : "Create my password and open my dashboard"}
+            </Button>
+          </div>
+        )
+      )}
+
+      {/* ── What happens next ──────────────────────────────────────────────── */}
+      <section
+        className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
+        data-testid="what-happens-next"
+      >
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" />
+          What happens next
+        </p>
+        <ol className="space-y-3">
+          {nextSteps(state.details.installationAddress, state.terms.termMonths).map(
+            (item, index) => (
+              <li key={item.title} className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {index + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">{item.title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{item.body}</p>
+                </div>
+              </li>
+            ),
+          )}
+        </ol>
+      </section>
+    </div>
+  );
+}
+
+// ── Local pieces ────────────────────────────────────────────────────────────
+
+/**
+ * The deposit, in whichever of its three end-states this gym is in.
+ *
+ * `deferred` gets the most words on purpose: a gym that chose to pay later has an
+ * open obligation, and the point of this card is that nobody can honestly say they
+ * did not know it was outstanding.
+ */
+function DepositCard({ state }: { state: StepViewProps["state"] }) {
+  const amount = formatInr(state.terms.securityDepositInr);
+  const paidAt = state.timestamps.depositPaidAt;
+
+  if (state.depositStatus === "paid") {
+    return (
+      <div
+        className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
+        data-testid="deposit-outcome"
+      >
+        <p className="text-sm font-bold text-foreground flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
+          Deposit received — {amount}
+        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+          {paidAt ? `Paid on ${formatAgreementDate(paidAt)}. ` : ""}
+          Your receipt is in your email and in your dashboard. It is refundable at the end of the
+          term, less anything owing under §5.6.
+        </p>
+        {/*
+          The reference, here as well as on step 4, because paying advances the wizard
+          straight to this screen — so for most gyms this is the only place they will
+          see it before the email arrives.
+        */}
+        {state.depositReceipt && (
+          <p className="text-[11px] text-muted-foreground mt-2" data-testid="deposit-receipt-no">
+            Receipt <span className="font-mono text-foreground">{state.depositReceipt.receiptNo}</span>
+            {state.depositReceipt.method ? ` · paid by ${state.depositReceipt.method}` : ""}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
+      data-testid="deposit-outcome"
+    >
+      <p className="text-sm font-bold text-foreground flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        Deposit still to pay — {amount}
+      </p>
+      <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+        {state.depositStatus === "pending"
+          ? "We can see a payment in progress. Once it clears we'll email the receipt — nothing more for you to do."
+          : `We'll email you a payment link, and it stays in your dashboard under Deposit. The site survey can go ahead in the meantime, but installation waits for the ${amount}.`}
+      </p>
+    </div>
+  );
+}
+
+/** Survey → installation → Schedule A → first shake. */
+function nextSteps(installationAddress: string, termMonths: number) {
+  const where = installationAddress.trim() ? " at your installation address" : "";
+  return [
+    {
+      title: "We call you within two working days",
+      body: `To book the site survey${where} — where the machine stands, the power point, and water access.`,
+    },
+    {
+      title: "We confirm an installation date",
+      body: "Usually within two weeks of the survey, once the unit is allocated to you.",
+    },
+    {
+      title: "Schedule A is signed on site",
+      body: `A short second signature at installation: you and our technician confirm the machine's serial number, its condition and the installation date. Your ${termMonths}-month term runs from that date (§4.1), not from today.`,
+    },
+    {
+      title: "Your first shake, and your first statement",
+      body: "Sales appear in your dashboard the same day they happen. The first payout follows the first month-end.",
+    },
+  ];
+}

@@ -443,6 +443,11 @@ export default function GymRevenueIdeas() {
                           View Machine Specs
                         </Button>
                       </Link>
+                      <Link href="/gym-partnership">
+                        <Button size="sm" variant="outline" className="h-9 px-5 rounded-full font-semibold border-primary/30 text-primary hover:bg-primary/5">
+                          Read the Revenue Share Terms
+                        </Button>
+                      </Link>
                       <Link href="/vs/protein-shake-bar">
                         <Button size="sm" variant="ghost" className="h-9 px-5 rounded-full font-semibold text-gray-500 hover:text-gray-900">
                           Compare vs. Shake Bar

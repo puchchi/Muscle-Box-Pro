@@ -38,14 +38,14 @@ describe("AuthCallback page", () => {
     expect(screen.getByText(/finalizing sign-in/i)).toBeInTheDocument();
   });
 
-  it("redirects to /account when session is valid", async () => {
+  it("redirects to /gym/dashboard when session is valid", async () => {
     mockGetSession.mockResolvedValue({
       data: { session: { access_token: "tok", user: { email: "u@e.com" } } },
     });
     render(<AuthCallback />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/account");
+      expect(mockPush).toHaveBeenCalledWith("/gym/dashboard");
     });
   });
 
@@ -62,12 +62,12 @@ describe("AuthCallback page", () => {
     });
   });
 
-  it("redirects to /login when session is null", async () => {
+  it("redirects to /gym/login when session is null", async () => {
     mockGetSession.mockResolvedValue({ data: { session: null } });
     render(<AuthCallback />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/login");
+      expect(mockPush).toHaveBeenCalledWith("/gym/login");
     });
   });
 

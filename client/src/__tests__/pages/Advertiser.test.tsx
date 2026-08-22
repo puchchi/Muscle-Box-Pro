@@ -14,6 +14,14 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
+/**
+ * This file had no framer-motion mock, so it ran the real library — and the page wraps
+ * its form and its confirmation in `<AnimatePresence mode="wait">`, which holds the
+ * incoming panel until the outgoing one finishes exiting. Under happy-dom that exit
+ * never finishes, so the panel a test was waiting for simply never arrived.
+ */
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
+
 vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
 
 const { mockFunctionsInvoke } = vi.hoisted(() => ({
@@ -44,7 +52,7 @@ describe("Advertiser page", () => {
   it("shows the three feature cards", () => {
     render(<Advertiser />);
     expect(screen.getAllByText(/captive audience/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/4k displays/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/hd displays/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/high conversion/i).length).toBeGreaterThan(0);
   });
 
@@ -92,9 +100,14 @@ describe("Advertiser page", () => {
     });
   });
 
-  it("shows success message after submission", async () => {
+  /**
+   * The confirmation copy is the page's own, not the edge function's — `data.message`
+   * is discarded. This test used to mock a message and then assert that message, so it
+   * was asserting the mock rather than the page.
+   */
+  it("shows its own confirmation after submission, not the function's message", async () => {
     mockFunctionsInvoke.mockResolvedValue({
-      data: { message: "Thank you! Our advertising team will contact you shortly." },
+      data: { message: "ignored by the page" },
       error: null,
     });
     render(<Advertiser />);
@@ -106,8 +119,10 @@ describe("Advertiser page", () => {
     await user.click(screen.getByRole("button", { name: /contact for pricing/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/advertising team will contact you shortly/i)).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /inquiry received/i })).toBeInTheDocument();
     });
+    expect(screen.getByText(/reach out within 24 hours/i)).toBeInTheDocument();
+    expect(screen.queryByText(/ignored by the page/i)).toBeNull();
   });
 
   it("shows error message when edge function fails", async () => {
@@ -145,7 +160,16 @@ describe("Advertiser page", () => {
     resolve({ data: { message: "Done." }, error: null });
   });
 
-  it("clears form after successful submission", async () => {
+  /**
+   * Success unmounts the form, so the old version of this test held a reference to a
+   * detached input and asked whether it was empty — a question with no bearing on what
+   * the user sees, and one that failed whether or not the page cleared its state.
+   *
+   * "Submit Another Inquiry" is what makes the clearing observable, and what makes it
+   * matter: a brand that comes back to the form and finds its previous entry still
+   * there sends us the same inquiry twice.
+   */
+  it("returns to an empty form when asked to submit another inquiry", async () => {
     mockFunctionsInvoke.mockResolvedValue({
       data: { message: "Done." },
       error: null,
@@ -153,14 +177,18 @@ describe("Advertiser page", () => {
     render(<Advertiser />);
     const user = userEvent.setup();
 
-    const brandInput = screen.getByPlaceholderText(/nike, gymshark/i);
-    await user.type(brandInput, "FitBrand");
+    await user.type(screen.getByPlaceholderText(/nike, gymshark/i), "FitBrand");
     await user.type(screen.getByPlaceholderText(/marketing@brand\.com/i), "ads@fitbrand.com");
     await user.type(screen.getByPlaceholderText(/\+91 98765 43210/), "9876543210");
     await user.click(screen.getByRole("button", { name: /contact for pricing/i }));
 
     await waitFor(() => {
-      expect(brandInput).toHaveValue("");
+      expect(screen.getByRole("button", { name: /submit another inquiry/i })).toBeInTheDocument();
     });
+    await user.click(screen.getByRole("button", { name: /submit another inquiry/i }));
+
+    expect(screen.getByPlaceholderText(/nike, gymshark/i)).toHaveValue("");
+    expect(screen.getByPlaceholderText(/marketing@brand\.com/i)).toHaveValue("");
+    expect(screen.getByPlaceholderText(/\+91 98765 43210/)).toHaveValue("");
   });
 });

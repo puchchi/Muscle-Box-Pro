@@ -11,6 +11,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.muscleboxpro.com/gym-partnership</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.muscleboxpro.com/specs</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

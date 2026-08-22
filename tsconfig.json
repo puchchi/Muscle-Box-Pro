@@ -12,7 +12,9 @@
     "dist",
     ".next",
     "supabase",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "client/src/pages/_archive",
+    "client/src/__tests__/_archive"
   ],
   "compilerOptions": {
     "incremental": true,

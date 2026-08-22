@@ -16,6 +16,8 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
+
 vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
 
 // ─── Pages ────────────────────────────────────────────────────────────────────

@@ -112,10 +112,6 @@ export default function TermsAndConditions() {
               If you have any questions regarding these terms, please contact our legal department at{" "}
               <a href="mailto:contact@muscleboxpro.com" className="text-primary hover:underline font-medium">
                 contact@muscleboxpro.com
-              </a>{" "}
-              or call us at{" "}
-              <a href="tel:+918687247670" className="text-primary hover:underline font-medium">
-                +91-8687247670
               </a>.
             </p>
             <a

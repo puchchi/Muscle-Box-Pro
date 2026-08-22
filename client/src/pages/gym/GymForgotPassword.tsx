@@ -10,12 +10,12 @@ import { useState, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 
 const brandPerks = [
-  { icon: ShieldCheck, text: "Your account is protected with 256-bit encryption" },
+  { icon: ShieldCheck, text: "Your portal is protected with 256-bit encryption" },
   { icon: KeyRound, text: "Reset links expire after 1 hour for security" },
-  { icon: Zap, text: "Back to your shakes in seconds" },
+  { icon: Zap, text: "Back to your dashboard in seconds" },
 ];
 
-function ForgotPasswordInner() {
+function GymForgotPasswordInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -59,7 +59,7 @@ function ForgotPasswordInner() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setNotice({ type: "success", message: "Password reset successfully. Redirecting to login..." });
-      setTimeout(() => router.push("/login"), 1200);
+      setTimeout(() => router.push("/gym/login"), 1200);
     } catch (error) {
       setNotice({ type: "error", message: error instanceof Error ? error.message : "Could not reset password." });
     } finally {
@@ -156,7 +156,7 @@ function ForgotPasswordInner() {
             </h1>
             <p className="text-muted-foreground text-sm">
               {isResetMode
-                ? "Create a new password for your account"
+                ? "Create a new password for your partner portal"
                 : "Enter your email to receive a recovery link"}
             </p>
           </div>
@@ -234,7 +234,7 @@ function ForgotPasswordInner() {
             </Button>
           </form>
 
-          <Link href="/login">
+          <Link href="/gym/login">
             <span className="mt-6 text-muted-foreground text-sm hover:text-foreground transition-colors cursor-pointer flex items-center justify-center gap-2">
               <ArrowLeft className="h-4 w-4" /> Back to Sign In
             </span>
@@ -246,14 +246,14 @@ function ForgotPasswordInner() {
   );
 }
 
-export default function ForgotPassword() {
+export default function GymForgotPassword() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-white flex items-center justify-center text-muted-foreground">
         Loading...
       </div>
     }>
-      <ForgotPasswordInner />
+      <GymForgotPasswordInner />
     </Suspense>
   );
 }

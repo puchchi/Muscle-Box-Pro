@@ -1,0 +1,1335 @@
+# Gym Onboarding
+
+Design for the public partnership page, the gym-partner onboarding flow, the gym portal, and the
+online Machine Placement & Profit Sharing Agreement. Written 2026-08-22, before implementation.
+
+Two things change at once:
+
+1. **Consumer login/signup is removed.** There are no customer accounts. Members buy a shake at
+   the machine; they do not have profiles, wallets, or logins.
+2. **Gyms are onboarded through a single emailed link** — a five-step flow that ends with a signed
+   agreement, a paid security deposit, and a working portal account.
+
+The agreement started from
+`docs/MuscleBoxPro_Machine_Placement_Profit_Sharing_Agreement_v2_1.pdf` (Execution Draft v2.0 in its
+own header). That PDF is transcribed as `v2_1.ts` and frozen. The version the flow actually issues is
+**2.2**, which resolves every unfinished clause in it — see §12 for the defect-by-defect mapping and
+the thirteen commercial decisions behind it.
+
+---
+
+## 1. Why invite-only
+
+A gym is never a self-serve signup. Every gym that gets a machine has already had a sales
+conversation, a site discussion, and agreed commercials. By the time they see the onboarding flow,
+we know their name, their address, and what machine they're getting.
+
+So there is no public gym signup form. The public front doors are `/gym-partnership` (understand the
+deal) and [/gym-demo](../app/gym-demo/page.tsx) (ask for a machine, writes to `demo_requests`).
+Admin converts a demo request into a gym record, sets the machine and the commercial terms, and
+sends one link.
+
+This also means the onboarding flow *is* the signup form. It creates the account, as its last act,
+only after the agreement is signed.
+
+## 2. The public partnership page
+
+`/gym-partnership` is a public, indexed, one-page explanation of the deal — the partnership
+minified. No login, no token, nothing to fill in. A gym owner can read it, forward it to a business
+partner, and decide whether to ask for a machine.
+
+The site has no page like this today. [/gym-demo](../client/src/pages/GymDemo.tsx) asks for a form
+before explaining the commercials, which asks for commitment before comprehension.
+
+### Three renderings of one partnership
+
+| Where | Audience | Fidelity | Terms shown |
+|---|---|---|---|
+| `/gym-partnership` | public, pre-sales | one page | **indicative** standard terms |
+| Onboarding step 2 | invited gym | one screen | **their** `gym_terms` row |
+| Onboarding step 3, `/gym/agreement` | invited gym | 47 sections | their terms, legally binding |
+
+Same numbers, three levels of commitment. **They must come from one place or they will drift**, and
+the failure mode is a gym quoting the marketing page at you during a settlement dispute.
+
+So `shared/partnership/summary.ts` holds the standard commercials, and it feeds two consumers: the
+public page, and the default values when admin creates a new `gym_terms` row. The sales page and the
+default deal become the same object. Per-gym terms then diverge deliberately, in the database — not
+because someone forgot to update a marketing page.
+
+As built:
+
+| File | Holds |
+|---|---|
+| [shared/partnership/summary.ts](../shared/partnership/summary.ts) | `PARTNERSHIP` commercials, `INDICATIVE_ECONOMICS`, `workedMonth()`, `bindingMilestone()`, `formatInr()` |
+| [shared/partnership/faq.ts](../shared/partnership/faq.ts) | `PARTNERSHIP_FAQ`, interpolating `PARTNERSHIP` — rendered *both* as visible copy and as FAQPage JSON-LD, so it cannot be two lists |
+| [client/src/pages/GymPartnership.tsx](../client/src/pages/GymPartnership.tsx) | the page; contains no rupee or percentage literals |
+| [app/gym-partnership/page.tsx](../app/gym-partnership/page.tsx) | metadata, BreadcrumbList + FAQPage JSON-LD |
+
+The worked example is derived, not typed: `workedMonth()` applies the same percentage the page prints
+above it, and a test asserts the result stays inside the ₹3,000–₹12,000 band already published on
+[BlogGymRetention.tsx](../client/src/pages/BlogGymRetention.tsx) and uses an ASP and cost inside the
+ranges on [BlogWhyGymVending.tsx](../client/src/pages/BlogWhyGymVending.tsx). Two pages quoting
+different economics is the same drift problem one level out.
+
+### It is indicative, not an offer
+
+Per-gym variation is real: the deposit and the ratios are negotiable in practice, and decision 4
+makes the deposit settable per gym from the backend. So the page carries an explicit, visible line —
+*"Indicative terms. Your signed agreement governs."* Not buried in a footer.
+
+And **the full agreement text does not go on this page**, even now that v2.2 is issuable. A gym's
+agreement is rendered from *its* terms row, so any copy published here is a different document from
+the one that binds it — and publishing 47 sections invites reliance on the version that happened to
+be current the day someone read it.
+
+### What's on it
+
+- **What you get, what it costs** — ₹0 for the machine, ₹50,000 refundable deposit
+- **How the money works** — the 80:20 → 50:50 progression, with **one worked month**
+- **What we handle / what you handle** — restocking, cleaning, maintenance, water vs. floor space
+  and a power point
+- **Your obligations, stated plainly** — don't move it (§21), don't touch the ingredients (§14)
+- **Term and exit** — 24 months, 30 days' notice to leave (§36.1)
+- **The five onboarding steps**, so the flow is not a surprise
+- **FAQ**
+- **CTA** → `/gym-demo`
+
+The worked month is what makes the page land: *"1,000 cups at ₹X = ₹Y gross, less ₹Z ingredients =
+₹A net profit, your 20% = ₹B, plus ₹1,000 electricity reimbursement."* One concrete month
+communicates more than any percentage does. Derive it from `summary.ts` so it cannot contradict the
+ratios printed above it.
+
+**Include the uncomfortable clauses here too**, same reasoning as onboarding step 2. A gym that
+learns about §14 on a public page self-selects out early and costs nothing. One that learns at month
+three is a dispute.
+
+### SEO
+
+This is a real ranking opportunity and genuine mid-funnel content the site currently lacks: gym
+vending machine profit sharing, protein vending machine partnership terms. Treat it as a
+first-class page — `sitemap.xml`, `INDEXNOW_URLS` in [next.config.mjs](../next.config.mjs),
+`FAQPage` JSON-LD in the route shell, internal links from `/gym-demo` and the machine and advertise
+pages.
+
+## 3. The onboarding flow
+
+```
+Admin (local_dashboard)                    Gym (one link, any device)
+─────────────────────                     ──────────────────────────
+demo_request comes in
+      ↓
+create gym + machine + terms
+      ↓
+"Send onboarding link" ──────email──────▶  /onboarding/<token>
+                                                  │
+                                    ┌─────────────┴──────────────┐
+                                    │ 1  Confirm Your Details    │  form
+                                    │ 2  Your Partnership        │  read
+                                    │ 3  Review & Sign           │  agreement
+                                    │ 4  Security Deposit        │  payment
+                                    │ 5  You're Set Up           │  password
+                                    └─────────────┬──────────────┘
+                                                  ↓
+                                          /gym/dashboard
+```
+
+One URL for the whole flow. The step is decided by the server from persisted state, never by the
+path or by the client — see §4.
+
+### Step 1 — Confirm Your Details
+
+Details come first for two reasons: the data is captured before anyone can drop off, and everything
+after it can then be personalised with the gym's own name and terms.
+
+Prefilled from the demo request wherever possible; the gym corrects and completes.
+
+- Legal entity name
+- Entity type — proprietorship / partnership / LLP / Pvt Ltd
+- Trade name (the name on the door, if different)
+- GSTIN
+- FSSAI licence number, if held
+- Registered address
+- Installation address
+- Signatory name + designation
+- Notices email + phone (§41)
+
+Because this is now the cold open, it needs a compact "what this is" hero above the form — who sent
+the link, what the five steps are, how long it takes, and a link to `/gym-partnership` for anyone
+who wants the deal restated. A form as the first thing a gym sees, with no frame around it, reads
+like a data-harvesting page. The link arrives off the back of a sales call, so one short paragraph
+is enough; it does not need to re-sell.
+
+Two details worth building:
+
+**A live preview panel.** As they type, show `This Agreement is between BlendBox Innovations LLP
+and <legal name>`. Seeing their own legal name land in the contract is what turns a form into a
+contract negotiation, and it catches typos in the one field that is hardest to fix afterwards.
+
+**Ask for FSSAI.** §24.5 and Schedule F make each party responsible for its own registrations.
+Whether the gym holds a licence is a question you want answered on day one, not at an inspection.
+
+**As built (2026-08-22).** All eleven fields, the live preview, the hero, autosave and server-side
+field errors are in [StepDetails.tsx](../client/src/pages/onboarding/steps/StepDetails.tsx). The hero
+is its own component, [OnboardingIntro.tsx](../client/src/pages/onboarding/OnboardingIntro.tsx), and
+it renders **only while step 1 is still live** — a gym that comes back to check what it typed is not
+introduced to the process a second time. Its duration estimate is summed from `STEP_META` rather
+than typed in, so it moves when a step's scope does. The submit block carries one line of microcopy
+saying what Continue does *not* do ("There is nothing to sign until step 3"), because nobody fills
+in a GSTIN happily while suspecting the next button commits them.
+
+### Step 2 — Your Partnership
+
+No input. Its job is to establish what the deal is *before* showing anyone forty-seven clauses —
+and, because step 1 has already run, it can address them by name with the terms actually on their
+record rather than the indicative numbers on the public page.
+
+Six cards drawn from that gym's `gym_terms` row:
+
+| | |
+|---|---|
+| ₹0 | for the machine |
+| ₹50,000 | refundable security deposit |
+| 24 months | initial term |
+| 20% → 50% | of net profit, rising at the milestone — 15,000 cups **or** ₹5,00,000 of cumulative net profit, whichever first (§14) |
+| ₹1,000 | per 1,000 cups, electricity reimbursement, per 3-month window |
+| Included | restocking, cleaning, maintenance, water |
+
+Then a "what we need from you" block: floor space, a power point, don't move it, don't touch the
+ingredients, protect it from damage.
+
+**Put the uncomfortable parts here deliberately.** A gym owner surprised by §14 in month three is a
+dispute. One who read it on this step is a partner. The temptation is to make this page pure sell;
+resist it.
+
+Ends with the machine they're getting (model, dimensions, render — reuse assets from
+[MachineSpecs](../client/src/pages/MachineSpecs.tsx)) and a five-item timeline: sign → deposit →
+site survey → installation → first payout.
+
+Continuing records `partnership_ack_at`. Cheap, and it is evidence the commercials were shown
+before the contract.
+
+This screen shares components with `/gym-partnership` but is **not** the same page: this one reads
+from the database and is authoritative for that gym; that one is indicative and public.
+
+**As built (2026-08-22).**
+[StepPartnership.tsx](../client/src/pages/onboarding/steps/StepPartnership.tsx) — six headline cards,
+a four-row "The detail" block, the restrictions, both sides of the arrangement, the machine, and the
+timeline. Four decisions in it worth not undoing:
+
+**The restrictions block is the point of the screen, not an appendix.** Five items, each tagged with
+the clause it comes from (§3, §14, §21, §12.4, §5.6) so a gym owner or their lawyer can check the
+summary against the real text one step later. `OnboardingFlow.test.tsx` asserts all five clause refs
+are present, which is the closest thing to a lock we can put on an editorial decision.
+
+**The milestone leads with "whichever comes first", not the cup count.** At the indicative ₹65 of
+margin a cup the ₹5,00,000 net-profit test fires at about 7,700 cups, so quoting 15,000 on its own
+*understates* the deal — and a thinner-margin machine reaches the cup count first instead, so neither
+figure can be quoted alone. The row states both tests and then the arithmetic at that gym's own
+numbers, computed rather than typed. Advertising is stated as never re-ratioing, which is the other
+thing gyms assume works like the profit share and doesn't.
+
+**The machine comes from [shared/machine/spec.ts](../shared/machine/spec.ts).** Extracted in this
+build item because `/specs`, this step and Schedule A all describe the same hardware and a gym that
+reads two of them must not find two different heights. `MachineSpecs.tsx` now reads its key-stats row
+from the same constant. Per-unit facts — serial, device number, installation date — stay on the
+machine record; the copy says explicitly that they land in Schedule A at installation.
+
+**Nothing here is hard-coded from `PARTNERSHIP`** except the electricity floor and the
+underperformance notice period, which have no per-gym column yet. Everything a gym could negotiate
+reads from `state.terms`. If a gym gets a different deposit or term, this screen already follows.
+
+### Step 3 — Review & Sign
+
+This step carries the legal weight, so it is the one to over-engineer.
+
+**Plain-language summary first**, as a collapsible "In short" panel covering the clauses a gym
+actually cares about. Each item links to the full clause. For v2.2, eleven of them:
+
+| In short | Clause |
+|---|---|
+| The machine stays our property | §3 |
+| Your share rises to 50% at the milestone — 15,000 cups or ₹5,00,000 of net profit, whichever first | §6 |
+| Advertising stays 80/20 permanently | §9.4 |
+| Your deposit can be forfeited for damage | §5.6 |
+| You cannot add, change or refill ingredients | §14 |
+| We hold the FSSAI licence, not you | §24.6 |
+| You cannot relocate the machine | §21 |
+| We can remove it on 15 days' notice if it underperforms | §12.4 |
+| You can exit on 30 days' notice, at no charge | §36.1 |
+| Neither of us has a cap on liability for direct loss | §34 |
+| Disputes go to the courts at Gautam Buddha Nagar, not arbitration | §46 |
+
+The last two are there because they bite, not because they are reassuring. A summary that lists only
+the comfortable clauses is a sales page wearing a summary's clothes.
+
+This is not decoration. It is what makes "I have read and agree" a true statement, and it is the
+part a court would look at.
+
+**Full document** below it. Sticky section index on desktop, collapsible accordions on mobile.
+Assume a phone — a forty-seven-section contract on a 390px screen is the actual design problem
+here, not the desktop layout.
+
+**Scroll-tracked.** The sign panel stays disabled until they reach the end.
+
+**Email OTP before signing.** The link proves email control right up until someone forwards it. A
+six-digit code sent at the moment of signing proves the person signing controls the address the
+agreement was sent to. One extra screen, materially stronger audit trail on a 24-month agreement
+with a ₹50,000 deposit.
+
+**The signature itself:** typed full name, designation, and two separate checkboxes —
+
+- "I have read and agree to this Agreement"
+- "I am authorised to bind `<legal entity name>`" (§32)
+
+Two checkboxes rather than one because §32 is a distinct representation about authority, and
+bundling it into a general "I agree" weakens it.
+
+**Captured with the signature:** server timestamp, IP, user-agent, OTP verification record,
+agreement version, and a **SHA-256 of the exact rendered text that was on screen**.
+
+That hash is the load-bearing part of the whole design. It proves that a later edit to the
+agreement content did not retroactively change what was signed. Without it, the stored signature
+means only "someone agreed to whatever the version file says today".
+
+**As built (2026-08-22).** Four files:
+[plainLanguage.ts](../shared/agreement/plainLanguage.ts) (the panel, as data),
+[AgreementReader.tsx](../client/src/pages/onboarding/AgreementReader.tsx) (the document plus the
+reading gate), [SignPanel.tsx](../client/src/pages/onboarding/SignPanel.tsx) (assent, then the code),
+and [StepReviewSign.tsx](../client/src/pages/onboarding/steps/StepReviewSign.tsx), which composes
+them and owns the hash. Five decisions worth not undoing:
+
+**The summary quotes the document rather than improving it.** Each list is named for the version it
+describes — `PLAIN_LANGUAGE_V2_1`, `PLAIN_LANGUAGE_V2_2` — and its figures are literals rather than
+interpolations from `PARTNERSHIP`, because the agreement text transcribes "15,000" and "₹5,00,000" as
+content and changing our standard commercials must not silently rewrite what this panel claims a
+*signed* document says. A version's list is frozen with its version for the same reason the text is.
+
+Where the agreement was weak, the v2.1 line said so: §36.1 was written as the *request* it was, naming
+§36.2's blank Schedule B charge, and §6 named its own contradiction with Schedules B and C. v2.2 has
+no such lines because it has no such gaps, and the tests now assert the panel contains no
+"still blank" or "read it as a request" hedging — a line that says a clause is unfinished must
+disappear when the clause is finished, or the panel starts lying in the reassuring direction.
+
+A summary that reads better than the contract is worse than no summary, because it becomes the thing
+the gym relied on. The tests assert each clause ref resolves to a real section, each dotted ref sits
+inside the section it links to, every quoted figure still appears in the rendered text, and the panel
+discloses §34 and §46.
+
+**One renderer, one options object.** `AGREEMENT_RENDER_OPTIONS` is exported from the reader and
+imported by the hash, so the text on screen and the text that is hashed cannot drift. `onMissing:
+"placeholder"` rather than `throw`, because serial number and installation date are genuinely blank
+until Schedule A is signed on site — and `canIssue()` still refuses to *sign* around a placeholder.
+
+**The reading gate is a measured percentage, not an `IntersectionObserver` sentinel.** It yields a
+"% read" number to show the reader, and it stays correct when sections are collapsed and the
+document's height changes underneath it. It has an explicit `rect.height === 0 → progress = 1`
+branch: happy-dom has no layout engine, and an unmeasurable document must not soft-lock the sign
+panel. What the gate is honestly worth is delivery and opportunity to read, not reading — nothing in
+a browser evidences reading. The load-bearing evidence is the hash, the OTP and the server
+timestamps.
+
+**Signing is refused in production while `canIssue()` is false**, with the gym seeing an "isn't ready
+to sign" panel and no drafting notes. Preview builds override the refusal — otherwise the flow could
+not be walked at all — and say on screen that this is why signing is enabled. The `todo` blocks and
+the blocker list render only under `IS_MOCK_ONBOARDING`; a gym must never read our notes about its
+own contract.
+
+**Known gap for build item 9.** The effective date is rendered client-side into the hashed text. A
+browser that renders at 23:59 UTC and a server that signs after midnight would disagree about the
+hash. Item 9 must either submit the effective date alongside the signature or render the document
+server-side; `openedAt` is already fixed at mount rather than read per render, so the value to submit
+exists.
+
+### Step 4 — Security Deposit
+
+₹50,000 refundable, per §5.1 and Schedule B. See §5 for the gateway design.
+
+**This step comes after signing, and it is skippable.** Both matter:
+
+*After signing*, because the deposit is an obligation that arises **under** the agreement (§5.1).
+Collecting ₹50,000 before there is an executed contract creates a refund liability with no
+agreement governing it, and it is the wrong order commercially — you are asking for money before
+the gym has committed to anything.
+
+*Skippable*, because a failed or delayed ₹50,000 payment must never orphan a gym that has already
+signed. The signed agreement is the milestone; the deposit is a receivable. "Pay later — we'll
+email you the payment link" moves them straight to step 5 with the account created and a persistent
+`Deposit pending` banner on the dashboard.
+
+The screen shows the amount, that it is refundable, what it can be adjusted against (§5.4–5.7 in
+plain language — this is the clause most likely to cause a later argument, so state it here too),
+and one primary button.
+
+**As built (2026-08-22).**
+[StepDeposit.tsx](../client/src/pages/onboarding/steps/StepDeposit.tsx) plus
+[_shared/razorpay.ts](../supabase/functions/_shared/razorpay.ts). Four decisions, and one honest
+split of scope:
+
+**The link is presented as forwardable, in those words.** The reason we use Payment Links rather than
+a checkout is that the signatory usually cannot release ₹50,000 — so the screen says "you don't have
+to be the one who pays" and explains that a forwarded link works from someone else's inbox. A feature
+nobody is told about is a feature nobody uses, and this one is the difference between a deposit paid
+today and a deposit paid next Friday.
+
+**Nothing client-side can mark a deposit paid.** The screen polls our own record every five seconds
+while a payment is settling, stops after ~5 minutes, and never inspects a redirect or a gateway
+callback. That choice also removes work: the return trip from Razorpay needs **no special handling at
+all**, and the same mechanism covers a gym that closes the tab, and a gym whose accountant paid from a
+forwarded link and never had this page open. The poll goes through a separate
+`actions.pollDepositStatus()` that deliberately does *not* touch `isSubmitting`, `actionError` or
+`viewOverride` — a background timer must not spin the whole wizard's buttons or yank a gym reading
+step 3 back to step 4.
+
+**The waiting state is designed rather than defaulted.** After about fifteen seconds the copy stops
+saying "checking" and starts explaining, the gym is told in as many words that it can close the tab,
+and the manual "I've paid — check now" button reports its own result — a check that visibly changes
+nothing reads as a broken button and gets clicked six more times. The mock now models this:
+`refreshDepositStatus` reports the money as not yet seen on the first poll and confirmed on the
+second, because a mock that confirms instantly hides the state the UI most needs.
+
+**§5.6–5.7 is on the money screen.** Five rows off `DEPOSIT_FACTS`, including the two that are not in
+the gym's favour: deliberate or reckless damage can forfeit the whole deposit, and cost beyond it is
+still owed. Stated at the moment money changes hands, with the clause numbers, so a gym that later
+hits §5.6 recognises it rather than discovering it.
+
+**Paying stays possible after deferring.** Step 4 is read-only when revisited, with one exception:
+a `deferred` deposit keeps its pay button, because that outstanding ₹50,000 is the only reason to come
+back to the step. This surfaced a mock bug worth keeping fixed — confirming a payment for a gym that
+had already created its account was writing `status = "deposit_paid"` over `active`, demoting a gym
+that was already trading. The status now only moves forward.
+
+**What is deferred to item 9, and why.** The Payment Link is created by the mock and the paid/unpaid
+truth comes from the mock's record. The two Supabase functions — create-link and webhook — need the
+`deposits` and `gym_onboarding` tables and live Razorpay credentials, neither of which exists yet, and
+a handler written against absent tables cannot be run or tested. What *is* written and tested now is
+the half where a mistake is silent: `_shared/razorpay.ts` does HMAC-SHA256 verification over the raw
+body with a constant-time compare, fails closed on a missing signature *or* a missing secret, acts
+only on `payment_link.paid`, reads the cumulative `payment_link.amount_paid` rather than
+`payment.amount`, refuses a partial payment as a deposit, takes `paid_at` from Razorpay's epoch rather
+than our clock, and returns a described outcome instead of throwing — because a handler that throws is
+retried by Razorpay forever on a body that will never parse. 13 tests in
+[razorpay-webhook.test.ts](../supabase/functions/__tests__/razorpay-webhook.test.ts).
+
+**Also in `OnboardingState` now:** `depositReceipt` — receipt number, amount in paise, method and
+paid-at, written only by the server from its own `deposits` row. Decision 11 settled what it is: a
+**receipt, not a tax invoice**, with no GST line, because a refundable deposit is not consideration for
+a supply (§5). The field is deliberately still free of tax characterisation in the type — the document
+the server emails says it, one place, rather than every screen implying it.
+
+### Step 5 — You're Set Up
+
+- Signed PDF on screen, and emailed to the gym, `contact@muscleboxpro.com`, and the
+  `*_REQUEST_CC` list
+- Deposit receipt, if paid
+- Set a portal password → straight into `/gym/dashboard`
+- "What happens next": site survey, installation date, Schedule A signing at install
+
+Account creation lands after signing on purpose. No logins for gyms that never signed, and no
+"log in to sign" friction in front of the thing we actually want them to do. It lands *before* the
+deposit clears so that skipping step 4 still leaves a usable account.
+
+**As built (2026-08-22).** [StepDone.tsx](../client/src/pages/onboarding/steps/StepDone.tsx) confirms
+what was signed (date, signatory, agreement version, and the first twelve characters of the content
+hash with the full value on the element's `title` — short enough to read out on a phone call, and the
+whole hash is in the PDF), states the deposit outcome, takes the password, then lists what happens
+next.
+
+Three things it does deliberately:
+
+**No download button yet.** The signature and its hash are real and stored, but the countersigned PDF
+is build item 9 and its permanent home is build item 8. So the screen says the PDF is emailed once we
+counter-sign and will live in the dashboard — a "Download" button that 404s would be worse than that
+sentence. Replace the note, not the layout, when item 9 lands.
+
+**A deferred deposit reads as owed.** `deposit_status` of `deferred` or `not_started` both render
+"Deposit still to pay — ₹50,000" and say that the site survey can proceed but installation waits for
+it. `pending` says a payment is in flight and there is nothing more to do. Only `paid` shows a
+receipt line. Nobody should be able to say afterwards that they did not know it was outstanding.
+
+**Schedule A is disclosed here, not discovered at installation.** The "what happens next" list names
+the second signature explicitly and repeats that the term runs from the installation date (§4.1), not
+from today — the single most common wrong assumption available at this point in the flow.
+
+## 4. Persistence and resume
+
+The whole flow is stored server-side, keyed by the token. A gym can close the tab at any point,
+open the same emailed link days later on a different device, and land exactly where they left off —
+including inside a half-filled form.
+
+**As built (2026-08-22).** The rules below are enforced today by the mock and pinned by tests; the
+edge functions in item 9 have to enforce the same set. The one difference is where the record lives —
+an in-memory `Map` rather than `gym_onboarding`, so a hard reload starts over. Everything the wizard
+does goes through `OnboardingApi`, so that is the only thing item 9 changes.
+
+| File | What it is |
+|---|---|
+| [onboarding/types.ts](../shared/onboarding/types.ts) | the API contract — `OnboardingState`, `OnboardingApi`, the error codes |
+| [onboarding/steps.ts](../shared/onboarding/steps.ts) | `STEP_META` — the five titles and blurbs, in one place |
+| [onboarding/schema.ts](../shared/onboarding/schema.ts) | zod schemas shared by the form, the mock and later the edge function |
+| [onboarding/mockApi.ts](../shared/onboarding/mockApi.ts) | the state machine, not a stub — step derivation, freezing, the conditional signing write |
+| [onboarding/agreementFields.ts](../shared/onboarding/agreementFields.ts) | `OnboardingState` → `AgreementFields`, so §12's renderer has every token |
+| [lib/onboardingApi.ts](../client/src/lib/onboardingApi.ts) | the single swap point for phase 2 |
+| [onboarding/useOnboarding.ts](../client/src/pages/onboarding/useOnboarding.ts) | all server state for one token; no local step counter exists |
+| [onboarding/useDraftAutosave.ts](../client/src/pages/onboarding/useDraftAutosave.ts) | 800 ms debounce, plus a `pagehide` flush |
+| [onboarding/OnboardingFlow.tsx](../client/src/pages/onboarding/OnboardingFlow.tsx) | the shell — chrome, rail, token-problem screens, step dispatch |
+| [onboarding/OnboardingIntro.tsx](../client/src/pages/onboarding/OnboardingIntro.tsx) | the step 1 cold open; shown on the first pass only |
+| [shared/machine/spec.ts](../shared/machine/spec.ts) | the hardware, once — `/specs`, step 2 and later Schedule A read from it |
+| [agreement/plainLanguage.ts](../shared/agreement/plainLanguage.ts) | step 3's "In short" panel, as data, one list per agreement version |
+| [onboarding/AgreementReader.tsx](../client/src/pages/onboarding/AgreementReader.tsx) | the document on screen, plus the reading gate and `AGREEMENT_RENDER_OPTIONS` |
+| [onboarding/SignPanel.tsx](../client/src/pages/onboarding/SignPanel.tsx) | assent, then the emailed code; never recomputes the hash it is handed |
+| [onboarding-mock-api.test.ts](../client/src/__tests__/shared/onboarding-mock-api.test.ts) | 31 tests — really the spec for item 9 |
+| [onboarding/steps/StepDeposit.tsx](../client/src/pages/onboarding/steps/StepDeposit.tsx) | step 4 — the forwardable link, the background poll, the receipt |
+| [_shared/razorpay.ts](../supabase/functions/_shared/razorpay.ts) | webhook signature, event parsing and the settlement check — pure, no DB |
+| [OnboardingFlow.test.tsx](../client/src/__tests__/pages/OnboardingFlow.test.tsx) | 27 tests, including a full walk from step 1 to the dashboard hand-off |
+| [agreement.test.ts](../client/src/__tests__/shared/agreement.test.ts) | 37 tests — the renderer, the issue gate, and the plain-language panel against v2.1 |
+| [agreement-v2-2.test.ts](../client/src/__tests__/shared/agreement-v2-2.test.ts) | 47 tests — the issued version: consistency, resolutions, pinned hash |
+| [settlement/compute.ts](../shared/settlement/compute.ts) | §§6–10 as one pure module — net profit, the milestone split, advertising, electricity |
+| [gym/portal.ts](../shared/gym/portal.ts) | the reporting endpoint's response shape, written before the endpoint (§15) |
+| [gym/fixtures.ts](../shared/gym/fixtures.ts) | raw inputs for the dashboard — cups and rupees, not one derived figure |
+| [gym/GymDashboard.tsx](../client/src/pages/gym/GymDashboard.tsx) | the nine §13 cards, every number derived through `compute.ts` |
+| [settlement.test.ts](../client/src/__tests__/shared/settlement.test.ts) | 31 tests — the maths, including the month the milestone splits |
+| [GymDashboard.test.tsx](../client/src/__tests__/pages/GymDashboard.test.tsx) | 15 tests — that the cards render derived figures and not typed-in ones |
+
+Two implementation notes worth keeping when the real backend lands:
+
+**`current_step` is derived, never incremented.** It is the lowest step not in `completed_steps`.
+`current_step + 1` looks equivalent until a gym on step 3 goes back and corrects step 1 — then it
+knocks them back to 2. The mock's `recomputeStep()` is the shape to copy.
+
+**`viewStep` is a view, not a step.** The hook keeps an override so a gym can re-read a completed
+step, it renders read-only, and any successful action clears it. Submits are still validated against
+`current_step` server-side, which is what makes the override safe to have at all.
+
+**`gym_onboarding` holds one row per gym**, created when the link is sent:
+
+| Column | Notes |
+|---|---|
+| `gym_id`, `token_id` | one active token per gym; superseded tokens are revoked, not deleted |
+| `current_step` | authoritative — the **server** decides which step to render |
+| `completed_steps` | which steps are genuinely done, distinct from drafted |
+| `step_data` | `jsonb`, per-step draft payloads |
+| `status` | `invited → opened → details_submitted → partnership_ack → agreement_viewed → signed → deposit_paid → active` |
+| timestamps | one per transition: `invited_at`, `first_opened_at`, `details_submitted_at`, `partnership_ack_at`, `agreement_viewed_at`, `signed_at`, `deposit_initiated_at`, `deposit_paid_at`, `account_created_at` |
+| `first_open_ip`, `first_open_ua` | audit |
+
+Rules that are easy to get wrong:
+
+**The server decides the step, always.** If the client picks the step from local state, a stale tab
+or a hand-edited URL can jump past the agreement or re-enter signing. Every step render asks the
+server "where am I", and every step submit is validated against `current_step` server-side.
+
+**Drafts save on debounce, not on submit.** Saving only when a step completes means a gym that
+types nine fields and closes the tab has typed nine fields for nothing. Draft writes go to
+`step_data` under a per-step key so a partial step 1 can never overwrite a submitted step 1.
+
+**Once `signed_at` is set, steps 1 and 2 are frozen.** The signature hash covers the rendered
+agreement, which contains the legal entity name and addresses from step 1. Letting someone edit
+those afterwards would silently invalidate the hash. Enforce it in the edge function, not by hiding
+the back button — the UI is not a security boundary.
+
+**Signing is a conditional write.** `signed_at is null` as a precondition, so two tabs cannot
+produce two signatures.
+
+**No PII in `localStorage`.** Drafts live server-side only. Gym owners use the front-desk computer;
+a shared browser holding a cached GSTIN and signatory name is a leak with no upside, since the
+server round-trip is what makes cross-device resume work anyway.
+
+Because every transition is timestamped, the admin tab gets the funnel for free: who opened and
+never submitted, who read the agreement and didn't sign, who signed and hasn't paid. That is
+worth more than it costs to store.
+
+## 5. Security deposit and the payment gateway
+
+### Use Razorpay Payment Links, not an in-page checkout
+
+Three reasons, in order of weight:
+
+**1. The signatory is often not the payer.** The person authorised to sign a placement agreement
+frequently has no access to the account that releases ₹50,000. A Payment Link can be forwarded to
+whoever holds the bank access; a modal locked inside the signer's browser session cannot. This
+alone decides it.
+
+**2. It keeps the CSP intact.** [next.config.mjs](../next.config.mjs) currently sets
+`frame-src 'none'`, and Razorpay's Checkout JS needs both a script origin and an iframe origin
+allowed site-wide, on every page, for one screen in one flow. A Payment Link navigates off-site
+instead and needs **no CSP change at all** — the return trip is a plain redirect back to
+`/onboarding/<token>`, which `form-action 'self'` does not restrict. Status polling goes to our own
+Supabase function, already in `connect-src`.
+
+**3. One mechanism serves both paths.** The "pay later" email and the in-flow button are the same
+link. No second integration for the deferred case.
+
+Razorpay is also already the provider in `mbp-backend`, so credentials, dashboard and webhook
+signature conventions are familiar.
+
+### Where the integration lives
+
+For now, on the Supabase side: an edge function to create the link, and a separate one for the
+webhook. `mbp-backend` deliberately handles only machine payments, and the user-facing onboarding
+flow shouldn't take a dependency on a service we've chosen to defer.
+
+This does mean two Razorpay integrations exist for a while, which is a real cost — noted honestly.
+It is tolerable because a deposit is a far simpler money flow than a machine order: one-off, no
+dispense coupling, no auto-refund on hardware failure, no state machine. The refund is a manual
+admin action 30 days after termination (§5.8). If deposits later move into `mbp-backend` as a
+`deposits` capability, that is the correct long-term home.
+
+### Rules that protect the money
+
+- **Verify the amount server-side, in paise, against `gym_terms.security_deposit`.** Never trust
+  an amount that came back from the browser.
+- **The webhook is the source of truth, not the redirect.** A gym closing the tab after paying must
+  still end up marked paid. The redirect updates the UI; the webhook updates the record.
+- **Verify the Razorpay signature on every webhook** and reject unsigned calls.
+- **Idempotent by `razorpay_payment_id`**, stored unique. Razorpay retries; a replayed webhook must
+  not create a second deposit.
+- **Never mark paid from a client callback.** Poll our own function, which reads our own record.
+
+**As built (2026-08-22).** Every rule above except the two that need tables is enforced and tested in
+[_shared/razorpay.ts](../supabase/functions/_shared/razorpay.ts) — signature verification, the
+`payment_link.paid`-only filter, the partial-payment refusal, and `settlesDeposit()` for the paise
+comparison against the terms row. The unique-`razorpay_payment_id` index and the record writes land
+with the tables in item 9; `parseDepositWebhook` already surfaces `paymentId` as the key to write it
+with. See §3 step 4 for why the split falls there.
+
+`deposits` table: `gym_id`, `amount_paise`, `currency`, `razorpay_link_id`,
+`razorpay_payment_id` (unique), `status` (`created → pending → paid → failed → refunded`), `method`,
+`paid_at`, `receipt_no`, `refunded_at`, `refund_amount_paise`, `notes`.
+
+### A dummy endpoint until the real backend exists
+
+Decision 9: no live Razorpay credentials yet. The link-creation call stands in behind a dummy
+endpoint with the same shape the real one will have, so step 4's UI, the pending→paid polling and
+the receipt are all exercisable locally without touching a payment gateway. `mockApi.ts` already
+produces every state the screen needs — `pending` on the first refresh and `paid` on the second,
+because a gym clicking "check now" seconds after paying is the common case, not the edge one.
+
+The pure rules in [_shared/razorpay.ts](../supabase/functions/_shared/razorpay.ts) are written
+against the real webhook payload regardless, so swapping the dummy for the live call is a
+credentials-and-handler change rather than a rewrite. Signature verification stays mandatory from
+the first live call: a deposit endpoint that accepts unsigned webhooks is a way to mark a gym paid
+for free.
+
+### GST on the deposit — settled
+
+Decision 11: we issue a **receipt, not a tax invoice**, and charge no GST at collection. A purely
+refundable security deposit is not "consideration" for a supply of goods or services under CGST Act
+§2(31), so there is nothing to levy GST on when it is taken. An invoice would force us to show a GST
+line that should not exist.
+
+The interesting half is the other end. If part of the deposit is later applied against unpaid dues
+or forfeited under §5.7, that portion *does* become consideration and needs its own tax document at
+that point. §5.9 of v2.2 states both halves, so the gym is not surprised by a tax invoice arriving
+after a forfeiture. The `deposits` table's `refunded_at` / `refund_amount_paise` columns are what
+make the applied amount computable when that document has to be raised.
+
+Still worth a CA's eyes before the first live receipt — recorded as part of
+`v2-2-not-reviewed-by-counsel` in §12 rather than as a separate open question, because it is the same
+piece of work.
+
+## 6. Schedule A is a second signing moment
+
+§17.2 requires a Machine Installation & Acceptance Certificate completed **at installation**, and
+Schedule A wants Machine ID, serial number, installation date, physical condition and photographs.
+
+None of that exists when the agreement is signed. The machine hasn't shipped.
+
+So Schedule A renders as *"To be completed at installation"* inside the signed agreement, and
+becomes a separate signing event: same token mechanism, on a phone, on-site, gym representative and
+technician both signing. Schedule H (Machine Return Certificate) works the same way at the other
+end of the relationship.
+
+**Consequence for the build:** make the signature component and the token flow generic enough to
+serve all three moments — agreement, installation certificate, return certificate. Building it
+specific to the agreement means writing it twice.
+
+Related: §4.1 says the term commences on the Effective Date *or* the installation date, whichever
+is later. So `effective_date` (signing) and `commencement_date` (installation) are two different
+fields, and the 24-month clock runs from the latter. Don't collapse them.
+
+## 7. Token mechanics
+
+- JWT signed with its own secret, reusing the pattern in
+  [`_shared/verificationEmail.ts`](../supabase/functions/_shared/verificationEmail.ts)
+- 30-day TTL, scoped to exactly one `gym_id`
+- Resendable and voidable from the admin tab; resending supersedes the previous token
+- `noindex` on the route, `Disallow: /onboarding/` in [robots.txt](../public/robots.txt)
+- Rate-limited on the OTP endpoint
+
+## 8. Front end first
+
+The reporting API in `mbp-backend` comes after the front end. The one decision that stops that
+being throwaway work: **define the API contract now.**
+
+`shared/onboarding/types.ts` holds request/response types for every call, alongside a
+`mockOnboardingApi` the wizard talks to during phase 1. Phase 2 swaps the implementation, not the
+components. The mock must model persistence too — an in-memory session that survives step
+navigation — or the resume behaviour goes untested until the real backend lands.
+
+**As built.** Exactly one file binds the wizard to a backend:
+[`client/src/lib/onboardingApi.ts`](../client/src/lib/onboardingApi.ts), which exports the singleton
+`onboardingApi` and the `IS_MOCK_ONBOARDING` flag the preview banner reads. Nothing under
+`pages/onboarding/` imports `mockApi` directly — including the fixed preview OTP, which is
+re-exported as `PREVIEW_OTP` rather than imported from the mock at its use site. Keep it that way:
+the moment a component reaches past this file, phase 2 stops being a one-file change.
+
+The mock adds 300 ms of latency outside tests, deliberately. Against an instant API the saving
+indicator never appears and the disabled-while-submitting states never get looked at, so both ship
+broken.
+
+The same applies to the dashboard: it renders against fixtures with honest "awaiting first
+settlement" empty states, and the data-access module is the only file that changes when real
+numbers arrive.
+
+## 9. Routes
+
+| Route | Page component | Notes |
+|---|---|---|
+| `/gym-partnership` | `GymPartnership.tsx` | **public, indexed** — the minified partnership |
+| `/gym-demo` | [GymDemo.tsx](../client/src/pages/GymDemo.tsx) | unchanged — lead capture |
+| `/onboarding/[token]` | `onboarding/OnboardingFlow.tsx` | public, token-scoped, `noindex` |
+| `/gym/login` | `gym/GymLogin.tsx` | reworked from `Login.tsx`, no signup link |
+| `/gym/forgot-password` | `gym/GymForgotPassword.tsx` | reworked from `ForgotPassword.tsx` |
+| `/gym/dashboard` | `gym/GymDashboard.tsx` | `noindex` |
+| `/gym/agreement` | `gym/GymAgreement.tsx` | their signed copy, always available |
+| `/gym/deposit` | `gym/GymDeposit.tsx` | `noindex` — the "pay later" landing spot |
+
+Removed, with permanent redirects in [next.config.mjs](../next.config.mjs). Next emits **308**,
+not 301, for `permanent: true`:
+
+| Gone | Goes to | Why |
+|---|---|---|
+| `/login` | `/gym/login` | |
+| `/account` | `/gym/dashboard` | |
+| `/forgot-password` | `/gym/forgot-password` | |
+| `/signup` | `/gym-demo` | there is no gym signup — §1. Lead capture is the honest successor. |
+
+**Kept and reworked, not archived:** `ForgotPassword.tsx` and `AuthCallback.tsx`. Password reset is
+still needed — gym owners forget passwords too — so these move under `/gym/*` rather than into
+`_archive/`.
+
+Per repo convention, `app/` holds metadata-only shells and the components live in
+`client/src/pages/`. See the note in the README about that split.
+
+## 10. Removing consumer auth
+
+Next only compiles what is reachable from `app/`, but **`npm run check` type-checks everything and
+vitest runs every test file**, so deleting the routes is not enough to stop the old pages
+compiling.
+
+- Move [Login.tsx](../client/src/pages/Login.tsx), [Signup.tsx](../client/src/pages/Signup.tsx),
+  [Account.tsx](../client/src/pages/Account.tsx) → `client/src/pages/_archive/`
+- Move `Login.test.tsx`, `Signup.test.tsx`, `Account.test.tsx` → `client/src/__tests__/_archive/`.
+  Tests live in `client/src/__tests__/pages/`, not beside the pages.
+- Add both `_archive` paths to `exclude` in [tsconfig.json](../tsconfig.json) **and** to the vitest
+  `exclude` in [vitest.config.ts](../vitest.config.ts). Note tsconfig currently excludes
+  `**/*.test.ts` but **not** `**/*.test.tsx`, so the archived tests stay type-checked unless
+  excluded explicitly.
+- Delete `app/login/`, `app/signup/`, `app/account/`; add redirects in
+  [next.config.mjs](../next.config.mjs)
+- Update the nav links in [Navbar.tsx](../client/src/components/layout/Navbar.tsx) — "My Account"
+  becomes "Gym Login"
+- Undeploy the `auth-signup` edge function (consumer-only), and `send-email` along with it
+  (TODO A3)
+
+**This closes TODO A2.** The user-writable `wallet_balance` read at `Account.tsx:109-118` is the
+vulnerability, and it leaves with the file. The replacement must not repeat the pattern: no
+business state in `user_metadata`, which is writable by the user who owns the token. Gym financials
+live in Postgres and are read through an authenticated endpoint. The token carries identity only.
+
+## 11. Data model
+
+New migration. **Every table gets `alter table ... enable row level security` in the same file** —
+see [supabase-gotchas.md](supabase-gotchas.md) §1. No policies needed; every legitimate writer is
+an edge function using `service_role`, which bypasses RLS.
+
+| Table | Purpose |
+|---|---|
+| `gyms` | legal entity, entity type, trade name, GSTIN, FSSAI, addresses, notices block (§41), status |
+| `gym_onboarding` | the resume state described in §4 |
+| `gym_users` | `auth.users.id` → `gym_id`, role (`owner` / `manager`) |
+| `machines` | `gym_id`, **`device_no`** ← the join key to `mbp-backend`, model, serial, value, install date, location, accessories, status |
+| `gym_terms` | per-gym commercials: deposit, term, ratio before/after, milestone cups + **cumulative net profit**, ad ratio, electricity rate, early-termination charge |
+| `agreements` | version, populated field values, content hash, token id, status, sent/viewed/signed timestamps |
+| `agreement_signatures` | signatory name, designation, email, timestamp, IP, UA, OTP record, content hash, checkbox flags |
+| `deposits` | the payment record described in §5 |
+
+Deferred to the dashboard phase: `cost_schedule` (§7.3, effective-dated), `ad_revenue` (§9),
+`settlements` (§8).
+
+`gym_terms` exists as a table rather than constants because Schedule B carries per-gym variation: the
+deposit and the ratios are negotiable in practice, and decision 4 makes the deposit explicitly
+backend-settable while keeping ₹50,000 as the standard. Hardcoding ₹50,000 and 80:20 guarantees a
+schema migration on the first exception, and the deposit amount is load-bearing in both a payment flow
+and §5.1's own text — which is why `rupeesInWords()` derives the words from the same integer rather
+than the clause carrying "Rupees Fifty Thousand Only" as fixed prose. Defaults come from
+`shared/partnership/summary.ts` (§2) so the public page and a new gym's terms start identical.
+
+## 12. The agreement content model — and what used to block it
+
+**As built (2026-08-22).**
+
+| File | What it is |
+|---|---|
+| [types.ts](../shared/agreement/types.ts) | the document model — `Block` union, `Section`, `Agreement`, `AgreementFields`, `Blocker` |
+| [v2_1.ts](../shared/agreement/v2_1.ts) | the source PDF transcribed: 47 sections and Schedules A–H as data, plus a `todo` block at every unresolved spot. **Frozen** |
+| [v2_2.ts](../shared/agreement/v2_2.ts) | the version the flow issues — every one of v2.1's eight `blocks-send` items resolved, plus `AGREEMENT_V2_2_RESOLUTIONS` recording how |
+| [render.ts](../shared/agreement/render.ts) | `renderText` / `renderPlainText` / `collectBlockers` / `canIssue` / `sha256Hex` / `fingerprint` |
+| [plainLanguage.ts](../shared/agreement/plainLanguage.ts) | `PLAIN_LANGUAGE_V2_1` (8 items) and `PLAIN_LANGUAGE_V2_2` (11) — the "In short" panel, one list per version |
+| [amountInWords.ts](../shared/agreement/amountInWords.ts) | `rupeesInWords()`, Indian numbering, so §5.1's figure and its words come from one integer |
+| [agreement.test.ts](../client/src/__tests__/shared/agreement.test.ts) | 37 tests, including the pinned v2.1 hash |
+| [agreement-v2-2.test.ts](../client/src/__tests__/shared/agreement-v2-2.test.ts) | 47 tests: internal consistency, no marker deleted without its clause fixed, pinned v2.2 hash |
+| [amount-in-words.test.ts](../client/src/__tests__/shared/amount-in-words.test.ts) | 40 tests, weighted to the teens and the empty-group cases where Indian grouping goes wrong |
+
+`collectBlockers()` **derives** the blocker list by walking the tree for `kind: "todo"` — there is no
+hand-maintained checklist to go stale. `canIssue(agreement, fields)` returns `ok: false` while any
+`blocks-send` marker or unfilled token remains; `needs-review` and `cosmetic` don't block. Callers
+must treat `ok: false` as a hard stop, not a warning.
+
+`todo` blocks are excluded from `renderPlainText`, so they never enter the hash. Otherwise clearing a
+cosmetic transcription note would invalidate signatures on clauses that never changed.
+
+Each version module holds all forty-seven sections and Schedules A–H as **structured data** —
+headings, clauses, bullet lists, tables — not an HTML blob. Placeholders are typed:
+
+```
+gymLegalName, effectiveDate, machineModel, machineId, serialNumber, machineValue,
+installationDate, installationAddress, accessories, securityDeposit,
+securityDepositInWords, termMonths,
+mbpNotices{address,email,phone}, gymNotices{address,email,phone},
+signatoryName, signatoryDesignation
+```
+
+One module feeds three consumers: the React reader, the PDF builder, and a plain-text renderer
+used for hashing. They must never diverge, which is why it is data and not markup.
+
+A field stays on `AgreementFields` for as long as **any** version references it, even after the
+current version stops doing so. `mbpNotices.phone` is the live example: v2.2's §41 drops the phone
+channel, but v2.1's §41 table still renders it, and a frozen version has to keep rendering from
+current state or a signature stored against it stops being reproducible.
+
+Each version's hash is pinned by a test against a fixed fixture, and the two fixtures are separate
+copies on purpose — one shared fixture means an edit made for a future version silently moves an
+older version's hash, and the obvious fix at that point is to update the expected value, which is
+the one thing neither test may do.
+
+### Unfinished content in the source PDF — all resolved in v2.2
+
+The PDF could not be transcribed as-is and could not be sent. Every row below had a marker in
+`v2_1.ts`; the **Resolved in v2.2** column says what closed it. The decisions behind those
+resolutions were taken on 2026-08-22 and are recorded in full further down this section.
+
+v2.1 keeps every one of these markers. It is the transcription, not the contract we issue, and
+editing it would break the pinned hash that makes a v2.1 signature verifiable. `AGREEMENT_V2_2_RESOLUTIONS`
+at the bottom of `v2_2.ts` carries the same mapping in code, and
+[agreement-v2-2.test.ts](../client/src/__tests__/shared/agreement-v2-2.test.ts) asserts in both
+directions — no v2.1 marker may vanish without an entry, and no entry may name a marker that was
+never raised. That is what stops the next person clearing a `blocks-send` flag instead of the defect.
+
+| Location | `id` | Severity | Problem in v2.1 | Resolved in v2.2 |
+|---|---|---|---|---|
+| §4.4 | `s4-4-empty` | blocks-send | dangling clause number, no text | clause deleted; §4 stops at 4.3, nothing renumbers |
+| §6.1 | `s6-1-no-heading` | blocks-send | no heading at all — the number is followed by a callout box titled "UPDATED COMMERCIAL MILESTONE", which reads as a change note left in the document | headed "Profit-Sharing Milestone" with real clause text; the change-note line is gone |
+| §6.3 | `s6-3-empty` | blocks-send | "Milestone Interpretation" heading with an empty body | five sub-clauses 6.3.1–6.3.5 |
+| §6, §6.2, §21.5, Sch B, Sch C | `s6-milestone-ambiguity` | blocks-send | **the document states two different triggers for the 50:50 step** — see below | one trigger: earlier of 15,000 cups or ₹5,00,000 cumulative **Net Profit** (§7), worded identically in all five places |
+| Schedule C step 4 | `schedule-c-step4-conflicts-with-s6-1` | blocks-send | same conflict, marked where a reader of Schedule C alone would hit it | restates §6.1's earlier-of test and points at §6.3; worked example added |
+| Schedule B | `schedule-b-unlabelled-ratio-rows` | blocks-send | profit-share rows `80:20` and `50:50` float without a "Cups 1–15,000 / Cup 15,001+" label column, and the ₹5,00,000 trigger is absent entirely | "Profit Share, before/after the Milestone" rows plus an explicit Milestone row; FBO and forum rows added |
+| Schedule B | `schedule-b-early-termination-charge` | blocks-send | "Early Termination Charges: `[TO BE AGREED]`" — and §36.2 points at this row for the amount owed on early exit, so the exit price is undefined while §36.1 grants the right to exit | **Nil**, conditional on §36.1's 30 days' written notice; §36.2 states it directly instead of pointing at a schedule row |
+| §46 | `s46-dispute-mechanism-missing` | blocks-send | refers disputes to "the dispute-resolution mechanism agreed by the Parties", a mechanism the Agreement never specifies, and defers arbitration/seat/venue/jurisdiction to counsel. As drafted there is **no forum** | Indian law, 30-day escalation, then the exclusive jurisdiction of the courts at Gautam Buddha Nagar; arbitration expressly not agreed |
+| §21.5 | `s21-5-revenue-milestone-omitted` | needs-review | preserves "the cumulative cup count or the 15,000-cup milestone" across a relocation, silent on the ₹5,00,000 milestone — so read strictly, relocation resets the test that actually governs | preserves cups, cumulative Net Profit and the Milestone, cross-referring to §6.3.1 |
+| §10.3 | `s10-3-table-truncated` | needs-review | the reimbursement table stops at 4,000–4,999 with no "and above" row, so it reads as a ₹4,000 cap even though §10.4 states the rule generally | lead-in says the table illustrates and does not cap; "5,000 and above" row added |
+| §24.6 | `s24-6-fbo-unresolved` | needs-review | defers the FSSAI Food Business Operator allocation to a consultant "before execution", so neither party knows who holds the licence for the food being dispensed | **MuscleBoxPro is the FBO** and holds the licence at its own cost; the Gym must not hold itself out as the operator. Same in Schedule F |
+| §33.3 | `s33-3-indemnity-not-final` | needs-review | "Final indemnity language shall be reviewed by legal counsel" — a clause advertising its own provisionality to the counterparty | deleted; §33.2 gained a food-safety indemnity in the Gym's favour |
+| §34 | `s34-liability-cap-undetermined` | needs-review | describes a cap to be "determined by legal counsel" instead of setting one, which means it has none | rewritten in four clauses: consequential loss excluded, **no monetary cap** on direct loss, the Gym's profit share expressly outside the exclusion, non-excludable liability preserved |
+| Cover | `cover-execution-note-unresolved` | needs-review | an execution note deferring stamp duty, tax, FBO, arbitration and jurisdiction to advisors | note removed; all five settled in the body. Replaced by one honest marker — see below |
+| §6 callout | `s6-1-mojibake` | cosmetic | mojibake where `₹` should be: `? ?5,00,000`, and the bullet glyphs are `?` too. Transcribed with the intended characters restored | written as TypeScript source with real characters; a test greps for the corruption returning |
+| §5.1 | `s5-1-amount-in-words` | cosmetic | "Rupees Fifty Thousand Only" is fixed text beside a tokenised figure, so a negotiated deposit would produce a clause whose figure and words disagree | `{{securityDepositInWords}}`, produced by `rupeesInWords()` from the same integer as the figure |
+| Header | `cover-version-mismatch` | cosmetic | cover page and every page footer say "Version 2.0", filename says v2_1 | version string, cover and footer all read 2.2 |
+
+Seventeen rows for eighteen markers. The eighteenth, `schedule-a-second-signing`, is **carried into
+v2.2 unchanged** — it is not a defect in the drafting but a note that Schedule A cannot be completed
+at signing time because the machine has not shipped, which is §6 of this document and build item 9's
+work. A marker that describes a real-world sequencing fact should survive a redraft.
+
+Two of the rows were worse than formatting gaps, and both drove decisions rather than edits:
+
+**The milestone conflict.** §6.1 set the 50:50 step at *the earlier of* 15,000 completed paid cups
+or ₹5,00,000 cumulative gross. §6.2's heading said "After 15,000 Cups". Schedule B and Schedule C
+step 4 said "Cups 1–15,000 = 80:20, Cup 15,001 onward = 50:50" and never mentioned revenue. §43 makes
+the Schedules part of the entire agreement, so this was a conflict on the face of the document, not
+an inconsistency between a summary and the real thing. It was also material: at ₹120 a cup ₹5,00,000
+of *gross* arrives at ~4,167 cups, so §6.1 stepped up roughly **3.6× sooner** than Schedule C did,
+and the 15,000-cup figure was dead text at any selling price above ~₹33. Decision 1 moved the second
+test to cumulative **Net Profit** as §7 defines it, which puts the crossover at ₹33.33 of *margin* a
+cup — inside the real operating range, so both tests are live. See §14.
+
+**§46 had no forum.** A 24-month agreement carrying a ₹50,000 deposit, with an operative dispute
+clause pointing at a mechanism the document never defined. Decision 3 chose courts over arbitration:
+for a deal this size the arbitration machinery costs more than the amounts in dispute, and an
+arbitration clause with no institution, seat or appointment procedure is worse than none.
+
+Beyond those: §5.7 and §20.5 hardcoded "₹50,000" as the damage threshold in the PDF. Both are
+tokenised as `{{securityDeposit}}` in each version, and a test asserts that a gym with a ₹75,000
+deposit gets ₹75,000 in both clauses and no stray ₹50,000 anywhere in the document.
+
+**Our own notices block.** `MBP_NOTICES` in
+[agreementFields.ts](../shared/onboarding/agreementFields.ts) now reads "BlendBox Innovations LLP,
+Sector 75, Noida, Uttar Pradesh 201301, India", and `phone` is deliberately `""`. Decision 8: we do
+not publish a number for notices, so v2.2's §41 offers address and email only and says in terms that
+telephone is not a channel for formal notice. A channel a gym cannot actually use is worse than one
+the clause never offers, because a notice attempted down it and missed is still arguably served. The
+gym's number stays in the clause labelled as an operational contact. `phone` stays on
+`AgreementFields` because v2.1's §41 table still renders it.
+
+What remains is the missing building/street line, carried as `s41-mbp-address-incomplete`
+(needs-review, not blocking): post to the sector and PIN will plausibly arrive and email is the
+primary channel, but it should be replaced with the registered office exactly as it reads on the LLP
+incorporation certificate before the first agreement is executed. That is a data change, not a
+content change, so it does not need a new version. The gym's side uses its **registered** address
+rather than the installation address — a notice served at a gym floor is not a notice served on the
+entity.
+
+`todo` markers still show a visible warning banner in dev and still **block sending in production**
+on `blocks-send`. v2.2 has none, so that path is dormant rather than dead: it is what stops a future
+v2_3 being issued half-drafted.
+
+### The thirteen decisions (2026-08-22)
+
+Every one of v2.1's open items came down to a commercial choice rather than a coding problem. These
+are the answers, and they are the reason v2.2 exists:
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | The milestone trigger for 50:50 | Earlier of 15,000 paid cups **or ₹5,00,000 cumulative Net Profit** — not cumulative gross |
+| 2 | Schedule B's early-termination charge | Nil; the Gym's exit price is one month's notice, not a payment |
+| 3 | Arbitration seat and venue for §46 | No arbitration. Indian law, courts at Gautam Buddha Nagar |
+| 4 | Is the ₹50,000 deposit fixed or per-gym? | Fixed as standard, but settable per gym from the backend — hence `rupeesInWords()`, so §5.1 cannot state one amount as a figure and another in words |
+| 5 | §10.3 — cap or continue? | Continues. ₹1,000 per completed 1,000 cups with no ceiling; the table is illustrative and the ₹4,000 row is not a maximum |
+| 6 | §24.6 — who is the FSSAI FBO? | MuscleBoxPro. It follows from §§14, 15, 24.3 and 25.1 — we control every food-handling step |
+| 7 | §34 liability cap | None. Consequential loss excluded both ways, direct loss uncapped both ways |
+| 8 | Registered office and notices phone | Sector 75, Noida 201301; phone left blank and §41 rewritten to drop the channel |
+| 9 | Razorpay live credentials | Not yet. A dummy endpoint stands in until the real backend API exists — see §5 |
+| 10 | Authorisation for a production build | Withheld. Complete and test locally first. `IndexNowPlugin` POSTs 30 live URLs to `api.indexnow.org` on any production client build, so this is not a formality |
+| 11 | GST on the refundable security deposit | A **receipt, not a tax invoice**. A refundable deposit is not "consideration" for a supply under CGST Act §2(31), so no GST at collection. §5.9 also covers the case where part is later applied or forfeited, which *is* consideration and needs its own tax document |
+| 12 | Stamp duty | Removed from the document; agreements are issued unstamped |
+| 13 | §33.3 / §4.4 / §6.1 heading / §6.3 | Drafted in-house. The PDF is for local reading and testing; the real document is generated by the website |
+
+Two of these carry risk that is now **accepted rather than closed**, and both are recorded where
+somebody will trip over them rather than only here.
+
+**Unstamped instruments.** Deleting the stamp-duty section removed the reminder, not the liability.
+An unstamped instrument can be inadmissible in evidence until stamped with penalty, which matters
+precisely when the agreement is needed — in a dispute. Kept in the cover marker's `problem` text so
+it surfaces in the internal banner on every preview.
+
+**No outside review.** v2.1 could only be wrong by mis-transcription; v2.2 can be wrong by drafting.
+§§5.9, 6.1/6.3, 24.6, 34, 36.2 and 46 were settled commercially and written in-house, with no Indian
+legal counsel, CA or food-law consultant having read them. That is the standing
+`v2-2-not-reviewed-by-counsel` marker on the cover — `needs-review`, so issuing v2.2 is a knowing
+decision to carry the risk rather than an oversight. It clears when counsel reviews §§33, 34, 36 and
+46, a CA confirms §5.9 and the stamp position for the state of execution, and a food-law consultant
+confirms §24.6 and Schedule F. Either delete it then or issue v2_3 with their wording.
+
+Click-to-accept with a typed name and an audit trail is a valid electronic record under India's
+IT Act 2000 §10A for this contract type.
+
+## 13. Gym dashboard
+
+Built on fixtures in phase 1, wired in phase 4. The cards:
+
+- **Machine** — model, serial, status, install date, last service
+- **Cups sold** — this month, lifetime, and a **progress bar to the 15,000-cup / ₹5,00,000
+  milestone** with "your share moves to 50% at…". Straight from §6 and the single most motivating
+  number a gym owner can see.
+- **Revenue collected** — gross, ex-GST
+- **Net profit** and **current share %**
+- **Your payout** — provisional this month, plus the last settled statement
+- **Electricity reimbursement** — earned this review period, cups to the next ₹1,000 block
+- **Advertising share** — separate card, labelled 80/20 regardless of the shake ratio (§9.4)
+- **Statements** — settled months (§8.3: within 15 days of month-end), downloadable
+- **Deposit status** — paid and held, or a persistent pending banner with the payment link
+
+Two judgement calls:
+
+**Label live figures "Provisional — settles by the 15th".** §8.3 makes the monthly statement the
+thing that is owed. A gym treating a mid-month number as a debt is a support conversation you don't
+want.
+
+**Show direct variable costs as a single aggregate, not per-unit.** §40 confidentiality runs both
+ways, and per-unit ingredient costs are commercially sensitive pricing. The gym needs the total to
+verify net profit; it does not need your cost schedule.
+
+### As built (2026-08-22)
+
+Nine cards, all on [gym/fixtures.ts](../shared/gym/fixtures.ts), all deriving through
+[compute.ts](../shared/settlement/compute.ts): cups (with the milestone bar), revenue, net profit
+and share, payout, electricity, advertising, machine, statements and agreement, and the deposit.
+`useSnapshot()` at the top of the file is the one line item 11 replaces.
+
+Four things the screen says that a simpler version would not:
+
+**The milestone bar tracks the test that binds, not the headline.** At the fixture's position —
+3,460 cups and ₹4,15,200 of ₹5,00,000 — the bar reads **83%** and the caption says the step-up is
+about **707 cups** away. A bar tracking the 15,000-cup figure would read 23% and imply years. The
+caption also names which test is being tracked and why, because a gym owner who has read §6 will
+otherwise assume the bar is wrong.
+
+**A split month says so on the card.** When the milestone falls mid-month the profit card shows both
+rates, the cup counts either side, and the blended effective percentage. Silently showing "50%" next
+to a payout that is not 50% of net profit is the version of this screen that generates a support
+ticket and a trust problem in the same afternoon.
+
+**Electricity counts cups to the next *increase*, not to the next block.** Below two blocks those
+differ, because §10.2's ₹1,000 minimum already pays what the first block would. "600 more cups earns
+you another ₹1,000" is false at 400 cups in a window; 1,600 is true.
+
+**An outstanding deposit is a banner, not a card.** A gym that deferred at step 4 is trading with a
+receivable against it — a state we deliberately allow (§3, step 4) — and it should not be
+discoverable only by scrolling. The banner carries the Payment Link, because the person reading the
+dashboard is often not the person who releases payments.
+
+The one number on the screen that is *not* recomputed is a settled month's payout: `Statement`
+carries what was actually paid. A settled month is history, and recomputing it would let a later
+`gym_terms` amendment silently rewrite what a gym has already been paid and shown.
+
+## 14. Settlement maths
+
+One tested pure module, `shared/settlement/compute.ts`. Derived from §§6–10:
+
+- `net_profit = gross_ex_tax − direct_variable_costs` (§7)
+- Ratio 80/20 until the earlier of **15,000 completed paid cups** or **₹5,00,000 cumulative Net
+  Profit**; 50/50 after (§6.1, §6.3, Schedule B, Schedule C step 4 — all four now say the same thing)
+- **The milestone can split a month.** Cups running 14,900 → 15,100 inside one month means two
+  ratios in one settlement. Handle it, or you will under- or overpay on exactly one month per gym —
+  and it will be the month they are paying closest attention.
+- **Both tests are live, which is the point of decision 1.** The second test was ₹5,00,000 of
+  cumulative *gross* in v2.1, reached at `500000 / ASP` cups — about **4,167 cups at ₹120** — so it
+  fired first at any selling price above roughly **₹33 a cup** and the headline 15,000 figure was
+  dead text. Against cumulative **Net Profit** the crossover is ₹33.33 of *margin* per cup, which
+  sits inside the real operating range: a high-margin gym crosses on profit, a thin-margin one
+  crosses on cups. `bindingMilestone()` in [summary.ts](../shared/partnership/summary.ts) computes
+  which one binds at the gym's actual figures, so nothing in the UI assumes either;
+  `/gym-partnership` says "whichever comes first" and prints the real cup count.
+- **Cumulative net profit is not monotonic, so the milestone ratchets.** A loss month reduces the
+  cumulative figure, and without a latch a gym could cross ₹5,00,000, drop back under it and be
+  silently demoted from 50:50 to 80:20. `CumulativeAtPeriodStart.milestoneAlreadyReached` is a
+  one-way flag: once set it is never cleared, and §6.3.4 says so in the contract. The cup test needs
+  no equivalent because cup counts only rise.
+- Advertising always 80/20, never re-ratioed (§9.4)
+- Electricity: ₹1,000 per completed 1,000 paid cups **per three-month review window**, floor
+  ₹1,000, no carry-forward (§10.4–10.6). Window-scoped, not monthly.
+- Relocation does not reset the cup count (§21.5) — cumulative is per gym-machine relationship,
+  not per installation
+- Cup count excludes cancelled, refunded, failed payment, failed dispense, test and complimentary
+  transactions (§6.4)
+
+That last exclusion list maps exactly onto states the `mbp-backend` payment state machine already
+distinguishes, so it is a projection over existing data, not new bookkeeping.
+
+### As built (2026-08-22) — moved forward from item 11
+
+`compute.ts` was scheduled with the reporting API in item 11 and was built in item 8 instead. The
+reason is that every §13 card is a *derived* quantity — net profit, current share, payout,
+electricity earned, cups to the next block, milestone progress — so a dashboard "on fixtures" either
+derives them or has them typed into the fixture by hand. Hand-typed figures beside computed ones is
+exactly the drift this module exists to prevent, and the fixture always wins the argument in a demo.
+Item 11 now swaps the data source, not the maths. 31 tests in
+[settlement.test.ts](../client/src/__tests__/shared/settlement.test.ts).
+
+Two decisions the agreement does not make, both taken here and both flagged in the code:
+
+**A loss period pays the gym nothing rather than billing it for a share of the loss.** The gym has no
+cost exposure under this agreement — no machine cost, no ingredients, no processing fees — and
+nothing in §§6–8 creates a claim against it, so a month where costs exceeded sales is MBP's loss
+entirely. `gymShareInr` floors at zero and `mbpShareInr` carries the whole negative.
+
+**§10.3's truncated rate table is extrapolated, not read as a cap** — and decision 5 confirmed it.
+The table in the PDF stopped mid-row at "4,000-4,999", which read literally capped the reimbursement
+at ₹4,000. §10.1's rule is the operative sentence and `computeElectricityWindow` follows it linearly,
+so 10,000 cups in a window pays ₹10,000. v2.2 makes the code and the contract agree: the table gains
+a "5,000 and above" row and a lead-in saying it illustrates the rule and does not cap it. No code
+changed here — the decision retired a `needs-review` marker rather than a behaviour.
+
+Three implementation notes:
+
+**The milestone split pro-rates at the period's average selling price.** Exact only if price was flat
+across the period. The function composes over any period length, so the fix if it ever matters is to
+call it with daily buckets rather than to complicate it — and there is a test asserting that two
+half-months give the same total as one whole month.
+
+**A non-positive threshold in `gym_terms` means "not configured", never "already met".** A zero cup
+count read the other way would hand every gym 50% from its first cup: a wrong answer that costs money
+and looks like a feature. Same for a missing electricity rate, which pays nothing rather than
+inventing a floor.
+
+**Percentages and rupees are guarded at the boundary.** These inputs arrive over the network in item
+11, and a `NaN` reaching the arithmetic renders as "₹NaN" on a partner's dashboard.
+
+## 15. Reporting data — deferred
+
+`mbp-backend` has no read API today, deliberately: its README states *"no browser ever calls this
+API"* and *"No admin API"*. It is machine-facing, GS-header-authenticated, no CORS.
+
+It does already carry `gsi2-device`, keyed `deviceNo` / `createdAt` and annotated *"dashboard
+history"*, so the access pattern was anticipated.
+
+When it is built, the shape that preserves that invariant is a **BFF**: browser → Supabase edge
+function → `mbp-backend` reporting endpoint. The edge function authenticates the gym's JWT, resolves
+its `device_no`s, calls the reporting endpoint with a service secret, joins against `cost_schedule`
+/ `ad_revenue` / `settlements` / `gym_terms`, and runs `compute.ts`. The browser never touches AWS.
+
+`mbp-backend` can answer cup counts and gross sales. It cannot answer "profit" — costs, advertising
+revenue and settlement records live in Postgres, on this side.
+
+**The response shape already exists.** [gym/portal.ts](../shared/gym/portal.ts) is
+`GymPortalSnapshot`, written in item 8 from what §13's cards need, and the dashboard renders nothing
+else. The split of work it fixes: the endpoint returns raw facts — cups net of §6.4's exclusions,
+gross ex-GST, the cost total, the cumulative opening counters, the boundaries of the current
+electricity review window — and the browser derives every rupee through `compute.ts`. Anything needing
+a calendar, a device lookup or a join is the endpoint's; anything needing §§6–10 is not.
+
+Note the window boundaries in particular. Which three-month electricity window a gym is in depends on
+when *its* first window opened, which is a fact about that gym's record and not about today's date, so
+the browser must not reconstruct it.
+
+**When that endpoint lands, add its host to `connect-src` in
+[next.config.mjs](../next.config.mjs).** The CSP is an allowlist and `next dev` does not apply
+these headers the same way, so a missing host means the dashboard fails **in production only**.
+This repo has already been bitten by exactly this.
+
+## 16. Build order
+
+| | Work | Est. |
+|---|---|---|
+| 1 | Remove consumer auth (§10) — **done 2026-08-22** | ½ d |
+| 2 | `shared/partnership/summary.ts` + `/gym-partnership` page (§2) — **done 2026-08-22** | 1½ d |
+| 3 | `shared/agreement/{types,v2_1,render}.ts` (§12) — **done 2026-08-22**; `v2_2.ts` issued 2026-08-22, unblocked | 1½ d |
+| 4 | Wizard shell — token route, server-driven step, draft autosave, resume, mobile (§4) — **done 2026-08-22** | 2½ d |
+| 5 | Steps 1, 2, 5 UI — **done 2026-08-22** | 2 d |
+| 6 | Step 3 — reader, plain-language panel, scroll gate, sign panel — **done 2026-08-22** | 2 d |
+| 7 | Step 4 — deposit UI, Razorpay Payment Link, webhook, receipt (§5) — **done 2026-08-22**, functions deferred to 9 | 2 d |
+| 8 | `/gym/login`, `/gym/forgot-password` + dashboard on fixtures (§13) — **done 2026-08-22**, absorbed `compute.ts` | 2 d |
+| | **front end** | **~14 d** |
+| 9 | Tables + edge functions + OTP + PDF + email — **next** | 5 d |
+| 10 | `local_dashboard` Gyms tab; fix TODO A4 while in that file | 1½ d |
+| 11 | Reporting API + real dashboard numbers (`compute.ts` done in 8) | 4 d |
+
+`/gym-partnership` comes early on purpose: it is publicly useful the day it ships, independent of
+every backend decision, and it forces `summary.ts` into existence before three screens start
+hardcoding ₹50,000.
+
+Item 3 shipped as structure with the gaps marked rather than waiting on legal, which was the right
+trade: items 4–6 could be built and demoed against the real document tree, and `canIssue()` guaranteed
+nothing reached a gym until the eight `blocks-send` items cleared. All eight are now cleared in
+`v2_2.ts`, and the marker machinery is what made that a mechanical exercise rather than a re-read —
+see §12.
+
+Item 4 went slightly past a shell in one place and stopped well short in three. Step 1 is a **working
+form** — all eleven fields, shared-schema validation, autosave, live agreement preview — because a
+shell with five placeholder screens proves nothing about autosave, resume or server-side field
+errors; one real form proves all three. Steps 2 to 5 are scaffolds with their plumbing wired and a
+visible build note: step 2 renders that gym's own commercials, step 3 renders and hashes the real
+agreement and shows the blocker list, step 4 prices the deposit off the terms row, step 5 sets a
+password. What is missing is the copy, the layout and — in step 3 — the entire reading experience,
+which is the actual work in items 5 to 7. The flow is walkable end to end at `/onboarding/demo`
+today; `expired-demo` and `revoked-demo` show the terminal screens.
+
+Item 5 finished steps 1, 2 and 5 and produced one thing that was not in its scope:
+[shared/machine/spec.ts](../shared/machine/spec.ts). Step 2 needed the machine's dimensions, `/specs`
+already had them inline, and typing "76×60×180" a second time is how two surfaces end up disagreeing
+about the same hardware — so it was extracted and `MachineSpecs.tsx` repointed at it. Schedule A
+should read from it too when item 9 renders the PDF.
+
+Steps 3 and 4 remained scaffolds at the end of item 5. That was deliberate: step 3's real work is the
+reading experience on a 390px screen and step 4's is the Razorpay round trip, and neither is a copy
+pass. The test file grew from 15 to 20 cases, four of them asserting content rather than plumbing —
+the five clause references on step 2, the machine panel, the milestone phrasing, and that a deferred
+deposit still reads as owed on step 5. Those four are guarding editorial decisions that a future
+redesign could quietly drop, and they are cheap insurance on the two screens where being honest
+matters more than being tidy.
+
+Item 6 split into three files rather than one big step component, because the reader and the sign
+panel have nothing to do with each other: one renders a document and reports how far through it you
+are, the other collects assent and a code. The step composes them and owns the single thing that
+spans both — the hash. Two things it surfaced that are worth flagging rather than burying:
+
+**The scroll gate cannot be an `IntersectionObserver` under test.** `client/src/test/setup.ts` stubs
+both observers as no-ops that never fire, and happy-dom's `getBoundingClientRect()` returns zeros, so
+a sentinel-based gate would have left the sign panel permanently locked in every test — the flow walk
+included. The measured-percentage approach with an explicit zero-height branch is both testable and a
+better experience, since it can show a "% read" figure a boolean cannot.
+
+**The effective date is hashed client-side.** Recorded above under step 3 as a build-item-9 blocker;
+it is a real correctness bug the moment the server starts producing the PDF, not a nitpick.
+
+The test count went 20 → 24 on the flow (four step-3 cases: the eight linked clauses, the whole
+document rendering with a live hash, that one checkbox is not assent, and that a wrong code fails
+visibly) and 31 → 37 on the agreement (six cases tying the plain-language panel to v2.1's real
+clause numbers and figures). Step 4 is the last scaffold left in the wizard.
+
+Item 7 finished it, and `StepScaffold.tsx` was deleted along with it — no callers left, and its own
+docstring said it should go when the flow stopped being a demo. Two things about how it landed:
+
+**Item 7's stated scope included the webhook, and half of it was genuinely not buildable.** The
+create-link and webhook functions need the `deposits` and `gym_onboarding` tables and live Razorpay
+credentials; a handler written against absent tables cannot be run, tested or reviewed. Rather than
+either claim the item done with no webhook code or write something unverifiable, the split fell at
+purity: `_shared/razorpay.ts` holds every rule that is decidable without a database — signature,
+event filter, amount source, partial-payment refusal, settlement comparison — with 13 tests, and the
+persistence lands in item 9. That is where a silent bug would otherwise have lived unexamined until a
+gym's ₹50,000 went missing.
+
+**Polling our own record turned out to remove work, not add it.** The obvious design is to handle
+Razorpay's redirect back to `/onboarding/<token>`. But the redirect is neither trustworthy nor
+guaranteed — a gym that pays and closes the tab, or whose accountant pays from a *forwarded* link on
+another device, never comes back to the page at all. One poll against our own record covers every
+path, so there is no return handler, no query-param state, and nothing to get wrong about a URL a
+gateway controls.
+
+Test counts after item 7: 27 on the flow, 31 on the mock API, 13 on the Razorpay module — 529 in the
+suite, with the same 29 pre-existing failures in `home`, `ContactUs`, `Advertiser`, `GymDemo` and
+`static-pages` that predate this work.
+
+Item 8 turned out to be half already done and half bigger than billed. `/gym/login` and
+`/gym/forgot-password` were built in item 1, when consumer auth came out — login has no signup link
+by design, and there was nothing to add. What was left was the dashboard, and the honest version of
+"a dashboard on fixtures" pulled `compute.ts` forward out of item 11; the reasoning is in §14 and the
+short version is that a fixture full of hand-typed payouts proves nothing and drifts immediately.
+
+The ordering that fell out of that is better than the one planned. The maths now exists **before** the
+endpoint that feeds it, so §§6–10 were read as a specification with no schema to accommodate, and the
+two places the agreement is silent — a loss period, and §10.3's truncated table — surfaced as
+decisions to write down rather than as behaviour nobody chose. It also means the reporting endpoint in
+item 11 has a target: `GymPortalSnapshot` in [gym/portal.ts](../shared/gym/portal.ts) is its response
+shape, written from what the screen needs rather than from what a query happens to return.
+
+One thing worth stating about what the fixture is *for*. It depicts a gym four months in, 83% of the
+way to the milestone, with a part-finished electricity window and two settled statements — chosen
+because those are the states where the screen has something difficult to say. A fixture of round
+numbers and a paid-up, milestone-reached gym would have rendered beautifully and exercised none of the
+logic that matters.
+
+Test counts after item 8: 31 on the settlement maths, 15 on the dashboard (5 → 15) — 570 in the
+suite, 541 passing, the same 29 pre-existing failures unchanged. `npx tsc --noEmit` clean.
+
+### The 29 pre-existing failures, cleared (2026-08-22)
+
+Referenced throughout the notes above as the failures that predate this work. **The suite is now
+green: 37 files, 568 tests, `tsc` clean.** Two root causes, and neither was what the count implied.
+
+**Seven test files each hand-maintained their own `vi.mock("framer-motion", …)`.** Every one listed a
+different subset of tags — `ContactUs` stubbed `motion.div` only, `home` had six tags but no
+`LazyMotion`, `GymPartnership` had `LazyMotion` but one tag. An unlisted tag resolves to `undefined`
+and React throws "Element type is invalid", which fails the *whole file* with an error pointing at
+React rather than at the mock. That is where 19 of the 29 came from: `ContactUs` had all eleven of its
+tests failing because its stub omitted `AnimatePresence`.
+
+Replaced with one [client/src/test/framerMotion.tsx](../client/src/test/framerMotion.tsx), imported by
+all ten page-test files as `vi.mock("framer-motion", () => import("@/test/framerMotion"))`. `motion`
+is a Proxy that manufactures a passthrough component for any tag asked of it, so there is no list to
+fall behind a page. It also strips animation props instead of spreading them onto DOM nodes, and uses
+plain functions rather than `vi.fn()` — `setup.ts` runs `vi.clearAllMocks()` before every test, which
+would reduce a `vi.fn(() => true)` to returning `undefined`, the same trap that made the observers in
+`setup.ts` classes.
+
+**`Advertiser.test.tsx` had no framer-motion mock at all**, so it ran the real library, including
+`<AnimatePresence mode="wait">` around the form-to-confirmation swap. `mode="wait"` holds the incoming
+panel until the outgoing one finishes exiting, and under happy-dom that exit never finishes — so a
+test waiting for the confirmation waited forever. `GymDemo` and `blog-pages` had the same exposure and
+are now on the shared mock too.
+
+The remaining ten were copy that had legitimately moved on and assertions that were never testing
+what they claimed. Four of the latter are worth naming, because a green test that asserts nothing is
+worse than a red one:
+
+- `queryByText("CLASSIC")` for "the category filters are hidden" — the filters render title-case and
+  are uppercased by CSS, so that string appears in no state of the component. The test passed whether
+  the filters were there or not. Now `queryByRole("button", { name: "Classic" })`.
+- `getByText(/wallet/i)` for "the FAQ accordion renders" matched the category tile *and* two
+  questions, so it never reached the accordion. Now the question text.
+- Advertiser's "shows success message" mocked a `data.message` and then asserted that message. The
+  page discards `data.message` and renders its own copy, so the test was asserting the mock. Now it
+  asserts the page's confirmation and that the function's message does *not* appear.
+- Both "clears the form after submission" tests held a reference to an input, submitted, and asked
+  whether that input was empty. Submission *unmounts* the form, so they were interrogating a detached
+  node and would have failed however the page behaved. The clearing is only observable through "Send
+  Another Message" / "Submit Another Inquiry", so that is what they now exercise — which is also the
+  path where failing to clear would send us a duplicate inquiry.
+
+No component was changed. Every failure was in the tests.
+
+One more thing surfaced while verifying: with all 29 cleared, the suite still failed once in fifteen
+runs and would not reproduce. Testing Library defaults `waitFor` to 1000ms, and the contact and
+advertiser flows spend ~1.2s typing into three fields before they start waiting, so under load a
+`waitFor` was losing a race it should never have been in. `setup.ts` now sets
+`asyncUtilTimeout: 5000`. Twenty consecutive green runs since. A suite that fails one time in fifteen
+teaches people to re-run it instead of reading it, which costs more than the flake does.
+
+### Version 2.2 and the thirteen decisions (2026-08-22)
+
+Not a build item. Every open question in §§12 and 14 was a commercial choice, and answering them
+produced work in three places at once: the settlement maths (decision 1 changed the milestone's
+second test from gross to Net Profit, which is a `gym_terms` field rename, a new opening counter and
+the ratchet), the document (`v2_2.ts`, 47 sections, all eight `blocks-send` markers resolved), and the
+copy on four surfaces that quote the milestone.
+
+The order mattered. The maths went first, because §6.3's wording had to describe behaviour that
+already existed and was tested — a contract clause drafted against intended behaviour and code
+written against the clause tend to disagree in exactly the month a gym is watching. `PARTNERSHIP` in
+[summary.ts](../shared/partnership/summary.ts) is the single source both the page copy and the
+document's fixture read from, and a test asserts §6.1's rendered text, §21.5's, Schedule B's,
+Schedule C's and `PARTNERSHIP.milestone` all state the same two numbers.
+
+Two things worth naming about how v2.2 was built:
+
+**It is a new file, not an edit.** `v2_1.ts` stays byte-frozen with its pinned hash, because the
+version string is part of what gets hashed and a signature is only evidence while the text can be
+re-rendered. Both versions are asserted to render with zero unresolved tokens from current onboarding
+state, which is why `mbpNotices.phone` survives on `AgreementFields` after v2.2 stopped offering the
+channel.
+
+**Resolutions are data, checked in both directions.** `AGREEMENT_V2_2_RESOLUTIONS` maps each v2.1
+marker id to what v2.2 did about it, and the test suite asserts that no v2.1 marker may disappear
+without an entry *and* that no entry may name a marker that was never raised. Without that, the
+cheapest way to make `canIssue()` return true is to delete the marker, and it looks identical in a
+diff to fixing the defect.
+
+Test counts after v2.2: 47 on the new agreement suite, 40 on `rupeesInWords`, and the flow, fixture
+and mock-API suites updated — **39 files, 664 tests, all passing, `npx tsc --noEmit` clean**. One
+caveat carried forward: `tsconfig.json`'s `exclude` lists `**/*.test.ts` but not `**/*.test.tsx`, so
+the five `.ts` test files — including the settlement and both agreement suites — are invisible to
+`tsc`. They typecheck under vitest's transform, so a type error there fails the run rather than
+passing silently, but the maths this project cares most about is the part `tsc` is not looking at.
+Worth fixing.
+
+No production build was made. Decision 10 withheld authorisation until local testing is complete, and
+`IndexNowPlugin` in [next.config.mjs](../next.config.mjs) submits 30 live URLs to `api.indexnow.org`
+on any production client build — a side effect on the public search index, from a command that reads
+like a compile step.
+
+## 17. Checklist for anything added here
+
+- [ ] `enable row level security` in the same migration as the `create table`
+- [ ] No business state in `user_metadata` — it is writable by the user
+- [ ] The server decides the onboarding step; the client never asserts it
+- [ ] Payment amounts verified server-side in paise; webhook is the source of truth
+- [ ] Webhook handlers idempotent on the provider's payment id
+- [ ] No PII in `localStorage`
+- [ ] Commercial numbers come from `summary.ts` or `gym_terms`, never inline literals
+- [ ] `/gym-partnership` says "indicative terms" and never carries the full agreement text
+- [ ] New API host added to `connect-src` in `next.config.mjs`
+- [ ] `/gym/*` and `/onboarding/*` are `noindex` and `Disallow`ed in `robots.txt`
+- [ ] Agreement content changes bump the version; never edit a version that has signatures
+- [ ] A new agreement version pins its own golden length and hash, and does not share a fixture with
+      an older one — a shared fixture lets one version's edit move another version's hash
+- [ ] Every version renders with zero unresolved tokens from current onboarding state, frozen versions
+      included; a field stays on `AgreementFields` while any version references it
+- [ ] Clearing a `todo` marker means fixing the defect and recording the resolution, never deleting
+      the marker
+- [ ] Amounts stated twice in a clause — figure and words — derive from one integer
+- [ ] The milestone reads identically in §6.1, §21.5, Schedule B, Schedule C and `PARTNERSHIP`
+- [ ] `compute.ts` change comes with a test for the milestone-splitting month
+- [ ] Milestone latches once reached; cumulative net profit can fall and must not demote a gym
+- [ ] A test file rendering a page mocks framer-motion via `@/test/framerMotion` — never inline
+- [ ] No `npm run build` without asking — `IndexNowPlugin` pings 30 live URLs on a production build

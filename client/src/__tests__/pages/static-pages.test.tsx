@@ -17,20 +17,7 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
-vi.mock("framer-motion", () => ({
-  motion: {
-    div: ({ children, ...p }: React.ComponentProps<"div">) => <div {...p}>{children}</div>,
-    section: ({ children, ...p }: React.ComponentProps<"section">) => <section {...p}>{children}</section>,
-    h1: ({ children, ...p }: React.ComponentProps<"h1">) => <h1 {...p}>{children}</h1>,
-    h2: ({ children, ...p }: React.ComponentProps<"h2">) => <h2 {...p}>{children}</h2>,
-    p: ({ children, ...p }: React.ComponentProps<"p">) => <p {...p}>{children}</p>,
-    span: ({ children, ...p }: React.ComponentProps<"span">) => <span {...p}>{children}</span>,
-    li: ({ children, ...p }: React.ComponentProps<"li">) => <li {...p}>{children}</li>,
-    img: ({ ...p }: React.ComponentProps<"img">) => <img {...p} />,
-  },
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useInView: vi.fn(() => true),
-}));
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
 vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
 
@@ -49,9 +36,10 @@ describe("AboutUs page", () => {
     render(<AboutUs />);
   });
 
-  it("shows ABOUT US heading", () => {
+  // The h1 is "About MuscleBoxPro"; "About Us" is only the nav label and the <title>.
+  it("shows the About MuscleBoxPro heading", () => {
     render(<AboutUs />);
-    expect(screen.getByRole("heading", { name: /about us/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/about musclebox/i);
   });
 
   it("shows Our Vision section", () => {
@@ -71,10 +59,12 @@ describe("HelpCenter page", () => {
     expect(screen.getByRole("heading", { name: /help center/i })).toBeInTheDocument();
   });
 
+  // A bare /wallet/i matched both the "Payments & Wallet" category tile and two of
+  // the questions inside it, so it asserted nothing about the accordion. Match the
+  // question itself.
   it("renders FAQ accordion items", () => {
     render(<HelpCenter />);
-    // Accordion renders questions
-    expect(screen.getByText(/wallet/i)).toBeInTheDocument();
+    expect(screen.getByText("How do I add funds to my wallet?")).toBeInTheDocument();
   });
 });
 
@@ -159,15 +149,19 @@ describe("NotFound (404) page", () => {
     render(<NotFound />);
   });
 
-  it("shows 404 text", () => {
+  // "404" is on the page twice: the badge, and a giant aria-hidden watermark. The
+  // badge is the one a screen reader gets, so that is the one worth asserting.
+  it("says 404 in the badge and names the failure in the heading", () => {
     render(<NotFound />);
-    expect(screen.getByText(/404/)).toBeInTheDocument();
+    expect(screen.getByText("Error 404")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/page not found/i);
   });
 
+  // Matched by its own label rather than /home/i, which also hit the navbar's HOME,
+  // the "Home" quick-link tile and the footer.
   it("shows a link to the homepage", () => {
     render(<NotFound />);
-    const homeLink = screen.getByRole("link", { name: /home/i });
-    expect(homeLink).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: /go to homepage/i })).toHaveAttribute("href", "/");
   });
 });
 

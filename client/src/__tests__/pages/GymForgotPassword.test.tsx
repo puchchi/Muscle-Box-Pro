@@ -8,7 +8,7 @@ const mockGetSearchParam = vi.fn(() => null as string | null); // no token by de
 
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: mockPush })),
-  usePathname: vi.fn(() => "/forgot-password"),
+  usePathname: vi.fn(() => "/gym/forgot-password"),
   useSearchParams: vi.fn(() => ({ get: mockGetSearchParam })),
 }));
 
@@ -18,93 +18,89 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-vi.mock("framer-motion", () => ({
-  motion: {
-    div: ({ children, ...p }: React.ComponentProps<"div">) => <div {...p}>{children}</div>,
-  },
-}));
+// The component uses motion.div *and* motion.p. Stubbing only `div` makes the
+// missing tag render as `undefined` and every test in the file fails with
+// "Element type is invalid" — which is how this suite was silently broken.
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
 vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
 
-const { mockResetForEmail, mockUpdateUser } = vi.hoisted(() => ({
-  mockResetForEmail: vi.fn(),
+const { mockInvoke, mockUpdateUser } = vi.hoisted(() => ({
+  mockInvoke: vi.fn(),
   mockUpdateUser: vi.fn(),
 }));
 vi.mock("@/lib/supabase", () => ({
   supabase: {
-    auth: {
-      resetPasswordForEmail: mockResetForEmail,
-      updateUser: mockUpdateUser,
-    },
+    auth: { updateUser: mockUpdateUser },
+    functions: { invoke: mockInvoke },
   },
 }));
 
-import ForgotPassword from "@/pages/ForgotPassword";
+import GymForgotPassword from "@/pages/gym/GymForgotPassword";
 
 // ─── Email request mode (no token) ───────────────────────────────────────────
-describe("ForgotPassword — email request mode", () => {
+describe("GymForgotPassword — email request mode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSearchParam.mockReturnValue(null);
   });
 
   it("renders without crashing", () => {
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
   });
 
   it("shows RESET PASSWORD heading", async () => {
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /reset password/i })).toBeInTheDocument();
     });
   });
 
   it("shows email input field", async () => {
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/you@example\.com/i)).toBeInTheDocument();
     });
   });
 
   it("shows SEND RECOVERY LINK button", async () => {
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /send recovery link/i })).toBeInTheDocument();
     });
   });
 
-  it("shows Back to Login link", async () => {
-    render(<ForgotPassword />);
+  it("shows a Back to Sign In link pointing at the gym login route", async () => {
+    render(<GymForgotPassword />);
     await waitFor(() => {
-      const link = screen.getByRole("link", { name: /back to login/i });
-      expect(link).toHaveAttribute("href", "/login");
+      const link = screen.getByRole("link", { name: /back to sign in/i });
+      expect(link).toHaveAttribute("href", "/gym/login");
     });
   });
 
-  it("calls resetPasswordForEmail with the entered email", async () => {
-    mockResetForEmail.mockResolvedValue({ error: null });
-    render(<ForgotPassword />);
+  it("invokes the forgot-password function with the entered email", async () => {
+    mockInvoke.mockResolvedValue({ data: null, error: null });
+    render(<GymForgotPassword />);
     const user = userEvent.setup();
 
     await waitFor(() => screen.getByPlaceholderText(/you@example\.com/i));
-    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "user@example.com");
+    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "owner@yourgym.com");
     await user.click(screen.getByRole("button", { name: /send recovery link/i }));
 
     await waitFor(() => {
-      expect(mockResetForEmail).toHaveBeenCalledWith(
-        "user@example.com",
-        expect.objectContaining({ redirectTo: expect.stringContaining("forgot-password") })
-      );
+      expect(mockInvoke).toHaveBeenCalledWith("forgot-password", {
+        body: { email: "owner@yourgym.com" },
+      });
     });
   });
 
-  it("shows success message after email is sent", async () => {
-    mockResetForEmail.mockResolvedValue({ error: null });
-    render(<ForgotPassword />);
+  it("shows a neutral success message that does not confirm the account exists", async () => {
+    mockInvoke.mockResolvedValue({ data: null, error: null });
+    render(<GymForgotPassword />);
     const user = userEvent.setup();
 
     await waitFor(() => screen.getByPlaceholderText(/you@example\.com/i));
-    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "user@example.com");
+    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "owner@yourgym.com");
     await user.click(screen.getByRole("button", { name: /send recovery link/i }));
 
     await waitFor(() => {
@@ -112,13 +108,13 @@ describe("ForgotPassword — email request mode", () => {
     });
   });
 
-  it("shows error message when resetPasswordForEmail fails", async () => {
-    mockResetForEmail.mockResolvedValue({ error: new Error("Rate limit exceeded.") });
-    render(<ForgotPassword />);
+  it("shows an error message when the function call fails", async () => {
+    mockInvoke.mockResolvedValue({ data: null, error: { message: "Rate limit exceeded." } });
+    render(<GymForgotPassword />);
     const user = userEvent.setup();
 
     await waitFor(() => screen.getByPlaceholderText(/you@example\.com/i));
-    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "user@example.com");
+    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "owner@yourgym.com");
     await user.click(screen.getByRole("button", { name: /send recovery link/i }));
 
     await waitFor(() => {
@@ -128,21 +124,21 @@ describe("ForgotPassword — email request mode", () => {
 });
 
 // ─── Reset mode (token present) ──────────────────────────────────────────────
-describe("ForgotPassword — reset mode (token present)", () => {
+describe("GymForgotPassword — reset mode (token present)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSearchParam.mockReturnValue("sometoken123");
   });
 
   it("shows SET NEW PASSWORD heading in reset mode", async () => {
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /set new password/i })).toBeInTheDocument();
     });
   });
 
   it("shows two password fields in reset mode", async () => {
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     await waitFor(() => {
       const fields = screen.getAllByPlaceholderText("••••••••");
       expect(fields.length).toBe(2);
@@ -150,14 +146,14 @@ describe("ForgotPassword — reset mode (token present)", () => {
   });
 
   it("shows UPDATE PASSWORD button", async () => {
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /update password/i })).toBeInTheDocument();
     });
   });
 
   it("shows password mismatch error when passwords differ", async () => {
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     const user = userEvent.setup();
 
     await waitFor(() => screen.getAllByPlaceholderText("••••••••"));
@@ -174,7 +170,7 @@ describe("ForgotPassword — reset mode (token present)", () => {
 
   it("calls updateUser when passwords match", async () => {
     mockUpdateUser.mockResolvedValue({ error: null });
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     const user = userEvent.setup();
 
     await waitFor(() => screen.getAllByPlaceholderText("••••••••"));
@@ -190,7 +186,7 @@ describe("ForgotPassword — reset mode (token present)", () => {
 
   it("shows success message after password reset", async () => {
     mockUpdateUser.mockResolvedValue({ error: null });
-    render(<ForgotPassword />);
+    render(<GymForgotPassword />);
     const user = userEvent.setup();
 
     await waitFor(() => screen.getAllByPlaceholderText("••••••••"));
@@ -200,7 +196,7 @@ describe("ForgotPassword — reset mode (token present)", () => {
     await user.click(screen.getByRole("button", { name: /update password/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/password has been reset successfully/i)).toBeInTheDocument();
+      expect(screen.getByText(/password reset successfully/i)).toBeInTheDocument();
     });
   });
 });

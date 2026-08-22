@@ -91,7 +91,6 @@ export default function RootLayout({
               description:
                 "Smart protein shake vending machines for gyms with zero-maintenance operations and recurring revenue. Operating across India.",
               email: "contact@muscleboxpro.com",
-              telephone: "+91-8687247670",
               address: {
                 "@type": "PostalAddress",
                 streetAddress: "Sector 75",
@@ -104,7 +103,6 @@ export default function RootLayout({
                 "@type": "ContactPoint",
                 contactType: "customer service",
                 email: "contact@muscleboxpro.com",
-                telephone: "+91-8687247670",
                 availableLanguage: ["English", "Hindi"],
               },
               sameAs: [
@@ -126,7 +124,6 @@ export default function RootLayout({
               description:
                 "Automated protein shake vending machines installed in gyms and fitness centers across India.",
               url: "https://www.muscleboxpro.com",
-              telephone: "+91-8687247670",
               email: "contact@muscleboxpro.com",
               image: "https://www.muscleboxpro.com/og-image.png",
               priceRange: "₹₹",

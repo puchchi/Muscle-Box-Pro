@@ -14,6 +14,9 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
+// Same `AnimatePresence mode="wait"` form-to-confirmation swap as the advertiser page.
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
+
 vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
 
 const { mockFunctionsInvoke } = vi.hoisted(() => ({
@@ -50,9 +53,11 @@ describe("GymDemo page", () => {
     expect(screen.getByText(/get a machine/i)).toBeInTheDocument();
   });
 
-  it("shows Request a Free Demo heading", () => {
+  // The form's own heading is "Request a demo"; "Free Demo" is the hero eyebrow above
+  // the h1, not a heading.
+  it("heads the form panel with Request a demo", () => {
     render(<GymDemo />);
-    expect(screen.getByRole("heading", { name: /request a free demo/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /request a demo/i })).toBeInTheDocument();
   });
 
   it("renders all form fields", () => {

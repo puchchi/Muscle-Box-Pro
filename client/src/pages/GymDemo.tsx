@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Wrench, TrendingUp, Palette, ArrowRight, Star, AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
@@ -118,8 +119,20 @@ export default function GymDemo() {
                     for your gym.
                   </span>
                 </h1>
-                <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm">
+                <p className="text-white/50 text-sm leading-relaxed mb-4 max-w-sm">
                   Increase member satisfaction and generate passive revenue. We handle stocking, cleaning, and service.
+                </p>
+
+                {/* Some gyms want the commercials before they want a call. */}
+                <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm">
+                  Want the numbers first?{" "}
+                  <Link
+                    href="/gym-partnership"
+                    className="text-primary font-semibold hover:underline"
+                  >
+                    Read the full partnership terms
+                  </Link>
+                  .
                 </p>
 
                 <div className="grid grid-cols-2 gap-2.5">

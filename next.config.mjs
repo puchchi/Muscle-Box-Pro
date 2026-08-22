@@ -7,6 +7,7 @@ const INDEXNOW_KEY = "a3f7b2e8d4c1f9a6b5e0d7c3f2a8b1e4";
 const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/",
   "https://www.muscleboxpro.com/gym-demo",
+  "https://www.muscleboxpro.com/gym-partnership",
   "https://www.muscleboxpro.com/specs",
   "https://www.muscleboxpro.com/advertise",
   "https://www.muscleboxpro.com/menu",
@@ -76,6 +77,13 @@ const nextConfig = {
         destination: "/protein-vending-machine-:city",
         permanent: true,
       },
+      // Consumer auth was removed in favour of the gym partner portal.
+      // See docs/gym-onboarding.md §9. There is no gym signup: portal accounts
+      // are created by the onboarding flow, so /signup goes to lead capture.
+      { source: "/login", destination: "/gym/login", permanent: true },
+      { source: "/account", destination: "/gym/dashboard", permanent: true },
+      { source: "/forgot-password", destination: "/gym/forgot-password", permanent: true },
+      { source: "/signup", destination: "/gym-demo", permanent: true },
     ];
   },
   async rewrites() {

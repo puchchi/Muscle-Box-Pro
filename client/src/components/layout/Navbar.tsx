@@ -22,7 +22,6 @@ export default function Navbar() {
     { name: "Home", path: "/" },
     { name: "Gym Demo", path: "/gym-demo" },
     { name: "Specs", path: "/specs" },
-    { name: "My Account", path: "/account" },
     { name: "Advertise", path: "/advertise" },
   ];
 
@@ -59,13 +58,11 @@ export default function Navbar() {
                 </span>
               </Link>
             ))}
-            {!isLoggedIn && (
-              <Link href="/login">
-                <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
-                  LOGIN
-                </Button>
-              </Link>
-            )}
+            <Link href={isLoggedIn ? "/gym/dashboard" : "/gym/login"}>
+              <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
+                {isLoggedIn ? "DASHBOARD" : "GYM LOGIN"}
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Nav */}
@@ -90,6 +87,16 @@ export default function Navbar() {
                       </span>
                     </Link>
                   ))}
+                  {/* The desktop bar carries this as a button; the sheet only
+                      renders navLinks, so it needs its own entry. */}
+                  <Link href={isLoggedIn ? "/gym/dashboard" : "/gym/login"}>
+                    <span
+                      className="text-lg font-display tracking-wider text-primary transition-colors hover:text-primary/80 cursor-pointer block"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {isLoggedIn ? "DASHBOARD" : "GYM LOGIN"}
+                    </span>
+                  </Link>
                 </div>
               </SheetContent>
             </Sheet>
