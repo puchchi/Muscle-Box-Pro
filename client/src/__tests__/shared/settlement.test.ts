@@ -50,10 +50,16 @@ const START: CumulativeAtPeriodStart = {
   openingNetProfitInr: 0,
 };
 
-/** Net profit per cup at the indicative economics — the rate §6.1's profit test runs at. */
+/** Net profit per cup in this file's fixture — the rate §6.1's profit test runs at. */
 const MARGIN_PER_CUP = 120 - 55;
 
-/** A month at the published indicative economics: ₹120 a cup, ₹55 of cost. */
+/**
+ * A month at ₹120 a cup and ₹55 of cost — this file's own fixture, deliberately not
+ * read from `INDICATIVE_ECONOMICS`. These are settlement-arithmetic tests, and every
+ * expectation below is a hand-computed figure at this rate; wiring them to the
+ * marketing illustration would make an editorial change to that constant fail here
+ * for no reason. `MARGIN_PER_CUP` above is the same fixture rate.
+ */
 function month(cups: number, overrides: Partial<PeriodSales> = {}): PeriodSales {
   return {
     period: "2026-08",

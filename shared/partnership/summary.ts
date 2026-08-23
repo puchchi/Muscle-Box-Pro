@@ -43,7 +43,7 @@ export const PARTNERSHIP = {
    * gross, ₹5,00,000 arrived at ~4,167 cups and the 15,000-cup figure was dead
    * text at any selling price above ~₹33. Against net profit the crossover moves
    * to ₹33.33 of *margin* per cup, which is inside the real operating range: a
-   * machine earning ₹65 a cup hits the profit test at ~7,700 cups, one earning ₹30
+   * machine earning ₹55 a cup hits the profit test at ~9,100 cups, one earning ₹30
    * hits the cup test first. See `bindingMilestone()`.
    */
   milestone: {
@@ -110,13 +110,20 @@ export const PARTNERSHIP = {
  * partner data Q1 2026). Keep them consistent with that page — a visitor who
  * reads both should not find two different sets of numbers.
  *
- * 400 cups/month is ~13 a day, and lands the gym's share inside the
+ * 600 cups/month is ~20 a day, and lands the gym's share (₹6,600) inside the
  * ₹3,000–₹12,000 range published on BlogGymRetention.
+ *
+ * Schedule C of agreement v2.2 carries its own worked example at 400 cups and ₹55
+ * a cup. **That divergence is deliberate and must not be "fixed" in v2_2.ts.** The
+ * agreement text is hashed and frozen once a gym signs against it, so editing it
+ * means minting v2_3.ts; and its example exists to show the clause 7 arithmetic,
+ * not to publish a volume. This constant is the marketing-side illustration and is
+ * free to move as the real partner data does.
  */
 export const INDICATIVE_ECONOMICS = {
   avgSellingPriceInr: 120,
-  directCostPerCupInr: 55,
-  exampleCupsPerMonth: 400,
+  directCostPerCupInr: 65,
+  exampleCupsPerMonth: 600,
 } as const;
 
 export type WorkedMonth = {
@@ -160,12 +167,12 @@ export function workedMonth(
  * Takes net profit per cup rather than selling price, because the §6 test is on
  * §7 Net Profit. A gym asking "when does my share go up?" is asking about this
  * function's answer, and the honest answer depends on the machine's margin, not
- * its shelf price: ₹5,00,000 of profit is ~7,700 cups at ₹65 a cup and ~16,700 at
+ * its shelf price: ₹5,00,000 of profit is ~9,100 cups at ₹55 a cup and ~16,700 at
  * ₹30, and only in the second case does the 15,000-cup ceiling bind.
  *
  * So the public page says "whichever comes first" and prints the real number for
  * the indicative economics — quoting 15,000 to a gym whose share then rises at
- * 7,700 undersells the deal, and quoting 7,700 to one whose margin is thinner
+ * 9,100 undersells the deal, and quoting 9,100 to one whose margin is thinner
  * oversells it.
  */
 export function bindingMilestone(

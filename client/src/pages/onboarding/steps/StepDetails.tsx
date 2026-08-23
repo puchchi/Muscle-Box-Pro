@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -36,6 +36,40 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
 
   const values = form.watch();
   const draft = useDraftAutosave(token, "details", values, { enabled: !readOnly });
+
+  /**
+   * "The machine will stand at the registered address."
+   *
+   * Deliberately *not* a field on `GymDetails`, because it is not a fact about the gym — the
+   * agreement has two addresses (§41 serves notices at one, Schedule A locates the machine at the
+   * other) and they happen to coincide. Storing a "same" flag would make the wire carry a
+   * question the contract does not ask, and would leave the two schemas to argue about which
+   * field wins.
+   *
+   * So its initial state is *derived* instead: two identical, non-empty addresses is what having
+   * ticked it looks like after a reload, which is the only thing a reopened draft needs it to
+   * survive as.
+   */
+  const [sameAddress, setSameAddress] = useState(() => {
+    const registered = (values.registeredAddress || "").trim();
+    return registered !== "" && registered === (values.installationAddress || "").trim();
+  });
+
+  // Kept in sync while ticked, rather than copied once on tick: the gym may well tick this before
+  // finishing the registered address, and a one-shot copy would leave the machine's location as
+  // whatever half-sentence was in the box at that moment.
+  useEffect(() => {
+    if (!sameAddress || readOnly) return;
+    form.setValue("installationAddress", values.registeredAddress, {
+      // Without `shouldDirty` a mirrored address is not part of the values the autosave watches,
+      // and a refresh would lose it.
+      shouldDirty: true,
+      // Only when there is already a message to clear. Validating on every keystroke would print
+      // "include the full address where the machine will stand" under a field nobody is typing in,
+      // while they are still typing the address above it.
+      shouldValidate: form.getFieldState("installationAddress").error !== undefined,
+    });
+  }, [sameAddress, readOnly, values.registeredAddress, form]);
 
   // Server-side validation messages land on the same inputs as client-side ones.
   // Without this, a rule the client doesn't know about shows only in the summary
@@ -163,12 +197,40 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             description="Where formal notices should be served (§41 of the agreement)."
             disabled={readOnly}
           />
+
+          {/*
+            Most single-site gyms install the machine at the address they are registered at, and
+            re-typing a postal address is where a typo that reaches Schedule A comes from. Hidden
+            on a revisit: there is nothing to tick when both fields are disabled anyway.
+          */}
+          {!readOnly && (
+            <label htmlFor="same-address" className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                id="same-address"
+                type="checkbox"
+                checked={sameAddress}
+                onChange={(event) => setSameAddress(event.target.checked)}
+                className="w-4 h-4 mt-0.5 flex-shrink-0 accent-primary"
+                data-testid="checkbox-same-address"
+              />
+              <span className="text-xs text-muted-foreground leading-relaxed">
+                The machine will stand at the registered address
+              </span>
+            </label>
+          )}
+
           <AreaField
             form={form}
             name="installationAddress"
             label="Installation address"
-            description="Where the machine will actually stand."
-            disabled={readOnly}
+            description={
+              sameAddress
+                ? "Taken from the registered address. Untick above to enter a different one."
+                : "Where the machine will actually stand."
+            }
+            // Disabled rather than hidden while ticked: the gym still has to be able to read the
+            // address it is agreeing to, and this field is what Schedule A is built from.
+            disabled={readOnly || sameAddress}
           />
         </Section>
 

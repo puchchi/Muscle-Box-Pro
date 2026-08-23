@@ -172,6 +172,42 @@ describe("the admin gym view boundary", () => {
     expect(unagreed.ok && unagreed.data.terms.earlyTerminationChargeInr).toBeNull();
   });
 
+  it("accepts a gym invited before it has a legal entity, GSTIN, addresses or signatory", () => {
+    // Found on sandbox on 2026-08-23, and it is the exact failure this file's docstring warns
+    // about with the polarity flipped: the schema rejected a *true* response. Every one of these
+    // was required by `POST /admin/gyms` until the invite form deferred them to the gym's own
+    // step 1, so `label` was right and then silently wasn't.
+    const result = parseAdminGymView(
+      corrupt((gym) => {
+        gym.details.legalEntityName = "";
+        gym.details.gstin = "";
+        gym.details.registeredAddress = "";
+        gym.details.installationAddress = "";
+        gym.details.signatoryName = "";
+        gym.details.signatoryDesignation = "";
+      }),
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("still refuses a blank trade name, notices email or phone", () => {
+    // The other half of the same change: `POST /admin/gyms` still requires these three, so a
+    // blank one is a server bug rather than a gym that has not got there yet. Loosening the
+    // whole details block instead of the six deferred fields would have lost that distinction.
+    for (const field of ["tradeName", "noticesEmail", "noticesPhone"]) {
+      const issues = rejectView(corrupt((gym) => (gym.details[field] = "")));
+      expect(issues.join(" "), field).toContain(`details.${field}`);
+    }
+  });
+
+  it("keeps entity type a strict enum even though the invite form no longer asks for it", () => {
+    // The server substitutes "proprietorship" for a blank entity type rather than storing "",
+    // so the wire never carries one — accepting `""` here would only hide it if that changed.
+    expect(rejectView(corrupt((gym) => (gym.details.entityType = ""))).join(" ")).toContain(
+      "details.entityType",
+    );
+  });
+
   it("accepts an empty FSSAI licence number", () => {
     // §24.5 leaves each party to its own registrations, so this is genuinely optional and
     // arrives as `""` rather than absent.
@@ -219,6 +255,25 @@ describe("the admin gym list boundary", () => {
     // The first thing a fresh environment returns. It must not read as an error.
     const result = parseAdminGymList({ gyms: [], nextCursor: null });
     expect(result.ok).toBe(true);
+  });
+
+  it("accepts a page of gyms invited before they have a legal entity name", () => {
+    // The sandbox failure verbatim: two of three gyms had `legalEntityName: ""`, and because a
+    // page is all-or-nothing the third one — a fully onboarded, active gym — disappeared with
+    // them. "0 loaded" plus a schema error is a worse answer than any single wrong cell.
+    const list = adminGymListFixture();
+    list.gyms[0].legalEntityName = "";
+    list.gyms[1].legalEntityName = "";
+    const result = parseAdminGymList(list);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.data.gyms).toHaveLength(3);
+  });
+
+  it("still refuses a row with a blank trade name", () => {
+    // The row's own headline. Blank here is not a gym waiting on step 1 — the invite required it.
+    const list = adminGymListFixture() as unknown as Record<string, any>;
+    list.gyms[0].tradeName = "";
+    expect(rejectList(list).join(" ")).toContain("gyms.0.tradeName");
   });
 
   it("refuses a row with no createdAt", () => {

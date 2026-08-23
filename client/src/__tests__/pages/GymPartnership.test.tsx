@@ -72,13 +72,13 @@ describe("GymPartnership page", () => {
   });
 
   it("describes the milestone as whichever-comes-first, with the real cup count", () => {
-    // At ₹65 of margin the ₹5,00,000 profit test binds at ~7,693 cups, still short of
+    // At ₹55 of margin the ₹5,00,000 profit test binds at ~9,091 cups, still short of
     // 15,000. Advertising only "15,000 cups" would understate the deal; advertising
-    // only 7,693 would overstate it for a gym with thinner margins, so the page says
+    // only 9,091 would overstate it for a gym with thinner margins, so the page says
     // both and prints the arithmetic.
     render(<GymPartnership />);
     expect(screen.getByText(/whichever comes first/i)).toBeInTheDocument();
-    expect(screen.getByText(/about 7,693 cups/i)).toBeInTheDocument();
+    expect(screen.getByText(/about 9,091 cups/i)).toBeInTheDocument();
     expect(screen.getByText(/cumulative net profit/i)).toBeInTheDocument();
   });
 
@@ -97,7 +97,22 @@ describe("GymPartnership page", () => {
     expect(screen.getByText(/marked provisional/i)).toBeInTheDocument();
   });
 
-  it("lists the five onboarding steps in order", () => {
+  it("starts the journey at the demo request, before the invite link exists", () => {
+    // The stepper used to open at "confirm your details", which is where the *link*
+    // starts, not where the visitor does — there is nothing on this page a gym can act
+    // on until it has asked for a demo.
+    render(<GymPartnership />);
+    const items = screen.getAllByRole("listitem").map((el) => el.textContent ?? "");
+    const journey = items.findIndex((t) => /start here/i.test(t));
+    expect(journey).toBeGreaterThanOrEqual(0);
+    expect(items[journey]).toMatch(/request a demo/i);
+    expect(items[journey + 1]).toMatch(/confirm your details/i);
+  });
+
+  it("lists the five onboarding steps in order, and numbers them as the wizard does", () => {
+    // Five, still — the demo request is unnumbered on purpose. `shared/onboarding/
+    // steps.ts`, the progress rail and the invitation email all call "confirm your
+    // details" step 1, so a sixth number here would contradict them.
     render(<GymPartnership />);
     const steps = screen.getAllByRole("listitem").map((el) => el.textContent ?? "");
     const wizard = steps.filter((t) => /^\d/.test(t.trim()));

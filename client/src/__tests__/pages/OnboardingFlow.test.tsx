@@ -231,6 +231,79 @@ describe("OnboardingFlow — going back", () => {
   });
 });
 
+/**
+ * "The machine will stand at the registered address."
+ *
+ * A convenience over two fields the agreement keeps separate — §41 serves notices at the
+ * registered address, Schedule A locates the machine at the installation one. The checkbox is not
+ * part of `GymDetails`, so what the tests hold is what it does to the two real values: mirrors
+ * while ticked, hands the field back on untick, and submits a genuine installation address either
+ * way rather than a flag the server would have to interpret.
+ */
+describe("OnboardingFlow — the same-address checkbox", () => {
+  it("starts unticked when the two addresses differ", async () => {
+    // The seeded record has an installation address and no registered one, so there is nothing
+    // to infer a tick from — and a tick here would blank the address the gym already has.
+    await open();
+    expect(screen.getByTestId("checkbox-same-address")).not.toBeChecked();
+    expect(screen.getByTestId("input-installationAddress")).toBeEnabled();
+  });
+
+  it("mirrors the registered address and locks the field while ticked", async () => {
+    const user = await open();
+    await user.type(screen.getByTestId("input-registeredAddress"), VALID.registeredAddress);
+    await user.click(screen.getByTestId("checkbox-same-address"));
+
+    const installation = screen.getByTestId("input-installationAddress");
+    expect(installation).toHaveValue(VALID.registeredAddress);
+    expect(installation).toBeDisabled();
+  });
+
+  it("keeps mirroring if the registered address is still being typed", async () => {
+    // The order most people actually use it in: tick first, then finish typing. A one-shot copy
+    // would leave the machine's location as whatever half-sentence was in the box at that moment.
+    const user = await open();
+    await user.click(screen.getByTestId("checkbox-same-address"));
+    await user.type(screen.getByTestId("input-registeredAddress"), VALID.registeredAddress);
+
+    expect(screen.getByTestId("input-installationAddress")).toHaveValue(VALID.registeredAddress);
+  });
+
+  it("hands the field back on untick, without discarding what was mirrored", async () => {
+    // The gym in unit 4 of the building it is registered in: tick, untick, edit one line. The
+    // registered address must not follow.
+    const user = await open();
+    await user.type(screen.getByTestId("input-registeredAddress"), VALID.registeredAddress);
+    await user.click(screen.getByTestId("checkbox-same-address"));
+    await user.click(screen.getByTestId("checkbox-same-address"));
+
+    const installation = screen.getByTestId("input-installationAddress");
+    expect(installation).toBeEnabled();
+    expect(installation).toHaveValue(VALID.registeredAddress);
+
+    await user.clear(installation);
+    await user.type(installation, "Unit 4, 12 MG Road, Indiranagar, Bengaluru 560038");
+    expect(screen.getByTestId("input-registeredAddress")).toHaveValue(VALID.registeredAddress);
+  });
+
+  it("submits the mirrored address as a real installation address", async () => {
+    // The whole point of mirroring into the field rather than sending a flag: the server, the
+    // agreement and Schedule A all see an address, and none of them has to know a box was ticked.
+    const user = await open();
+    await user.type(screen.getByTestId("input-legalEntityName"), VALID.legalEntityName);
+    await user.type(screen.getByTestId("input-gstin"), VALID.gstin);
+    await user.type(screen.getByTestId("input-registeredAddress"), VALID.registeredAddress);
+    await user.click(screen.getByTestId("checkbox-same-address"));
+    await user.type(screen.getByTestId("input-signatoryName"), VALID.signatoryName);
+    await user.type(screen.getByTestId("input-signatoryDesignation"), VALID.signatoryDesignation);
+    await user.click(screen.getByTestId("button-continue"));
+
+    // Advancing at all is the assertion: `gymDetailsSchema` requires a full installation address,
+    // so a step 2 on screen means one was submitted.
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+  });
+});
+
 describe("OnboardingFlow — saving and resuming", () => {
   it("autosaves a draft and says so", async () => {
     const user = await open();

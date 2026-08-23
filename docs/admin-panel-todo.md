@@ -36,6 +36,15 @@ routes with no admin UI in front of them yet:
       the sandbox walk).
 - [ ] **Set-password link** — `POST /admin/gyms/{gymId}/set-password-link`. §9.2.
 
+## Worth considering
+
+- [ ] **A malformed page hides every gym on it, not just the bad row.** `parseAdminGymList`
+      validates the page as one object, so one row with an unexpected field takes the whole list
+      down — that is how the blank-`legalEntityName` bug on 2026-08-23 turned two new gyms into
+      "0 loaded" and hid a third, fully onboarded one. Parsing rows individually would render
+      what is readable and list the rows that aren't. Not obviously right (a half-rendered list
+      is its own kind of misleading), so this needs a decision rather than a patch.
+
 ## Not designed yet
 
 ### Terminate contract — requested 2026-08-24, from the Gyms list UI

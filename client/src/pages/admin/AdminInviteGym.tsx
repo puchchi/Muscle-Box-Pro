@@ -207,10 +207,13 @@ const EMPTY_VALUES: AdminInviteFormInput = {
   },
   machine: {
     model: "MuscleBoxPro MBP-1",
-    // No single published source for this the way `PARTNERSHIP` is for the commercial terms —
-    // the figure the mock API and every fixture in this codebase use for the hardware's book
-    // value, kept here so an admin overwrites a plausible number rather than a blank one.
-    valueInr: 450_000,
+    // ₹5,00,000 — the unit's book value, set here so an admin overwrites a plausible number
+    // rather than a blank one. No single published source for this the way `PARTNERSHIP` is for
+    // the commercial terms: it is a hardware cost, not a contractual term, and it is per-gym on
+    // the wire precisely because it moves. Raised from ₹4,50,000 on 2026-08-24 by instruction.
+    // The fixtures still use ₹4,50,000 and deliberately are not chased — they stand in for gyms
+    // already invited at the older figure, which is exactly the state the field allows for.
+    valueInr: 500_000,
   },
   invitedByName: "",
 };

@@ -222,8 +222,8 @@ the clause it comes from (§3, §14, §21, §12.4, §5.6) so a gym owner or thei
 summary against the real text one step later. `OnboardingFlow.test.tsx` asserts all five clause refs
 are present, which is the closest thing to a lock we can put on an editorial decision.
 
-**The milestone leads with "whichever comes first", not the cup count.** At the indicative ₹65 of
-margin a cup the ₹5,00,000 net-profit test fires at about 7,700 cups, so quoting 15,000 on its own
+**The milestone leads with "whichever comes first", not the cup count.** At the indicative ₹55 of
+margin a cup the ₹5,00,000 net-profit test fires at about 9,100 cups, so quoting 15,000 on its own
 *understates* the deal — and a thinner-margin machine reaches the cup count first instead, so neither
 figure can be quoted alone. The row states both tests and then the arithmetic at that gym's own
 numbers, computed rather than typed. Advertising is stated as never re-ratioing, which is the other

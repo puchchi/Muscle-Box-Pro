@@ -47,6 +47,22 @@ const label = z.string().min(1);
  */
 const text = z.string();
 
+/**
+ * A string that is empty until the gym fills it in at onboarding step 1.
+ *
+ * Structurally identical to `text`, and named separately because the *reason* differs and the
+ * reason is what a reader needs. `text` means "empty is a legitimate final value"; this means
+ * "empty means not yet answered", which the screen has to say out loud rather than render as a
+ * blank cell — `AdminGymDetail`'s details card carries a note for exactly this state.
+ *
+ * These were `label` until 2026-08-23, and that was correct until it wasn't: `POST /admin/gyms`
+ * used to require all of them, so a gym could not exist without them. Deferring them to the gym
+ * (`validateInviteDetails` in mbp-backend) made `""` a real value the server sends, and this
+ * schema rejected the whole page for it — every gym invited through the new form took the entire
+ * Gyms list down with a `String must contain at least 1 character(s)` on itself.
+ */
+const deferred = z.string();
+
 /** An ISO timestamp, or null where the event has not happened. Format-checked, not parsed. */
 const instant = z.string().datetime({ offset: true }).nullable();
 
@@ -101,7 +117,9 @@ const step = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.
 const adminGymListRowSchema = z.object({
   gymId: label,
   tradeName: label,
-  legalEntityName: label,
+  // Blank until the gym reaches step 1 — see `deferred`. The list's own rendering already
+  // accounts for it: a blank second line is suppressed rather than printed empty.
+  legalEntityName: deferred,
   slug: label,
   status: onboardingStatus,
   noticesEmail: label,
@@ -120,18 +138,31 @@ export const adminGymListSchema = z.object({
 
 // ── One gym ─────────────────────────────────────────────────────────────────
 
+/**
+ * The details block.
+ *
+ * Six of these are `deferred` rather than `label`: an admin invites a gym with only a trade name
+ * and a contact, and the gym itself supplies the legal entity, GSTIN, both addresses and the
+ * signatory at step 1. Only `tradeName`, `noticesEmail` and `noticesPhone` are ones the invite
+ * required, so only those three are safe to insist on here.
+ *
+ * `entityType` stays a strict enum despite also being optional on the invite form, because the
+ * server substitutes `"proprietorship"` for a blank one rather than storing `""` — so the wire
+ * never carries an empty entity type, and accepting one here would only hide it if it ever did.
+ */
 const gymDetailsSchema = z.object({
-  legalEntityName: label,
+  legalEntityName: deferred,
   entityType,
   tradeName: label,
-  gstin: label,
+  gstin: deferred,
   // Genuinely optional — §24.5 makes each party responsible for its own registrations, so a
-  // gym without one has `""` here and that is not an error.
+  // gym without one has `""` here and that is not an error. Unlike the `deferred` fields, this
+  // one stays blank for good rather than being filled in later.
   fssaiLicenceNumber: text,
-  registeredAddress: label,
-  installationAddress: label,
-  signatoryName: label,
-  signatoryDesignation: label,
+  registeredAddress: deferred,
+  installationAddress: deferred,
+  signatoryName: deferred,
+  signatoryDesignation: deferred,
   noticesEmail: label,
   noticesPhone: label,
 });

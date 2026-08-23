@@ -158,7 +158,7 @@ describe("AdminInviteGym", () => {
   it("prefills the machine model and value with a plausible default, still editable", async () => {
     render(<AdminInviteGym />);
     expect(await screen.findByTestId("input-machine.model")).toHaveValue("MuscleBoxPro MBP-1");
-    expect(screen.getByTestId("input-machine.valueInr")).toHaveValue(450_000);
+    expect(screen.getByTestId("input-machine.valueInr")).toHaveValue(500_000);
   });
 
   it("submits the whole form and shows the link on success", async () => {
@@ -187,7 +187,7 @@ describe("AdminInviteGym", () => {
     const body = mockCreateGym.mock.calls[0][0];
     // Only model and value on the wire for the machine — nothing about device number, serial
     // number, accessories or installation date, which this form never collects at all.
-    expect(body.machine).toEqual({ model: "MuscleBoxPro MBP-1", valueInr: 450_000 });
+    expect(body.machine).toEqual({ model: "MuscleBoxPro MBP-1", valueInr: 500_000 });
     expect("invitedByName" in body).toBe(false);
     expect(body.terms.earlyTerminationChargeInr).toBe(0);
   });

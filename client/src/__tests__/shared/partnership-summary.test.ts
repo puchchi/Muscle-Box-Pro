@@ -49,27 +49,27 @@ describe("PARTNERSHIP terms", () => {
 describe("workedMonth", () => {
   it("derives the example from the published unit economics", () => {
     const m = workedMonth();
-    expect(m.cups).toBe(400);
-    expect(m.grossInr).toBe(48_000);
-    expect(m.directCostsInr).toBe(22_000);
-    expect(m.netProfitInr).toBe(26_000);
-    expect(m.gymShareInr).toBe(5_200);
+    expect(m.cups).toBe(600);
+    expect(m.grossInr).toBe(72_000);
+    expect(m.directCostsInr).toBe(39_000);
+    expect(m.netProfitInr).toBe(33_000);
+    expect(m.gymShareInr).toBe(6_600);
   });
 
   it("applies exactly the percentage the page prints above it", () => {
-    const m = workedMonth(400);
+    const m = workedMonth(600);
     expect(m.gymSharePct).toBe(PARTNERSHIP.gymNetProfitSharePct.beforeMilestone);
     expect(m.gymShareInr).toBe(Math.round((m.netProfitInr * m.gymSharePct) / 100));
   });
 
   it("switches to the post-milestone share on request", () => {
-    const after = workedMonth(400, true);
+    const after = workedMonth(600, true);
     expect(after.gymSharePct).toBe(50);
-    expect(after.gymShareInr).toBe(13_000);
+    expect(after.gymShareInr).toBe(16_500);
   });
 
   it("scales linearly with volume", () => {
-    expect(workedMonth(800).gymShareInr).toBe(workedMonth(400).gymShareInr * 2);
+    expect(workedMonth(1_200).gymShareInr).toBe(workedMonth(600).gymShareInr * 2);
   });
 
   it("lands inside the ₹3,000–₹12,000 monthly range published on the retention blog", () => {
@@ -91,14 +91,14 @@ describe("workedMonth", () => {
 
 describe("bindingMilestone", () => {
   it("is the profit trigger at the indicative margin", () => {
-    // ₹5,00,000 of net profit at ₹65 a cup ≈ 7,693 cups, still short of 15,000.
-    expect(bindingMilestone()).toEqual({ trigger: "netProfit", cups: 7_693 });
+    // ₹5,00,000 of net profit at ₹55 a cup ≈ 9,091 cups, still short of 15,000.
+    expect(bindingMilestone()).toEqual({ trigger: "netProfit", cups: 9_091 });
   });
 
   it("defaults to the margin in INDICATIVE_ECONOMICS, not to the selling price", () => {
-    // The regression this guards is passing ₹120 where ₹65 belongs, which would put
+    // The regression this guards is passing ₹120 where ₹55 belongs, which would put
     // the milestone at 4,167 cups — the answer the old cumulative-gross test gave, and
-    // 3,500 cups earlier than the deal actually steps up.
+    // ~4,900 cups earlier than the deal actually steps up.
     const margin =
       INDICATIVE_ECONOMICS.avgSellingPriceInr - INDICATIVE_ECONOMICS.directCostPerCupInr;
     expect(bindingMilestone()).toEqual(bindingMilestone(margin));
