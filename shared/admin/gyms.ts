@@ -40,6 +40,26 @@ import type {
 } from "../onboarding/types";
 import type { MachineStatus } from "../gym/portal";
 
+/**
+ * The device number on a unit that has been costed but not yet chosen.
+ *
+ * Mirrors `domain/ids.ts`'s `newPendingDeviceNo`/`isPendingDeviceNo` in `mbp-backend` — same
+ * prefix, same reason: `POST /admin/gyms` writes a machine row with model and value at invite
+ * time even when the admin has not picked a physical unit, because `deviceNo` cannot be blank
+ * on the row (it is `gsi1-device`'s partition key). This side has to know the convention too,
+ * or "no unit chosen yet" renders as a real device with a serial number attached — see
+ * `AdminGymDetail.tsx`'s Machine card, the one place this actually matters.
+ *
+ * If the backend's prefix ever changes, this constant has to change with it — there is no way
+ * to derive one from the other across the repo boundary, which is exactly why this docstring
+ * points back at the source of truth rather than re-deriving the reasoning.
+ */
+const PENDING_DEVICE_PREFIX = "PENDING-";
+
+export function isPendingDeviceNo(deviceNo: string | null): boolean {
+  return deviceNo !== null && deviceNo.startsWith(PENDING_DEVICE_PREFIX);
+}
+
 // ── The list ────────────────────────────────────────────────────────────────
 
 /**
@@ -220,6 +240,13 @@ export type AdminGymView = {
    * (`deviceNo: null`, `model: ""`, `valueInr: 0`), so "no unit allocated" reads as
    * `machine.deviceNo === null` — not as `machine === null`, which never happens. Checking
    * the wrong one shows a gym with no machine a ₹0 unit called "".
+   *
+   * A second, related trap since 2026-08-23: `deviceNo` being non-null no longer means a real
+   * unit exists. `POST /admin/gyms` allocates a machine row (with a real model and value) even
+   * when the admin has not chosen a physical unit yet, and fills `deviceNo` with a
+   * `PENDING-`-prefixed placeholder rather than leaving it null — because the field is
+   * `gsi1-device`'s partition key and cannot be blank on a written row. Check
+   * `isPendingDeviceNo(machine.deviceNo)` before treating a device number as a real allocation.
    *
    * `status` and `lastServiceAt` are not on this projection at all; they are in `machines`.
    */

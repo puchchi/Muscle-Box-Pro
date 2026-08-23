@@ -10,7 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ENTITY_TYPE_LABELS } from "@shared/onboarding/schema";
+import { PARTNERSHIP } from "@shared/partnership/summary";
 import { adminInviteFormSchema, toAdminInviteBody, type AdminInviteFormInput, type AdminInviteResult } from "@shared/admin/invite";
 import { createGym } from "@/lib/adminApi";
 import { useAdminGuard } from "./useAdminGuard";
@@ -18,18 +18,35 @@ import { AdminChecking, AdminShell } from "./AdminShell";
 import { formatIstDateTime } from "./adminFormat";
 
 /**
- * Invite a gym — §2.7's `POST /admin/gyms`: one form, thirty fields, submitted once.
+ * Invite a gym — §2.7's `POST /admin/gyms`: one form, eighteen fields, submitted once.
  *
- * ## Why there is no autosave, and no "typical terms" preset
+ * ## Eleven fields live here no longer
  *
- * Both were raised and both were closed deliberately, not overlooked. **No autosave**: a
- * half-filled invite going nowhere is not a state worth resuming — unlike the wizard, where a
- * gym owner is expected to leave and come back, an admin filling this in is expected to finish
- * it in one sitting, and a draft nobody asked for is one more place stale commercial figures
- * could sit. **No preset button for terms**: `validateTermsInput`'s own docstring is the
- * reason — *"a default deposit fee is the kind of value that ends up in a signed agreement
- * because nobody noticed the field was blank."* Every commercial figure starts empty and has
- * to be typed once, on purpose, per gym.
+ * Legal entity name, entity type, GSTIN, both addresses, signatory name and designation used
+ * to be typed here and then typed again by the gym at onboarding step 1 — the admin's copy
+ * never became the row of record, only labour. They are gone from this screen entirely; the
+ * gym supplies them, for real, at step 1. `shared/admin/invite.ts`'s module docstring has the
+ * server side of this (`validateInviteDetails`) and the one field dropped rather than deferred
+ * (`fssaiLicenceNumber`, already optional). `tradeName`, `noticesEmail` and `noticesPhone` stay
+ * here because nothing after this point supplies them.
+ *
+ * Device number, serial number, accessories and installation date left the Machine section the
+ * same way, for a related but distinct reason: those describe the *physical unit and its
+ * logistics*, which are decided later, while model and value describe the hardware itself and
+ * rarely change gym to gym. `shared/admin/invite.ts`'s docstring on `adminInviteMachineSchema`
+ * and `validateInviteMachineInput` server-side explain why `deviceNo` gets a placeholder rather
+ * than travelling blank the way the seven detail fields do — it is a DynamoDB partition key and
+ * cannot be empty on a written row.
+ *
+ * ## No autosave, and terms that start at the standard figures
+ *
+ * **No autosave**: a half-filled invite going nowhere is not a state worth resuming — unlike
+ * the wizard, where a gym owner is expected to leave and come back, an admin filling this in is
+ * expected to finish it in one sitting. **Every commercial figure starts at `PARTNERSHIP`'s
+ * standard terms**, editable inline — see `shared/admin/invite.ts`'s *"Terms default to
+ * `PARTNERSHIP`"* section for why this is not the preset button that was deliberately left out
+ * earlier: nothing is hidden behind a click, and the number an admin needs to check is already
+ * the one on screen.
  *
  * ## All or nothing, and what "nothing" looks like on this screen
  *
@@ -153,13 +170,18 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-const EMPTY_VALUES = {
+/**
+ * Blank rather than absent for the seven deferred fields, even though the form never renders an
+ * input for them: `adminInviteFormSchema` still describes the whole wire shape, and `""` is what
+ * `validateInviteDetails` reads as "the gym will supply this" — the same value `toAdminInviteBody`
+ * would produce from an input the admin left empty, just skipping the step of rendering one.
+ */
+const EMPTY_VALUES: AdminInviteFormInput = {
   details: {
     legalEntityName: "",
-    entityType: "proprietorship",
+    entityType: "",
     tradeName: "",
     gstin: "",
-    fssaiLicenceNumber: "",
     registeredAddress: "",
     installationAddress: "",
     signatoryName: "",
@@ -167,21 +189,31 @@ const EMPTY_VALUES = {
     noticesEmail: "",
     noticesPhone: "",
   },
-  // Left as `undefined` for every commercial figure — see the module docstring on why there is
-  // no preset. `as unknown as AdminInviteFormInput["terms"]` because the schema's inferred
-  // type is every field required-and-numeric, and an admin who has typed nothing has, by
-  // construction, not yet satisfied that — which is exactly the state zodResolver is for.
-  terms: {} as unknown as AdminInviteFormInput["terms"],
+  // `PARTNERSHIP` is the standard partnership terms — see the module docstring on why a
+  // prefilled, editable value is not the preset button that was ruled out.
+  terms: {
+    securityDepositInr: PARTNERSHIP.securityDepositInr,
+    termMonths: PARTNERSHIP.initialTermMonths,
+    gymSharePctBeforeMilestone: PARTNERSHIP.gymNetProfitSharePct.beforeMilestone,
+    gymSharePctAfterMilestone: PARTNERSHIP.gymNetProfitSharePct.afterMilestone,
+    milestoneCups: PARTNERSHIP.milestone.cups,
+    milestoneNetProfitInr: PARTNERSHIP.milestone.cumulativeNetProfitInr,
+    advertisingGymSharePct: PARTNERSHIP.advertisingGymSharePct,
+    electricityInrPerBlock: PARTNERSHIP.electricity.inrPerBlock,
+    electricityCupsPerBlock: PARTNERSHIP.electricity.cupsPerBlock,
+    electricityReviewWindowMonths: PARTNERSHIP.electricity.reviewWindowMonths,
+    settlementDaysAfterMonthEnd: PARTNERSHIP.settlementDaysAfterMonthEnd,
+    earlyTerminationChargeInr: PARTNERSHIP.earlyTerminationChargeInr,
+  },
   machine: {
-    deviceNo: "",
     model: "MuscleBoxPro MBP-1",
-    serialNumber: "",
-    accessories: "",
-    valueInr: undefined as unknown as number,
-    installationDate: "",
+    // No single published source for this the way `PARTNERSHIP` is for the commercial terms —
+    // the figure the mock API and every fixture in this codebase use for the hardware's book
+    // value, kept here so an admin overwrites a plausible number rather than a blank one.
+    valueInr: 450_000,
   },
   invitedByName: "",
-} satisfies AdminInviteFormInput as unknown as AdminInviteFormInput;
+};
 
 function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => void }) {
   const router = useRouter();
@@ -193,7 +225,6 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const legalName = form.watch("details.legalEntityName");
   const earlyChargeChoice = useEarlyTerminationChoice(form);
 
   async function onSubmit(values: AdminInviteFormInput) {
@@ -243,64 +274,36 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
             </div>
           )}
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-4" data-testid="agreement-preview">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
-              In the agreement
-            </p>
+          <div
+            className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4"
+            data-testid="deferred-fields-note"
+          >
             <p className="text-sm text-foreground leading-relaxed">
-              This Agreement is between <strong>BlendBox Innovations LLP</strong> and{" "}
-              {legalName?.trim() ? (
-                <strong>{legalName.trim()}</strong>
-              ) : (
-                <span className="text-muted-foreground italic">the legal entity name below</span>
-              )}
-              .
+              Legal entity name, entity type, GSTIN, both addresses and the signatory are
+              collected from the gym directly at step 1 of onboarding — there's nothing to enter
+              for them here.
             </p>
           </div>
 
-          <Section title="The entity signing">
-            <TextField form={form} name="details.legalEntityName" label="Legal entity name" placeholder="Iron Temple Fitness Private Limited" description="Exactly as registered. This goes into the agreement." />
-            <FormField
-              control={form.control}
-              name="details.entityType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-gray-700 text-sm font-semibold">Entity type</FormLabel>
-                  <FormControl>
-                    <select
-                      {...field}
-                      data-testid="select-entity-type"
-                      className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-foreground focus:border-primary focus:bg-white transition-colors"
-                    >
-                      {Object.entries(ENTITY_TYPE_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <Section title="Gym">
+            <TextField
+              form={form}
+              name="details.tradeName"
+              label="Trade name"
+              placeholder="Iron Temple Fitness"
+              description="Used to build the onboarding link. The gym confirms its legal name and everything else at step 1."
             />
-            <TextField form={form} name="details.tradeName" label="Trade name" placeholder="Iron Temple Fitness" description="The name on the door, if it differs. Leave blank if it's the same." />
-            <TextField form={form} name="details.gstin" label="GSTIN" placeholder="29AABCU9603R1ZM" />
-            <TextField form={form} name="details.fssaiLicenceNumber" label="FSSAI licence number" placeholder="12345678901234" description="If the gym holds one. Optional." />
           </Section>
 
-          <Section title="Addresses">
-            <AreaField form={form} name="details.registeredAddress" label="Registered address" description="Where formal notices are served (§41)." />
-            <AreaField form={form} name="details.installationAddress" label="Installation address" description="Where the machine will actually stand." />
-          </Section>
-
-          <Section title="Who signs, and where we write">
-            <TextField form={form} name="details.signatoryName" label="Signatory name" />
-            <TextField form={form} name="details.signatoryDesignation" label="Designation" placeholder="Director" />
+          <Section title="Contact for notices">
             <TextField form={form} name="details.noticesEmail" label="Notices email" type="email" />
             <TextField form={form} name="details.noticesPhone" label="Notices phone" />
           </Section>
 
-          <Section title="Commercial terms" note="No defaults. Every figure is set once, deliberately, for this gym.">
+          <Section
+            title="Commercial terms"
+            note="Prefilled with the standard partnership terms — check they're right for this gym before creating it."
+          >
             <NumberField form={form} name="terms.securityDepositInr" label="Security deposit (₹)" />
             <NumberField form={form} name="terms.termMonths" label="Term (months)" />
             <NumberField form={form} name="terms.gymSharePctBeforeMilestone" label="Gym share before milestone (%)" />
@@ -355,13 +358,12 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
             </div>
           </Section>
 
-          <Section title="Machine">
-            <TextField form={form} name="machine.deviceNo" label="Device number" placeholder="MBP-000512" description="The join key to payments. Letters, digits, hyphen and underscore only." />
+          <Section
+            title="Machine"
+            note="Device number, serial number, accessories and installation date are assigned later, once a physical unit is chosen."
+          >
             <TextField form={form} name="machine.model" label="Model" />
-            <TextField form={form} name="machine.serialNumber" label="Serial number" description="Optional." />
-            <TextField form={form} name="machine.accessories" label="Accessories" description="Optional." />
             <NumberField form={form} name="machine.valueInr" label="Value (₹)" />
-            <TextField form={form} name="machine.installationDate" label="Installation date" placeholder="YYYY-MM-DD" description="Optional — leave blank if not yet installed." />
           </Section>
 
           <Section title="Invite">

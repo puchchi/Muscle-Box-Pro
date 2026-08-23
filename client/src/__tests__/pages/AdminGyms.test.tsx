@@ -101,6 +101,21 @@ describe("AdminGyms", () => {
     expect(peakRow.textContent?.match(/Peak Fitness/g)).toHaveLength(1);
   });
 
+  it("does not print an empty second line for a gym invited without a legal entity name yet", async () => {
+    // Since 2026-08-23 an admin can invite a gym before it has one — `legalEntityName` is `""`
+    // until the gym reaches step 1. `"" !== tradeName` is always true, so the naive version of
+    // this check would render a blank paragraph under every such gym's name.
+    const list = adminGymListFixture();
+    list.gyms[0].legalEntityName = "";
+    mockFetchList.mockResolvedValue({ ok: true, data: list });
+    render(<AdminGyms />);
+
+    const nameLink = await screen.findByTestId("link-gym-gym_01HQZX9K2M4N6P8R");
+    // Scoped to the name cell, not the whole row — the contact column has its own `<p>`s for
+    // notices email and phone, which are unrelated to this check.
+    expect(nameLink.parentElement?.querySelectorAll("p")).toHaveLength(0);
+  });
+
   it("labels each status in words a reader recognises", async () => {
     mockFetchList.mockResolvedValue({ ok: true, data: adminGymListFixture() });
     render(<AdminGyms />);

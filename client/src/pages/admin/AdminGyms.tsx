@@ -183,9 +183,14 @@ export default function AdminGyms() {
                     >
                       {row.tradeName}
                     </Link>
-                    {/* Both names, because they differ often enough that showing one is a
-                        question — and the legal entity is what the agreement binds. */}
-                    {row.legalEntityName !== row.tradeName && (
+                    {/*
+                      Both names, because they differ often enough that showing one is a
+                      question — and the legal entity is what the agreement binds. Blank, not
+                      merely different, is now a real state too: since 2026-08-23 an admin can
+                      invite a gym before it has one, and `"" !== tradeName` would otherwise
+                      print an empty second line for every gym still waiting on step 1.
+                    */}
+                    {row.legalEntityName !== "" && row.legalEntityName !== row.tradeName && (
                       <p className="text-xs text-muted-foreground">{row.legalEntityName}</p>
                     )}
                   </td>

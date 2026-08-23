@@ -119,6 +119,59 @@ describe("AdminGymDetail", () => {
     expect(screen.getByTestId("card-machine")).not.toHaveTextContent("₹0");
   });
 
+  it("does not show a placeholder device number as a real allocation", async () => {
+    // Since 2026-08-23, `POST /admin/gyms` allocates a machine row with a real model and value
+    // even when the admin has not chosen a physical unit yet, filling `deviceNo` with a
+    // `PENDING-`-prefixed placeholder rather than leaving it null. This is the second trap the
+    // `machine` field carries, alongside the zero-valued-projection one above: `deviceNo !== null`
+    // is no longer sufficient proof of a real allocation.
+    const gym = adminGymFixture();
+    gym.machine = {
+      model: "MuscleBoxPro MBP-1",
+      deviceNo: "PENDING-A1B2C3D4",
+      serialNumber: null,
+      valueInr: 450_000,
+      accessories: "",
+      installationDate: null,
+    };
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    const card = await screen.findByTestId("card-machine");
+    // The known figures still render — this is not the "no unit at all" state.
+    expect(card).toHaveTextContent("MuscleBoxPro MBP-1");
+    expect(card).toHaveTextContent("₹4,50,000");
+    // The raw placeholder string never reaches the screen as if it were a real device number.
+    expect(card).not.toHaveTextContent("PENDING-A1B2C3D4");
+    expect(card).toHaveTextContent("Pending — not yet chosen");
+    expect(screen.queryByTestId("machine-none")).not.toBeInTheDocument();
+  });
+
+  it("labels a pending placeholder in the unit history table too", async () => {
+    const gym = adminGymFixture();
+    gym.machines = [
+      {
+        deviceNo: "PENDING-A1B2C3D4",
+        model: "MuscleBoxPro MBP-1",
+        serialNumber: null,
+        valueInr: 450_000,
+        accessories: "",
+        installationDate: null,
+        status: "allocated",
+        lastServiceAt: null,
+        replacedByDeviceNo: null,
+        replacedAt: null,
+      },
+    ];
+    gym.machine = { ...gym.machines[0] };
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    const table = await screen.findByTestId("table-machines");
+    expect(table).toHaveTextContent("pending");
+    expect(table).not.toHaveTextContent("PENDING-A1B2C3D4");
+  });
+
   it("keeps a replaced unit visible in the machine history", async () => {
     mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
     render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
@@ -199,6 +252,35 @@ describe("AdminGymDetail", () => {
       "The response did not match what we expected.",
     );
     expect(screen.getByTestId("gym-issues")).toHaveTextContent("terms.securityDepositInr: Required");
+  });
+
+  it("says the seven deferred fields are pending when the gym hasn't reached step 1", async () => {
+    // Since 2026-08-23 an admin can invite a gym before its legal entity name, entity type,
+    // GSTIN, addresses and signatory exist — all blank until `onboardingDetails.ts` commits
+    // step 1, and that handler requires a non-blank legal entity name, so blank reliably means
+    // "not there yet."
+    const gym = adminGymFixture();
+    gym.details.legalEntityName = "";
+    gym.details.gstin = "";
+    gym.details.registeredAddress = "";
+    gym.details.installationAddress = "";
+    gym.details.signatoryName = "";
+    gym.details.signatoryDesignation = "";
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    const card = await screen.findByTestId("card-details");
+    expect(card).toHaveTextContent(/hasn't reached step 1/);
+    // The blank fields themselves still render, as an em dash rather than a missing row.
+    expect(card).toHaveTextContent("—");
+  });
+
+  it("shows no pending note once the gym has a legal entity name", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    const card = await screen.findByTestId("card-details");
+    expect(card).not.toHaveTextContent(/hasn't reached step 1/);
   });
 
   it("links back to the gyms list", async () => {

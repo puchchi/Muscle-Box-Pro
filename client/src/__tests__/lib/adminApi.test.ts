@@ -174,7 +174,6 @@ function inviteForm(): AdminInviteFormInput {
       entityType: "pvt_ltd",
       tradeName: "Iron Temple Fitness",
       gstin: "29AABCU9603R1ZM",
-      fssaiLicenceNumber: "",
       registeredAddress: "14 Rajpur Road, Civil Lines, Delhi 110054",
       installationAddress: "Plot 8, Sector 18, Noida, Uttar Pradesh 201301",
       signatoryName: "Rohit Malhotra",
@@ -197,12 +196,8 @@ function inviteForm(): AdminInviteFormInput {
       earlyTerminationChargeInr: 0,
     },
     machine: {
-      deviceNo: "MBP-000512",
       model: "MuscleBoxPro MBP-1",
-      serialNumber: "",
-      accessories: "",
       valueInr: 450000,
-      installationDate: "",
     },
     invitedByName: "",
   };
@@ -225,7 +220,10 @@ describe("createGym", () => {
     // absent key, not an empty string — `toAdminInviteBody` is what makes that true, and this
     // is the assertion that the seam sends what it was given rather than the form directly.
     expect(options.body).not.toHaveProperty("invitedByName");
-    expect((options.body as { machine: { deviceNo: string } }).machine.deviceNo).toBe("MBP-000512");
+    expect((options.body as { machine: { model: string } }).machine.model).toBe("MuscleBoxPro MBP-1");
+    // Device number, serial number, accessories and installation date are never on the wire at
+    // all — see `shared/admin/invite.ts`'s docstring on why an absent key is the right shape.
+    expect(options.body).not.toHaveProperty("machine.deviceNo");
   });
 
   it("returns the link on success", async () => {

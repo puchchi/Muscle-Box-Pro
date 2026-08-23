@@ -19,6 +19,25 @@
  * round-trips as a `fieldError` correctly, it is just an avoidable server call on the field
  * most likely to be mistyped. Fixing that means porting the checksum, not this form.
  *
+ * ## Seven fields the gym fills in, not the admin — added 2026-08-23
+ *
+ * `legalEntityName`, `entityType`, `gstin`, `registeredAddress`, `installationAddress`,
+ * `signatoryName` and `signatoryDesignation` used to be required here, and then required again
+ * at step 1 when the gym submitted its own details — the admin's copy was retyped labour that
+ * never became the row of record. `domain/details.ts`'s `validateInviteDetails` is the server
+ * side of this: those seven are blank-tolerant on `POST /admin/gyms` specifically, while the
+ * gym's own step-1 submission (`onboardingDetails.ts`) still calls the original, fully strict
+ * `validateDetails` — nothing about what ends up on the agreement got looser, only what an
+ * admin has to type before the gym exists.
+ *
+ * `fssaiLicenceNumber` is not on this form at all, for the same reason: it was already optional
+ * server-side, so there was nothing an admin was usefully entering.
+ *
+ * `tradeName`, `noticesEmail` and `noticesPhone` stay required — nothing after invite time
+ * supplies them. `tradeName` feeds `slugify()` at the moment the gym is created, and the
+ * notices pair has to be reachable from the moment the invite exists (§41), not from the moment
+ * the gym finishes onboarding.
+ *
  * ## Rupees in, whole rupees only
  *
  * Every amount here is typed `z.number().int()`, not "a number with two decimal places". That
@@ -31,11 +50,22 @@
  * `earlyTerminationChargeInr` is the one amount that is nullable rather than merely optional:
  * null means "not agreed" and zero means "agreed at nil" (§36.1's standard term), and this form
  * asks for one explicitly rather than defaulting either way — see `AdminInviteTerms` below.
+ *
+ * ## Terms default to `PARTNERSHIP`, and that is not the preset button we ruled out
+ *
+ * The invite form's default *values* for every commercial figure are `shared/partnership/summary.ts`'s
+ * standard terms — that file's own docstring names this as its second consumer: *"the defaults
+ * used when admin creates a gym's `gym_terms` row."* This is not the "typical terms" shortcut
+ * that was deliberately left out earlier: there is no button, nothing is hidden, and every
+ * figure is visible and editable the moment the form renders. What was ruled out was a
+ * *reachable* default that only appears if pressed, which hides the same value behind an extra
+ * click and makes it easier to apply without looking. A number already sitting in the field an
+ * admin is about to look at is the opposite of that.
  */
 
 import * as z from "zod";
-import { gymDetailsSchema } from "../onboarding/schema";
-import type { GymDetails, OnboardingTerms } from "../onboarding/types";
+import { entityTypeSchema } from "../onboarding/schema";
+import type { EntityType, GymDetails, OnboardingTerms } from "../onboarding/types";
 
 /** ₹10,00,00,000 — a digit-slip guard, not a policy limit. Matches `MAX_AMOUNT_INR` server-side. */
 const MAX_AMOUNT_INR = 100_000_000;
@@ -56,15 +86,72 @@ function wholeNumber(min: number, max: number) {
     .max(max, `Must be at most ${max}.`);
 }
 
+/** `GSTIN` in `domain/details.ts` — shape only, not the check-digit. See the module docstring. */
+const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
+/** `PHONE` in `domain/details.ts`. Deliberately permissive on separators. */
+const PHONE_RE = /^(\+?91[-\s]?)?[0-9][0-9\s-]{8,14}$/;
+
+/**
+ * A field that may be left for the gym to fill in later.
+ *
+ * Blank is accepted outright — not a shorter minimum, an actual bypass of the length check —
+ * because "not yet provided" and "too short to be real" are different failures and only one of
+ * them is this form's business. `validateInviteDetails` draws the same line: present-and-
+ * malformed is still refused, because typing something wrong is not the same as leaving it.
+ */
+function deferrableText(min: number, max: number) {
+  return z
+    .string()
+    .trim()
+    .refine(
+      (v) => v === "" || (v.length >= min && v.length <= max),
+      `Leave blank for the gym to fill in, or enter ${min}–${max} characters.`,
+    );
+}
+
+/**
+ * `entityType`, deferrable. A native `<select>` needs a real option value for "not chosen yet"
+ * — `""` — which is why this is a union with the enum rather than `.optional()`: an `undefined`
+ * would fight the controlled `<select>`'s own value prop the way it does everywhere else in
+ * this codebase's forms.
+ */
+export const adminInviteEntityTypeSchema = z.union([entityTypeSchema, z.literal("")]);
+
+/**
+ * The seven fields the gym fills in at step 1, plus the three that stay required — see the
+ * module docstring's *"Seven fields the gym fills in, not the admin"* section for which is
+ * which and why. No `fssaiLicenceNumber`: it was already optional server-side, so there was
+ * nothing here for an admin to usefully enter.
+ */
+export const adminInviteDetailsSchema = z.object({
+  legalEntityName: deferrableText(3, 200),
+  entityType: adminInviteEntityTypeSchema,
+  tradeName: z.string().trim().min(2, "Required.").max(200, "Must be at most 200 characters."),
+  gstin: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .refine((v) => v === "" || GSTIN_RE.test(v), "Leave blank, or enter a valid 15-character GSTIN."),
+  registeredAddress: deferrableText(10, 400),
+  installationAddress: deferrableText(10, 400),
+  signatoryName: deferrableText(2, 120),
+  signatoryDesignation: deferrableText(2, 120),
+  noticesEmail: z.string().trim().email("A valid email is required for formal notices."),
+  noticesPhone: z.string().trim().regex(PHONE_RE, "A valid phone number is required."),
+});
+
+export type AdminInviteDetailsInput = z.infer<typeof adminInviteDetailsSchema>;
+
 /**
  * The commercial terms, in rupees — the same shape as `OnboardingTerms`, because that is
  * exactly what this creates: the row step 2 and the agreement both read from afterwards.
  *
- * No defaults, on purpose, and that is a decision this form keeps rather than works around. A
- * default deposit figure is the kind of value that ends up in a signed agreement because
- * nobody noticed the field was blank (`validateTermsInput`'s own docstring), and this form asks
- * for every field once, deliberately, per gym — not something the client should paper over
- * with a "typical terms" button.
+ * The schema itself has no defaults and no field is optional — the standard figures live in
+ * `AdminInviteGym.tsx`'s initial form state, not here, so that `adminInviteFormSchema.safeParse`
+ * always answers "every commercial figure this gym has, right now" and never silently accepts
+ * an admin who cleared a field. See the module docstring's *"Terms default to `PARTNERSHIP`"*
+ * section for why prefilling the value is not the preset button that was ruled out.
  */
 export const adminInviteTermsSchema = z.object({
   securityDepositInr: wholeRupees,
@@ -86,38 +173,27 @@ export const adminInviteTermsSchema = z.object({
 
 export type AdminInviteTermsInput = z.infer<typeof adminInviteTermsSchema>;
 
-/** `ISO_DATE` in `domain/adminInput.ts` — no time part, because this renders into Schedule A. */
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 /**
- * The machine being allocated. `deviceNo` is the join key to the payments service
- * (`gsi1-device`), which is why its shape is checked and not just its presence: a stray space
- * produces a machine row that no payment ever matches, and the symptom shows up months later
- * as a gym with no revenue.
+ * The machine being costed at invite time — model and value only.
+ *
+ * `deviceNo`, `serialNumber`, `accessories` and `installationDate` are gone from this form
+ * entirely as of 2026-08-23, for the same reason as the seven `GymDetails` fields above: the
+ * physical unit and its logistics are usually undecided when a gym is invited, while the model
+ * and its book value are not — they are the same for nearly every gym, and Schedule A needs a
+ * real description of *something* immediately, which is what `model`/`valueInr` still provide.
+ *
+ * `domain/adminInput.ts`'s `validateInviteMachineInput` is the server side of this. `deviceNo`
+ * cannot simply travel blank the way the seven detail fields do — it is `gsi1-device`'s
+ * partition key, and a machine row cannot exist without a real string there — so the server
+ * fills it with a placeholder (`newPendingDeviceNo()`) rather than accepting an empty one. This
+ * form does not construct that placeholder or send anything in its place; it simply never sends
+ * the key, and `validateInviteMachineInput` treats an absent field exactly like a blank one.
+ * `shared/admin/gyms.ts`'s `isPendingDeviceNo` is how a reader tells a real allocation from one
+ * still pending — see the note on `AdminGymView.machine` there.
  */
 export const adminInviteMachineSchema = z.object({
-  deviceNo: z
-    .string()
-    .trim()
-    .min(1, "Required.")
-    .max(64, "Must be at most 64 characters.")
-    .regex(/^[A-Za-z0-9_-]+$/, "Letters, digits, hyphen and underscore only."),
   model: z.string().trim().min(1, "Required.").max(120, "Must be at most 120 characters."),
-  // Present-but-empty is allowed and means "not recorded" — same as the wizard's optional
-  // fields — so this stays a plain string rather than `.nullable()`, and the empty string is
-  // turned into `null` at the point of submission (see `toAdminInviteBody`).
-  serialNumber: z.string().trim().max(120, "Must be at most 120 characters."),
-  accessories: z.string().trim().max(2000, "Must be at most 2000 characters."),
   valueInr: wholeRupees,
-  // A calendar date or blank — allocation time genuinely may not have an installation date yet
-  // (§2.7). Format-checked only; the server's `isoDate` additionally rejects a shape-valid but
-  // impossible date like `2026-02-31`, which is a smaller gap than the GSTIN checksum one and
-  // documented for the same reason: it round-trips as a field error rather than silently
-  // storing the wrong date.
-  installationDate: z
-    .string()
-    .trim()
-    .refine((v) => v === "" || ISO_DATE.test(v), "Must be a date as YYYY-MM-DD, or blank."),
 });
 
 export type AdminInviteMachineInput = z.infer<typeof adminInviteMachineSchema>;
@@ -129,7 +205,7 @@ export type AdminInviteMachineInput = z.infer<typeof adminInviteMachineSchema>;
  * `validateInvitedByName` treats absent, `null` and blank alike.
  */
 export const adminInviteFormSchema = z.object({
-  details: gymDetailsSchema,
+  details: adminInviteDetailsSchema,
   terms: adminInviteTermsSchema,
   machine: adminInviteMachineSchema,
   invitedByName: z
@@ -141,41 +217,64 @@ export const adminInviteFormSchema = z.object({
 
 export type AdminInviteFormInput = z.infer<typeof adminInviteFormSchema>;
 
-/** What `POST /admin/gyms` actually wants on the wire — `null` machine fields, no blank strings. */
+/**
+ * What `POST /admin/gyms` actually wants on the wire.
+ *
+ * `machine` carries only `model` and `valueInr` — `deviceNo`, `serialNumber`, `accessories` and
+ * `installationDate` are simply absent, and `validateInviteMachineInput` treats an absent key
+ * exactly like a blank one (see that function's docstring, and `adminInviteMachineSchema`'s).
+ */
 export type AdminInviteBody = {
   details: GymDetails;
   terms: OnboardingTerms;
   machine: {
-    deviceNo: string;
     model: string;
-    serialNumber: string | null;
-    accessories: string;
     valueInr: number;
-    installationDate: string | null;
   };
   invitedByName?: string;
 };
 
 /**
+ * `entityType`'s baseline when the admin leaves it for the gym to choose.
+ *
+ * Matches `validateInviteDetails`'s own fallback server-side exactly, on purpose: sending
+ * `"proprietorship"` explicitly rather than an absent key produces the identical stored row
+ * either way, and keeping the two in step here means there is only one place — this constant
+ * and its server counterpart — that would need to change if the baseline ever did.
+ */
+const DEFAULT_ENTITY_TYPE: EntityType = "proprietorship";
+
+/**
  * Form values → wire body.
  *
- * The two shapes differ only in how "not provided" is spelled: a form gives blank strings
- * because that is what an empty input is, and the server wants `null` (machine fields) or an
- * absent key (`invitedByName`) — the same distinction `validateInvitedByName`'s docstring
- * draws between "not provided" and "provided as empty". This is the one place that translates
- * between them, so the rule lives in one spot rather than in every call site.
+ * Three things happen here, not one:
+ *
+ * - **The machine's four logistics fields are simply not sent** — an absent key for
+ *   `invitedByName` too, the same distinction `validateInvitedByName`'s docstring draws between
+ *   "not provided" and "provided as empty".
+ * - **A blank `entityType` resolves to `DEFAULT_ENTITY_TYPE`** rather than travelling as `""`.
+ *   The server would default it identically if left absent; resolving it here means
+ *   `AdminInviteBody.details` can stay the same `GymDetails` type every other reader of this
+ *   module already expects, instead of a second, looser type that exists only for this one
+ *   field.
+ * - **The other six deferrable fields travel through unchanged** — `GymDetails` already types
+ *   them as plain `string`, and `""` is a valid one. `validateInviteDetails` reads a blank
+ *   exactly as "the gym will supply this."
  */
 export function toAdminInviteBody(form: AdminInviteFormInput): AdminInviteBody {
   const body: AdminInviteBody = {
-    details: form.details,
+    details: {
+      ...form.details,
+      entityType: form.details.entityType === "" ? DEFAULT_ENTITY_TYPE : form.details.entityType,
+      // Not on this form at all — see the module docstring on why FSSAI was dropped rather
+      // than deferred. `GymDetails` still requires the key, so it is supplied here as the
+      // "not recorded" value `validateDetails` already treats it as everywhere else.
+      fssaiLicenceNumber: "",
+    },
     terms: form.terms,
     machine: {
-      deviceNo: form.machine.deviceNo,
       model: form.machine.model,
-      serialNumber: form.machine.serialNumber.trim() === "" ? null : form.machine.serialNumber.trim(),
-      accessories: form.machine.accessories,
       valueInr: form.machine.valueInr,
-      installationDate: form.machine.installationDate.trim() === "" ? null : form.machine.installationDate.trim(),
     },
   };
   if (form.invitedByName.trim() !== "") body.invitedByName = form.invitedByName.trim();

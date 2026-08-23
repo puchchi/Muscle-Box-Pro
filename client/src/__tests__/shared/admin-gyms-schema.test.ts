@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseAdminGymList, parseAdminGymView } from "@shared/admin/gymsSchema";
 import { adminGymFixture, adminGymListFixture } from "@/test/adminGymFixture";
-import type { AdminGymView } from "@shared/admin/gyms";
+import { isPendingDeviceNo, type AdminGymView } from "@shared/admin/gyms";
 
 /**
  * The boundary check on the two admin read endpoints.
@@ -239,5 +239,29 @@ describe("the admin gym list boundary", () => {
 
   it("refuses gyms being an object rather than an array", () => {
     expect(rejectList({ gyms: {}, nextCursor: null }).join(" ")).toContain("gyms");
+  });
+});
+
+describe("isPendingDeviceNo", () => {
+  it("recognises the placeholder mbp-backend's newPendingDeviceNo mints", () => {
+    // Same prefix, same 8 hex characters — see this function's own docstring on why the two
+    // sides have to agree byte-for-byte rather than each inventing a convention.
+    expect(isPendingDeviceNo("PENDING-A1B2C3D4")).toBe(true);
+  });
+
+  it("does not mistake a real device number for a placeholder", () => {
+    expect(isPendingDeviceNo("MBP-000241")).toBe(false);
+  });
+
+  it("treats null as not pending, same as any other real answer", () => {
+    // `machine === null` never happens (`machineOf(null)`'s zero-valued projection), but
+    // `deviceNo` itself can be null on that projection, and this function has to say "no" to it
+    // rather than throw.
+    expect(isPendingDeviceNo(null)).toBe(false);
+  });
+
+  it("is a byte-for-byte prefix check, not a fuzzy one", () => {
+    expect(isPendingDeviceNo("pending-lowercase")).toBe(false);
+    expect(isPendingDeviceNo("MBP-PENDING-0001")).toBe(false);
   });
 });

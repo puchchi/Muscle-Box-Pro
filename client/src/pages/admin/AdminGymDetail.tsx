@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { fetchAdminGymView } from "@/lib/adminApi";
-import type { AdminGymView } from "@shared/admin/gyms";
+import { isPendingDeviceNo, type AdminGymView } from "@shared/admin/gyms";
 import type { OnboardingTimestamps } from "@shared/onboarding/types";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
@@ -114,6 +114,11 @@ export default function AdminGymDetail({ gymId }: { gymId: string }) {
 function GymView({ gym }: { gym: AdminGymView }) {
   // The trap, spelled out once so no section below has to remember it.
   const hasUnit = gym.machine.deviceNo !== null;
+  // A second trap since 2026-08-23: `hasUnit` alone no longer means a real, physical unit is
+  // assigned. `POST /admin/gyms` allocates a machine row (with a real model and value) even
+  // when the admin has not chosen a unit yet, filling `deviceNo` with a placeholder rather than
+  // leaving it null — see `isPendingDeviceNo`'s docstring in `shared/admin/gyms.ts`.
+  const isPending = hasUnit && isPendingDeviceNo(gym.machine.deviceNo);
 
   return (
     <div className="space-y-6">
@@ -184,7 +189,15 @@ function GymView({ gym }: { gym: AdminGymView }) {
         )}
       </Card>
 
-      <Card title="Details" testId="card-details">
+      <Card
+        title="Details"
+        testId="card-details"
+        note={
+          gym.details.legalEntityName === ""
+            ? "Legal entity, entity type, GSTIN, both addresses and the signatory are pending — the gym hasn't reached step 1 of onboarding yet."
+            : undefined
+        }
+      >
         <Fields>
           <Field label="Legal entity" value={gym.details.legalEntityName} />
           <Field label="Entity type" value={ENTITY_TYPE_LABEL[gym.details.entityType]} />
@@ -257,10 +270,22 @@ function GymView({ gym }: { gym: AdminGymView }) {
         </Fields>
       </Card>
 
-      <Card title="Machine" testId="card-machine">
+      <Card
+        title="Machine"
+        testId="card-machine"
+        note={
+          isPending
+            ? "Model and value are set; the physical unit hasn't been chosen yet."
+            : undefined
+        }
+      >
         {hasUnit ? (
           <Fields>
-            <Field label="Device no." value={gym.machine.deviceNo} mono />
+            <Field
+              label="Device no."
+              value={isPending ? "Pending — not yet chosen" : gym.machine.deviceNo}
+              mono={!isPending}
+            />
             <Field label="Model" value={gym.machine.model} />
             <Field label="Serial" value={gym.machine.serialNumber} mono />
             <Field label="Value" value={formatInr(gym.machine.valueInr)} />
@@ -286,7 +311,13 @@ function GymView({ gym }: { gym: AdminGymView }) {
               <tbody className="divide-y divide-gray-100">
                 {gym.machines.map((unit) => (
                   <tr key={unit.deviceNo}>
-                    <td className="px-5 py-3 font-mono text-xs">{unit.deviceNo}</td>
+                    <td className="px-5 py-3 font-mono text-xs">
+                      {isPendingDeviceNo(unit.deviceNo) ? (
+                        <span className="font-sans text-muted-foreground italic">pending</span>
+                      ) : (
+                        unit.deviceNo
+                      )}
+                    </td>
                     <td className="px-5 py-3">{unit.model}</td>
                     <td className="px-5 py-3">{MACHINE_STATUS_LABEL[unit.status]}</td>
                     <td className="px-5 py-3 text-muted-foreground whitespace-nowrap">

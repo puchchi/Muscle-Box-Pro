@@ -8,9 +8,10 @@ import { adminInviteFormSchema, toAdminInviteBody, type AdminInviteFormInput } f
  * the module docstring on why a courtesy check is still worth having even though the server
  * re-validates everything. The cases below are chosen from the same two angles as the read-side
  * schema tests: what a bad value would do on screen (a fractional deposit that the agreement
- * renderer would later throw on; a device number with a stray space that silently never
- * matches a payment), and what a real, awkward-but-valid submission looks like (no early
- * termination charge agreed yet, no FSSAI number, no serial number).
+ * renderer would later throw on), and what a real, awkward-but-valid submission looks like (no
+ * early termination charge agreed yet, and — since 2026-08-23 — none of the seven details
+ * fields the gym now supplies at step 1, nor the four machine logistics fields it supplies once
+ * a physical unit is chosen).
  */
 
 function valid(): AdminInviteFormInput {
@@ -20,7 +21,6 @@ function valid(): AdminInviteFormInput {
       entityType: "pvt_ltd",
       tradeName: "Iron Temple Fitness",
       gstin: "29AABCU9603R1ZM",
-      fssaiLicenceNumber: "",
       registeredAddress: "14 Rajpur Road, Civil Lines, Delhi 110054",
       installationAddress: "Plot 8, Sector 18, Noida, Uttar Pradesh 201301",
       signatoryName: "Rohit Malhotra",
@@ -43,15 +43,24 @@ function valid(): AdminInviteFormInput {
       earlyTerminationChargeInr: 0,
     },
     machine: {
-      deviceNo: "MBP-000512",
       model: "MuscleBoxPro MBP-1",
-      serialNumber: "",
-      accessories: "",
       valueInr: 450000,
-      installationDate: "",
     },
     invitedByName: "",
   };
+}
+
+/** The seven fields the gym now fills in at step 1 — left blank, the way this form actually submits them. */
+function withDeferredFieldsBlank(): AdminInviteFormInput {
+  const form = valid();
+  form.details.legalEntityName = "";
+  form.details.entityType = "";
+  form.details.gstin = "";
+  form.details.registeredAddress = "";
+  form.details.installationAddress = "";
+  form.details.signatoryName = "";
+  form.details.signatoryDesignation = "";
+  return form;
 }
 
 function issuePaths(form: unknown): string[] {
@@ -65,11 +74,68 @@ describe("the invite form schema", () => {
     expect(adminInviteFormSchema.safeParse(valid()).success).toBe(true);
   });
 
-  it("accepts a gym with no FSSAI number, no serial number and no installation date", () => {
-    // All genuinely optional — §24.5 for the FSSAI number, and the machine may not be
-    // physically installed at invite time.
+  it("accepts the seven deferred fields all blank at once", () => {
+    // The form this codebase actually submits since 2026-08-23: nothing rendered for legal
+    // entity name, entity type, GSTIN, either address or the signatory — the gym supplies all
+    // seven for real at onboarding step 1.
+    expect(adminInviteFormSchema.safeParse(withDeferredFieldsBlank()).success).toBe(true);
+  });
+
+  it("still requires trade name, notices email and notices phone even with everything else blank", () => {
+    for (const field of ["tradeName", "noticesEmail", "noticesPhone"] as const) {
+      const form = withDeferredFieldsBlank();
+      form.details[field] = "";
+      const paths = issuePaths(form);
+      expect(paths.some((p) => p === `details.${field}`), field).toBe(true);
+    }
+  });
+
+  it("still refuses a GSTIN that is present and malformed, even though blank is allowed", () => {
+    const form = withDeferredFieldsBlank();
+    form.details.gstin = "NOT-A-GSTIN";
+    expect(issuePaths(form)).toContain("details.gstin");
+  });
+
+  it("still refuses an entity type that is present and invalid, rather than treating it as blank", () => {
+    const form = withDeferredFieldsBlank();
+    // @ts-expect-error — exactly the invalid value this test exists to refuse.
+    form.details.entityType = "opc";
+    expect(issuePaths(form)).toContain("details.entityType");
+  });
+
+  it("still enforces a length floor on a deferred field that is present, not blank", () => {
+    // Typing four characters into "registered address" and stopping is not "leaving it blank" —
+    // it is a value nobody should mistake for a real one.
+    const form = withDeferredFieldsBlank();
+    form.details.registeredAddress = "abcd";
+    expect(issuePaths(form)).toContain("details.registeredAddress");
+  });
+
+  it("has no field for an FSSAI number at all", () => {
+    // Dropped rather than deferred — it was already optional server-side, so there was nothing
+    // for an admin to usefully enter.
+    expect("fssaiLicenceNumber" in valid().details).toBe(false);
+  });
+
+  it("has no field for device number, serial number, accessories or installation date", () => {
+    // Deferred to the machine-assignment action, not this form — see the module docstring on
+    // `adminInviteMachineSchema` in `shared/admin/invite.ts`.
+    const machine = valid().machine;
+    for (const field of ["deviceNo", "serialNumber", "accessories", "installationDate"]) {
+      expect(field in machine, field).toBe(false);
+    }
+  });
+
+  it("refuses a fractional machine value", () => {
     const form = valid();
-    expect(adminInviteFormSchema.safeParse(form).success).toBe(true);
+    form.machine.valueInr = 450000.25;
+    expect(issuePaths(form)).toContain("machine.valueInr");
+  });
+
+  it("requires a machine model", () => {
+    const form = valid();
+    form.machine.model = "";
+    expect(issuePaths(form)).toContain("machine.model");
   });
 
   it("accepts an unagreed early-termination charge", () => {
@@ -111,40 +177,6 @@ describe("the invite form schema", () => {
     expect(issuePaths(form)).toContain("terms.termMonths");
   });
 
-  it("refuses a device number with a space in it", () => {
-    // The join key to `gsi1-device`. A stray space produces a machine row that no payment ever
-    // matches, and the symptom shows up months later as a gym with no revenue.
-    const form = valid();
-    form.machine.deviceNo = "MBP 000512";
-    expect(issuePaths(form)).toContain("machine.deviceNo");
-  });
-
-  it("refuses a device number that is only whitespace", () => {
-    const form = valid();
-    form.machine.deviceNo = "   ";
-    expect(issuePaths(form)).toContain("machine.deviceNo");
-  });
-
-  it("refuses a fractional machine value", () => {
-    const form = valid();
-    form.machine.valueInr = 450000.25;
-    expect(issuePaths(form)).toContain("machine.valueInr");
-  });
-
-  it("refuses an installation date that is not YYYY-MM-DD", () => {
-    const form = valid();
-    form.machine.installationDate = "10/07/2026";
-    expect(issuePaths(form)).toContain("machine.installationDate");
-  });
-
-  it("refuses a GSTIN that does not match the 15-character shape", () => {
-    // The checksum digit is a documented, deliberate gap (see the module docstring) — this
-    // schema catches the shape, not the check digit.
-    const form = valid();
-    form.details.gstin = "NOT-A-GSTIN";
-    expect(issuePaths(form)).toContain("details.gstin");
-  });
-
   it("refuses a malformed notices email", () => {
     const form = valid();
     form.details.noticesEmail = "not-an-email";
@@ -166,19 +198,9 @@ describe("the invite form schema", () => {
 });
 
 describe("toAdminInviteBody", () => {
-  it("turns blank machine fields into null, not empty strings", () => {
+  it("sends only model and value for the machine, nothing else", () => {
     const body = toAdminInviteBody(valid());
-    expect(body.machine.serialNumber).toBeNull();
-    expect(body.machine.installationDate).toBeNull();
-  });
-
-  it("keeps a filled serial number and installation date", () => {
-    const form = valid();
-    form.machine.serialNumber = "SN-2026-000512";
-    form.machine.installationDate = "2026-08-23";
-    const body = toAdminInviteBody(form);
-    expect(body.machine.serialNumber).toBe("SN-2026-000512");
-    expect(body.machine.installationDate).toBe("2026-08-23");
+    expect(body.machine).toEqual({ model: "MuscleBoxPro MBP-1", valueInr: 450000 });
   });
 
   it("omits invitedByName entirely when blank, rather than sending an empty string", () => {
@@ -206,5 +228,35 @@ describe("toAdminInviteBody", () => {
     form.terms.earlyTerminationChargeInr = null;
     const body = toAdminInviteBody(form);
     expect(body.terms.earlyTerminationChargeInr).toBeNull();
+  });
+
+  it("sends a blank entity type as the same baseline the server defaults to", () => {
+    // Sending `"proprietorship"` explicitly rather than `""` produces the identical stored row
+    // either way — this just keeps the two in step rather than leaving it to the server alone.
+    const body = toAdminInviteBody(withDeferredFieldsBlank());
+    expect(body.details.entityType).toBe("proprietorship");
+  });
+
+  it("sends the other six deferred fields through as blank strings, unresolved", () => {
+    // Unlike `entityType`, `GymDetails` already types these as plain `string`, and
+    // `validateInviteDetails` reads `""` directly as "the gym will supply this" — there is no
+    // baseline to resolve to.
+    const body = toAdminInviteBody(withDeferredFieldsBlank());
+    expect(body.details.legalEntityName).toBe("");
+    expect(body.details.gstin).toBe("");
+    expect(body.details.registeredAddress).toBe("");
+    expect(body.details.installationAddress).toBe("");
+    expect(body.details.signatoryName).toBe("");
+    expect(body.details.signatoryDesignation).toBe("");
+  });
+
+  it("keeps a chosen entity type rather than overwriting it with the baseline", () => {
+    const body = toAdminInviteBody(valid());
+    expect(body.details.entityType).toBe("pvt_ltd");
+  });
+
+  it("always sends an empty FSSAI licence number, since the form never collects one", () => {
+    const body = toAdminInviteBody(valid());
+    expect(body.details.fssaiLicenceNumber).toBe("");
   });
 });

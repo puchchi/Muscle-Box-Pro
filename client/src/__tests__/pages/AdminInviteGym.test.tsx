@@ -8,9 +8,11 @@ import userEvent from "@testing-library/user-event";
  * Mocked at the guard and at `createGym`, the same division as the other admin page tests: what
  * this page owns is filling the form, mapping namespaced server errors back onto the right
  * inputs, and showing the link exactly once — not the transport or the schema, covered
- * elsewhere. Filling all thirty fields for every case would make each test mostly noise, so most
- * tests here fill only what that test is about and assert against `createGym`'s field errors for
- * the rest, the same way a real submit against an incomplete form would behave.
+ * elsewhere. Most of what used to need filling here is now prefilled or removed (2026-08-23):
+ * legal entity name, entity type, GSTIN, both addresses and the signatory moved to the gym's
+ * own step 1, and every commercial term now starts at `PARTNERSHIP`'s standard figures. So
+ * `fillEverything` only has four fields left to type, and the tests that used to fill a long
+ * form now assert what is prefilled instead.
  */
 
 vi.mock("next/navigation", () => ({
@@ -88,49 +90,75 @@ beforeEach(() => {
   mockWriteText.mockResolvedValue(undefined);
 });
 
-/** Fill every field the schema requires, so the happy-path tests reach `createGym` at all. */
+/**
+ * Fill what the schema still requires and nothing else, so the happy-path tests reach
+ * `createGym` at all. Terms and the whole machine block (model and value) all start prefilled
+ * and valid (`PARTNERSHIP`'s standard figures, and the mock/fixture book value) — this is the
+ * whole reason there is so little left to type.
+ */
 async function fillEverything(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(await screen.findByTestId("input-details.legalEntityName"), "Iron Temple Fitness Private Limited");
-  await user.type(screen.getByTestId("input-details.gstin"), "29AABCU9603R1ZM");
-  await user.type(screen.getByTestId("input-details.registeredAddress"), "14 Rajpur Road, Civil Lines, Delhi 110054");
-  await user.type(screen.getByTestId("input-details.installationAddress"), "Plot 8, Sector 18, Noida 201301");
-  await user.type(screen.getByTestId("input-details.signatoryName"), "Rohit Malhotra");
-  await user.type(screen.getByTestId("input-details.signatoryDesignation"), "Director");
+  await user.type(await screen.findByTestId("input-details.tradeName"), "Iron Temple Fitness");
   await user.type(screen.getByTestId("input-details.noticesEmail"), "rohit@irontemple.in");
   await user.type(screen.getByTestId("input-details.noticesPhone"), "+919812345678");
-
-  await user.type(screen.getByTestId("input-terms.securityDepositInr"), "50000");
-  await user.type(screen.getByTestId("input-terms.termMonths"), "36");
-  await user.type(screen.getByTestId("input-terms.gymSharePctBeforeMilestone"), "10");
-  await user.type(screen.getByTestId("input-terms.gymSharePctAfterMilestone"), "20");
-  await user.type(screen.getByTestId("input-terms.milestoneCups"), "15000");
-  await user.type(screen.getByTestId("input-terms.milestoneNetProfitInr"), "1500000");
-  await user.type(screen.getByTestId("input-terms.advertisingGymSharePct"), "20");
-  await user.type(screen.getByTestId("input-terms.electricityInrPerBlock"), "1500");
-  await user.type(screen.getByTestId("input-terms.electricityCupsPerBlock"), "1000");
-  await user.type(screen.getByTestId("input-terms.electricityReviewWindowMonths"), "6");
-  await user.type(screen.getByTestId("input-terms.settlementDaysAfterMonthEnd"), "15");
-  await user.click(screen.getByTestId("radio-early-termination-zero"));
-
-  await user.type(screen.getByTestId("input-machine.deviceNo"), "MBP-000512");
-  await user.type(screen.getByTestId("input-machine.model"), "MuscleBoxPro MBP-1");
-  await user.type(screen.getByTestId("input-machine.valueInr"), "450000");
 }
 
 describe("AdminInviteGym", () => {
-  it("renders no autosave indicator and no terms preset", async () => {
-    // Both raised and both closed deliberately (see the module docstring) — a regression here
-    // is one of these two decisions being quietly undone.
+  it("renders no autosave indicator and no separate terms-preset button", async () => {
+    // No autosave was raised and closed deliberately; the terms preset was raised, closed, and
+    // then reopened as a prefilled-and-editable default rather than a button — see the module
+    // docstring. A regression here is either of those being quietly undone.
     render(<AdminInviteGym />);
-    await screen.findByTestId("input-details.legalEntityName");
+    await screen.findByTestId("input-details.tradeName");
     expect(screen.queryByText(/draft saved/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /typical|preset|standard terms/i })).not.toBeInTheDocument();
   });
 
-  it("shows every commercial figure blank rather than defaulted", async () => {
+  it("says the seven deferred fields are collected from the gym at step 1", async () => {
     render(<AdminInviteGym />);
-    expect(await screen.findByTestId("input-terms.securityDepositInr")).toHaveValue(null);
-    expect(screen.getByTestId("input-terms.termMonths")).toHaveValue(null);
+    expect(await screen.findByTestId("deferred-fields-note")).toHaveTextContent(/GSTIN/);
+    expect(
+      screen.queryByTestId("input-details.legalEntityName"),
+      "legal entity name should no longer be on this form",
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-details.gstin")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-details.registeredAddress")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-details.installationAddress")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-details.signatoryName")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-details.signatoryDesignation")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("select-entity-type")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-details.fssaiLicenceNumber")).not.toBeInTheDocument();
+    // The four machine logistics fields, deferred the same day for a related reason — see the
+    // module docstring's note on `adminInviteMachineSchema`.
+    expect(screen.queryByTestId("input-machine.deviceNo")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-machine.serialNumber")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-machine.accessories")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-machine.installationDate")).not.toBeInTheDocument();
+  });
+
+  it("prefills every commercial figure with the standard partnership terms", async () => {
+    // The reversal of the earlier "no defaults" decision — see the module docstring on why a
+    // prefilled, editable value is not the preset button that was ruled out. These figures are
+    // `PARTNERSHIP`'s own, not invented for the test.
+    render(<AdminInviteGym />);
+    expect(await screen.findByTestId("input-terms.securityDepositInr")).toHaveValue(50_000);
+    expect(screen.getByTestId("input-terms.termMonths")).toHaveValue(24);
+    expect(screen.getByTestId("input-terms.gymSharePctBeforeMilestone")).toHaveValue(20);
+    expect(screen.getByTestId("input-terms.gymSharePctAfterMilestone")).toHaveValue(50);
+    expect(screen.getByTestId("input-terms.milestoneCups")).toHaveValue(15_000);
+    expect(screen.getByTestId("input-terms.milestoneNetProfitInr")).toHaveValue(500_000);
+    expect(screen.getByTestId("input-terms.advertisingGymSharePct")).toHaveValue(20);
+    expect(screen.getByTestId("input-terms.electricityInrPerBlock")).toHaveValue(1_000);
+    expect(screen.getByTestId("input-terms.electricityCupsPerBlock")).toHaveValue(1_000);
+    expect(screen.getByTestId("input-terms.electricityReviewWindowMonths")).toHaveValue(3);
+    expect(screen.getByTestId("input-terms.settlementDaysAfterMonthEnd")).toHaveValue(15);
+    // The standard term is nil, so the "Standard" radio is the one selected by default.
+    expect(screen.getByTestId("radio-early-termination-zero")).toBeChecked();
+  });
+
+  it("prefills the machine model and value with a plausible default, still editable", async () => {
+    render(<AdminInviteGym />);
+    expect(await screen.findByTestId("input-machine.model")).toHaveValue("MuscleBoxPro MBP-1");
+    expect(screen.getByTestId("input-machine.valueInr")).toHaveValue(450_000);
   });
 
   it("submits the whole form and shows the link on success", async () => {
@@ -157,10 +185,9 @@ describe("AdminInviteGym", () => {
 
     await waitFor(() => expect(mockCreateGym).toHaveBeenCalled());
     const body = mockCreateGym.mock.calls[0][0];
-    expect(body.machine.deviceNo).toBe("MBP-000512");
-    // Blank machine fields become null on the wire, not empty strings — `toAdminInviteBody`'s job.
-    expect(body.machine.serialNumber).toBeNull();
-    expect(body.machine.installationDate).toBeNull();
+    // Only model and value on the wire for the machine — nothing about device number, serial
+    // number, accessories or installation date, which this form never collects at all.
+    expect(body.machine).toEqual({ model: "MuscleBoxPro MBP-1", valueInr: 450_000 });
     expect("invitedByName" in body).toBe(false);
     expect(body.terms.earlyTerminationChargeInr).toBe(0);
   });
@@ -197,18 +224,24 @@ describe("AdminInviteGym", () => {
     expect(mockCreateGym).toHaveBeenCalledTimes(1);
   });
 
-  it("maps namespaced field errors onto the matching inputs across all three blocks", async () => {
+  it("maps namespaced field errors onto the matching inputs across every visible block", async () => {
     // The handler validates all four blocks before reporting any of them — an admin filling one
-    // long form should see everything wrong with it at once.
+    // long form should see everything wrong with it at once. `details.noticesEmail` and
+    // `machine.valueInr` stand in for their blocks here rather than `details.gstin` or
+    // `machine.deviceNo`: both of those are among the fields that no longer have a visible
+    // input, so a server error on either — which can still happen, if some other path somehow
+    // carried one through — would have nowhere on screen to land, and that is a real (if
+    // unlikely) gap `setError` alone can't paper over. It is not this test's job to fix that;
+    // it is this test's job to prove the fields that *are* visible each get their own message.
     mockCreateGym.mockResolvedValue({
       ok: false,
       error: {
         code: "validation",
         message: "Some fields need fixing.",
         fieldErrors: {
-          "details.gstin": "That GSTIN's check digit does not match.",
+          "details.noticesEmail": "That does not look like an email address.",
           "terms.termMonths": "Must be between 1 and 600.",
-          "machine.deviceNo": "Letters, digits, hyphen and underscore only.",
+          "machine.valueInr": "Must be at most ₹10,00,00,000.",
           invitedByName: "Must be at least 2 characters.",
         },
       },
@@ -218,9 +251,9 @@ describe("AdminInviteGym", () => {
     await fillEverything(user);
     await user.click(screen.getByTestId("button-create-gym"));
 
-    expect(await screen.findByText("That GSTIN's check digit does not match.")).toBeInTheDocument();
+    expect(await screen.findByText("That does not look like an email address.")).toBeInTheDocument();
     expect(screen.getByText("Must be between 1 and 600.")).toBeInTheDocument();
-    expect(screen.getByText("Letters, digits, hyphen and underscore only.")).toBeInTheDocument();
+    expect(screen.getByText("Must be at most ₹10,00,00,000.")).toBeInTheDocument();
     expect(screen.getByText("Must be at least 2 characters.")).toBeInTheDocument();
     // Nothing was created — the form is still on screen, not the success state.
     expect(screen.queryByTestId("invite-created")).not.toBeInTheDocument();
@@ -264,7 +297,7 @@ describe("AdminInviteGym", () => {
 
   it("reveals an amount field only when 'a different amount' is chosen", async () => {
     render(<AdminInviteGym />);
-    await screen.findByTestId("input-details.legalEntityName");
+    await screen.findByTestId("input-details.tradeName");
     expect(screen.queryByTestId("input-terms.earlyTerminationChargeInr")).not.toBeInTheDocument();
 
     const user = userEvent.setup();
