@@ -22,8 +22,6 @@ vi.mock("next/navigation", () => ({
  */
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
-
 const { mockFunctionsInvoke } = vi.hoisted(() => ({
   mockFunctionsInvoke: vi.fn(),
 }));

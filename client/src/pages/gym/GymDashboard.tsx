@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   BarChart3,
   Cpu,
   FileText,
@@ -15,16 +17,31 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
 import { queryClient } from "@/lib/queryClient";
+import {
+  GYM_PORTAL_QUERY_KEY,
+  GymPortalRequestError,
+  fetchGymPortalSnapshot,
+} from "@/lib/gymPortalApi";
+import {
+  GYM_SESSION_QUERY_KEY,
+  fetchGymSession,
+  signOutOfPortal,
+} from "@/lib/gymSession";
 import { formatInr } from "@shared/partnership/summary";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
-import { DEMO_GYM_PORTAL } from "@shared/gym/fixtures";
-import type { GymPortalSnapshot, MachineStatus, Statement } from "@shared/gym/portal";
+import type {
+  ElectricityWindowPeriod,
+  GymPortalSnapshot,
+  MachineStatus,
+  PortalAbsence,
+  Statement,
+  TradingFigures,
+} from "@shared/gym/portal";
 import {
+  computeAdvertisingShare,
   computeElectricityWindow,
   computePeriodSettlement,
-  type ElectricityWindow,
   type PeriodSettlement,
 } from "@shared/settlement/compute";
 
@@ -38,28 +55,58 @@ import {
  *    `shared/settlement/compute.ts`, which is tested against §§6–10 directly. A card
  *    that computes its own 20% is a card that keeps paying 20% after the milestone.
  *
- * 2. **No business state from `session.user.user_metadata`.** That field is writable
- *    by the account holder, so a gym could edit its own payout figure. It is exactly
- *    the vulnerability the old consumer Account page shipped (TODO A2). The session is
- *    used for one thing here — is this person signed in, and what is their email.
+ * 2. **No business state from the session.** The old consumer Account page read figures
+ *    out of `session.user.user_metadata`, which the account holder can write to — a gym
+ *    could edit its own payout percentage (TODO A2). The session is used for two things
+ *    here: is this person signed in, and what is their email. Everything with a rupee sign
+ *    on it comes from `GET /gym/portal`, which resolves the gym from the session server-side
+ *    and is why `fetchGymPortalSnapshot` takes no gym parameter.
  *
  * 3. **Live figures are labelled provisional.** §8.3 makes the monthly statement the
  *    amount actually owed; a gym treating a mid-month number as a debt is a support
  *    conversation nobody wants.
  *
- * The data is a fixture until the reporting endpoint exists (§15 of
- * docs/gym-onboarding.md). Swapping it is one line — `useSnapshot` below — because the
- * fixture is typed as the endpoint's response shape rather than as demo props.
+ * 4. **Nothing renders from an unvalidated response.** The figures arrive through
+ *    `fetchGymPortalSnapshot`, which parses them against
+ *    `shared/gym/portalSchema.ts` first. `compute.ts` clamps its own inputs, but
+ *    `statementTotalInr` below adds two endpoint values directly and `formatInr(NaN)`
+ *    is the string "₹NaN" — so a bad response has to fail into the error state, not
+ *    into a card.
+ *
+ * 5. **An absent section says so; it never renders as zero.** `GET /gym/portal` ships
+ *    partial — cups, advertising revenue, electricity and settled statements are four
+ *    separate feeds and none of them exists yet. Each is a `PortalSection`, and where one
+ *    is absent the card keeps its heading and explains itself. ₹0 in those cards is the
+ *    one output this file must not produce: a gym reading ₹0 settled concludes it earned
+ *    nothing, and will believe that number long before it suspects the page. The card is
+ *    kept rather than hidden so a gym also learns the figure is coming.
+ *
+ * The data source is still a fixture until the reporting endpoint exists (§15 of
+ * docs/gym-onboarding.md), but it is reached asynchronously and validated, so the
+ * pending and error paths below are the real ones rather than something written on the
+ * day the network arrives. Swapping the source is one function body in
+ * `@/lib/gymPortalApi`.
  */
 
 /**
- * Build item 11 replaces the body of this hook with a query against the BFF
- * (browser → Supabase edge function → `mbp-backend`), keyed on the gym resolved from
- * the JWT. Nothing else in the file changes: the derived figures below are computed
- * from whatever this returns.
+ * Did this fail because the session ended, or because something else went wrong?
+ *
+ * The distinction decides between two completely different screens — a redirect to the login
+ * page, or an amber panel insisting the machine is still trading and nothing owed is
+ * affected. Showing the second when the first is true is the failure worth avoiding: it tells
+ * a gym its figures are broken when its session merely expired.
+ *
+ * Only the three session codes count. `frozen` and `wrong_step` belong to the onboarding
+ * wizard and cannot reach this endpoint; `network` explicitly must not appear here, because a
+ * dropped connection would then sign the gym out of a session that is perfectly alive.
  */
-function useSnapshot(): GymPortalSnapshot {
-  return DEMO_GYM_PORTAL;
+function isSessionGone(error: unknown): boolean {
+  if (!(error instanceof GymPortalRequestError)) return false;
+  return (
+    error.code === "invalid_token" ||
+    error.code === "expired_token" ||
+    error.code === "revoked_token"
+  );
 }
 
 const MACHINE_STATUS_LABEL: Record<MachineStatus, string> = {
@@ -76,33 +123,66 @@ export default function GymDashboard() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let cancelled = false;
+    fetchGymSession().then((session) => {
+      if (cancelled) return;
       if (!session) {
         router.replace("/gym/login");
         return;
       }
-      setEmail(session.user.email ?? null);
+      setEmail(session.email);
       setIsChecking(false);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
-    await queryClient.invalidateQueries({ queryKey: ["supabase-session"] });
+    // The call goes first and its result is not checked: only the server can expire an
+    // `HttpOnly` cookie, and a gym who has pressed Sign out on a shared office machine
+    // must leave the screen either way. `removeQueries`, not `invalidateQueries` — the
+    // snapshot in the cache is this gym's revenue, and invalidating would leave it sitting
+    // there for whoever signs in next while the refetch is in flight.
+    await signOutOfPortal();
+    queryClient.removeQueries({ queryKey: GYM_PORTAL_QUERY_KEY });
+    queryClient.removeQueries({ queryKey: GYM_SESSION_QUERY_KEY });
     router.replace("/gym/login");
   }
 
-  const snapshot = useSnapshot();
-  const settlement = useMemo(
-    () => computePeriodSettlement(snapshot.terms, snapshot.currentPeriod, snapshot.opening),
-    [snapshot],
-  );
-  const electricity = useMemo(
-    () => computeElectricityWindow(snapshot.terms, snapshot.electricityWindow.paidCups),
-    [snapshot],
-  );
+  const {
+    data: snapshot,
+    isPending,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery({
+    queryKey: GYM_PORTAL_QUERY_KEY,
+    queryFn: fetchGymPortalSnapshot,
+    // Not until we know there is a session. Otherwise every unauthenticated visit
+    // fires a reporting call on its way to the login redirect.
+    enabled: !isChecking,
+    // A rejected session is not a transient failure, so retrying it three times only
+    // delays the redirect below by a few seconds of backoff while the gym reads
+    // "we can't show your figures" about something that is really "sign in again".
+    retry: (attempt, err) => !isSessionGone(err) && attempt < 2,
+  });
 
-  if (isChecking) {
+  // The guard above proved there was a session; this covers it ending afterwards — a 12
+  // hour cookie expiring on a tab left open overnight, or an admin revoking the account.
+  // Without it that gym sits on the amber "problem at our end" panel pressing Try again,
+  // which is both wrong and unactionable.
+  const sessionGone = isError && isSessionGone(error);
+  useEffect(() => {
+    if (sessionGone) router.replace("/gym/login");
+  }, [sessionGone, router]);
+
+  // No chrome here on purpose: there is no session yet, so there is no email to show
+  // and no meaningful Sign out. `sessionGone` shares this branch because the redirect it
+  // triggers has not landed yet, and the chrome would otherwise flash a signed-in header
+  // belonging to a session that has already ended.
+  if (isChecking || sessionGone) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center text-muted-foreground">
         Loading your portal...
@@ -110,6 +190,224 @@ export default function GymDashboard() {
     );
   }
 
+  // Everything from here renders inside the chrome, including the failures. A gym whose
+  // figures will not load must still be able to sign out — a bare error page that
+  // strips the header is a page you can only leave with the back button.
+  if (isPending) {
+    return (
+      <PortalChrome email={email} onSignOut={handleSignOut}>
+        <PortalLoading />
+      </PortalChrome>
+    );
+  }
+
+  if (isError || !snapshot) {
+    return (
+      <PortalChrome email={email} onSignOut={handleSignOut}>
+        <PortalError error={error} onRetry={() => refetch()} isRetrying={isFetching} />
+      </PortalChrome>
+    );
+  }
+
+  return (
+    <PortalChrome email={email} onSignOut={handleSignOut}>
+      <PortalContent snapshot={snapshot} />
+    </PortalChrome>
+  );
+}
+
+/**
+ * The loaded dashboard.
+ *
+ * Its own component so that every `useMemo` below runs against a snapshot that exists.
+ * Hooks cannot be conditional, so while these lived in `GymDashboard` they each had to
+ * take an optional snapshot and return null, and the loaded branch then had to re-check
+ * for a null that could not happen. With four reporting sections that can each be absent
+ * that pattern stops being merely awkward — an unreachable null and a legitimately absent
+ * section would be indistinguishable at the point where the copy is chosen, which is
+ * exactly the distinction this screen exists to keep.
+ */
+function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
+  const { terms, sales, adRevenue, electricity, statements } = snapshot;
+
+  return (
+    <>
+      <h1 className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1">
+        {snapshot.gymDisplayName}
+      </h1>
+      <p className="text-muted-foreground text-sm mb-8" data-testid="as-of">
+        {sales.available ? (
+          <>
+            {monthName(sales.data.currentPeriod.period)} so far — provisional, settles by the{" "}
+            {terms.settlementDaysAfterMonthEnd}th. Figures as at{" "}
+            {formatAgreementDate(snapshot.asOf)}.
+          </>
+        ) : (
+          // No period to name, so nothing is claimed about one. The timestamp still
+          // belongs here: it is when the record below was read, and it is true whether or
+          // not the trading feeds answered.
+          <>Your account as at {formatAgreementDate(snapshot.asOf)}.</>
+        )}
+      </p>
+
+      {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sales.available ? (
+          <TradingCards
+            trading={sales.data}
+            terms={terms}
+            adRevenue={adRevenue}
+            statements={statements}
+          />
+        ) : (
+          <TradingCardsUnavailable reason={sales.reason} />
+        )}
+
+        {adRevenue.available ? (
+          <AdvertisingCard terms={terms} revenueExTaxInr={adRevenue.data.revenueExTaxInr} />
+        ) : (
+          <UnavailableCard
+            icon={Megaphone}
+            label="Advertising share"
+            testId="card-advertising"
+            reason={adRevenue.reason}
+            what="Your share of screen advertising"
+          />
+        )}
+
+        {electricity.available ? (
+          <ElectricityCard reviewPeriod={electricity.data} terms={terms} />
+        ) : (
+          <UnavailableCard
+            icon={Zap}
+            label="Electricity reimbursement"
+            testId="card-electricity"
+            reason={electricity.reason}
+            what="Your electricity reimbursement"
+          />
+        )}
+
+        <MachineCard machine={snapshot.machine} />
+        <StatementsCard statements={statements} agreement={snapshot.agreement} />
+        {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
+      </div>
+
+      {sales.available && (
+        <p className="text-xs text-muted-foreground mt-8 leading-relaxed max-w-3xl">
+          Figures shown here before the 15th of a month are provisional. Your monthly statement is
+          the settled amount, issued within {terms.settlementDaysAfterMonthEnd} days of month-end.
+          Costs are shown as a single total because your share is calculated on net profit, not on
+          our ingredient pricing.
+        </p>
+      )}
+    </>
+  );
+}
+
+/**
+ * The four cards derived from one period's trading: cups, revenue, profit and payout.
+ *
+ * Grouped because they share one `computePeriodSettlement` call and are absent or present
+ * together — cups, gross and direct costs arrive as a single feed, and none of these four
+ * figures can be stated without all three. Advertising is *not* in that set, which is why
+ * it is a separate section and a separate card: it has its own feed and its own permanent
+ * ratio (§9.4).
+ */
+function TradingCards({
+  trading,
+  terms,
+  adRevenue,
+  statements,
+}: {
+  trading: TradingFigures;
+  terms: GymPortalSnapshot["terms"];
+  adRevenue: GymPortalSnapshot["adRevenue"];
+  statements: GymPortalSnapshot["statements"];
+}) {
+  // Zero when advertising is not being reported. Safe only because the payout card says
+  // so in words — see `PayoutCard`. An unlabelled payout silently missing its advertising
+  // component would be the same lie as a ₹0 card, just harder to spot.
+  const adRevenueExTaxInr = adRevenue.available ? adRevenue.data.revenueExTaxInr : 0;
+
+  const settlement = useMemo(
+    () =>
+      computePeriodSettlement(
+        terms,
+        { ...trading.currentPeriod, adRevenueExTaxInr },
+        trading.opening,
+      ),
+    [terms, trading, adRevenueExTaxInr],
+  );
+
+  return (
+    <>
+      <CupsCard settlement={settlement} terms={terms} />
+      <RevenueCard settlement={settlement} />
+      <ProfitCard settlement={settlement} />
+      <PayoutCard
+        settlement={settlement}
+        statements={statements}
+        advertisingReported={adRevenue.available}
+      />
+    </>
+  );
+}
+
+/** The same four cards, with nothing to put in them. */
+function TradingCardsUnavailable({ reason }: { reason: PortalAbsence }) {
+  return (
+    <>
+      <UnavailableCard
+        icon={BarChart3}
+        label="Cups sold"
+        testId="card-cups"
+        reason={reason}
+        what="Your cup count"
+      />
+      <UnavailableCard
+        icon={IndianRupee}
+        label="Revenue collected"
+        testId="card-revenue"
+        reason={reason}
+        what="Revenue from your machine"
+      />
+      <UnavailableCard
+        icon={TrendingUp}
+        label="Net profit"
+        testId="card-profit"
+        reason={reason}
+        what="Net profit on your machine"
+      />
+      <UnavailableCard
+        icon={Wallet}
+        label="Your payout"
+        testId="card-payout"
+        reason={reason}
+        what="Your provisional payout"
+      />
+    </>
+  );
+}
+
+// ── Frame and its two failure states ────────────────────────────────────────
+
+/**
+ * The header and page frame, shared by the loaded, loading and failed views.
+ *
+ * Extracted when the data became asynchronous. The alternative — three full-page
+ * layouts — is three places for the sign-out button to be forgotten in, and the failed
+ * view is exactly the one where a gym owner most needs it.
+ */
+function PortalChrome({
+  email,
+  onSignOut,
+  children,
+}: {
+  email: string | null;
+  onSignOut: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
@@ -121,7 +419,7 @@ export default function GymDashboard() {
             <span className="text-sm text-muted-foreground truncate hidden sm:inline">{email}</span>
             <Button
               variant="outline"
-              onClick={handleSignOut}
+              onClick={onSignOut}
               className="h-9 rounded-xl font-semibold text-sm"
               data-testid="button-signout"
             >
@@ -131,41 +429,92 @@ export default function GymDashboard() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <h1 className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1">
-          {snapshot.gymDisplayName}
-        </h1>
-        <p className="text-muted-foreground text-sm mb-8" data-testid="as-of">
-          {monthName(snapshot.currentPeriod.period)} so far — provisional, settles by the{" "}
-          {snapshot.terms.settlementDaysAfterMonthEnd}th. Figures as at{" "}
-          {formatAgreementDate(snapshot.asOf)}.
-        </p>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">{children}</main>
+    </div>
+  );
+}
 
-        {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
+/**
+ * Placeholders in the shape of the cards that are coming.
+ *
+ * Not a spinner: the grid is nine cards deep, and a centred spinner followed by a full
+ * page appearing at once reads as a slower load than it is. `aria-busy` carries the
+ * state for a screen reader, which the shimmer cannot.
+ */
+function PortalLoading() {
+  return (
+    <div data-testid="portal-loading" aria-busy="true">
+      <div className="h-7 w-64 bg-gray-200 rounded-lg animate-pulse mb-2" />
+      <div className="h-4 w-80 max-w-full bg-gray-100 rounded animate-pulse mb-8" />
+      <p className="sr-only">Loading your figures</p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div
+            key={index}
+            className="rounded-2xl border border-gray-200 bg-white p-5 animate-pulse"
+            aria-hidden="true"
+          >
+            <div className="h-3 w-24 bg-gray-100 rounded mb-4" />
+            <div className="h-7 w-32 bg-gray-200 rounded mb-3" />
+            <div className="h-3 w-full bg-gray-100 rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <CupsCard settlement={settlement} terms={snapshot.terms} />
-          <RevenueCard settlement={settlement} />
-          <ProfitCard settlement={settlement} />
-          <PayoutCard settlement={settlement} statement={snapshot.statements[0]} />
-          <ElectricityCard
-            electricity={electricity}
-            reviewPeriod={snapshot.electricityWindow}
-            terms={snapshot.terms}
-          />
-          <AdvertisingCard settlement={settlement} />
-          <MachineCard machine={snapshot.machine} />
-          <StatementsCard snapshot={snapshot} />
-          {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
-        </div>
+/**
+ * What a gym owner sees when the figures cannot be trusted.
+ *
+ * Deliberately not zeros. `compute.ts` clamps a bad input to ₹0, which is right as a
+ * guard and wrong as an answer: a gym owed ₹5,870 and shown ₹0 cannot tell that from a
+ * bad month, and it will believe the number before it believes the dashboard is broken.
+ * Saying nothing is available is the only honest state.
+ *
+ * No field names, no validation issues, no exception message on screen — those go to
+ * the console for us. What the owner gets is the fact, a retry, and the one number that
+ * does not depend on our reporting stack: their own settled statements are unaffected,
+ * so the email trail is still authoritative.
+ */
+function PortalError({
+  error,
+  onRetry,
+  isRetrying,
+}: {
+  error: unknown;
+  onRetry: () => void;
+  isRetrying: boolean;
+}) {
+  useEffect(() => {
+    if (error) console.error("[GymPortal] snapshot unavailable:", error);
+  }, [error]);
 
-        <p className="text-xs text-muted-foreground mt-8 leading-relaxed max-w-3xl">
-          Figures shown here before the 15th of a month are provisional. Your monthly statement is
-          the settled amount, issued within {snapshot.terms.settlementDaysAfterMonthEnd} days of
-          month-end. Costs are shown as a single total because your share is calculated on net
-          profit, not on our ingredient pricing.
-        </p>
-      </main>
+  return (
+    <div
+      className="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6 max-w-2xl"
+      data-testid="portal-error"
+      role="alert"
+    >
+      <p className="text-sm font-bold text-foreground flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+        We can't show your figures right now
+      </p>
+      <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+        This is a problem at our end, not with your machine or your account — it is still trading and
+        every cup is still counted. Nothing you are owed is affected: your settled statements are
+        issued from our records, not from this page.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onRetry}
+        disabled={isRetrying}
+        className="h-10 rounded-xl font-semibold text-sm mt-4"
+        data-testid="button-retry-snapshot"
+      >
+        {isRetrying ? "Trying again..." : "Try again"}
+      </Button>
     </div>
   );
 }
@@ -203,6 +552,53 @@ function Figure({ value, caption }: { value: string; caption: string }) {
       <p className="text-2xl font-display font-black text-foreground tracking-tight">{value}</p>
       <p className="text-xs text-muted-foreground">{caption}</p>
     </div>
+  );
+}
+
+/**
+ * A card whose section the endpoint could not answer.
+ *
+ * Rendered in place of the real card rather than instead of nothing, and with its heading
+ * and icon intact, because two things have to be true at once: the gym must not read a
+ * figure that is not there, and it should still learn that the figure exists and is
+ * coming. A missing card teaches nothing; a card reading ₹0 teaches something false.
+ *
+ * `what` is the subject of the sentence, capitalised — "Your cup count", not "cups".
+ * Passed in rather than derived from `label` because the heading is a noun phrase for a
+ * grid ("Cups sold") and this is one for a sentence.
+ */
+function UnavailableCard({
+  icon,
+  label,
+  testId,
+  reason,
+  what,
+}: {
+  icon: typeof Cpu;
+  label: string;
+  testId: string;
+  reason: PortalAbsence;
+  what: string;
+}) {
+  return (
+    <Card icon={icon} label={label} testId={testId}>
+      <div data-testid={`${testId}-unavailable`}>
+        {/* Deliberately not styled as a `Figure`. The headline slot on every other card
+            holds a number, and putting words in the same weight and size is how a
+            skim-read turns "not available" into a value. */}
+        <p className="text-sm font-semibold text-muted-foreground">Not available yet</p>
+        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+          {reason === "no_data_yet" ? (
+            <>{what} appears here once your machine is installed and trading.</>
+          ) : (
+            <>
+              {what} is not reported on this page yet — we are still building it. Nothing you are
+              owed depends on it: your settled statements are issued from our records.
+            </>
+          )}
+        </p>
+      </div>
+    </Card>
   );
 }
 
@@ -313,21 +709,44 @@ function ProfitCard({ settlement }: { settlement: PeriodSettlement }) {
 
 function PayoutCard({
   settlement,
-  statement,
+  statements,
+  advertisingReported,
 }: {
   settlement: PeriodSettlement;
-  statement: Statement | undefined;
+  statements: GymPortalSnapshot["statements"];
+  advertisingReported: boolean;
 }) {
+  const lastSettled = statements.available ? statements.data[0] : undefined;
+
   return (
     <Card icon={Wallet} label="Your payout" testId="card-payout">
       <Figure value={formatInr(settlement.gymPayoutInr)} caption="provisional, this month so far" />
       <Row label="Share of shake profit" value={formatInr(settlement.shake.gymShareInr)} />
-      <Row label="Share of advertising" value={formatInr(settlement.advertising.gymShareInr)} />
+      {advertisingReported && (
+        <Row label="Share of advertising" value={formatInr(settlement.advertising.gymShareInr)} />
+      )}
+      {/* The headline above is `shake + advertising`, and advertising went in as zero
+          because it was not reported. Stated rather than left implicit: the whole reason
+          the absent sections are absent instead of zeroed is that an unexplained
+          understatement is indistinguishable from a bad month. */}
+      {!advertisingReported && (
+        <p
+          className="text-xs text-muted-foreground leading-relaxed"
+          data-testid="payout-excludes-advertising"
+        >
+          This is your shake profit share only. Your advertising share is not reported here yet — it
+          is settled with your monthly statement either way.
+        </p>
+      )}
       <div className="border-t border-gray-100 pt-2 mt-1">
-        {statement ? (
+        {!statements.available ? (
+          // Not "your first statement is issued after your first full month": that would
+          // be a claim about this gym's history, and we do not have it.
+          <p className="text-xs text-muted-foreground">Settled months are not listed here yet.</p>
+        ) : lastSettled ? (
           <Row
-            label={`Settled ${monthName(statement.period)}`}
-            value={formatInr(statementTotalInr(statement))}
+            label={`Settled ${monthName(lastSettled.period)}`}
+            value={formatInr(statementTotalInr(lastSettled))}
           />
         ) : (
           <p className="text-xs text-muted-foreground">
@@ -340,14 +759,17 @@ function PayoutCard({
 }
 
 function ElectricityCard({
-  electricity,
   reviewPeriod,
   terms,
 }: {
-  electricity: ElectricityWindow;
-  reviewPeriod: GymPortalSnapshot["electricityWindow"];
+  reviewPeriod: ElectricityWindowPeriod;
   terms: GymPortalSnapshot["terms"];
 }) {
+  const electricity = useMemo(
+    () => computeElectricityWindow(terms, reviewPeriod.paidCups),
+    [terms, reviewPeriod.paidCups],
+  );
+
   return (
     <Card icon={Zap} label="Electricity reimbursement" testId="card-electricity">
       <Figure
@@ -382,8 +804,27 @@ function ElectricityCard({
   );
 }
 
-function AdvertisingCard({ settlement }: { settlement: PeriodSettlement }) {
-  const { advertising } = settlement;
+/**
+ * Derived straight from the advertising feed, not from the shake settlement.
+ *
+ * §9.4 makes this ratio permanent and independent of the shake split, and the response
+ * now reflects that by reporting advertising revenue as its own section — so this card
+ * renders for a month whose cup figures have not arrived. It calls the same
+ * `computeAdvertisingShare` that `computePeriodSettlement` calls internally, so when both
+ * sections are available the figure here and the row on the payout card are the same
+ * function of the same input and cannot disagree.
+ */
+function AdvertisingCard({
+  terms,
+  revenueExTaxInr,
+}: {
+  terms: GymPortalSnapshot["terms"];
+  revenueExTaxInr: number;
+}) {
+  const advertising = useMemo(
+    () => computeAdvertisingShare(terms, revenueExTaxInr),
+    [terms, revenueExTaxInr],
+  );
 
   return (
     <Card icon={Megaphone} label="Advertising share" testId="card-advertising">
@@ -422,14 +863,34 @@ function MachineCard({ machine }: { machine: GymPortalSnapshot["machine"] }) {
   );
 }
 
-function StatementsCard({ snapshot }: { snapshot: GymPortalSnapshot }) {
+/**
+ * Two things in one card, and only one of them can be absent.
+ *
+ * The agreement summary comes from our own record and is always answerable; the settled
+ * statements come from a pipeline that does not exist yet. Keeping them together means a
+ * gym with no statements can still see and check its signed agreement, which is the one
+ * thing on this screen it may actually need.
+ */
+function StatementsCard({
+  statements,
+  agreement,
+}: {
+  statements: GymPortalSnapshot["statements"];
+  agreement: GymPortalSnapshot["agreement"];
+}) {
   return (
     <Card icon={FileText} label="Statements & agreement" testId="card-statements">
-      {snapshot.statements.length === 0 ? (
+      {!statements.available ? (
+        <p className="text-xs text-muted-foreground" data-testid="statements-unavailable">
+          {statements.reason === "no_data_yet"
+            ? "Your first statement appears here after your first full month of trading."
+            : "Settled statements are not listed here yet — we are still building this. They are issued from our records and emailed to you as usual."}
+        </p>
+      ) : statements.data.length === 0 ? (
         <p className="text-xs text-muted-foreground">No settled months yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {snapshot.statements.map((statement) => (
+          {statements.data.map((statement) => (
             <div
               key={statement.period}
               className="flex items-baseline justify-between gap-3 text-xs"
@@ -461,14 +922,14 @@ function StatementsCard({ snapshot }: { snapshot: GymPortalSnapshot }) {
         </div>
       )}
 
-      {snapshot.agreement && (
+      {agreement && (
         <div className="border-t border-gray-100 pt-2 mt-1" data-testid="agreement-summary">
-          <Row label="Agreement" value={`v${snapshot.agreement.version}`} />
-          <Row label="Signed" value={formatAgreementDate(snapshot.agreement.signedOn)} />
+          <Row label="Agreement" value={`v${agreement.version}`} />
+          <Row label="Signed" value={formatAgreementDate(agreement.signedOn)} />
           <p className="text-[11px] text-muted-foreground/70 mt-1 break-all">
             {/* The hash is here so a gym can check its own copy against ours. It is
                 evidence, and evidence you cannot see is not much use. */}
-            Document hash {snapshot.agreement.contentHash.slice(0, 16)}…
+            Document hash {agreement.contentHash.slice(0, 16)}…
           </p>
         </div>
       )}

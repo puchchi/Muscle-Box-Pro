@@ -163,8 +163,52 @@ export type OnboardingState = {
   drafts: StepDrafts;
   timestamps: OnboardingTimestamps;
 
-  /** Set once the agreement is signed, for the step 5 download. */
-  agreement: { version: string; contentHash: string } | null;
+  /**
+   * The issued document, set when the gym becomes entitled to see it rather than when
+   * it signs — because the client cannot render a hashable agreement until the server
+   * has told it which version and, critically, which date.
+   *
+   * Null before issuance, and non-null in one piece afterwards. There is no state where
+   * a version exists without a hash: the server renders and hashes in the same call
+   * that fixes the date, so a half-issued document is not representable.
+   */
+  agreement: IssuedAgreement | null;
+};
+
+/**
+ * The document the server has pinned for this gym: which version, dated when, and the
+ * exact bytes it renders to.
+ *
+ * **The server computes `contentHash`, not the client.** This is the direction that
+ * matters and it is the reverse of what the mock originally did. A hash the browser
+ * supplied and the server stored proves only that some client did some arithmetic —
+ * the server cannot verify a signature against a hash it never computed, and a browser
+ * running stale JavaScript would have quietly signed a different document from the one
+ * on the record. Now the server renders the text at issuance, stores the hash, and at
+ * signing renders it again and compares. See `mbp-backend`'s
+ * `docs/gym-onboarding-api-design.md` §2.9.
+ *
+ * `effectiveDate` is server-owned for the same reason: §4.1's Effective Date is rendered
+ * *into* the agreement text, so it is part of what gets hashed. Taking it from the
+ * browser's clock made the hash non-deterministic — a gym opening the reader at 23:58
+ * IST and signing four minutes later hashed a document dated yesterday, while the
+ * signature record said today, and a machine with a skewed clock or a different timezone
+ * produced a different hash again for the identical agreement. Re-rendering server-side
+ * to verify would then never reproduce it. The server's own clock is not off the hook
+ * either: it must resolve the date in `Asia/Kolkata`, because a Lambda running UTC dates
+ * a 03:00 IST signature to the previous day.
+ */
+export type IssuedAgreement = {
+  version: string;
+  /** ISO date, resolved in `Asia/Kolkata`. Enters the hashed text. */
+  effectiveDate: string;
+  /** SHA-256 of the rendered plain text, lowercase hex. Computed server-side. */
+  contentHash: string;
+  /**
+   * Character count of the same rendering. Not decoration: it is what tells a mismatch
+   * apart from a substitution when the client's own rendering disagrees.
+   */
+  length: number;
 };
 
 // ── Inputs ──────────────────────────────────────────────────────────────────
@@ -177,14 +221,41 @@ export type SignatureInput = {
   /** "I am authorised to bind <legal entity>" — §32, deliberately separate. */
   authorisedToBind: boolean;
   /**
-   * SHA-256 of the exact text that was on screen. The load-bearing field: it
-   * proves a later edit to the agreement content did not retroactively change
-   * what was signed (§3, step 3).
+   * SHA-256 of the exact text that was on screen, computed independently by this client.
+   *
+   * Still sent, and still required, but its job changed with the inversion: it is no
+   * longer what gets stored. The server stores the hash *it* computed at issuance and
+   * compares this one against it, answering `content_mismatch` if they differ. Echoing
+   * `state.agreement.contentHash` back would satisfy the type and check nothing, so
+   * clients compute it — the value of the field is precisely that it came from somewhere
+   * else. See `checkIssuedAgreement` in `issuedAgreement.ts`.
    */
   contentHash: string;
-  /** Proves control of the address the agreement was sent to, at the moment of signing. */
-  otpCode: string;
+  /**
+   * Proves control of the address the agreement was sent to, at the moment of signing.
+   *
+   * Optional, and currently never sent: signing ships without OTP because SES is not
+   * live, and the endpoint **rejects** a payload that carries this field rather than
+   * ignoring it — a client sending a code that nothing verifies is worse than no code,
+   * because the screen tells the gym its address was checked. `SIGNING_REQUIRES_OTP` is
+   * the switch; see its docstring.
+   */
+  otpCode?: string;
 };
+
+/**
+ * Whether the signing panel asks for an emailed code.
+ *
+ * False until SES is live. The backend rejects `otpCode` outright while this is false,
+ * so the two must be flipped in the right order: backend first to accept the field,
+ * frontend second to start sending it. Flipping this alone makes every signature fail.
+ *
+ * It is a constant rather than a deleted feature because OTP is an added precondition on
+ * the same endpoint, not a redesign of it — the panel's second phase, the resend button
+ * and `requestSigningOtp` all stay wired and tested behind it. Deleting them and
+ * rebuilding later is how the §41-notices-address reasoning gets lost.
+ */
+export const SIGNING_REQUIRES_OTP: boolean = false;
 
 export type DepositChoice = "pay_now" | "pay_later";
 
@@ -203,6 +274,18 @@ export type OnboardingErrorCode =
   | "frozen"
   /** The conditional `signed_at is null` write lost. Two tabs, one signature. */
   | "already_signed"
+  /**
+   * The hash the client computed is not the hash the server pinned — the document on
+   * screen is not the document on the record.
+   *
+   * Its own code rather than a `validation` error with a `contentHash` field error,
+   * because nothing the gym typed is wrong and the wizard would otherwise highlight a
+   * field nobody filled in. The realistic cause is legitimate: `PATCH .../terms` is
+   * blocked only by `signedAt`, so an admin can re-price a gym between the moment the
+   * reader loaded and the moment it signed. The recovery is to reload the step and read
+   * the reissued document, which is a different instruction from "fix your input".
+   */
+  | "content_mismatch"
   | "validation"
   | "otp_invalid"
   | "network";

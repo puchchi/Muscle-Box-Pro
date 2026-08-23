@@ -17,24 +17,17 @@ vi.mock("next/link", () => ({
   }) => <a href={href}>{children}</a>,
 }));
 
-vi.mock("@/lib/auth", () => ({
-  hasAccessTokenSync: vi.fn(() => false),
-}));
-
 // framer-motion is not used in Navbar, but mock sheet open/close via Radix
 // Sheet is a Radix component — test relies on real Radix implementation in jsdom.
 
 import Navbar from "@/components/layout/Navbar";
 import { usePathname } from "next/navigation";
-import { hasAccessTokenSync } from "@/lib/auth";
 
 const mockPathname = vi.mocked(usePathname);
-const mockHasToken = vi.mocked(hasAccessTokenSync);
 
 describe("Navbar", () => {
   beforeEach(() => {
     mockPathname.mockReturnValue("/");
-    mockHasToken.mockReturnValue(false);
   });
 
   // The wordmark next to the logo is commented out in Navbar.tsx; the image is
@@ -61,17 +54,9 @@ describe("Navbar", () => {
     expect(accountLink).toBeUndefined();
   });
 
-  it("shows GYM LOGIN button when user is not logged in", () => {
-    mockHasToken.mockReturnValue(false);
+  it("shows the GYM LOGIN button", () => {
     render(<Navbar />);
     expect(screen.getByRole("button", { name: /gym login/i })).toBeInTheDocument();
-  });
-
-  it("shows DASHBOARD instead of GYM LOGIN when user is logged in", () => {
-    mockHasToken.mockReturnValue(true);
-    render(<Navbar />);
-    expect(screen.getByRole("button", { name: /dashboard/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /gym login/i })).not.toBeInTheDocument();
   });
 
   it("marks the active route link with text-primary class", () => {
@@ -118,7 +103,6 @@ describe("Navbar", () => {
   });
 
   it("the GYM LOGIN button links to '/gym/login'", () => {
-    mockHasToken.mockReturnValue(false);
     render(<Navbar />);
     const loginLink = screen
       .getAllByRole("link")
@@ -126,13 +110,27 @@ describe("Navbar", () => {
     expect(loginLink).toBeInTheDocument();
   });
 
-  it("points at '/gym/dashboard' once logged in", () => {
-    mockHasToken.mockReturnValue(true);
+  /**
+   * These two replace a pair that asserted the button became "DASHBOARD" for a signed-in
+   * gym. It cannot: the portal session is an `HttpOnly` cookie, so nothing here can read
+   * whether one exists, and `/gym/login` forwards an existing session to the dashboard
+   * instead. What is worth pinning is that the nav does not try — a reinstated probe would
+   * be one request per visitor on every marketing page, and a reinstated
+   * `/gym/dashboard` href would send a signed-out visitor to a page that bounces them
+   * back. Both are the kind of change that looks like an improvement in review.
+   */
+  it("never links straight to the dashboard", () => {
     render(<Navbar />);
-    const dashLink = screen
-      .getAllByRole("link")
-      .find((el) => el.getAttribute("href") === "/gym/dashboard");
-    expect(dashLink).toBeInTheDocument();
+    const hrefs = screen.getAllByRole("link").map((el) => el.getAttribute("href"));
+    expect(hrefs).not.toContain("/gym/dashboard");
+  });
+
+  it("makes no request when it renders", () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    render(<Navbar />);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 
   it("renders the mobile menu trigger button", () => {

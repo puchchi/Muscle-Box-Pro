@@ -19,8 +19,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
-
 // ─── Components ───────────────────────────────────────────────────────────────
 import Hero from "@/components/home/Hero";
 import Features from "@/components/home/Features";

@@ -321,15 +321,7 @@ export function computePeriodSettlement(
       netProfitInr > 0 ? oneDecimal((gymShakeShareInr / netProfitInr) * 100) : 0,
   };
 
-  const adRevenueExTaxInr = nonNegative(sales.adRevenueExTaxInr);
-  const adGymSharePct = percentage(terms.advertisingGymSharePct);
-  const advertising: AdvertisingSettlement = {
-    revenueExTaxInr: adRevenueExTaxInr,
-    // §9.4: this ratio is permanent. It does not follow the shake ratio to 50:50, and
-    // nothing in this function may pass it `rateAfter`.
-    gymSharePct: adGymSharePct,
-    gymShareInr: Math.round((adRevenueExTaxInr * adGymSharePct) / 100),
-  };
+  const advertising = computeAdvertisingShare(terms, sales.adRevenueExTaxInr);
 
   return {
     period: sales.period,
@@ -345,6 +337,37 @@ export function computePeriodSettlement(
       reachedAtPeriodStart,
     }),
     gymPayoutInr: shake.gymShareInr + advertising.gymShareInr,
+  };
+}
+
+/**
+ * §9's advertising share, on its own.
+ *
+ * Split out of `computePeriodSettlement` — which now calls it rather than repeating it —
+ * because the reporting endpoint reports advertising revenue as a section that can be
+ * absent independently of cup telemetry (`PortalSection` in `shared/gym/portal.ts`).
+ * The dashboard therefore has to be able to show an advertising figure for a month whose
+ * shake figures have not arrived, and there is no shake settlement to hang it off.
+ *
+ * One implementation, called from two places, rather than two implementations: §9.4
+ * makes this ratio permanent for the whole term, and the failure it guards against is
+ * a second copy that quietly follows the shake ratio up to 50:50.
+ *
+ * Takes only the term it uses, so a caller holding an advertising figure and nothing
+ * else can call it without inventing a cup count.
+ */
+export function computeAdvertisingShare(
+  terms: Pick<SettlementTerms, "advertisingGymSharePct">,
+  revenueExTaxInr: number,
+): AdvertisingSettlement {
+  const revenue = nonNegative(revenueExTaxInr);
+  // §9.4: `advertisingGymSharePct` and nothing else. Not `gymSharePctAfterMilestone`,
+  // not an effective rate, not whatever the shake tranches ended up at.
+  const gymSharePct = percentage(terms.advertisingGymSharePct);
+  return {
+    revenueExTaxInr: revenue,
+    gymSharePct,
+    gymShareInr: Math.round((revenue * gymSharePct) / 100),
   };
 }
 

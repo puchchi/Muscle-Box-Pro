@@ -65,9 +65,15 @@ vulnerable read left with the file. `Account.tsx` is at `client/src/pages/_archi
 excluded from both `tsconfig.json` and `vitest.config.ts`, so it no longer compiles.
 
 - [x] Vulnerable code path removed with the page (no `members` table needed — the feature is gone)
-- [ ] **Constraint for the replacement:** the gym portal must keep business state in Postgres
-      behind an authenticated endpoint. Identity only in the token. See
-      `docs/gym-onboarding.md` §10 and the §17 checklist.
+- [x] **Constraint for the replacement — met 2026-08-23.** The gym portal's figures come from
+      `GET /gym/portal`, which resolves the gym from its session server-side; `fetchGymPortalSnapshot`
+      takes no gym parameter and must not gain one. `gymSession.ts` reads identity only and
+      deliberately does not touch `user_metadata`. See `docs/gym-onboarding.md` §18 and the §17
+      checklist.
+- [x] `client/src/lib/auth.ts` **deleted 2026-08-23**, along with its localStorage token parsing.
+      Its only non-test caller was `Navbar`, and an `HttpOnly` session cookie has no synchronous
+      answer to give — so the nav button no longer tries, and `/gym/login` forwards an existing
+      session to the dashboard instead.
 
 ### A3. `send-email` is an open spam relay
 
@@ -75,6 +81,10 @@ excluded from both `tsconfig.json` and `vitest.config.ts`, so it no longer compi
 authenticated user, sent from your domain. Torches sending reputation. **Zero callers.**
 
 - [ ] Delete the function and undeploy it.
+- [ ] **`forgot-password` joined it on 2026-08-23** — zero callers as of the
+      `/gym/forgot-password` rewrite (`docs/gym-onboarding.md` §18). It was the last thing invoking
+      it, and the page was telling gym owners a reset email had been sent when none can be. Delete
+      and undeploy this one too; a deployed function with no caller is still a public endpoint.
 
 ### A4. `/order/*` payment routes are unauthenticated
 
@@ -97,9 +107,22 @@ payment URLs for arbitrary amounts on your merchant account.
       close A4: set `GS_API_KEY` / `GS_API_SECRET` in `local_dashboard/.env`, send one real machine
       request, read the `[GSAuth] verified — construction "…"` line, then set
       `GS_AUTH_MODE=enforce`.** Blocked on machine access.
-- [ ] Validate `totalAmount` against a server-side price list — don't trust the caller. Still open,
-      and load-bearing: the GS digest covers only the headers, never the body, so a valid signature
-      says nothing about the amount.
+- [x] ~~Validate `totalAmount` against a server-side price list — don't trust the caller.~~ Done
+      2026-08-23: `local_dashboard/lib/orderAmount.js`, called from `POST /order/qr` before PhonePe is
+      touched. Load-bearing because the GS digest covers only the headers, never the body, so a valid
+      signature says nothing about the amount inside it. Two layers, split by how confident we are:
+      **shape and bounds are always enforced** (strict decimal-rupee parse to integer paise — no
+      `parseFloat`, which reads `"120abc"` as 120 and `"1e3"` as 1000 — plus a ₹1,000 ceiling against
+      a ~₹120 product, `MACHINE_AMOUNT_MAX_INR`); the **exact per-product price list is
+      observe-by-default** (`MACHINE_PRICE_LIST` JSON keyed on `objectId` then `subject`,
+      `MACHINE_PRICE_MODE=observe|enforce|off`), because we don't yet know whether `objectId` or
+      `subject` identifies the product or what each slot is priced at, and enforcing a guessed
+      catalogue would stop live payments — the same trap that keeps `GS_AUTH_MODE` on observe. An
+      unlisted product never rejects even in enforce mode. The machine sees a generic "Invalid order
+      amount"; the reason goes only to the log, so the ceiling isn't leaked to a caller probing it.
+      54 tests, `local_dashboard/lib/orderAmount.test.js` — run by the root vitest suite, which now
+      reaches into this CommonJS project.
+      **Remaining to close A4 fully: `GS_AUTH_MODE=enforce`, blocked on machine access (above).**
 
 ---
 
@@ -343,9 +366,10 @@ Full analysis if it's ever revived: Cognito absorbs `auth-signup`, `verify-email
 4 lead functions port to Lambda; `client/src/lib/api.ts` shim mirroring
 `supabase.functions.invoke()`'s `{ data, error }` contract keeps page diffs to one line each;
 `queryClient.ts`'s `invokeEdgeFunction`/`apiRequest`/`getQueryFn` are **all dead code with no
-callers** and can be deleted regardless; `auth.ts:9-12` hand-parses Supabase's
-`sb-<ref>-auth-token` localStorage key and would need rewriting; `next.config.mjs:99` CSP
-hardcodes the Supabase URL and would silently break every form in production only.
+callers** and can be deleted regardless; ~~`auth.ts:9-12` hand-parses Supabase's
+`sb-<ref>-auth-token` localStorage key and would need rewriting~~ (moot — `auth.ts` deleted
+2026-08-23, see A2); `next.config.mjs` CSP hardcodes the Supabase URL in `CONNECT_SRC` and would
+silently break every form in production only.
 
 ---
 
@@ -355,6 +379,12 @@ hardcodes the Supabase URL and would silently break every form in production onl
       and Resend.~~ Rewritten 2026-08-15: correct stack, real env var names from
       `supabase/functions/.env`, accurate function list, `local_dashboard` documented, and
       linked to `docs/supabase-gotchas.md`.
+- [x] ~~`tsconfig.json` excluded `**/*.test.ts`, so no `.ts` test file was ever typechecked.~~
+      Removed 2026-08-23. It hid the settlement and agreement maths specs — the files that assert
+      §§6–10 produce the right rupee figures — from `npx tsc --noEmit` entirely, while `*.test.tsx`
+      was checked, so the gap was invisible unless you read the exclude list. Zero errors surfaced
+      on removal (verified it now really is in the program by injecting a type error and seeing
+      `tsc` catch it). `supabase` stays excluded on its own line — those tests are Deno.
 - [ ] `client/.env` and `client/.env.example` are now dead (Vite-era, `VITE_*` names). Delete
       once confirmed nothing reads them.
 - [ ] Verify `.env`, `.env.local`, `client/.env`, `local_dashboard/.env`,

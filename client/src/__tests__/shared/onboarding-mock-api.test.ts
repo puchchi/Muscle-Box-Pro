@@ -3,12 +3,19 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { findUnresolvedTokens, sha256Hex, renderPlainText } from "@shared/agreement/render";
 import { AGREEMENT_V2_1 } from "@shared/agreement/v2_1";
 import { AGREEMENT_V2_2 } from "@shared/agreement/v2_2";
+import { ISSUED_AGREEMENT, ISSUED_AGREEMENT_VERSION } from "@shared/agreement/issued";
 import { rupeesInWords } from "@shared/agreement/amountInWords";
 import { formatInr } from "@shared/partnership/summary";
 import { toAgreementFields } from "@shared/onboarding/agreementFields";
+// The same entry point the browser uses. A test that renders through its own copy of
+// the options and the field bridge proves nothing about the hash a real client computes.
+import {
+  checkIssuedAgreement,
+  issuanceDateInIndia,
+  renderIssuedAgreementText,
+} from "@shared/onboarding/issuedAgreement";
 import {
   DEMO_TOKEN,
-  MOCK_OTP,
   MOCK_TOKENS,
   createMockOnboardingApi,
   resetMockOnboarding,
@@ -39,8 +46,15 @@ const VALID_DETAILS: GymDetails = {
   noticesPhone: "+91 98450 12345",
 };
 
-/** A 64-hex string, which is all `signatureSchema` requires of the hash. */
-const HASH = "a".repeat(64);
+/**
+ * Well-formed and wrong — 64 lowercase hex characters, which is all `signatureSchema`
+ * checks, and not the hash of anything.
+ *
+ * It used to be what every signing test sent, and every one of them passed, because the
+ * server stored whatever it was given. That is the defect the inversion fixes, so this
+ * constant now exists to assert the opposite: sending it must be refused.
+ */
+const WRONG_HASH = "a".repeat(64);
 
 let api: OnboardingApi;
 
@@ -58,20 +72,33 @@ async function expectState(
   return result.data;
 }
 
+/**
+ * The hash a real client would send for a record: rendered from state through the shared
+ * entry point, not read off `state.agreement`.
+ *
+ * Reading it off the record would make every signing test a comparison of the server's
+ * value with itself and would pass even if the renderer were broken on both sides.
+ */
+async function clientHashFor(state: OnboardingState): Promise<string> {
+  const issued = state.agreement;
+  if (!issued) throw new Error("expected a document to have been issued");
+  return sha256Hex(renderIssuedAgreementText(state, issued.effectiveDate));
+}
+
 /** Walks a fresh token to the point just after signing. */
 async function signedState(): Promise<OnboardingState> {
   await api.getState(DEMO_TOKEN);
   await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
-  await api.ackPartnership(DEMO_TOKEN);
-  await api.requestSigningOtp(DEMO_TOKEN);
+  const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
   return expectState(
     api.signAgreement(DEMO_TOKEN, {
       fullName: "Rohit Menon",
       designation: "Director",
       agreedToAgreement: true,
       authorisedToBind: true,
-      contentHash: HASH,
-      otpCode: MOCK_OTP,
+      contentHash: await clientHashFor(issued),
+      // No `otpCode`. Signing ships before SES does, and the endpoint rejects the field
+      // rather than ignoring it — see SIGNING_REQUIRES_OTP.
     }) as Promise<{ ok: true; data: OnboardingState } | { ok: false; error: unknown }>,
   );
 }
@@ -222,52 +249,232 @@ describe("step advancement", () => {
   });
 });
 
+/**
+ * The issued document.
+ *
+ * These pin the defects found while writing build item 9's migration, and they are the
+ * reason `OnboardingState.agreement` is populated at step 2 rather than at signing. The
+ * defects had one root cause — nobody owned the question "which document, dated when,
+ * hashing to what" — and they broke the same thing: the ability to re-render a stored
+ * agreement and reproduce its hash. A hash that cannot be reproduced is not evidence of
+ * anything, and a hash the server never computed is not even a hash of anything it holds.
+ */
+describe("the issued document", () => {
+  it("issues the version, the date and the hash together at step 2", async () => {
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const state = await expectState(api.ackPartnership(DEMO_TOKEN));
+
+    // All four at once, so there is no window in which a version exists without the hash
+    // of the text it renders to. The hash arriving later — at signing, from the client —
+    // is what made it unverifiable.
+    expect(state.agreement).toEqual({
+      version: ISSUED_AGREEMENT_VERSION,
+      effectiveDate: "2026-08-22",
+      contentHash: expect.stringMatching(/^[0-9a-f]{64}$/),
+      length: expect.any(Number),
+    });
+    expect(state.agreement?.length).toBeGreaterThan(10_000);
+  });
+
+  it("pins a hash a client independently reproduces from the record", async () => {
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
+
+    // Exactly what StepReviewSign does before it will open the sign panel.
+    const check = await checkIssuedAgreement(issued, issued.agreement!);
+    expect(check.ok ? [] : check.problems).toEqual([]);
+    if (!check.ok) throw new Error("unreachable");
+    expect(check.contentHash).toBe(issued.agreement?.contentHash);
+    expect(check.length).toBe(issued.agreement?.length);
+  });
+
+  it("records the version that was actually rendered and hashed", async () => {
+    // The defect: the record said "2.1" while the client rendered and hashed v2.2. Both
+    // now read from one module, so the two cannot disagree.
+    const state = await signedState();
+    expect(state.agreement?.version).toBe(ISSUED_AGREEMENT.version);
+  });
+
+  it("dates the agreement by the Indian calendar, not the UTC one", async () => {
+    // 00:30 IST on the 23rd is 19:00 UTC on the 22nd. `nowIso.slice(0, 10)` answered
+    // "2026-08-22" — off by one on the date that starts a 24-month term, printed on the
+    // document and inside the hash.
+    api = createMockOnboardingApi({ latencyMs: 0, now: () => "2026-08-22T19:00:00.000Z" });
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const state = await expectState(api.ackPartnership(DEMO_TOKEN));
+
+    expect(issuanceDateInIndia("2026-08-22T19:00:00.000Z")).toBe("2026-08-23");
+    expect(state.agreement?.effectiveDate).toBe("2026-08-23");
+  });
+
+  it("does not move the effective date when IST midnight passes before signing", async () => {
+    // 23:58 IST on the 22nd. Midnight IST is 18:30 UTC, so the crossing this exercises is
+    // a real one for a gym in India rather than one for a server in Virginia.
+    let clock = "2026-08-22T18:28:00.000Z";
+    api = createMockOnboardingApi({ latencyMs: 0, now: () => clock });
+
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    await api.ackPartnership(DEMO_TOKEN);
+    const issued = await expectState(api.markAgreementViewed(DEMO_TOKEN));
+    expect(issued.agreement?.effectiveDate).toBe("2026-08-22");
+
+    // Four minutes to read and sign, which happens to cross midnight. The date the gym
+    // read is the date that must stay on the record: the alternative is a stored hash of
+    // a document dated the 22nd sitting beside a record claiming the 23rd.
+    clock = "2026-08-22T18:32:00.000Z";
+    const signed = await expectState(
+      api.signAgreement(DEMO_TOKEN, {
+        fullName: "Rohit Menon",
+        designation: "Director",
+        agreedToAgreement: true,
+        authorisedToBind: true,
+        contentHash: await clientHashFor(issued),
+      }) as Promise<{ ok: true; data: OnboardingState } | { ok: false; error: unknown }>,
+    );
+
+    expect(signed.agreement?.effectiveDate).toBe("2026-08-22");
+    // The signing timestamp is the real time and is free to differ — it is not part of
+    // the hashed text, which is exactly why the two are separate fields.
+    expect(signed.timestamps.signedAt).toBe("2026-08-22T18:32:00.000Z");
+  });
+
+  it("re-renders from the record to the hash it stored", async () => {
+    const signed = await signedState();
+    const record = signed.agreement;
+    if (!record) throw new Error("expected a document to have been issued");
+
+    // What a verifier does years later, holding nothing but the record: render the
+    // version it names, with the date it carries, and compare. This is the whole point of
+    // storing a version and a date alongside the hash, and it is what a hash computed on
+    // the client's clock made impossible.
+    const verifierHash = await sha256Hex(renderIssuedAgreementText(signed, record.effectiveDate));
+
+    expect(verifierHash).toBe(record.contentHash);
+    expect(verifierHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
 describe("signing", () => {
-  it("records the signature, the version and the content hash", async () => {
+  it("records the signature and leaves the issued document exactly as it was", async () => {
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
     const state = await signedState();
 
     expect(state.isSigned).toBe(true);
     expect(state.status).toBe("signed");
     expect(state.completedSteps).toEqual([1, 2, 3]);
     expect(state.currentStep).toBe(4);
-    expect(state.agreement).toEqual({ version: "2.1", contentHash: HASH });
+    // Byte-identical to what was issued. Signing attaches to the document; it does not
+    // get to write to it, which is what the old `contentHash: parsed.data.contentHash`
+    // write did on every signature.
+    expect(state.agreement).toEqual(issued.agreement);
   });
 
-  it("refuses a wrong OTP", async () => {
+  it("refuses a well-formed hash of the wrong text, and signs nothing", async () => {
     await api.getState(DEMO_TOKEN);
     await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
     await api.ackPartnership(DEMO_TOKEN);
-    await api.requestSigningOtp(DEMO_TOKEN);
 
     const result = await api.signAgreement(DEMO_TOKEN, {
       fullName: "Rohit Menon",
       designation: "Director",
       agreedToAgreement: true,
       authorisedToBind: true,
-      contentHash: HASH,
-      otpCode: "000000",
+      contentHash: WRONG_HASH,
     });
 
+    // The assertion the old contract could not make: this used to be recorded as the
+    // signed hash of the agreement, and nothing anywhere would have noticed.
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe("otp_invalid");
+    if (!result.ok) expect(result.error.code).toBe("content_mismatch");
     expect((await expectState(api.getState(DEMO_TOKEN))).isSigned).toBe(false);
   });
 
-  it("signs once, even if two tabs submit — the second gets already_signed", async () => {
-    await signedState();
-    const second = await api.signAgreement(DEMO_TOKEN, {
+  it("refuses a hash of the document as it read before the terms changed", async () => {
+    // The realistic cause of `content_mismatch`, and the reason it is not a validation
+    // error: an admin re-prices the deposit while the gym has the reader open. Nothing
+    // the gym typed is wrong, so the recovery is "reload", not "fix your input".
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
+    const staleHash = await clientHashFor({
+      ...issued,
+      terms: { ...issued.terms, securityDepositInr: 25_000 },
+    });
+
+    const result = await api.signAgreement(DEMO_TOKEN, {
       fullName: "Rohit Menon",
       designation: "Director",
       agreedToAgreement: true,
       authorisedToBind: true,
-      contentHash: "b".repeat(64),
-      otpCode: MOCK_OTP,
+      contentHash: staleHash,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("content_mismatch");
+  });
+
+  it("rejects a signing code outright while OTP is off, rather than ignoring one", async () => {
+    // A signature accepted alongside an unverified code is a signature whose audit trail
+    // claims a check that never happened. Rejecting is what keeps the frontend and the
+    // backend flipping `SIGNING_REQUIRES_OTP` in the right order — backend first.
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
+
+    const result = await api.signAgreement(DEMO_TOKEN, {
+      fullName: "Rohit Menon",
+      designation: "Director",
+      agreedToAgreement: true,
+      authorisedToBind: true,
+      contentHash: await clientHashFor(issued),
+      otpCode: "123456",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("validation");
+    expect((await expectState(api.getState(DEMO_TOKEN))).isSigned).toBe(false);
+  });
+
+  it("refuses to sign a document that was never issued", async () => {
+    // A client with no pinned agreement rendered nothing, so whatever hash it sent came
+    // from somewhere else. Issuing one here to accommodate it would date the agreement at
+    // the instant of signing — the exact bug the inversion removed.
+    await api.getState(DEMO_TOKEN);
+    const result = await api.signAgreement(DEMO_TOKEN, {
+      fullName: "Rohit Menon",
+      designation: "Director",
+      agreedToAgreement: true,
+      authorisedToBind: true,
+      contentHash: WRONG_HASH,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("wrong_step");
+  });
+
+  it("signs once, even if two tabs submit — the second gets already_signed", async () => {
+    const first = await signedState();
+    const second = await api.signAgreement(DEMO_TOKEN, {
+      fullName: "Rohit Menon",
+      designation: "Director",
+      agreedToAgreement: true,
+      // The correct hash, which is what a second tab would genuinely hold. The race has
+      // to be lost on `signedAt`, not on the content check.
+      authorisedToBind: true,
+      contentHash: await clientHashFor(first),
     });
 
     expect(second.ok).toBe(false);
     if (!second.ok) expect(second.error.code).toBe("already_signed");
-    // The first hash stands. A second signature must not overwrite what was signed.
-    expect((await expectState(api.getState(DEMO_TOKEN))).agreement?.contentHash).toBe(HASH);
+    expect((await expectState(api.getState(DEMO_TOKEN))).timestamps.signedAt).toBe(
+      first.timestamps.signedAt,
+    );
   });
 
   it("freezes steps 1 and 2 after signing", async () => {

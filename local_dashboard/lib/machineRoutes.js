@@ -2,6 +2,7 @@ const { Router } = require("express");
 const log     = require("./logger");
 const { createOrder, getOrderStatus, getOrderAgeMs } = require("./phonepe");
 const { gsAuth, redactHeaders } = require("./gsAuth");
+const { validateOrderAmount } = require("./orderAmount");
 
 const STATUS_HARD_FAIL_MS = 5 * 60 * 1000;
 
@@ -77,12 +78,23 @@ router.post("/qr", async (req, res) => {
   const bad = missing(["orderNo", "subject", "totalAmount", "notifyUrl"], body);
   if (bad.length) return reject400("QR", res, bad);
 
+  // The amount is validated before PhonePe is touched (TODO A4). gsAuth proves who is calling, but
+  // the GS digest covers only headers — never the body — so a valid signature is no evidence about
+  // the sum inside it. Without this, a replayed header triple mints a payment URL for any amount.
+  const amount = validateOrderAmount(body);
+  if (!amount.ok) {
+    log.error(`[Machine:QR] Amount rejected — ${amount.reason}`);
+    return fail400(res, "Invalid order amount");
+  }
+
   try {
-    log.step(`[Machine:QR] Initiating PhonePe order for ${body.orderNo}  amount=₹${body.totalAmount}`);
+    log.step(`[Machine:QR] Initiating PhonePe order for ${body.orderNo}  amount=₹${amount.normalised}  priceList=${amount.priceListVerdict}`);
 
     const result = await createOrder({
       merchantOrderId: body.orderNo,
-      amount:          body.totalAmount,
+      // The normalised value, not the raw field: it has been format-checked and round-trips
+      // exactly through `createOrder`'s rupees→paise conversion.
+      amount:          amount.normalised,
       subject:         body.subject,
       notifyUrl:       body.notifyUrl,
       deviceInfo:      body.attach,

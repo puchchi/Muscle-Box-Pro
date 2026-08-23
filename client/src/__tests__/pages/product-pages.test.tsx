@@ -18,8 +18,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
-
 // ─── Pages ────────────────────────────────────────────────────────────────────
 import GymProteinShakeMachine from "@/pages/GymProtienShakeMachine";
 import ProteinShakeVendingMachine from "@/pages/ProtienShakeVendingMachine";

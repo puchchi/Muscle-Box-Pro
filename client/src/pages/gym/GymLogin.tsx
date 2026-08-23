@@ -6,19 +6,45 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { AlertCircle, BarChart3, IndianRupee, FileText } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { queryClient } from "@/lib/queryClient";
-import { useState } from "react";
+import {
+  GYM_SESSION_QUERY_KEY,
+  fetchGymSession,
+  signInToPortal,
+} from "@/lib/gymSession";
+import { useEffect, useState } from "react";
+
+/**
+ * The partner portal's front door.
+ *
+ * It talks to `@/lib/gymSession` rather than to an auth provider, so the page is the same
+ * whether the session is Supabase's or the `HttpOnly` cookie from `api.muscleboxpro.com`.
+ * Two consequences worth knowing before editing:
+ *
+ * **This page carries the "already signed in" check for the whole site.** Under cookie
+ * sessions script cannot read whether a session exists, so `Navbar` can no longer label its
+ * button "DASHBOARD" — it always says "GYM LOGIN" and always points here. That is only
+ * acceptable because arriving here with a live session lands you on the dashboard anyway.
+ * Removing the effect below re-breaks a link on every marketing page. The reasoning is
+ * recorded in `@/components/layout/Navbar`, where the button used to make that decision.
+ *
+ * **The form renders before the check finishes**, deliberately. Almost everyone who opens
+ * this page is not signed in, and making all of them wait on a round trip to see a password
+ * field is the wrong trade; the signed-in minority get a brief form and then a redirect.
+ *
+ * There is no "remember me". It used to sit below the password field promising 30 days and
+ * was wired to nothing at all — the value never left the form. The cookie sessions make it
+ * worse than decorative: a session is 12 hours and does not refresh, and the server decides
+ * that, so the checkbox would be a promise this page cannot keep.
+ */
 
 const loginSchema = z.object({
   email: z.string().email("A valid email is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  remember: z.boolean().default(false),
 });
 
 const partnerPerks = [
@@ -33,24 +59,35 @@ export default function GymLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "", remember: false },
+    defaultValues: { email: "", password: "" },
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchGymSession().then((session) => {
+      if (session && !cancelled) router.replace("/gym/dashboard");
+    });
+    // Guards against a redirect firing after the component is gone — someone who starts
+    // typing and navigates away mid-probe should not be yanked to the dashboard.
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setNotice(null);
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-
-      if (error || !data.session) {
-        setNotice("Incorrect email or password. Please try again.");
+      const result = await signInToPortal(values.email, values.password);
+      if (!result.ok) {
+        // The seam has already decided what a gym owner should read: one generic message
+        // for every credential failure, so this page is not the thing that turns a
+        // server's deliberate silence into an account-enumeration oracle.
+        setNotice(result.error.message);
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["supabase-session"] });
+      await queryClient.invalidateQueries({ queryKey: GYM_SESSION_QUERY_KEY });
       router.push("/gym/dashboard");
     } finally {
       setIsSubmitting(false);
@@ -191,26 +228,6 @@ export default function GymLogin() {
                       />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="remember"
-                render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        className="border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                        data-testid="checkbox-remember"
-                      />
-                    </FormControl>
-                    <FormLabel className="text-muted-foreground text-sm font-normal cursor-pointer">
-                      Remember me for 30 days
-                    </FormLabel>
                   </FormItem>
                 )}
               />

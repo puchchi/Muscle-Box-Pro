@@ -688,9 +688,10 @@ numbers arrive.
 |---|---|---|
 | `/gym-partnership` | `GymPartnership.tsx` | **public, indexed** — the minified partnership |
 | `/gym-demo` | [GymDemo.tsx](../client/src/pages/GymDemo.tsx) | unchanged — lead capture |
-| `/onboarding/[token]` | `onboarding/OnboardingFlow.tsx` | public, token-scoped, `noindex` |
-| `/gym/login` | `gym/GymLogin.tsx` | reworked from `Login.tsx`, no signup link |
-| `/gym/forgot-password` | `gym/GymForgotPassword.tsx` | reworked from `ForgotPassword.tsx` |
+| `/gym/onboarding/[slug]/[handle]` | `onboarding/OnboardingFlow.tsx` | public, handle-scoped, `noindex, nofollow` + `Referrer-Policy: no-referrer` |
+| `/gym/login` | `gym/GymLogin.tsx` | reworked from `Login.tsx`, no signup link; forwards an existing session to the dashboard |
+| `/gym/forgot-password` | `gym/GymForgotPassword.tsx` | prose, not a form — there is no self-service reset |
+| `/gym/set-password/[handle]` | `gym/GymSetPassword.tsx` | where a relayed reset link lands; `noindex, nofollow` + `Referrer-Policy: no-referrer` |
 | `/gym/dashboard` | `gym/GymDashboard.tsx` | `noindex` |
 | `/gym/agreement` | `gym/GymAgreement.tsx` | their signed copy, always available |
 | `/gym/deposit` | `gym/GymDeposit.tsx` | `noindex` — the "pay later" landing spot |
@@ -705,9 +706,28 @@ not 301, for `permanent: true`:
 | `/forgot-password` | `/gym/forgot-password` | |
 | `/signup` | `/gym-demo` | there is no gym signup — §1. Lead capture is the honest successor. |
 
+One **temporary** redirect (Next emits 307 for `permanent: false`):
+
+| From | To | Why |
+|---|---|---|
+| `/onboarding/:handle` | `/gym/onboarding/link/:handle` | the flow moved under `/gym/` and gained a name segment. Not permanent: no invite was ever minted at the old shape, so this is a courtesy for a pasted dev link, and a 308 cached in a browser would outlive the reason for it. |
+
+**Why two segments on the onboarding route.** `handle` is the credential; `slug` is the gym's trade
+name, so the link a person receives reads as theirs — `…/gym/onboarding/iron-temple-fitness/3f7c…`
+rather than a bare hex string after a path nobody recognises. A link that looks like phishing does
+not get clicked, and this flow lives or dies on being clicked. The slug is **not** checked against
+the handle: the server resolves the gym from `sha256(handle)` and nothing else, so comparing them
+client-side would validate a credential against a hint handed over in the same URL — and if the
+check ever failed for a gym whose trade name changed between invite and click, it would lock a
+partner out over cosmetics.
+
+**Why under `/gym/`.** `public/robots.txt` already carries `Disallow: /gym/`, so both
+credential-bearing paths are covered by the existing rule rather than by one somebody has to
+remember to add.
+
 **Kept and reworked, not archived:** `ForgotPassword.tsx` and `AuthCallback.tsx`. Password reset is
 still needed — gym owners forget passwords too — so these move under `/gym/*` rather than into
-`_archive/`.
+`_archive/`. What "reworked" means changed once the backend was designed: see §18.
 
 Per repo convention, `app/` holds metadata-only shells and the components live in
 `client/src/pages/`. See the note in the README about that split.
@@ -1093,10 +1113,41 @@ Note the window boundaries in particular. Which three-month electricity window a
 when *its* first window opened, which is a fact about that gym's record and not about today's date, so
 the browser must not reconstruct it.
 
-**When that endpoint lands, add its host to `connect-src` in
-[next.config.mjs](../next.config.mjs).** The CSP is an allowlist and `next dev` does not apply
-these headers the same way, so a missing host means the dashboard fails **in production only**.
-This repo has already been bitten by exactly this.
+**~~When that endpoint lands, add its host to `connect-src`~~ — not needed, checked 2026-08-23.**
+The BFF is the reason: the browser calls `supabase.functions.invoke`, which is the
+`*.supabase.co` origin already on the allowlist, and the edge function calls `mbp-backend`
+server-side. `connect-src` is now a named `CONNECT_SRC` array in
+[next.config.mjs](../next.config.mjs) carrying that note, and the inverse warning with it — an
+`execute-api.*.amazonaws.com` entry appearing there means something is calling AWS straight from
+the browser, which would put a service secret in client code. The CSP is still an allowlist that
+`next dev` does not apply the same way, so anything that genuinely does need adding fails **in
+production only**.
+
+**As built so far (2026-08-23).** Everything on this side of the missing endpoint, so that the
+endpoint landing is a single function body and not a refactor:
+
+- **[gym/portalSchema.ts](../shared/gym/portalSchema.ts)** — runtime validation of the response.
+  `GymPortalSnapshot` is erased at build time, and the response crosses two trust boundaries
+  (`mbp-backend` → edge function → browser). `compute.ts` clamps its own inputs, but not every
+  rendered figure goes through it: `statementTotalInr` adds `gymPayoutInr + electricityInr`
+  directly and `formatInr(NaN)` is the string "₹NaN". `documentUrl` and `deposit.paymentUrl` both
+  reach an `href`, so `javascript:` in either is script execution on a page holding a Supabase
+  session — the scheme is allowlisted rather than trusted. A `satisfies z.ZodType<...>` line makes
+  drift a `tsc` failure in both directions, verified by breaking it each way. 38 tests.
+  It found one defect immediately: the fixture's `contentHash` was 65 characters.
+- **[lib/gymPortalApi.ts](../client/src/lib/gymPortalApi.ts)** — the seam, same shape as
+  `onboardingApi.ts`. Async *now*, while it still returns a fixture, because a synchronous
+  `return DEMO_GYM_PORTAL` means the dashboard has no pending or error path and both would get
+  written for the first time on the day the network is introduced.
+- **Dashboard states** — `useQuery` plus card-shaped placeholders and a failure panel, both inside
+  the page frame so a gym whose figures will not load can still sign out. The failure panel is
+  deliberately not zeros: `compute.ts` clamping to ₹0 is right as a guard and wrong as an answer,
+  because a gym owed ₹5,870 and shown ₹0 cannot tell that from a bad month. No field names,
+  validation issues or exception text on screen; those go to the console.
+
+**Still blocked, and not faked:** the `mbp-backend` reporting endpoint itself (separate repo, no
+AWS credentials configured, nothing deployed) and the edge function, which needs `gym_terms`,
+`cost_schedule`, `ad_revenue` and `settlements` — the tables parked with item 9.
 
 ## 16. Build order
 
@@ -1111,9 +1162,18 @@ This repo has already been bitten by exactly this.
 | 7 | Step 4 — deposit UI, Razorpay Payment Link, webhook, receipt (§5) — **done 2026-08-22**, functions deferred to 9 | 2 d |
 | 8 | `/gym/login`, `/gym/forgot-password` + dashboard on fixtures (§13) — **done 2026-08-22**, absorbed `compute.ts` | 2 d |
 | | **front end** | **~14 d** |
-| 9 | Tables + edge functions + OTP + PDF + email — **next** | 5 d |
-| 10 | `local_dashboard` Gyms tab; fix TODO A4 while in that file | 1½ d |
-| 11 | Reporting API + real dashboard numbers (`compute.ts` done in 8) | 4 d |
+| 9 | Tables + edge functions + OTP + PDF + email — **parked 2026-08-23**, no real customers yet | 5 d |
+| 10 | `local_dashboard` Gyms tab — **skipped**; TODO A4's amount validation **done 2026-08-23** | 1½ d |
+| 11 | Reporting API + real dashboard numbers — **client side done 2026-08-23**, endpoint blocked | 4 d |
+
+Items 9–11 stopped being a sequence on 2026-08-23. Item 9 was parked because there are no real
+customers to persist, which took the tables with it; item 10's Gyms tab was skipped because its core
+action — *demo request → create gym + machine + terms → send onboarding link* — has nowhere to write
+without them, and `demo_requests` has eight columns and no status field, so it cannot even record
+that a link was sent. What did get done in item 10 was the other half: A4's server-side `totalAmount`
+validation ([orderAmount.js](../local_dashboard/lib/orderAmount.js)), which was never blocked on
+anything and was the load-bearing part, since the GS digest covers only the headers and never the
+body. Item 11 then went as far as it can without a backend — see §15.
 
 `/gym-partnership` comes early on purpose: it is publicly useful the day it ships, independent of
 every backend decision, and it forces `summary.ts` into existence before three screens start
@@ -1319,7 +1379,17 @@ like a compile step.
 - [ ] Commercial numbers come from `summary.ts` or `gym_terms`, never inline literals
 - [ ] `/gym-partnership` says "indicative terms" and never carries the full agreement text
 - [ ] New API host added to `connect-src` in `next.config.mjs`
-- [ ] `/gym/*` and `/onboarding/*` are `noindex` and `Disallow`ed in `robots.txt`
+- [ ] `/gym/*` is `noindex` and `Disallow`ed in `robots.txt`
+- [ ] A route carrying a credential in its URL puts it in a **path segment**, is `nofollow` as well as
+      `noindex`, and gets a `Referrer-Policy: no-referrer` rule listed **below** the `/(.*)` block —
+      Next applies every matching rule and the last one wins
+- [ ] Browser talks to the API only through `apiClient.ts`; no second `fetch` to
+      `api.muscleboxpro.com` anywhere
+- [ ] Nothing asks synchronously whether a session exists — `HttpOnly` means there is no answer
+- [ ] Signing out `removeQueries` on this gym's data; invalidating leaves it for the next person on a
+      shared machine
+- [ ] A `network` failure never signs anyone out, and never gets copy blaming their credentials
+- [ ] Copy never promises a message the system cannot send
 - [ ] Agreement content changes bump the version; never edit a version that has signatures
 - [ ] A new agreement version pins its own golden length and hash, and does not share a fixture with
       an older one — a shared fixture lets one version's edit move another version's hash
@@ -1333,3 +1403,116 @@ like a compile step.
 - [ ] Milestone latches once reached; cumulative net profit can fall and must not demote a gym
 - [ ] A test file rendering a page mocks framer-motion via `@/test/framerMotion` — never inline
 - [ ] No `npm run build` without asking — `IndexNowPlugin` pings 30 live URLs on a production build
+
+## 18. Wiring the frontend to the real backend (2026-08-23)
+
+The API surface was settled in
+[mbp-backend/docs/gym-onboarding-api-design.md](https://github.com/anuragsingh/mbp-backend). This
+section is what the frontend now does about it. **Nothing is switched on yet** — see the flag below.
+
+### One seam per kind of conversation
+
+| File | Speaks | Notes |
+|---|---|---|
+| [apiClient.ts](../client/src/lib/apiClient.ts) | HTTP | The only place `fetch` reaches the API. Returns a result, never throws. |
+| [httpOnboardingApi.ts](../client/src/lib/httpOnboardingApi.ts) | the wizard's 9 routes | Implements the existing `OnboardingApi` interface, so `useOnboarding` is unchanged. |
+| [gymPortalApi.ts](../client/src/lib/gymPortalApi.ts) | `GET /gym/portal` | Validates through `portalSchema.ts` before anything renders. |
+| [gymSession.ts](../client/src/lib/gymSession.ts) | login, logout, session, set-password | Dual-implemented: Supabase today, cookies when the flag flips. |
+
+`NEXT_PUBLIC_MBP_API_MODE=live` is the single switch, and it is opt-**in** on purpose while the
+endpoints are being built. **The day `GET /onboarding` is live the trigger reverses** and the default
+should become live-with-an-opt-out: a production build that quietly fell back to the mock would take
+a real gym's details into memory, tell it the agreement was signed, and lose all of it on refresh.
+
+### Four rules `apiClient` exists to hold
+
+1. **`credentials: "include"` on every request.** Sessions are `HttpOnly` cookies on
+   `api.muscleboxpro.com`; without this the browser sends nothing and every authenticated route 401s.
+2. **`Content-Type: application/json` on every mutating request.** This is a CSRF control, not a
+   formality. A form-encoded body is a request a plain HTML form can make with no preflight; a JSON
+   content type guarantees a preflight that a non-allowlisted origin fails. The server rejects
+   form-encoded bodies for the same reason.
+3. **The onboarding handle travels in `Authorization: Bearer`, never in a path or query.** API
+   Gateway access logs archive URLs; they do not archive headers. §4.3.
+4. **A failure is a value, not an exception.** `OnboardingResult` either way, so a caller cannot
+   forget a `catch` and leave the wizard on a spinner.
+
+`apiClient` maps status → `OnboardingErrorCode` and **uses our own copy for anything it does not
+recognise**. Taking `message` from an unrecognised envelope would put "Internal server error" or a
+proxy's boilerplate in front of a gym owner as if we had written it for them.
+
+### What the backend must hold to
+
+Recorded here because each of these is invisible until it breaks:
+
+- **Every mutating route returns the whole `OnboardingState`.** The interface's invariant is that the
+  server owns `currentStep`, and `useOnboarding` folds each response straight into React state. The
+  design specifies 6 of 9 routes as partial; `commit()` falls back to a re-read, but that is a
+  compatibility shim and not somewhere to settle — DynamoDB's read is eventually consistent, so a
+  `GET /onboarding` issued immediately after `POST /onboarding/details` can legitimately answer with
+  the item as it was *before* the write. The wizard then re-renders step 1 with an empty form,
+  because committing the step cleared the draft.
+- **`Access-Control-Allow-Origin` must name a specific origin from the allowlist, never `*`,** on
+  every route including the handle-authenticated ones. `credentials: "include"` makes a wildcard a
+  hard browser error.
+- **`PUT /onboarding/draft`'s `step` field is a draft key name** (`"details"`, `"signature"`), not a
+  step number.
+- **`POST /gym/account` derives the email server-side** from the gym's §41 notices address. The
+  interface signature has no email to send, and a client-supplied one would let a browser choose
+  which address can later reset the account's password.
+
+Still open on our side: **there is no runtime schema for `OnboardingState`** — the symmetric gap to
+`portalSchema.ts`. A renamed `terms` field would render "₹NaN" in the wizard rather than failing.
+
+### The session is a cookie, and that removes a synchronous answer
+
+`HttpOnly` means **script cannot read whether a session exists.** That is the point — the frontend's
+CSP carries `'unsafe-inline'` and `'unsafe-eval'` on `script-src`, so a token in `localStorage` is
+exfiltratable by anything that runs, and a cookie is not readable at all. It does not make XSS
+harmless (a script can still *use* the ambient cookie) but it turns credential theft into session
+riding, which ends when the session does.
+
+Consequences, all of them shipped:
+
+- `client/src/lib/auth.ts` is **deleted**. Its only non-test caller was `Navbar`.
+- **`Navbar` no longer knows if anyone is signed in.** The button always reads "GYM LOGIN" and always
+  points at `/gym/login`. The alternatives were worse: a session probe runs on every marketing page
+  view to change one word, and a mirrored non-`HttpOnly` flag cookie is a second copy of the truth
+  that goes stale exactly when a session is revoked server-side.
+- **`/gym/login` forwards an existing session to the dashboard.** This is what makes the above
+  correct — the label is conservative but the destination is right. The two changes are one change;
+  removing the forwarding effect re-breaks a link on every page.
+- `GymDashboard` distinguishes "sign in again" from "try again in a moment" by
+  `GymPortalRequestError.code`, and does not retry a rejected session. `network` deliberately does
+  **not** count as an expiry: a dropped connection must not sign a gym out of a live session.
+- Signing out `removeQueries` rather than invalidating. The cached snapshot is one gym's revenue, and
+  invalidating leaves it in the cache for whoever signs in next on a shared gym office machine.
+- Sessions are 12 hours and **do not refresh** (§9.3), which is why the login form's "remember me for
+  30 days" checkbox is gone. It was wired to nothing at all — the value never left the form.
+
+### Password reset: the mechanism is real, the delivery is a person
+
+§9.2 — the reset works and the email does not. `POST /admin/gyms/{gymId}/set-password-link` mints a
+single-use handle and `POST /gym/account` spends it; there is no transactional sender wired up, so a
+human relays the link until SES lands.
+
+`/gym/forgot-password` **was actively harmful** and is now prose. It took an email address, called a
+`forgot-password` edge function, and answered "if an account exists for this email, a password reset
+link has been sent". Nothing was sent. The brand panel went further and promised those links expired
+after an hour. A locked-out gym owner would read a confident confirmation and then wait for a message
+that was never coming — and waiting instead of calling us is the worst outcome available. Its
+`?token=` branch was broken a second way: it called `supabase.auth.updateUser({ password })`, which
+changes the password of whatever session the browser already has and ignores the token entirely.
+
+`/gym/set-password/[handle]` is the other half — where a relayed link lands. It sets a password and
+**does not sign anyone in**: a link that opened a session would *be* a session, and a forwarded email
+would hand someone a logged-in portal.
+
+When SES lands this becomes a form again. The thing to keep is the neutral confirmation — the message
+must not differ between an address we know and one we do not, or the page is an oracle for which gyms
+are customers.
+
+### Verified
+
+`npx tsc --noEmit` clean. **44 test files, 847 tests passing** — up 61 net from 786 at the start of
+the work, after removing `auth.test.ts` with its module. No production build (decision 10).

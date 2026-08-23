@@ -83,7 +83,18 @@ export const signatureSchema = z.object({
     errorMap: () => ({ message: "You need to confirm you are authorised to bind the entity" }),
   }),
   contentHash: z.string().regex(/^[0-9a-f]{64}$/, "Missing or malformed agreement hash"),
-  otpCode: z.string().trim().regex(/^[0-9]{6}$/, "Enter the 6-digit code we emailed you"),
+  /**
+   * Optional, because signing ships before SES does — see `SIGNING_REQUIRES_OTP`.
+   *
+   * `.optional()` rather than allowing `""`: the server distinguishes absent from
+   * malformed and rejects a request that carries the field at all while OTP is off, so
+   * an empty string has to fail the schema rather than pass as "no code".
+   */
+  otpCode: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{6}$/, "Enter the 6-digit code we emailed you")
+    .optional(),
 });
 
 export const portalPasswordSchema = z

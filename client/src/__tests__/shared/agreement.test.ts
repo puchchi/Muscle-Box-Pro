@@ -12,43 +12,18 @@ import {
   sha256Hex,
 } from "@shared/agreement/render";
 import { PLAIN_LANGUAGE_V2_1 } from "@shared/agreement/plainLanguage";
-import type { AgreementFields, Block } from "@shared/agreement/types";
+import { GOLDEN_V2_1, verifyGoldenVector } from "@shared/agreement/goldenVector";
+import type { Block } from "@shared/agreement/types";
 import { PARTNERSHIP, formatInr } from "@shared/partnership/summary";
 
 /**
- * Fixed inputs for the hash test. These are NOT example values to be freshened —
- * changing any character here changes the expected hash below, which is the whole
- * point. Treat them as a golden fixture.
+ * The pinned inputs live in `shared/agreement/goldenVector.ts`, not here, because
+ * `mbp-backend` copies that module verbatim to compute the same hash — see that repo's
+ * `docs/gym-onboarding-api-design.md` §2.9. A fixture declared inside a test file cannot
+ * be shared with another repo, and the hash guard on `POST /onboarding/sign` rejects
+ * every signature if the two renderings disagree by one byte.
  */
-const FIXTURE: AgreementFields = {
-  gymLegalName: "Iron Temple Fitness LLP",
-  effectiveDate: "01 September 2026",
-  machineModel: "MuscleBoxPro MBP-1",
-  machineId: "MBP-0001",
-  serialNumber: "SN-TEST-0001",
-  machineValue: "₹4,50,000",
-  installationDate: "05 September 2026",
-  installationAddress: "12 MG Road, Bengaluru, Karnataka 560001",
-  accessories: "Cup dispenser, water line kit",
-  securityDeposit: "₹50,000",
-  // v2.1 has no token for this — its §5.1 transcribes the words as fixed text, which
-  // is the defect v2.2 fixes. Present because `AgreementFields` requires it; it does
-  // not appear in v2.1's rendered bytes, so the golden hash below is unaffected.
-  securityDepositInWords: "Rupees Fifty Thousand Only",
-  termMonths: "24",
-  mbpNotices: {
-    address: "BlendBox Innovations LLP, Bengaluru",
-    email: "legal@muscleboxpro.com",
-    phone: "+91 00000 00000",
-  },
-  gymNotices: {
-    address: "12 MG Road, Bengaluru, Karnataka 560001",
-    email: "owner@irontemple.example",
-    phone: "+91 11111 11111",
-  },
-  signatoryName: "A. Owner",
-  signatoryDesignation: "Designated Partner",
-};
+const FIXTURE = GOLDEN_V2_1.fields;
 
 /** Flattens cover + sections + schedules so a test can search the whole tree. */
 function allBlocks(): { location: string; block: Block }[] {
@@ -281,21 +256,18 @@ describe("plain-text rendering and hashing", () => {
     expect(a).not.toBe(b);
   });
 
-  it("produces a stable hash for v2.1 with the golden fixture", async () => {
+  it("still renders to the bytes the golden vector pins", async () => {
     // ─────────────────────────────────────────────────────────────────────────
-    // DO NOT UPDATE THIS HASH TO MAKE A FAILING TEST PASS.
+    // DO NOT UPDATE THE VECTOR TO MAKE THIS PASS.
     //
     // It pins the exact bytes that a v2.1 signature attests to. If this fails,
-    // either the agreement content changed — in which case add v2_2.ts rather
-    // than editing v2.1 — or renderPlainText's format changed, which invalidates
-    // every signature already stored. Both are things to stop and think about.
+    // either the agreement content changed — in which case add v2_3.ts rather
+    // than editing a published version — or renderPlainText's format changed,
+    // which invalidates every signature already stored. Both are things to stop
+    // and think about.
     // ─────────────────────────────────────────────────────────────────────────
-    const { version, contentHash, length } = await fingerprint(AGREEMENT_V2_1, FIXTURE);
-    expect(version).toBe("2.1");
-    expect(length).toBe(31_103);
-    expect(contentHash).toBe(
-      "32e560ac088577008ff7af73f9cf4c1c4940ea4ff54a1e42301d1362374a75cf",
-    );
+    const verdict = await verifyGoldenVector(AGREEMENT_V2_1, GOLDEN_V2_1);
+    expect(verdict.ok ? [] : verdict.problems).toEqual([]);
   });
 
   it("refuses to fingerprint a half-substituted contract", async () => {

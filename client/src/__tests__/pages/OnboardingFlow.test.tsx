@@ -17,7 +17,6 @@ vi.mock("next/link", () => ({
 }));
 
 import { DEMO_TOKEN, MOCK_TOKENS, resetMockOnboarding } from "@shared/onboarding/mockApi";
-import { PREVIEW_OTP } from "@/lib/onboardingApi";
 import OnboardingFlow from "@/pages/onboarding/OnboardingFlow";
 
 /**
@@ -309,16 +308,19 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
     expect(inShort).toHaveTextContent(/Gautam Buddha Nagar/);
   });
 
-  it("renders the whole document with a contents index and a hash of what is on screen", async () => {
+  it("renders the whole document with a contents index and the server's hash of it", async () => {
     await reachStepThree();
     expect(screen.getByTestId("agreement-index")).toBeInTheDocument();
     // Not an excerpt: a clause from the far end of the document, and a schedule.
     expect(screen.getByTestId("section-47")).toBeInTheDocument();
     expect(screen.getByTestId("section-Schedule H")).toBeInTheDocument();
-    // Hashed from the rendered text in the browser, not handed down by the server.
-    await waitFor(() =>
-      expect(screen.getByTestId("content-hash").textContent).toMatch(/^[0-9a-f]{64}$/),
-    );
+    // Handed down by the server at issuance, so it is on screen from the first paint —
+    // there is no "computing..." state left to wait through.
+    expect(screen.getByTestId("content-hash").textContent).toMatch(/^[0-9a-f]{64}$/);
+    // And then vouched for: this browser rendered the same text and got the same hash.
+    // Without this line the test would pass against a page displaying a fingerprint of
+    // some document other than the one it is showing.
+    await waitFor(() => expect(screen.getByTestId("hash-verified")).toBeInTheDocument());
     // v2.2 resolved all eight of v2.1's blocking markers, so the internal "can't be
     // issued yet" panel must be absent. It is not dead code: it renders again the moment
     // a future version carries a blocks-send marker, which is what agreement-v2-2.test.ts
@@ -326,36 +328,31 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
     expect(screen.queryByTestId("agreement-not-issuable")).not.toBeInTheDocument();
   });
 
-  it("will not email a code until both assertions are ticked", async () => {
+  it("will not sign until both assertions are ticked", async () => {
     const user = await reachStepThree();
-    await waitFor(() => expect(screen.getByTestId("button-request-otp")).toBeEnabled());
+    await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
 
     // §32 authority is a separate representation, so ticking only the first is not assent.
     await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("button-request-otp"));
-    expect(screen.getByTestId("error-authorised")).toBeInTheDocument();
-    expect(screen.queryByTestId("input-otp")).not.toBeInTheDocument();
-
-    await user.click(screen.getByTestId("checkbox-authorised"));
-    await user.click(screen.getByTestId("button-request-otp"));
-    await waitFor(() => expect(screen.getByTestId("input-otp")).toBeInTheDocument());
-    expect(screen.getByTestId("otp-sent-to")).toHaveTextContent("owner@irontemple.example");
-  });
-
-  it("rejects a wrong code and stays on step 3", async () => {
-    const user = await reachStepThree();
-    await waitFor(() => expect(screen.getByTestId("button-request-otp")).toBeEnabled());
-    await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("checkbox-authorised"));
-    await user.click(screen.getByTestId("button-request-otp"));
-    await waitFor(() => expect(screen.getByTestId("input-otp")).toBeInTheDocument());
-
-    await user.type(screen.getByTestId("input-otp"), "000000");
     await user.click(screen.getByTestId("button-sign"));
-
-    await waitFor(() => expect(screen.getByTestId("sign-error")).toBeInTheDocument());
+    expect(screen.getByTestId("error-authorised")).toBeInTheDocument();
     expect(screen.getByTestId("agreement-body")).toBeInTheDocument();
     expect(screen.queryByTestId("deposit-amount")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("checkbox-authorised"));
+    await user.click(screen.getByTestId("button-sign"));
+    await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
+  });
+
+  it("does not ask for a signing code it cannot verify", async () => {
+    // SES is not live and the signing endpoint rejects an `otpCode`, so the panel must
+    // not tell a gym we emailed and checked one. Asserted rather than left implicit,
+    // because the phase is still in the file behind `SIGNING_REQUIRES_OTP` and the
+    // failure mode of turning it on too early is a screen that lies.
+    await reachStepThree();
+    expect(screen.queryByTestId("button-request-otp")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("input-otp")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("otp-sent-to")).not.toBeInTheDocument();
   });
 });
 
@@ -373,12 +370,11 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
     await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
     await user.click(screen.getByTestId("button-continue"));
     await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByTestId("button-request-otp")).toBeEnabled());
+    // Enabled only once this browser has re-rendered the document and matched the
+    // server's hash — the check that replaced computing the hash here.
+    await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
     await user.click(screen.getByTestId("checkbox-agreed"));
     await user.click(screen.getByTestId("checkbox-authorised"));
-    await user.click(screen.getByTestId("button-request-otp"));
-    await waitFor(() => expect(screen.getByTestId("input-otp")).toBeInTheDocument());
-    await user.type(screen.getByTestId("input-otp"), PREVIEW_OTP);
     await user.click(screen.getByTestId("button-sign"));
     await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
   }
@@ -455,15 +451,11 @@ describe("OnboardingFlow — the whole flow", () => {
     await user.click(screen.getByTestId("button-continue"));
     await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
 
-    // Enabled only once the browser has finished hashing the document it rendered.
-    await waitFor(() => expect(screen.getByTestId("button-request-otp")).toBeEnabled());
+    // Enabled only once the browser has re-rendered the document and confirmed it hashes
+    // to the value the server pinned at issuance.
+    await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
     await user.click(screen.getByTestId("checkbox-agreed"));
     await user.click(screen.getByTestId("checkbox-authorised"));
-    await user.click(screen.getByTestId("button-request-otp"));
-
-    // Two phases: the button above sends a code, it does not sign anything.
-    await waitFor(() => expect(screen.getByTestId("input-otp")).toBeInTheDocument());
-    await user.type(screen.getByTestId("input-otp"), PREVIEW_OTP);
     await user.click(screen.getByTestId("button-sign"));
 
     await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());

@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ListTree, Wrench } from "lucide-react";
 import { renderText } from "@shared/agreement/render";
+import { ISSUED_RENDER_OPTIONS } from "@shared/agreement/issued";
 import type {
   Agreement,
   AgreementFields,
   Block,
   Section,
 } from "@shared/agreement/types";
-import type { RenderOptions } from "@shared/agreement/render";
 
 /**
  * The agreement, on screen, for signing.
@@ -22,28 +22,18 @@ import type { RenderOptions } from "@shared/agreement/render";
  * native `<details>` per section so a gym can fold away what it has read, and a
  * sticky contents strip that is one tap from any clause.
  *
- * **What is on screen must equal what is hashed.** Both this component and the
- * signature's content hash render through `renderText` with `AGREEMENT_RENDER_OPTIONS`.
+ * **What is on screen must equal what is hashed.** This component, and whatever renders
+ * the text that gets hashed, both go through `renderText` with `ISSUED_RENDER_OPTIONS`.
  * If those two ever diverge — a different placeholder, a different missing-token
  * policy — the stored hash stops being evidence of what the gym read, which is the
- * one thing it exists to be. Import the constant; do not retype the options.
+ * one thing it exists to be. Import the constant; do not retype the options. It lives in
+ * `@shared/agreement/issued` rather than here, because the server computes the hash now
+ * and cannot import from a `"use client"` component.
  *
  * **`todo` markers are ours, not the gym's.** They are drafting notes about holes in
  * the source document. They render only when `showInternalMarkers` is set, which is
  * preview mode; a gym must never read our notes about its own contract.
  */
-
-/**
- * `placeholder` rather than `throw`, because step 3 has to render for a gym whose
- * machine has not been allocated yet — serial number and installation date are
- * genuinely blank until Schedule A is signed on site (§6, §17). The signing path is
- * still protected: `canIssue()` refuses any agreement with unresolved tokens, so a
- * placeholder can be *read* but never *signed* around.
- */
-export const AGREEMENT_RENDER_OPTIONS: RenderOptions = {
-  onMissing: "placeholder",
-  placeholder: "__________",
-};
 
 /** `"6"` → `"agreement-6"`, `"Schedule A"` → `"agreement-schedule-a"`. */
 export function sectionAnchor(number: string): string {
@@ -211,7 +201,7 @@ function BlockView({
   fields: Partial<AgreementFields>;
   showInternalMarkers: boolean;
 }) {
-  const r = (text: string) => renderText(text, fields, AGREEMENT_RENDER_OPTIONS);
+  const r = (text: string) => renderText(text, fields, ISSUED_RENDER_OPTIONS);
 
   switch (block.kind) {
     case "paragraph":

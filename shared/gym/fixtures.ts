@@ -51,32 +51,48 @@ export const DEMO_GYM_PORTAL: GymPortalSnapshot = {
 
   terms: STANDARD_TERMS,
 
-  // Trading history behind it: 7,000 cups, ₹8,40,000 of gross and ₹4,55,000 of §7 net
-  // profit — ₹65 a cup on the indicative economics. That leaves the ₹5,00,000 profit
-  // milestone close but not reached, and the cup test still 7,740 cups away, so the
-  // demo shows the profit test binding and the share still at 20%.
-  opening: {
-    openingPaidCups: 7_000,
-    openingGrossExTaxInr: 8_40_000,
-    openingNetProfitInr: 4_55_000,
+  // All four reporting sections available, which is the *end* state rather than the one
+  // `GET /gym/portal` returns today. That is deliberate: the fixture's job is to exercise
+  // every card, and a fixture that mirrored the endpoint's current partial response would
+  // leave the figures nobody has checked since they were written untested. The absent
+  // states are covered by the dashboard's own tests, which override this.
+  sales: {
+    available: true,
+    data: {
+      // Trading history behind it: 7,000 cups, ₹8,40,000 of gross and ₹4,55,000 of §7
+      // net profit — ₹65 a cup on the indicative economics. That leaves the ₹5,00,000
+      // profit milestone close but not reached, and the cup test still 7,740 cups away,
+      // so the demo shows the profit test binding and the share still at 20%.
+      opening: {
+        openingPaidCups: 7_000,
+        openingGrossExTaxInr: 8_40_000,
+        openingNetProfitInr: 4_55_000,
+      },
+      currentPeriod: {
+        period: "2026-08",
+        paidCups: 260,
+        grossExTaxInr: 31_200,
+        directVariableCostsInr: 14_300,
+      },
+    },
   },
 
-  currentPeriod: {
-    period: "2026-08",
-    paidCups: 260,
-    grossExTaxInr: 31_200,
-    directVariableCostsInr: 14_300,
-    adRevenueExTaxInr: 4_000,
-  },
+  adRevenue: { available: true, data: { period: "2026-08", revenueExTaxInr: 4_000 } },
 
   // Opened in July, so August is its second month and the third is still to come.
   // 1,180 cups is one completed block with 180 cups sitting in an incomplete one.
-  electricityWindow: { label: "Jul–Sep 2026", paidCups: 1_180, endsOn: "2026-09-30" },
+  electricity: {
+    available: true,
+    data: { label: "Jul–Sep 2026", paidCups: 1_180, endsOn: "2026-09-30" },
+  },
 
-  statements: [
-    { period: "2026-07", settledOn: "2026-08-11", gymPayoutInr: 5_870, electricityInr: 0, documentUrl: null },
-    { period: "2026-06", settledOn: "2026-07-12", gymPayoutInr: 4_420, electricityInr: 2_000, documentUrl: null },
-  ],
+  statements: {
+    available: true,
+    data: [
+      { period: "2026-07", settledOn: "2026-08-11", gymPayoutInr: 5_870, electricityInr: 0, documentUrl: null },
+      { period: "2026-06", settledOn: "2026-07-12", gymPayoutInr: 4_420, electricityInr: 2_000, documentUrl: null },
+    ],
+  },
 
   deposit: {
     status: "paid",
@@ -90,12 +106,39 @@ export const DEMO_GYM_PORTAL: GymPortalSnapshot = {
   },
 
   agreement: {
-    version: "2.1",
+    // 2.2 because that is the first version the flow ever issues: v2.1 is the frozen
+    // transcription of the source PDF and had eight blocking holes in it, so no gym
+    // could have signed one. A fixture claiming otherwise describes a state that cannot
+    // exist.
+    version: "2.2",
     signedOn: "2026-04-27",
     // A real 64-hex digest is not required for a fixture, but the *length* is: the
-    // card truncates it, and a short string would hide a rendering bug.
-    contentHash: "3f9a1c7e2b4d6081a5c3e7f9b2d4068a1c5e3f7b9d2046a8c1e5f3b7d9024a68c",
+    // card truncates it, and a short string would hide a rendering bug. This was 65
+    // characters until `portalSchema.ts` started checking — which is the whole argument
+    // for validating a fixture against the same rules as a live response.
+    contentHash: "3f9a1c7e2b4d6081a5c3e7f9b2d4068a1c5e3f7b9d2046a8c1e5f3b7d9024a68",
   },
 
   asOf: "2026-08-22T06:30:00.000Z",
+};
+
+/**
+ * What `GET /gym/portal` actually returns today.
+ *
+ * The endpoint ships partial: profile, terms, machine, agreement and deposit are all held
+ * in our own table, and the four trading sections are not built (`mbp-backend`
+ * `docs/gym-onboarding-api-design.md` §2.6, gated on §9.4). This is here rather than only
+ * in a test override because it is the response every real gym will get on day one, and a
+ * repo where the only checked-in example is the fully-populated end state is a repo where
+ * the partial screen is first looked at in production.
+ *
+ * Same gym as `DEMO_GYM_PORTAL` on purpose, so the two can be swapped in
+ * `gymPortalApi.ts` to see the same dashboard with and without the trading feeds.
+ */
+export const PARTIAL_GYM_PORTAL: GymPortalSnapshot = {
+  ...DEMO_GYM_PORTAL,
+  sales: { available: false, reason: "not_implemented" },
+  adRevenue: { available: false, reason: "not_implemented" },
+  electricity: { available: false, reason: "not_implemented" },
+  statements: { available: false, reason: "not_implemented" },
 };

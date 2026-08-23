@@ -18,8 +18,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
-
 // ─── Pages ────────────────────────────────────────────────────────────────────
 import BlogBestProteinShake from "@/pages/BlogBestProteinShake";
 import BlogProteinDiabetes from "@/pages/BlogProteinDiabetes";

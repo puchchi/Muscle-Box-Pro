@@ -3,30 +3,30 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileSignature } from "lucide-react";
 import { IS_MOCK_ONBOARDING, PREVIEW_OTP } from "@/lib/onboardingApi";
-import { AGREEMENT_V2_2 } from "@shared/agreement/v2_2";
-import { PLAIN_LANGUAGE_V2_2 } from "@shared/agreement/plainLanguage";
-import { canIssue, collectBlockers, renderPlainText, sha256Hex } from "@shared/agreement/render";
-import { toAgreementFields, formatAgreementDate } from "@shared/onboarding/agreementFields";
+import { ISSUED_AGREEMENT, ISSUED_PLAIN_LANGUAGE } from "@shared/agreement/issued";
+import { canIssue, collectBlockers } from "@shared/agreement/render";
+import { formatAgreementDate } from "@shared/onboarding/agreementFields";
+import {
+  checkIssuedAgreement,
+  issuedAgreementFields,
+  type IssuedAgreementCheck,
+} from "@shared/onboarding/issuedAgreement";
 import type { Blocker } from "@shared/agreement/types";
-import AgreementReader, {
-  AGREEMENT_RENDER_OPTIONS,
-  sectionAnchor,
-} from "../AgreementReader";
+import AgreementReader, { sectionAnchor } from "../AgreementReader";
 import SignPanel from "../SignPanel";
 import type { StepViewProps } from "../types";
 
 /**
- * The version this flow issues, and its matching summary panel.
+ * The version this flow issues, and its matching summary panel — both from
+ * `@shared/agreement/issued`, which is the one place that decides.
  *
- * Aliased once at the top of the file so that switching version is a two-line change
- * and cannot half-happen. The pairing matters more than either constant: rendering
- * v2.2 above a panel written for v2.1 would put a summary on screen that describes
- * clauses the reader below does not contain, which is precisely the failure the panel
- * exists to avoid. The test file asserts every `section` in the panel resolves to a
- * real section of this agreement.
+ * This file used to name `AGREEMENT_V2_2` directly, and the record written at signing
+ * named "2.1" independently. Reading both from one module is what makes that particular
+ * disagreement unrepresentable. The test file asserts every `section` in the panel
+ * resolves to a real section of this agreement.
  */
-const AGREEMENT = AGREEMENT_V2_2;
-const PLAIN_LANGUAGE = PLAIN_LANGUAGE_V2_2;
+const AGREEMENT = ISSUED_AGREEMENT;
+const PLAIN_LANGUAGE = ISSUED_PLAIN_LANGUAGE;
 
 /**
  * Step 3 — Review & sign.
@@ -36,13 +36,18 @@ const PLAIN_LANGUAGE = PLAIN_LANGUAGE_V2_2;
  *
  *   - the plain-language panel — `PLAIN_LANGUAGE`, one line per clause
  *   - the reader             — `AgreementReader`, which also reports the scroll gate
- *   - the content hash       — SHA-256 of the same rendered text, computed in the browser
- *   - the sign panel         — `SignPanel`, two assertions plus an emailed code
+ *   - the hash check         — this client's own rendering, compared to the server's
+ *   - the sign panel         — `SignPanel`, two assertions
  *
- * The hash is the load-bearing part of the whole design. It is computed here from
- * `renderPlainText` with the same options the reader renders with, so the stored
- * signature is evidence of *this* text and a later edit to the version module cannot
- * retroactively change what was signed. See docs/gym-onboarding.md §12.
+ * **The hash comes from the server now, and this component checks it.** It used to be
+ * computed here and sent up as truth, which made the signature evidence only that some
+ * browser had done some arithmetic — the server could not verify a signature against a
+ * number it never computed, and a tab running yesterday's JavaScript would have signed a
+ * different document from the one on the record. The server renders and hashes at
+ * issuance; this component renders the same text, compares, and refuses to open the sign
+ * panel if the two disagree. A mismatch in development is a disabled button; a mismatch
+ * in production means the record moved under a gym mid-read and it is told to reload. See
+ * docs/gym-onboarding.md §12 and `@shared/onboarding/issuedAgreement`.
  *
  * **Signing is refused in production while the document has unresolved clauses.**
  * `canIssue()` decides, and that is not a warning to click past: an agreement with a
@@ -52,21 +57,36 @@ const PLAIN_LANGUAGE = PLAIN_LANGUAGE_V2_2;
  * it is what stops a future v2_3 being issued half-drafted.
  */
 export default function StepReviewSign({ state, readOnly, isSubmitting, actions }: StepViewProps) {
-  const [contentHash, setContentHash] = useState<string | null>(null);
+  /** Null until this client has rendered the text and hashed it for itself. */
+  const [check, setCheck] = useState<IssuedAgreementCheck | null>(null);
   const [hasReadToEnd, setHasReadToEnd] = useState(false);
 
   /**
-   * Fixed at mount rather than read on every render, so the rendered text — and
-   * therefore the hash — cannot change underneath a gym that is part-way through
-   * signing. Once signed, the server's timestamp governs.
+   * §4.1's Effective Date comes from the server, and this component renders nothing
+   * until it has one.
+   *
+   * It used to come from `new Date()` at mount. That is a hash bug rather than a
+   * cosmetic one: the date is rendered *into* the agreement text, so the browser's
+   * clock decided what got hashed. A gym opening the reader at 23:58 IST and signing
+   * four minutes later hashed a document dated the previous day; a device with a skewed
+   * clock, or simply a different timezone, hashed a different document again from the
+   * identical agreement. None of those could be reproduced by re-rendering server-side,
+   * which is the only thing that makes a stored hash evidence rather than decoration.
+   *
+   * Being server-owned also fixes the quieter half of it: `state.timestamps.signedAt`
+   * arriving after signing used to change `fields`, which recomputed the hash to a value
+   * different from the one just signed. The date is now fixed once, before the text is
+   * ever rendered, and signing does not move it.
    */
-  const [openedAt] = useState(() => new Date().toISOString());
+  const issued = state.agreement;
   const fields = useMemo(
-    () => toAgreementFields(state, state.timestamps.signedAt ?? openedAt),
-    [state, openedAt],
+    () => (issued ? issuedAgreementFields(state, issued.effectiveDate) : null),
+    [state, issued],
   );
 
-  const issuable = canIssue(AGREEMENT, fields);
+  // `{}` while the document is still being issued: `canIssue` takes partial fields, and
+  // an un-issued agreement is not issuable, which is the right answer anyway.
+  const issuable = canIssue(AGREEMENT, fields ?? {});
   const blockers = collectBlockers(AGREEMENT).filter((b) => b.severity === "blocks-send");
 
   useEffect(() => {
@@ -78,32 +98,49 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
   }, []);
 
   useEffect(() => {
+    if (!issued) return;
     let cancelled = false;
-    // Hashed from the same renderer and the same options the reader uses, so the
-    // document on screen and the document on the record cannot disagree.
-    void sha256Hex(renderPlainText(AGREEMENT, fields, AGREEMENT_RENDER_OPTIONS)).then(
-      (hash) => {
-        if (!cancelled) setContentHash(hash);
-      },
-    );
+    // Renders the document with the same version module, options and field bridge the
+    // server used, and compares. This is the only check that catches a drifted *field
+    // bridge* — the golden vector pins `AgreementFields` directly, so it cannot see a
+    // `formatInr` or a notices-address change that moves the text built from state.
+    void checkIssuedAgreement(state, issued).then((result) => {
+      if (cancelled) return;
+      setCheck(result);
+      if (!result.ok) {
+        // Logged, never rendered: the detail is about our code, and a gym reading
+        // "rendered hash abc…, the record pins def…" learns nothing it can act on.
+        console.error("[onboarding] issued agreement mismatch:", result.problems.join("; "));
+      }
+    });
     return () => {
       cancelled = true;
     };
-  }, [fields]);
+  }, [state, issued]);
 
   const onReachedEnd = useCallback(() => setHasReadToEnd(true), []);
+
+  // After every hook, so the hook order is identical on both paths. The normal route
+  // here never sees this: step 2's acknowledgement issues the document, so it is
+  // already in state by the time step 3 first paints. It shows for the single frame of
+  // a resume that lands directly on step 3, where `markAgreementViewed` above is what
+  // issues it.
+  if (!fields || !issued) return <PreparingNotice />;
 
   async function handleSign(input: {
     fullName: string;
     designation: string;
-    otpCode: string;
+    otpCode?: string;
   }): Promise<boolean> {
-    if (!contentHash) return false;
+    // Unreachable from the UI — the panel is not rendered until the check passes — and
+    // checked anyway, because "the button was disabled" is not a guarantee about what
+    // gets submitted.
+    if (!check?.ok) return false;
     return actions.signAgreement({
       ...input,
       agreedToAgreement: true,
       authorisedToBind: true,
-      contentHash,
+      contentHash: check.contentHash,
     });
   }
 
@@ -126,25 +163,33 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
         onReachedEnd={onReachedEnd}
       />
 
-      <HashLine contentHash={contentHash} />
+      <HashLine contentHash={issued.contentHash} verified={check?.ok ?? null} />
 
       {readOnly ? (
         <SignedSummary
           signedAt={state.timestamps.signedAt}
           signatoryName={state.details.signatoryName}
-          version={state.agreement?.version ?? AGREEMENT.version}
+          version={issued.version}
         />
       ) : (
         <SignPanel
           legalEntityName={state.details.legalEntityName}
           defaultName={state.details.signatoryName}
           defaultDesignation={state.details.signatoryDesignation}
-          contentHash={contentHash}
+          contentHash={check?.ok ? check.contentHash : null}
           hasReadToEnd={hasReadToEnd}
+          /*
+            Two reasons the panel can be shut, and the mismatch outranks the drafting
+            one — a document whose bytes we cannot account for is not something to let a
+            preview build click past, which is exactly what `IS_MOCK_ONBOARDING`
+            deliberately does for unresolved clauses.
+          */
           blockedReason={
-            issuable.ok || IS_MOCK_ONBOARDING
-              ? null
-              : "There are unresolved items in the document we need to close before you sign it. We're on it — we'll email you as soon as your copy is ready, and nothing you've entered is lost."
+            check && !check.ok
+              ? "We can't confirm this is the current version of your agreement. Reload this page to fetch a fresh copy — nothing you've entered is lost, and nothing has been signed."
+              : issuable.ok || IS_MOCK_ONBOARDING
+                ? null
+                : "There are unresolved items in the document we need to close before you sign it. We're on it — we'll email you as soon as your copy is ready, and nothing you've entered is lost."
           }
           previewOtp={IS_MOCK_ONBOARDING ? PREVIEW_OTP : null}
           isSubmitting={isSubmitting}
@@ -203,25 +248,63 @@ function InShort() {
 // ── Small pieces ────────────────────────────────────────────────────────────
 
 /**
+ * Shown while the server is still issuing the document.
+ *
+ * Deliberately not a spinner over a rendered agreement: without the server's effective
+ * date there is no document to render, and showing the text with a guessed date — even
+ * for one frame — is how a gym ends up reading a version of the agreement that differs
+ * from the one it signs.
+ */
+function PreparingNotice() {
+  return (
+    <section
+      className="rounded-2xl border border-gray-200 bg-white p-6 text-center"
+      data-testid="agreement-preparing"
+    >
+      <p className="text-sm font-bold text-foreground">Preparing your copy</p>
+      <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+        One moment — we're issuing your agreement. Nothing you've entered is lost.
+      </p>
+    </section>
+  );
+}
+
+/**
  * The fingerprint, on screen.
  *
  * Shown rather than kept internal because it is the gym's evidence too: the same value
  * appears in the emailed PDF, so a document that has been altered afterwards can be
  * detected by anyone who kept the email.
+ *
+ * The value rendered is the server's — it exists from the first paint, so there is no
+ * "computing..." state any more. What is still pending is the *check*, and that gets its
+ * own line rather than being folded into the hash: a fingerprint shown with no indication
+ * that this browser reproduced it is the fingerprint of a document nobody verified, which
+ * is worse than not showing one, because it looks like a verification.
  */
-function HashLine({ contentHash }: { contentHash: string | null }) {
+function HashLine({
+  contentHash,
+  verified,
+}: {
+  contentHash: string;
+  /** Null while this client is still rendering and hashing the document itself. */
+  verified: boolean | null;
+}) {
   return (
     <p className="text-[11px] text-muted-foreground leading-relaxed flex items-start gap-2">
       <FileSignature className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
       <span>
         Document fingerprint (SHA-256), stored with your signature and printed on your copy:{" "}
-        {contentHash ? (
-          <code className="break-all font-mono text-foreground" data-testid="content-hash">
-            {contentHash}
-          </code>
-        ) : (
-          "computing..."
+        <code className="break-all font-mono text-foreground" data-testid="content-hash">
+          {contentHash}
+        </code>
+        {verified === true && (
+          <span className="text-foreground" data-testid="hash-verified">
+            {" "}
+            — this page matches it.
+          </span>
         )}
+        {verified === null && <span data-testid="hash-checking"> — checking this page…</span>}
       </span>
     </p>
   );

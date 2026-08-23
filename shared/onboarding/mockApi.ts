@@ -18,7 +18,9 @@
  */
 
 import { PARTNERSHIP } from "../partnership/summary";
+import { fingerprintIssuedAgreement, issuanceDateInIndia } from "./issuedAgreement";
 import { gymDetailsSchema, portalPasswordSchema, signatureSchema, toFieldErrors } from "./schema";
+import { SIGNING_REQUIRES_OTP } from "./types";
 import type {
   DepositChoice,
   DepositLink,
@@ -183,6 +185,41 @@ function complete(state: OnboardingState, step: OnboardingStep): void {
   state.currentStep = recomputeStep(state.completedSteps);
 }
 
+/**
+ * Issues the document, once, when the gym becomes entitled to read it — version,
+ * effective date **and hash**, all fixed in one call.
+ *
+ * The hash is computed here rather than accepted at signing, and that inversion is the
+ * whole point. A hash the browser supplied and the server stored proved only that some
+ * client had done some arithmetic: the server could not verify a signature against a
+ * number it never computed. So this renders the text itself, exactly as the reader will
+ * render it — same version module, same `ISSUED_RENDER_OPTIONS`, same field bridge, all
+ * reached through `fingerprintIssuedAgreement` so there is one code path and not two.
+ *
+ * Async for that reason, and it is worth the awkwardness: `sha256Hex` goes through
+ * `crypto.subtle`, which is a promise everywhere it exists. The alternative — a
+ * synchronous hash implementation — is a second implementation of the one thing that
+ * must not have two.
+ *
+ * The effective date is fixed *here*, on the server's clock, before any client renders
+ * the text, because §4.1's Effective Date is rendered into the agreement and therefore
+ * into the hash. It is the Indian calendar date, not the UTC one: see
+ * `issuanceDateInIndia`.
+ *
+ * Idempotent, and deliberately so: it is called both when step 2 completes and when
+ * step 3 is first viewed, because a record that resumes straight into step 3 must find
+ * a document waiting rather than mint a second one with a later date. Re-issuing would
+ * move the date and the hash underneath a gym mid-read, so an existing row is never
+ * touched — not even after the terms change. Reissuing on a terms change is a real
+ * decision the real backend has to make; the honest failure mode meanwhile is
+ * `content_mismatch` at signing, which tells the gym to reload rather than silently
+ * swapping the document it read.
+ */
+async function issueAgreement(state: OnboardingState, nowIso: string): Promise<void> {
+  if (state.agreement) return;
+  state.agreement = await fingerprintIssuedAgreement(state, issuanceDateInIndia(nowIso));
+}
+
 /** Steps 1 and 2 after signing. The hash covers the values they set (§4). */
 function isFrozen(state: OnboardingState, step: OnboardingStep): boolean {
   return state.isSigned && (step === 1 || step === 2);
@@ -333,6 +370,10 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
       state.timestamps.partnershipAckAt = now();
       if (state.status === "details_submitted") state.status = "partnership_ack";
       complete(state, 2);
+      // The document is issued as the gym becomes entitled to read it, so step 3 has a
+      // version, an effective date and a hash to render and check against on its very
+      // first paint.
+      await issueAgreement(state, now());
       return ok(state);
     },
 
@@ -347,6 +388,10 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
         state.timestamps.agreementViewedAt = now();
         if (state.status === "partnership_ack") state.status = "agreement_viewed";
       }
+      // Backstop for a record that reaches step 3 without a document — a resume, or a
+      // row created before this call existed. Issuing here as well means the reader
+      // never has to invent a date, and the idempotence means it cannot move one.
+      await issueAgreement(state, now());
       return ok(state);
     },
 
@@ -357,6 +402,12 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
       const { state } = loaded.data;
 
       if (state.isSigned) return fail("already_signed", "This agreement is already signed.");
+      // Kept behind the same switch as the field itself, so a UI that starts asking for
+      // a code while the backend still rejects one fails here — at the request, before
+      // the gym has typed anything — rather than at the signature.
+      if (!SIGNING_REQUIRES_OTP) {
+        return fail("validation", "Signing codes aren't in use yet.");
+      }
       loaded.data.otpIssued = true;
       return { ok: true, data: { sentTo: state.details.noticesEmail } };
     },
@@ -385,14 +436,47 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
           fieldErrors: toFieldErrors(parsed.error),
         });
       }
-      if (!loaded.data.otpIssued || parsed.data.otpCode !== MOCK_OTP) {
+
+      // Refused rather than issued-on-the-fly. A client with no pinned document had
+      // nothing to render and therefore nothing to hash, so whatever it sent came from
+      // somewhere else — and issuing here would date the agreement at the instant of
+      // signing, which is precisely the browser-clock bug the inversion removed.
+      if (!state.agreement) {
+        return fail("wrong_step", "Open the agreement before signing it.", { currentStep: 3 });
+      }
+
+      // The code is rejected, not ignored, while OTP is off. A signature accepted
+      // alongside an unverified code is a signature whose audit trail claims a check
+      // that never happened, and the panel would have told the gym it was emailed one.
+      if (!SIGNING_REQUIRES_OTP) {
+        if (parsed.data.otpCode !== undefined) {
+          return fail("validation", "Signing codes aren't in use yet.", {
+            fieldErrors: { otpCode: "Remove this field — it is not verified yet." },
+          });
+        }
+      } else if (!loaded.data.otpIssued || parsed.data.otpCode !== MOCK_OTP) {
         return fail("otp_invalid", "That code isn't right. Request a new one and try again.");
+      }
+
+      // The comparison the whole inversion exists for. The server re-renders the
+      // document it pinned and checks the client's independently computed hash against
+      // its own — so what gets stored is never what the client asserted, and a client
+      // rendering different text cannot get a signature recorded against a document it
+      // did not display.
+      const recomputed = await fingerprintIssuedAgreement(state, state.agreement.effectiveDate);
+      if (parsed.data.contentHash !== recomputed.contentHash) {
+        return fail(
+          "content_mismatch",
+          "Your copy of the agreement is out of date. Reload this page to read the current version — nothing has been signed.",
+        );
       }
 
       state.timestamps.signedAt = now();
       state.isSigned = true;
       state.status = "signed";
-      state.agreement = { version: "2.1", contentHash: parsed.data.contentHash };
+      // Nothing is written to `state.agreement`. The version, the date and the hash were
+      // all fixed at issuance and the signature attaches to them; a write here could only
+      // move what was already agreed.
       complete(state, 3);
       return ok(state);
     },

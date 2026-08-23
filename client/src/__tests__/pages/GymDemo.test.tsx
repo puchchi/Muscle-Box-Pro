@@ -17,8 +17,6 @@ vi.mock("next/navigation", () => ({
 // Same `AnimatePresence mode="wait"` form-to-confirmation swap as the advertiser page.
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
-
 const { mockFunctionsInvoke } = vi.hoisted(() => ({
   mockFunctionsInvoke: vi.fn(),
 }));

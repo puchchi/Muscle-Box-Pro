@@ -71,6 +71,17 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
           </div>
         </div>
 
+        {/*
+          Gated on the agreement, which is all that is needed now that the server pins the
+          hash at issuance rather than accepting one at signing — there is no longer a
+          state where a version exists without a fingerprint.
+
+          This block only renders on step 5, which is unreachable unsigned, so the
+          fingerprint shown here is always the fingerprint of a signed document. If a
+          future step ever renders it earlier, it needs `state.isSigned` too: a
+          "Document fingerprint" beside the word "Signed" for a document nobody has signed
+          is worse than no row.
+        */}
         {state.agreement && (
           <dl
             className="mt-4 pt-3 border-t border-primary/15 grid grid-cols-2 gap-3"

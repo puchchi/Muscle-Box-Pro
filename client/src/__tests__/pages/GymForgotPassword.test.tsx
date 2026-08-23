@@ -1,15 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
-const mockPush = vi.fn();
-const mockGetSearchParam = vi.fn(() => null as string | null); // no token by default
-
 vi.mock("next/navigation", () => ({
-  useRouter: vi.fn(() => ({ push: mockPush })),
   usePathname: vi.fn(() => "/gym/forgot-password"),
-  useSearchParams: vi.fn(() => ({ get: mockGetSearchParam })),
 }));
 
 vi.mock("next/link", () => ({
@@ -23,180 +17,64 @@ vi.mock("next/link", () => ({
 // "Element type is invalid" — which is how this suite was silently broken.
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
-
-const { mockInvoke, mockUpdateUser } = vi.hoisted(() => ({
-  mockInvoke: vi.fn(),
-  mockUpdateUser: vi.fn(),
-}));
-vi.mock("@/lib/supabase", () => ({
-  supabase: {
-    auth: { updateUser: mockUpdateUser },
-    functions: { invoke: mockInvoke },
-  },
-}));
-
 import GymForgotPassword from "@/pages/gym/GymForgotPassword";
+import { MBP_NOTICES } from "@shared/onboarding/agreementFields";
 
-// ─── Email request mode (no token) ───────────────────────────────────────────
-describe("GymForgotPassword — email request mode", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetSearchParam.mockReturnValue(null);
-  });
-
-  it("renders without crashing", () => {
+/**
+ * This suite used to assert the page's old behaviour, which was the bug.
+ *
+ * It checked that entering an email invoked a `forgot-password` edge function and that the
+ * page then said "a password reset link has been sent". No link was sent — there is no
+ * transactional email sender wired up, and §9.2 of the backend design records the reset
+ * mechanism as built with its *delivery* still manual. So the old tests pinned a page that
+ * confidently told a locked-out gym owner to go and wait for nothing, and passing was what
+ * kept it there.
+ *
+ * What is asserted now is the absence of the form, because that is the thing a future
+ * well-meaning change is most likely to put back.
+ */
+describe("GymForgotPassword", () => {
+  it("shows the RESET PASSWORD heading", () => {
     render(<GymForgotPassword />);
+    expect(screen.getByRole("heading", { name: /reset password/i })).toBeInTheDocument();
   });
 
-  it("shows RESET PASSWORD heading", async () => {
+  it("offers no email form, because there is no self-service reset", () => {
     render(<GymForgotPassword />);
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /reset password/i })).toBeInTheDocument();
-    });
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(document.querySelector("input")).toBeNull();
+    expect(screen.queryByRole("button", { name: /send recovery link/i })).toBeNull();
   });
 
-  it("shows email input field", async () => {
+  /*
+    The specific claim worth keeping out. A gym owner who reads "a link has been sent" stops
+    doing the one thing that will actually get them back in, which is contacting us.
+  */
+  it("does not claim a link has been sent", () => {
     render(<GymForgotPassword />);
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/you@example\.com/i)).toBeInTheDocument();
-    });
+    expect(screen.queryByText(/link has been sent/i)).toBeNull();
+    expect(screen.queryByText(/check your (inbox|email)/i)).toBeNull();
+    // The old brand panel promised these expired after an hour. Nothing on this page should
+    // put a number on a link that a person issues by hand.
+    expect(screen.queryByText(/expire after 1 hour/i)).toBeNull();
   });
 
-  it("shows SEND RECOVERY LINK button", async () => {
+  it("says a person handles the reset and gives the address to ask", () => {
     render(<GymForgotPassword />);
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /send recovery link/i })).toBeInTheDocument();
-    });
+    expect(screen.getByTestId("reset-by-request")).toHaveTextContent(/handled by a person/i);
+    const mailto = screen.getByTestId("link-reset-email");
+    expect(mailto).toHaveAttribute("href", expect.stringContaining(`mailto:${MBP_NOTICES.email}`));
   });
 
-  it("shows a Back to Sign In link pointing at the gym login route", async () => {
+  it("offers a second route to reach us", () => {
     render(<GymForgotPassword />);
-    await waitFor(() => {
-      const link = screen.getByRole("link", { name: /back to sign in/i });
-      expect(link).toHaveAttribute("href", "/gym/login");
-    });
+    const hrefs = screen.getAllByRole("link").map((el) => el.getAttribute("href"));
+    expect(hrefs).toContain("/contact");
   });
 
-  it("invokes the forgot-password function with the entered email", async () => {
-    mockInvoke.mockResolvedValue({ data: null, error: null });
+  it("shows a Back to Sign In link pointing at the gym login route", () => {
     render(<GymForgotPassword />);
-    const user = userEvent.setup();
-
-    await waitFor(() => screen.getByPlaceholderText(/you@example\.com/i));
-    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "owner@yourgym.com");
-    await user.click(screen.getByRole("button", { name: /send recovery link/i }));
-
-    await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith("forgot-password", {
-        body: { email: "owner@yourgym.com" },
-      });
-    });
-  });
-
-  it("shows a neutral success message that does not confirm the account exists", async () => {
-    mockInvoke.mockResolvedValue({ data: null, error: null });
-    render(<GymForgotPassword />);
-    const user = userEvent.setup();
-
-    await waitFor(() => screen.getByPlaceholderText(/you@example\.com/i));
-    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "owner@yourgym.com");
-    await user.click(screen.getByRole("button", { name: /send recovery link/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/password reset link has been sent/i)).toBeInTheDocument();
-    });
-  });
-
-  it("shows an error message when the function call fails", async () => {
-    mockInvoke.mockResolvedValue({ data: null, error: { message: "Rate limit exceeded." } });
-    render(<GymForgotPassword />);
-    const user = userEvent.setup();
-
-    await waitFor(() => screen.getByPlaceholderText(/you@example\.com/i));
-    await user.type(screen.getByPlaceholderText(/you@example\.com/i), "owner@yourgym.com");
-    await user.click(screen.getByRole("button", { name: /send recovery link/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/rate limit exceeded/i)).toBeInTheDocument();
-    });
-  });
-});
-
-// ─── Reset mode (token present) ──────────────────────────────────────────────
-describe("GymForgotPassword — reset mode (token present)", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetSearchParam.mockReturnValue("sometoken123");
-  });
-
-  it("shows SET NEW PASSWORD heading in reset mode", async () => {
-    render(<GymForgotPassword />);
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /set new password/i })).toBeInTheDocument();
-    });
-  });
-
-  it("shows two password fields in reset mode", async () => {
-    render(<GymForgotPassword />);
-    await waitFor(() => {
-      const fields = screen.getAllByPlaceholderText("••••••••");
-      expect(fields.length).toBe(2);
-    });
-  });
-
-  it("shows UPDATE PASSWORD button", async () => {
-    render(<GymForgotPassword />);
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /update password/i })).toBeInTheDocument();
-    });
-  });
-
-  it("shows password mismatch error when passwords differ", async () => {
-    render(<GymForgotPassword />);
-    const user = userEvent.setup();
-
-    await waitFor(() => screen.getAllByPlaceholderText("••••••••"));
-    const [newPass, confirmPass] = screen.getAllByPlaceholderText("••••••••");
-    await user.type(newPass, "password123");
-    await user.type(confirmPass, "differentpass");
-    await user.click(screen.getByRole("button", { name: /update password/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
-    });
-    expect(mockUpdateUser).not.toHaveBeenCalled();
-  });
-
-  it("calls updateUser when passwords match", async () => {
-    mockUpdateUser.mockResolvedValue({ error: null });
-    render(<GymForgotPassword />);
-    const user = userEvent.setup();
-
-    await waitFor(() => screen.getAllByPlaceholderText("••••••••"));
-    const [newPass, confirmPass] = screen.getAllByPlaceholderText("••••••••");
-    await user.type(newPass, "newpassword1");
-    await user.type(confirmPass, "newpassword1");
-    await user.click(screen.getByRole("button", { name: /update password/i }));
-
-    await waitFor(() => {
-      expect(mockUpdateUser).toHaveBeenCalledWith({ password: "newpassword1" });
-    });
-  });
-
-  it("shows success message after password reset", async () => {
-    mockUpdateUser.mockResolvedValue({ error: null });
-    render(<GymForgotPassword />);
-    const user = userEvent.setup();
-
-    await waitFor(() => screen.getAllByPlaceholderText("••••••••"));
-    const [newPass, confirmPass] = screen.getAllByPlaceholderText("••••••••");
-    await user.type(newPass, "newpassword1");
-    await user.type(confirmPass, "newpassword1");
-    await user.click(screen.getByRole("button", { name: /update password/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/password reset successfully/i)).toBeInTheDocument();
-    });
+    const link = screen.getByRole("link", { name: /back to sign in/i });
+    expect(link).toHaveAttribute("href", "/gym/login");
   });
 });

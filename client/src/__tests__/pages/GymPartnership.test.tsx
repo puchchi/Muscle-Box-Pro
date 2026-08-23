@@ -16,8 +16,6 @@ vi.mock("next/link", () => ({
 
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
-
 vi.mock("@/components/footer/index", () => ({
   default: () => <footer data-testid="footer" />,
 }));

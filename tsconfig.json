@@ -12,7 +12,6 @@
     "dist",
     ".next",
     "supabase",
-    "**/*.test.ts",
     "client/src/pages/_archive",
     "client/src/__tests__/_archive"
   ],

@@ -6,12 +6,12 @@ import {
   collectBlockers,
   collectTokens,
   findUnresolvedTokens,
-  fingerprint,
   renderPlainText,
   renderText,
 } from "@shared/agreement/render";
 import { PLAIN_LANGUAGE_V2_2 } from "@shared/agreement/plainLanguage";
-import type { AgreementFields, Block } from "@shared/agreement/types";
+import { GOLDEN_V2_2, verifyGoldenVector } from "@shared/agreement/goldenVector";
+import type { Block } from "@shared/agreement/types";
 import { PARTNERSHIP, formatInr } from "@shared/partnership/summary";
 import { rupeesInWords } from "@shared/agreement/amountInWords";
 
@@ -27,42 +27,13 @@ import { rupeesInWords } from "@shared/agreement/amountInWords";
  */
 
 /**
- * Deliberately a separate copy of v2.1's fixture rather than a shared import.
- *
- * Each version's golden hash pins the bytes a signature against that version attests
- * to. If both suites read one fixture, a value edited to suit a future v2_3 test would
- * move v2.1's and v2.2's hashes as a side effect — and the fix at that point looks like
- * "update the expected hash", which is the one thing neither file may do.
+ * The pinned inputs and expected bytes live in `shared/agreement/goldenVector.ts`. Each
+ * version has its own literal there for the reason this comment used to give — one edited
+ * value must not be able to move another version's hash — and it lives in a shipped module
+ * rather than in this file because `mbp-backend` copies it verbatim to compute the hash
+ * that `POST /onboarding/sign` compares against.
  */
-const FIXTURE: AgreementFields = {
-  gymLegalName: "Iron Temple Fitness LLP",
-  effectiveDate: "01 September 2026",
-  machineModel: "MuscleBoxPro MBP-1",
-  machineId: "MBP-0001",
-  serialNumber: "SN-TEST-0001",
-  machineValue: "₹4,50,000",
-  installationDate: "05 September 2026",
-  installationAddress: "12 MG Road, Bengaluru, Karnataka 560001",
-  accessories: "Cup dispenser, water line kit",
-  securityDeposit: "₹50,000",
-  securityDepositInWords: "Rupees Fifty Thousand Only",
-  termMonths: "24",
-  mbpNotices: {
-    address: "BlendBox Innovations LLP, Bengaluru",
-    email: "legal@muscleboxpro.com",
-    // Empty in production — see MBP_NOTICES. Populated here so the fixture also proves
-    // that v2.2 renders identically whether or not a phone number exists, which is what
-    // makes dropping the channel a §41 drafting change rather than a data change.
-    phone: "+91 00000 00000",
-  },
-  gymNotices: {
-    address: "12 MG Road, Bengaluru, Karnataka 560001",
-    email: "owner@irontemple.example",
-    phone: "+91 11111 11111",
-  },
-  signatoryName: "A. Owner",
-  signatoryDesignation: "Designated Partner",
-};
+const FIXTURE = GOLDEN_V2_2.fields;
 
 function allBlocks(): { location: string; block: Block }[] {
   const out = AGREEMENT_V2_2.cover.map((block) => ({ location: "Cover", block }));
@@ -74,9 +45,6 @@ function allBlocks(): { location: string; block: Block }[] {
 
 const TEXT = renderPlainText(AGREEMENT_V2_2, FIXTURE);
 
-/** Pinned bytes for the fingerprint test at the bottom of this file. */
-const GOLDEN_LENGTH = 36_242;
-const GOLDEN_HASH = "99a1394bd545d9e8f87666dfd4896cefa65c246ceffa5153f111a0a5b63152b0";
 
 function clausesIn(sectionNumber: string): string[] {
   const section = [...AGREEMENT_V2_2.sections, ...AGREEMENT_V2_2.schedules].find(
@@ -527,18 +495,36 @@ describe("tokens and rendering", () => {
     expect(renderText(sig.parties[1].heading, FIXTURE)).toBe("FOR Iron Temple Fitness LLP");
   });
 
-  it("produces a stable hash for v2.2 with the golden fixture", async () => {
+  it("still renders to the bytes the golden vector pins", async () => {
     // ─────────────────────────────────────────────────────────────────────────
-    // DO NOT UPDATE THIS HASH TO MAKE A FAILING TEST PASS.
+    // DO NOT UPDATE THE VECTOR TO MAKE THIS PASS.
     //
     // It pins the exact bytes a v2.2 signature attests to. Once a gym has signed
     // against 2.2, a change here means the clause text changed underneath a signed
     // document — the fix is v2_3.ts, not a new expected value.
+    //
+    // `mbp-backend` runs this same check against its copy of the renderer, so a
+    // failure here and a failure there mean different things: here, the document
+    // changed; there, the copy drifted and must be re-taken.
     // ─────────────────────────────────────────────────────────────────────────
-    const { version, contentHash, length } = await fingerprint(AGREEMENT_V2_2, FIXTURE);
-    expect(version).toBe("2.2");
-    expect(length).toBe(GOLDEN_LENGTH);
-    expect(contentHash).toBe(GOLDEN_HASH);
+    const verdict = await verifyGoldenVector(AGREEMENT_V2_2, GOLDEN_V2_2);
+    expect(verdict.ok ? [] : verdict.problems).toEqual([]);
+  });
+
+  it("reports length and hash together when the document moves", async () => {
+    // Proves the guard above actually fails, and that it names both figures — the
+    // length is what localises a drift, so a verdict carrying only the hash would
+    // make a one-character change and a rewritten schedule look identical.
+    const verdict = await verifyGoldenVector(AGREEMENT_V2_2, {
+      ...GOLDEN_V2_2,
+      contentHash: "0".repeat(64),
+      length: 1,
+    });
+    expect(verdict.ok).toBe(false);
+    if (verdict.ok) throw new Error("unreachable");
+    expect(verdict.problems).toHaveLength(2);
+    expect(verdict.problems.join(" ")).toContain("length is 36242");
+    expect(verdict.actual.contentHash).toBe(GOLDEN_V2_2.contentHash);
   });
 });
 
