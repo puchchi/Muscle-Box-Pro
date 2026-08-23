@@ -109,13 +109,44 @@ function isSessionGone(error: unknown): boolean {
   );
 }
 
+/**
+ * `mbp-backend`'s machine states, in a partner's words.
+ *
+ * Exhaustive over `MachineStatus`, so a state added on the backend fails the type check
+ * here rather than rendering `undefined` in the status row. `replaced` and `removed` read
+ * differently on purpose — a replaced unit means there is a working machine on the floor,
+ * a removed one means there is not.
+ */
 const MACHINE_STATUS_LABEL: Record<MachineStatus, string> = {
   allocated: "Allocated to you",
-  installed: "Installed",
-  trading: "Trading",
-  service_due: "Service due",
+  installed: "Installed and trading",
+  servicing: "Being serviced",
+  replaced: "Replaced with a newer unit",
   removed: "Removed",
 };
+
+/**
+ * An ISO timestamp as a date a gym owner in India reads.
+ *
+ * **Not `formatAgreementDate`, and the difference matters.** That one formats in UTC
+ * because its output goes inside the hashed agreement text, where the same record must
+ * render identically on every machine. Feed it a timestamp and a service at 01:00 IST
+ * prints as the previous day — correct for a hash, wrong for a person who watched the
+ * engineer leave.
+ *
+ * `installationDate` still goes through `formatAgreementDate`: it is a date string with
+ * no time in it, so there is no timezone to get wrong.
+ */
+function formatIstDate(isoTimestamp: string): string {
+  const date = new Date(isoTimestamp);
+  if (Number.isNaN(date.getTime())) return isoTimestamp;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(date);
+}
 
 export default function GymDashboard() {
   const router = useRouter();
@@ -853,7 +884,7 @@ function MachineCard({ machine }: { machine: GymPortalSnapshot["machine"] }) {
       />
       <Row
         label="Last serviced"
-        value={machine.lastServiceAt ? formatAgreementDate(machine.lastServiceAt) : "—"}
+        value={machine.lastServiceAt ? formatIstDate(machine.lastServiceAt) : "—"}
       />
       <p className="text-xs text-muted-foreground leading-relaxed">
         Servicing, restocking and repairs are ours. Anything wrong with the machine is a call to
@@ -925,7 +956,7 @@ function StatementsCard({
       {agreement && (
         <div className="border-t border-gray-100 pt-2 mt-1" data-testid="agreement-summary">
           <Row label="Agreement" value={`v${agreement.version}`} />
-          <Row label="Signed" value={formatAgreementDate(agreement.signedOn)} />
+          <Row label="Signed" value={formatIstDate(agreement.signedAt)} />
           <p className="text-[11px] text-muted-foreground/70 mt-1 break-all">
             {/* The hash is here so a gym can check its own copy against ours. It is
                 evidence, and evidence you cannot see is not much use. */}

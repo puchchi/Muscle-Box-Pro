@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { MBP_API_BASE_URL, apiRequest } from "@/lib/apiClient";
+import {
+  BEARER_SESSION_ALLOWED,
+  MBP_API_BASE_URL,
+  apiRequest,
+  forgetBearerSession,
+  hasBearerSession,
+  rememberBearerSession,
+} from "@/lib/apiClient";
 
 /**
  * The transport rules for `api.muscleboxpro.com`.
@@ -22,6 +29,9 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
+  // Module-level state. A token left behind by one case would authenticate the next one's
+  // request and quietly invalidate every "omits the header" assertion in the file.
+  forgetBearerSession();
 });
 
 afterEach(() => {
@@ -328,6 +338,198 @@ describe("a request that never completed", () => {
     });
     const result = await apiRequest("GET", "/gym/portal");
     expect(result.ok === false && result.error.code).toBe("network");
+  });
+});
+
+/**
+ * The sandbox bearer hatch (rule 4).
+ *
+ * It exists because a page on `localhost:3000` talking to an `execute-api` host can
+ * neither read `Set-Cookie` — a forbidden response header the Fetch spec strips whatever
+ * `Access-Control-Expose-Headers` says — nor have a `SameSite=Lax` cookie sent back, since
+ * that pairing is cross-site. `mbp-backend` `docs/onboarding-testing.md` §9.1 requires that
+ * it cannot exist in production and that a test says so, which is the first case here.
+ *
+ * The rest of these are written from the failure they prevent, and the expensive one is
+ * subtle: a client that *required* `sessionToken` would work in sandbox and 401 everything
+ * in production, where the field is absent and the cookie does the work. So what is under
+ * test is not "does the token get sent" but "is sending it conditional on having one".
+ */
+describe("the sandbox bearer session", () => {
+  const token = "sandbox-session-token-9f2c";
+
+  /** A module instance whose base URL is `url`, since it is read once at module scope. */
+  async function apiClientAt(url: string) {
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", url);
+    vi.resetModules();
+    return await import("@/lib/apiClient");
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("cannot be turned on against the production API host", async () => {
+    // The whole safety argument. Gated on the hostname rather than on `NODE_ENV` or a flag
+    // of its own, so there is no env var anyone can set to enable it in production — and a
+    // production build accidentally pointed at the sandbox still works, which is the
+    // failure direction that is merely inconvenient rather than dangerous.
+    const prod = await apiClientAt("https://api.muscleboxpro.com");
+    expect(prod.BEARER_SESSION_ALLOWED).toBe(false);
+
+    // And a token offered to it is not merely unsent, it is never held.
+    prod.rememberBearerSession(token);
+    expect(prod.hasBearerSession()).toBe(false);
+
+    respond(200, {});
+    await prod.apiRequest("GET", "/gym/portal");
+    expect("Authorization" in sentInit().headers).toBe(false);
+  });
+
+  it("is off by default, because the default host is production", async () => {
+    // `NEXT_PUBLIC_MBP_API_URL` unset is the shape of a misconfigured deploy, and it has to
+    // fail closed. An unparseable value counts as production for the same reason.
+    expect(BEARER_SESSION_ALLOWED).toBe(false);
+    rememberBearerSession(token);
+    expect(hasBearerSession()).toBe(false);
+
+    const nonsense = await apiClientAt("not-a-url");
+    expect(nonsense.BEARER_SESSION_ALLOWED).toBe(false);
+  });
+
+  it("sends the token on the sandbox host, once there is one", async () => {
+    const sandbox = await apiClientAt(
+      "https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox",
+    );
+    expect(sandbox.BEARER_SESSION_ALLOWED).toBe(true);
+
+    // Before login: no header. This is the production code path — prod omits
+    // `sessionToken` from the body, so nothing is ever remembered and this is the only
+    // branch that ever runs there.
+    respond(200, {});
+    await sandbox.apiRequest("GET", "/gym/portal");
+    expect("Authorization" in sentInit().headers).toBe(false);
+
+    sandbox.rememberBearerSession(token);
+    fetchMock.mockReset();
+    respond(200, {});
+    await sandbox.apiRequest("GET", "/gym/portal");
+    expect(sentInit().headers.Authorization).toBe(`Bearer ${token}`);
+    // Still credentialed. The cookie is what production runs on and the hatch does not
+    // replace it — a request that sent only the token would be the untested path on deploy.
+    expect(sentInit().credentials).toBe("include");
+  });
+
+  it("ignores a body field that is not a usable token", async () => {
+    // Fed straight from `result.data.sessionToken`, which is network input and `unknown` on
+    // this side. `undefined` is the production shape; an empty string would otherwise be
+    // stored and sent as `Authorization: Bearer `, a malformed credential that a handler
+    // parsing before it checks may answer `invalid_token` to.
+    const sandbox = await apiClientAt("https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox");
+    for (const value of [undefined, null, "", 42, { token }]) {
+      sandbox.rememberBearerSession(value);
+      expect(sandbox.hasBearerSession()).toBe(false);
+    }
+  });
+
+  it("lets an onboarding handle win the Authorization header", async () => {
+    // `POST /gym/account` is reachable with both: an admin signed into the sandbox, and a
+    // set-password handle from a relayed link. That route reads the handle, so a stored
+    // admin token must not displace the credential the request is actually about.
+    const sandbox = await apiClientAt("https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox");
+    const handle = "3f7c9a1e5b2d4068a5c3e7f9b2d4068a";
+    sandbox.rememberBearerSession(token);
+
+    respond(200, {});
+    await sandbox.apiRequest("POST", "/gym/account", { handle, body: { password: "x" } });
+    expect(sentInit().headers.Authorization).toBe(`Bearer ${handle}`);
+  });
+
+  it("drops a token the server has rejected", async () => {
+    // Expired, or minted by a stack that has since been redeployed. Left in place it would
+    // be sent for the rest of the tab's life and `hasBearerSession()` — which is how the
+    // sandbox answers "am I signed in?" — would keep saying yes.
+    const sandbox = await apiClientAt("https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox");
+    sandbox.rememberBearerSession(token);
+
+    respond(401, { code: "invalid_token", message: "no" });
+    await sandbox.apiRequest("GET", "/gym/portal");
+    expect(sandbox.hasBearerSession()).toBe(false);
+  });
+
+  it("keeps the session when the 401 was about a handle", async () => {
+    // A lapsed onboarding link says nothing about the admin session that happened to be
+    // open in the same tab, and signing the admin out because a gym's link expired would
+    // be a confusing way to lose half an hour of sandbox testing.
+    const sandbox = await apiClientAt("https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox");
+    sandbox.rememberBearerSession(token);
+
+    respond(401, { code: "expired_token", message: "no" });
+    await sandbox.apiRequest("GET", "/onboarding", { handle: "3f7c9a1e5b2d4068a5c3e7f9b2d4068a" });
+    expect(sandbox.hasBearerSession()).toBe(true);
+  });
+
+  it("forgets on demand, which is not the same as signing out", async () => {
+    // Only the server can expire the cookie production runs on, so this is one half of
+    // sign-out and the logout route is the other. See `signOutOfPortal`.
+    const sandbox = await apiClientAt("https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox");
+    sandbox.rememberBearerSession(token);
+    expect(sandbox.hasBearerSession()).toBe(true);
+    sandbox.forgetBearerSession();
+    expect(sandbox.hasBearerSession()).toBe(false);
+  });
+
+  /**
+   * Surviving a reload is the whole reason the token is in `sessionStorage` rather than in a
+   * module variable, and it is the one property no other test here would notice breaking: a
+   * module variable passes every assertion above and still signs an admin out on every F5.
+   *
+   * A fresh module instance is the closest this suite gets to a reload — new module scope,
+   * same storage — which is exactly the pair that matters.
+   */
+  const SANDBOX = "https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox";
+
+  it("survives a reload on the sandbox host", async () => {
+    const before = await apiClientAt(SANDBOX);
+    before.rememberBearerSession(token);
+
+    const after = await apiClientAt(SANDBOX);
+    expect(after.hasBearerSession()).toBe(true);
+
+    respond(200, { ok: true });
+    await after.apiRequest("GET", "/admin/me");
+    expect(sentInit().headers.Authorization).toBe(`Bearer ${token}`);
+  });
+
+  it("does not survive being forgotten", async () => {
+    // `forgetBearerSession` has to reach the stored copy too, or a sign-out lasts until the
+    // next reload and then silently un-signs-out.
+    const before = await apiClientAt(SANDBOX);
+    before.rememberBearerSession(token);
+    before.forgetBearerSession();
+
+    const after = await apiClientAt(SANDBOX);
+    expect(after.hasBearerSession()).toBe(false);
+  });
+
+  it("does not survive a 401, across a reload", async () => {
+    const before = await apiClientAt(SANDBOX);
+    before.rememberBearerSession(token);
+    respond(401, { code: "invalid_token", message: "no" });
+    await before.apiRequest("GET", "/admin/me");
+
+    const after = await apiClientAt(SANDBOX);
+    expect(after.hasBearerSession()).toBe(false);
+  });
+
+  it("writes nothing to storage when pointed at production", async () => {
+    // The property that makes all of the above acceptable. Asserted against the storage key
+    // directly rather than through `hasBearerSession`, which would answer `false` for the
+    // gating reason alone and so would pass even if a token had been written.
+    const production = await apiClientAt("https://api.muscleboxpro.com");
+    production.rememberBearerSession(token);
+    expect(window.sessionStorage.getItem("mbp:sandbox-session")).toBeNull();
   });
 });
 

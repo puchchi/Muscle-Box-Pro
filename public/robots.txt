@@ -3,6 +3,7 @@ Allow: /
 Disallow: /gym/
 Disallow: /onboarding/
 Disallow: /auth/
+Disallow: /admin/
 
 # Google
 User-agent: Googlebot

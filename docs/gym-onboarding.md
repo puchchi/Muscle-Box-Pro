@@ -1516,3 +1516,142 @@ are customers.
 
 `npx tsc --noEmit` clean. **44 test files, 847 tests passing** — up 61 net from 786 at the start of
 the work, after removing `auth.test.ts` with its module. No production build (decision 10).
+
+## 19. Switching it on against the sandbox (2026-08-23)
+
+The endpoints are deployed. This section is what changed to actually talk to them, and the three
+things that made it more than flipping a flag.
+
+**Supabase is frozen from here on.** Nothing already deployed there gets changed and nothing new gets
+added — the migration path is "stop calling it", not "clean it up". Frontend code may stop *reading*
+Supabase freely; that is not a Supabase change. TODO A3 is closed as won't-do on this basis, and A1
+(RLS on the lead tables) is the one deliberate exception, because it is a live data exposure rather
+than a tidy-up.
+
+### The portal contract was wrong on eight fields, and nothing would have told us
+
+`GET /gym/portal` was returning `paidCups` and `settlements` where the dashboard reads `sales` and
+`statements`, a flat deposit where it reads a nested one, no `asOf`, a `MachineStatus` enum with two
+values that do not exist, and a date where `lastServiceAt` is a timestamp.
+
+The reason this is worth a section: **`parseGymPortalSnapshot` returns a result rather than throwing.**
+So a field name the backend gets wrong produces no type error on either side and no failing test
+anywhere. It shows a gym owner "we cannot show your figures right now" while every backend test stays
+green. That asymmetry is why the fix went into the backend projection rather than into a frontend
+adapter — an adapter is a permanent second place for the names to drift, and it would have preserved
+the property that nothing fails loudly.
+
+Fixed in `mbp-backend`'s `toPortalSnapshot`, which now carries a docstring saying in terms that the
+field names are *the frontend's `GymPortalSnapshot`, not that service's preference*. Redeployed to
+sandbox after `cdk diff` confirmed 17 code-only Lambda updates and no IAM, route or table changes.
+
+Two decisions inside that fix that went the backend's way on the merits:
+
+- **`servicing`, not `service_due`,** and `replaced` added. "A service is due" is a derivation from
+  `lastServiceAt` plus an interval nobody owns; "a service is happening" is a fact we store. And
+  `replaced` is the state `replaceMachine` actually writes — it marks rather than deletes, because
+  `installationDate` is a term boundary under §4.1.
+- **The wire carries the instant; this side formats in IST.** Truncating server-side in UTC would
+  show a unit serviced at 01:00 IST as the previous day. That forced `formatIstDate` to exist
+  separately from `formatAgreementDate`, whose UTC behaviour is load-bearing because its output goes
+  inside the hashed agreement text. `formatAgreementDate` now carries a warning saying so.
+
+One money bug was caught while writing the projection. `liveDeposit` returns the `paid` row ahead of
+everything else, and **a paid row still carries the `paymentUrl` of the link that paid it** — while
+Razorpay Payment Links stay reusable. Passing it through would have put a live ₹50,000 link in front
+of a gym that had already paid. The projection now withholds the link unless the deposit is `pending`
+and the link has not lapsed, and two tests pin both halves.
+
+### The sandbox bearer hatch, and why it cannot exist in production
+
+A browser on `localhost:3000` talking to `execute-api.ap-south-1.amazonaws.com` can neither *read*
+`Set-Cookie` — a forbidden response header the Fetch spec strips no matter what
+`Access-Control-Expose-Headers` says — nor have a `SameSite=Lax` cookie *sent* back, because that
+pairing is cross-site. So the sandbox stack sets `AllowBearerSessions=true` and its three
+session-minting routes also return `sessionToken` in the body.
+
+Three properties hold it in place, and the first is the one that matters:
+
+1. **Gated on the API hostname, not on `NODE_ENV` or a flag of its own.** The condition that makes a
+   bearer necessary *is* "the API is not on our registrable domain", so that is the thing tested.
+   There is no environment variable anyone can set to enable this against `api.muscleboxpro.com`.
+   Fail-closed: unset means production, and so does an unparseable value.
+2. **In memory for the life of the tab.** Not `localStorage` — the CSP carries `'unsafe-inline'`, so
+   a token any script can read is a token any injected script can exfiltrate, and a reloadable copy
+   of a 12-hour admin session is worth more to an attacker than surviving F5 is worth to us.
+3. **The header is conditional on the field being present.** Production omits `sessionToken`
+   entirely, so nothing is ever stored there and the cookie does the work. A client that *required*
+   the token would pass in sandbox and 401 everything in production — the worst available order in
+   which to find that out, and the reason `mbp-backend/docs/onboarding-testing.md` §9.1 asks for a
+   test asserting the hatch is off in prod. There is one.
+
+An onboarding handle wins the `Authorization` header over a stored session. `POST /gym/account` is
+reachable with both — an admin signed into the sandbox, and a relayed set-password link — and that
+route reads the handle.
+
+### `connect-src` follows the API host rather than listing it
+
+The sandbox origin has to be reachable from a browser, and a static entry for it would have shipped
+to production. So it is **derived** from `NEXT_PUBLIC_MBP_API_URL` at build time: production returns
+`null` and its CSP contains no `amazonaws.com` entry at all, which is the property
+`securityHeaders.test.ts` has always pinned and still does. The test gained the other half rather
+than a carve-out — that the entry *does* appear when the build is pointed at the sandbox.
+
+Loosening the CSP is not the dangerous part of pointing a build at `execute-api`; losing
+`SameSite=Lax` is. Both are confined to the same condition on purpose.
+
+### The admin login, kept basic
+
+There was no admin UI at all — the thing it replaces is `local_dashboard/server.js`'s
+`x-dashboard-password`: one shared plaintext password, defaulting to `"admin"`, compared with `===`.
+
+- [adminSession.ts](../client/src/lib/adminSession.ts) — `POST /admin/login`, `GET /admin/me`,
+  `POST /admin/logout`. **No Supabase branch**, unlike `gymSession.ts`: there is no history to
+  migrate here, so the switch that would let it fall back to something weaker is simply absent.
+- `/admin/login` — two fields, no brand panel. **No forgot-password link and no signup**: there is no
+  self-service admin reset and no email sender (§9.2), so a link would lead somewhere that cannot
+  help. Recovery is `seedAdmin` against the table, by someone with AWS access.
+- `/admin` — renders what `GET /admin/me` says, and exists because **login succeeding only proves the
+  password was right.** A cookie the browser refused to store and a sandbox token that never reached
+  the header both look like a successful login and then fail on the first real request. It prints the
+  API host it is talking to, because pointing a build at the wrong stage looks exactly like a code
+  fault and the two sandbox gateways differ by six characters.
+
+Two deliberate asymmetries with the partner login, both of which look like oversights:
+
+- **The server's error message is passed through verbatim.** `POST /admin/login` already answers one
+  fixed message for "no such admin", "wrong password" and "disabled account" alike, so there is no
+  enumeration oracle for this page to suppress — and its 429 says something the client cannot
+  reconstruct: *this password may well work in a minute*. Overwriting that with "incorrect email or
+  password" would have a locked-out admin retyping a correct password until they gave up.
+- **The password field validates `min(1)`, not `min(6)`.** This is a login: the password already
+  exists and its rules were enforced when it was set. A length check here can only refuse a
+  credential that would have worked, and it blames the admin for a disagreement between the form and
+  the seeder.
+
+`robots: { index: false, follow: false }` on both routes is the control that keeps them out of search
+— **not** the `Disallow: /admin/` added to robots.txt, because several crawlers there are given a
+blanket `Allow: /` in their own block that overrides the wildcard.
+
+### Verified
+
+`npx tsc --noEmit` clean. **46 test files, 888 tests passing.** In `mbp-backend`, 1,760 passing with
+212 skipped for want of DynamoDB Local — worth noting because those 212 are the only tests proving the
+conditional writes, so a green run without them is weaker than it looks.
+
+Against the deployed sandbox, without credentials: `/health` 200; the CORS preflight for
+`POST /admin/login` from `http://localhost:3000` answers 204 with a specific origin,
+`Allow-Credentials: true` and `Authorization` in `Allow-Headers` (the hatch depends on that last
+one); a bogus login answers 401 `{"code":"validation"}` with the generic message; `/admin/me` and
+`/gym/portal` answer 401 `{"code":"invalid_token"}`. Every one of those codes is in `apiClient`'s
+`RECOGNISED_CODES`, so each maps to real copy rather than to a status fallback.
+
+The credentialed walk — sign in, create a gym, open the wizard link, sign, check the portal — is the
+next thing, and it needs the sandbox admin password. One admin exists in `mbp-gyms-sandbox`
+(`contact@muscleboxpro.com`, role `owner`).
+
+Two things to know before running it: `next dev` reloads `.env.local` on its own but **does not
+re-evaluate `next.config.mjs`**, so a server that was already running has the old CSP and the browser
+will block the sandbox request with the env looking correct. Restart it. And the CORS allowlist names
+`localhost:3000` — port 3001 fails with an opaque CORS error, which `apiClient` reports as
+"couldn't reach us", indistinguishable from being offline.

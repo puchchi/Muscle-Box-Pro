@@ -100,11 +100,12 @@ const httpUrl = z
 
 // ── Components ──────────────────────────────────────────────────────────────
 
+/** `mbp-backend`'s `MachineStatus`, verbatim. See the note on the type in `portal.ts`. */
 const machineStatusSchema = z.enum([
   "allocated",
   "installed",
-  "trading",
-  "service_due",
+  "servicing",
+  "replaced",
   "removed",
 ]);
 
@@ -114,7 +115,9 @@ const machineRecordSchema = z.object({
   serialNumber: z.string().min(1).nullable(),
   status: machineStatusSchema,
   installationDate: isoDate.nullable(),
-  lastServiceAt: isoDate.nullable(),
+  // A timestamp, not a date — the wire carries the instant and this side formats it in
+  // IST. `isoDate` here would reject every real response.
+  lastServiceAt: isoTimestamp.nullable(),
 });
 
 /**
@@ -230,7 +233,8 @@ const depositSchema = z
 
 const agreementSchema = z.object({
   version: label,
-  signedOn: isoDate,
+  // A timestamp, for the same reason as `lastServiceAt`.
+  signedAt: isoTimestamp,
   // 64 lowercase hex. The dashboard truncates it to twelve characters for display, so
   // a short or upper-case string would render as a plausible fingerprint that does not
   // match the emailed copy — the one thing the fingerprint exists to let a gym check.

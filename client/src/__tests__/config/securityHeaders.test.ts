@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import nextConfig from "../../../../next.config.mjs";
 import { MBP_API_BASE_URL } from "@/lib/apiClient";
 
@@ -48,8 +48,40 @@ describe("connect-src and the onboarding API", () => {
     // `SameSite=Lax`'s CSRF protection. On `execute-api.<region>.amazonaws.com` the
     // requests become cross-site, the cookies need `SameSite=None`, and that protection is
     // gone. An entry appearing here means the domain doing the security work was bypassed.
+    //
+    // This is the *production* config — env unset, which is what Vercel builds with. The
+    // sandbox needs that host and gets it from `nonProductionApiOrigin()`, which returns
+    // null here; the next test is the other half of that pair. The two together are the
+    // point: the entry exists where the requests do and nowhere else.
     const sources = await directive("connect-src");
     expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
+  });
+
+  it("allows the sandbox host only when the build is pointed at it", async () => {
+    // Integration testing needs a browser on `localhost:3000` to reach the sandbox stack, and
+    // a static entry for it would have shipped to production. So it is derived from
+    // `NEXT_PUBLIC_MBP_API_URL`, read at build time. Both halves are asserted here because
+    // the risk is a well-meaning simplification that keeps the sandbox working and quietly
+    // widens production's CSP — which is invisible in every other test, since only a
+    // deployed build applies these headers at all.
+    const sandbox = "https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox";
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", sandbox);
+    vi.resetModules();
+
+    const fresh = await import("../../../../next.config.mjs");
+    const rules = await fresh.default.headers!();
+    const csp = rules
+      .find((rule) => rule.source === "/(.*)")!
+      .headers.find((header) => header.key === "Content-Security-Policy")!.value;
+
+    // The exact origin, with the stage path dropped — CSP source expressions match on
+    // scheme/host/port, and a path here would restrict rather than widen. And the
+    // production host stays: a build can be pointed elsewhere without losing it.
+    expect(csp).toContain(new URL(sandbox).origin);
+    expect(csp).toContain("https://api.muscleboxpro.com");
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
   it("names every origin explicitly rather than allowing a wildcard", async () => {

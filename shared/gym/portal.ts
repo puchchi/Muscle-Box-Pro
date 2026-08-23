@@ -71,11 +71,28 @@ export type PortalSection<T> =
   | { available: false; reason: PortalAbsence };
 
 /**
- * Where the unit is in its life. `service_due` is a flag on an otherwise trading
- * machine, not a stop — §12 makes servicing MBP's obligation, so the gym's view of it
- * is informational.
+ * Where the unit is in its life. **This is `mbp-backend`'s enum, not ours.**
+ *
+ * It used to read `allocated | installed | trading | service_due | removed`, which was
+ * invented against a fixture before a backend existed. The stored column is
+ * `MachineItem.status` in `services/onboarding/src/repo/machines.ts` and it has a
+ * different set, so the old list would have failed validation on any real response —
+ * silently, because `parseGymPortalSnapshot` returns a result rather than throwing.
+ *
+ * Two of the differences are semantic rather than cosmetic, and the backend is right
+ * about both:
+ *
+ * - **`servicing`, not `service_due`.** The stored state is "a service is happening",
+ *   which is a fact we record. "A service is due" is a *derivation* from
+ *   `lastServiceAt` plus an interval, and nothing owns that interval yet — so the old
+ *   name promised a judgement no data supports.
+ * - **`replaced`, not `trading`.** There is no `trading` column because `installed`
+ *   already means the unit is in place and selling; a separate value would have had no
+ *   writer. `replaced` is the one this list was missing, and it is load-bearing:
+ *   `replaceMachine` marks rather than deletes, because `installationDate` is a term
+ *   boundary (§4.1) and which unit was installed when has to stay answerable.
  */
-export type MachineStatus = "allocated" | "installed" | "trading" | "service_due" | "removed";
+export type MachineStatus = "allocated" | "installed" | "servicing" | "replaced" | "removed";
 
 /**
  * That gym's unit. The model-level facts live in `shared/machine/spec.ts`; this is the
@@ -88,8 +105,16 @@ export type MachineRecord = {
   deviceNo: string | null;
   serialNumber: string | null;
   status: MachineStatus;
-  /** §4.1: the term runs from the later of signing and installation. */
+  /** §4.1: the term runs from the later of signing and installation. An ISO date. */
   installationDate: string | null;
+  /**
+   * An ISO **timestamp**, not a date, and the difference is deliberate.
+   *
+   * The stored value is epoch milliseconds, and truncating it to `YYYY-MM-DD` needs a
+   * timezone: done in UTC — the obvious way — a unit serviced at 01:00 IST would show
+   * as the previous day to the gym owner who watched it happen. So the wire carries the
+   * instant and this side formats it in IST, which is where a timezone belongs.
+   */
   lastServiceAt: string | null;
 };
 
@@ -178,11 +203,24 @@ export type GymPortalSnapshot = {
     status: DepositStatus;
     /** Present only when the status is `paid` (§5). */
     receipt: DepositReceipt | null;
-    /** A live Razorpay Payment Link while the deposit is outstanding. */
+    /**
+     * A live Razorpay Payment Link while the deposit is outstanding, and null the rest
+     * of the time — including once it is paid.
+     *
+     * The backend withholds it deliberately rather than passing the row through: the
+     * paid deposit row still carries the URL of the link that paid it, and Razorpay
+     * Payment Links stay reusable, so rendering this unconditionally would put a live
+     * ₹50,000 link in front of a gym that has already paid.
+     */
     paymentUrl: string | null;
   };
-  /** Null only in the window between account creation and the PDF being issued. */
-  agreement: { version: string; signedOn: string; contentHash: string } | null;
+  /**
+   * Null only in the window between account creation and the PDF being issued.
+   *
+   * `signedAt` is an ISO **timestamp** — see `MachineRecord.lastServiceAt` for why this
+   * side does the timezone rather than the wire. Formatted for display in IST.
+   */
+  agreement: { version: string; signedAt: string; contentHash: string } | null;
   /** ISO timestamp the figures were read. Shown, because a stale dashboard lies. */
   asOf: string;
 };

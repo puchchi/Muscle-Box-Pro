@@ -75,16 +75,24 @@ excluded from both `tsconfig.json` and `vitest.config.ts`, so it no longer compi
       answer to give — so the nav button no longer tries, and `/gym/login` forwards an existing
       session to the dashboard instead.
 
-### A3. `send-email` is an open spam relay
+### A3. `send-email` is an open spam relay — WON'T DO 2026-08-23
 
 `supabase/functions/send-email/index.ts` accepts arbitrary `to` + arbitrary `html` from any
 authenticated user, sent from your domain. Torches sending reputation. **Zero callers.**
+`forgot-password` joined it on 2026-08-23 — zero callers as of the `/gym/forgot-password` rewrite
+(`docs/gym-onboarding.md` §18).
 
-- [ ] Delete the function and undeploy it.
-- [ ] **`forgot-password` joined it on 2026-08-23** — zero callers as of the
-      `/gym/forgot-password` rewrite (`docs/gym-onboarding.md` §18). It was the last thing invoking
-      it, and the page was telling gym owners a reset email had been sent when none can be. Delete
-      and undeploy this one too; a deployed function with no caller is still a public endpoint.
+**Closed as won't-do by a standing rule, not because the finding is wrong.** Nothing already
+deployed on Supabase gets changed, and nothing new gets added to it; new backend work goes to
+`mbp-backend` on AWS. Both functions therefore stay deployed with zero callers.
+
+- [x] ~~Delete `send-email` and undeploy it.~~ Won't do — Supabase is frozen.
+- [x] ~~Delete `forgot-password` and undeploy it.~~ Won't do — same rule.
+- [ ] **Residual risk, accepted knowingly:** two live public endpoints with no caller. `send-email`
+      needs an authenticated user, so the exposure is bounded by who can sign up. If that boundary
+      ever widens — or a sending-reputation problem shows up — this decision is the thing to revisit.
+
+A1 is deliberately *not* covered by the freeze: it is a live data exposure rather than a tidy-up.
 
 ### A4. `/order/*` payment routes are unauthenticated
 

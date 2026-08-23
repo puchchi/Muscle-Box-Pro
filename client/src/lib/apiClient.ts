@@ -26,7 +26,15 @@
  *    segment, never in a query string. API Gateway access logs archive paths and query
  *    strings, and a 30-day credential in a log is a 30-day credential in a log (§4.3).
  *
- * 4. **A failure is a value, never an exception.** Every call resolves to
+ * 4. **The sandbox bearer hatch is conditional, tab-scoped, and cannot exist in production.**
+ *    Where the API is not on our own registrable domain, a browser can neither read nor
+ *    return the session cookie, so the sandbox hands back a `sessionToken` and this module
+ *    sends it. It is gated on the API hostname rather than on a flag, so there is nothing to
+ *    switch on by accident. See `BEARER_SESSION_ALLOWED` and
+ *    `BEARER_SESSION_STORAGE_KEY` — the token lives in `sessionStorage`, which is what lets
+ *    a reload keep you signed in without letting a closed tab keep a credential.
+ *
+ * 5. **A failure is a value, never an exception.** Every call resolves to
  *    `OnboardingResult`, because `OnboardingError` *is* the wizard's error surface — it
  *    picks the terminal screen, the field markers and the recovery copy. A thrown fetch
  *    would bypass all of it and land in a React error boundary, which tells a gym owner
@@ -63,6 +71,163 @@ import type {
 export const MBP_API_BASE_URL = (
   process.env.NEXT_PUBLIC_MBP_API_URL ?? "https://api.muscleboxpro.com"
 ).replace(/\/+$/, "");
+
+/** The one host that serves real gyms. Everything about the hatch below hangs off this. */
+const PRODUCTION_API_HOSTNAME = "api.muscleboxpro.com";
+
+/**
+ * The hostname of a base URL, or the production one if it cannot be parsed.
+ *
+ * Falling back to production rather than to `null` is the fail-closed half of property 2
+ * below: a value nobody can parse is a misconfiguration, and the safe reading of a
+ * misconfiguration is "assume this is the host with real gyms on it".
+ */
+function hostnameOf(base: string): string {
+  try {
+    return new URL(base).hostname;
+  } catch {
+    return PRODUCTION_API_HOSTNAME;
+  }
+}
+
+/**
+ * Whether this build may fall back to a bearer session — **sandbox only.**
+ *
+ * The problem it solves is a browser one, not a convenience one. Against the sandbox's
+ * `execute-api.ap-south-1.amazonaws.com` host a page on `localhost:3000` can neither
+ * *read* `Set-Cookie` (a forbidden response header, stripped by the Fetch spec no matter
+ * what `Access-Control-Expose-Headers` says) nor have a `SameSite=Lax` cookie *sent*
+ * back, because that pairing is cross-site. So the sandbox stack sets
+ * `AllowBearerSessions=true` and its three session-minting routes also return
+ * `sessionToken` in the body; see `mbp-backend` `docs/onboarding-testing.md` §3.
+ *
+ * Three properties, each deliberate:
+ *
+ * 1. **Derived from the host, not from `NODE_ENV` or a flag of its own.** The condition
+ *    that makes a bearer necessary *is* "the API is not on our registrable domain", so
+ *    that is the thing to test. A production build accidentally pointed at the sandbox
+ *    still works; a sandbox-flavoured build pointed at `api.muscleboxpro.com` still
+ *    refuses. There is no env var anyone can set to turn this on in production.
+ * 2. **Fail-closed default.** `NEXT_PUBLIC_MBP_API_URL` unset means the production host,
+ *    which means off. An unparseable value is treated as production too.
+ * 3. **The header stays conditional even where it is allowed.** Prod omits `sessionToken`
+ *    from the body entirely, so nothing is ever remembered there and the cookie does the
+ *    work. A client that *required* the token would pass in sandbox and fail in prod —
+ *    the worst order in which to find out.
+ */
+export const BEARER_SESSION_ALLOWED = hostnameOf(MBP_API_BASE_URL) !== PRODUCTION_API_HOSTNAME;
+
+/**
+ * Where the sandbox session token is kept: `sessionStorage`, mirrored in memory.
+ *
+ * **Not `localStorage`, and never in production.** An earlier version of this module held
+ * the token in a module variable only, which meant a page reload signed you out — and
+ * signed you out of `/admin`, where the cookie cannot stand in for it. That made the one
+ * environment the hatch exists to serve unusable for actually building against.
+ *
+ * The reasoning that rejected persistence was about production, and in production
+ * `BEARER_SESSION_ALLOWED` is `false`, so nothing here is ever written. What is actually
+ * being weighed is a *sandbox* token, on a developer's `localhost`, exposed to a script
+ * injected into our own dev build. `sessionStorage` rather than `localStorage` keeps the
+ * blast radius at one tab: it dies when the tab closes, so a token does not sit on a laptop
+ * overnight waiting to be found.
+ */
+const BEARER_SESSION_STORAGE_KEY = "mbp:sandbox-session";
+
+/**
+ * `sessionStorage`, or null where there isn't one.
+ *
+ * Three ways there isn't one, and all three are ordinary rather than exceptional: this
+ * build is pointed at production (so the hatch is off), the module is being evaluated on
+ * the server during SSR (`"use client"` components are still rendered there), or the
+ * browser refuses storage access outright — Safari's private mode *throws* on the property
+ * access itself, not on the read, which is why the `try` wraps the access and not the call.
+ */
+function bearerSessionStore(): Storage | null {
+  if (!BEARER_SESSION_ALLOWED) return null;
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Forget the stored copy — **ungated**, unlike reading and writing.
+ *
+ * Removing a credential needs no permission and is never the wrong thing to do, so this
+ * does not consult `BEARER_SESSION_ALLOWED`. That also makes it the reliable way to reset
+ * between tests, where one module instance may have written a token that another instance
+ * would otherwise inherit through the shared storage.
+ */
+function clearStoredBearerSession(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(BEARER_SESSION_STORAGE_KEY);
+  } catch {
+    // No storage to clear is the same outcome as having cleared it.
+  }
+}
+
+/**
+ * The in-memory mirror, seeded from storage the first time it is wanted.
+ *
+ * Lazily rather than at module load because module load happens during SSR, where there is
+ * no storage to read and the answer would be cached as `null` for the life of the process.
+ */
+let bearerSession: string | null = null;
+let bearerSessionSeeded = false;
+
+function currentBearerSession(): string | null {
+  if (!BEARER_SESSION_ALLOWED) return null;
+  if (!bearerSessionSeeded) {
+    const stored = bearerSessionStore()?.getItem(BEARER_SESSION_STORAGE_KEY);
+    bearerSession = typeof stored === "string" && stored.length > 0 ? stored : null;
+    // Only once there is somewhere to read from. On the server there never is, and marking
+    // it seeded there would leave the browser half of a hydrated page reading `null`.
+    if (typeof window !== "undefined") bearerSessionSeeded = true;
+  }
+  return bearerSession;
+}
+
+/**
+ * Hold on to a `sessionToken` from a login response, if there is one and we are allowed to.
+ *
+ * Takes `unknown` on purpose: callers pass the response field straight in, so the "is it
+ * actually a non-empty string" check lives here rather than being repeated — and forgotten
+ * once — at each of the three call sites. In production the field is absent, so this is a
+ * no-op twice over: nothing to store, and storing disabled anyway.
+ */
+export function rememberBearerSession(token: unknown): void {
+  if (!BEARER_SESSION_ALLOWED) return;
+  if (typeof token !== "string" || token.length === 0) return;
+  bearerSession = token;
+  bearerSessionSeeded = true;
+  try {
+    bearerSessionStore()?.setItem(BEARER_SESSION_STORAGE_KEY, token);
+  } catch {
+    // Storage full or refused mid-session. The in-memory copy above still works for this
+    // tab, so the degradation is exactly the old behaviour: a reload signs you out.
+  }
+}
+
+/**
+ * Drop it — on sign-out, and on any 401, so a dead token stops being sent.
+ *
+ * This is *not* a substitute for calling the logout route: only the server can expire the
+ * cookie that production actually runs on. See `signOutOfPortal`.
+ */
+export function forgetBearerSession(): void {
+  bearerSession = null;
+  bearerSessionSeeded = false;
+  clearStoredBearerSession();
+}
+
+/** For tests and for deciding whether a sandbox session is worth optimistically rendering. */
+export function hasBearerSession(): boolean {
+  return currentBearerSession() !== null;
+}
 
 /**
  * How long to wait before calling it a failure.
@@ -105,7 +270,9 @@ export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE";
 export type ApiRequestOptions = {
   /**
    * The onboarding handle. Sent as `Authorization: Bearer`; omitted for the cookie-
-   * authenticated routes, which carry their session in `credentials: "include"`.
+   * authenticated routes, which carry their session in `credentials: "include"` — or, in
+   * sandbox only, in a stored bearer session (rule 4). Supplying a handle takes precedence
+   * over that: the two share one header and this route is about the handle.
    */
   handle?: string;
   /**
@@ -129,7 +296,15 @@ export async function apiRequest<T>(
   options: ApiRequestOptions = {},
 ): Promise<OnboardingResult<T>> {
   const headers: Record<string, string> = {};
+  // The handle wins. Both credentials travel in `Authorization`, and where a caller has
+  // supplied a handle that route is handle-authenticated — `POST /gym/account` is the one
+  // that can plausibly be reached with both a stored sandbox session and a set-password
+  // handle, and it is the handle that route reads. A signed-in admin's token must not
+  // displace the credential the request is actually about.
+  const session = currentBearerSession();
+  const usesBearerSession = !options.handle && session !== null;
   if (options.handle) headers.Authorization = `Bearer ${options.handle}`;
+  else if (usesBearerSession) headers.Authorization = `Bearer ${session}`;
 
   // Writes always carry a JSON body, reads never do. `{}` rather than nothing, because
   // the API refuses a state-changing request that arrives without `Content-Type:
@@ -176,6 +351,13 @@ export async function apiRequest<T>(
     if (body === undefined) return { ok: false, error: NETWORK_ERROR };
     return { ok: true, data: body as T };
   }
+
+  // A bearer session the server has rejected is a dead one — expired, or minted by a stack
+  // that has since been redeployed. Dropping it here stops it being sent for the rest of
+  // the tab's life and keeps `hasBearerSession()` truthful, which is what the sandbox's
+  // "am I signed in?" check reads. Narrow on purpose: only when *this* request was
+  // authenticated by the token, so a 401 about an onboarding handle leaves it alone.
+  if (response.status === 401 && usesBearerSession) forgetBearerSession();
 
   return { ok: false, error: toOnboardingError(response.status, body) };
 }

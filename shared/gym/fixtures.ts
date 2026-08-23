@@ -44,9 +44,11 @@ export const DEMO_GYM_PORTAL: GymPortalSnapshot = {
     model: MACHINE_SPEC.model,
     deviceNo: "MBP-BLR-0142",
     serialNumber: "MBX1-2026-0142",
-    status: "trading",
+    status: "installed",
     installationDate: "2026-05-04",
-    lastServiceAt: "2026-08-05",
+    // A timestamp, matching what `GET /gym/portal` actually sends. It was a date until
+    // the contract was read against the deployed handler.
+    lastServiceAt: "2026-08-05T09:20:00.000Z",
   },
 
   terms: STANDARD_TERMS,
@@ -111,7 +113,7 @@ export const DEMO_GYM_PORTAL: GymPortalSnapshot = {
     // could have signed one. A fixture claiming otherwise describes a state that cannot
     // exist.
     version: "2.2",
-    signedOn: "2026-04-27",
+    signedAt: "2026-04-27T11:42:00.000Z",
     // A real 64-hex digest is not required for a fixture, but the *length* is: the
     // card truncates it, and a short string would hide a rendering bug. This was 65
     // characters until `portalSchema.ts` started checking — which is the whole argument

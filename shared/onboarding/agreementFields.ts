@@ -48,7 +48,15 @@ export const MBP_NOTICES = {
   phone: "",
 } as const;
 
-/** "2026-08-22" → "22 August 2026". Formal-document style, no ordinals. */
+/**
+ * "2026-08-22" → "22 August 2026". Formal-document style, no ordinals.
+ *
+ * **Takes a date, never a timestamp.** It formats in UTC deliberately, because its output
+ * goes inside the hashed agreement text and the same record must render identically on
+ * every machine. That makes it the wrong function for anything with a time in it: a
+ * moment at 01:00 IST formats here as the previous day. `formatIstDate` in
+ * `GymDashboard.tsx` is the one for timestamps a person reads.
+ */
 export function formatAgreementDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;

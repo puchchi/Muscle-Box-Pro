@@ -26,17 +26,55 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * issued, and the API resolves the gym from it — so the hop bought a second trust boundary
  * and nothing else.
  */
+const PRODUCTION_API_ORIGIN = "https://api.muscleboxpro.com";
+
+/**
+ * A non-production API origin to allow, or `null` — which is what production returns.
+ *
+ * The sandbox stack answers on `https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox`
+ * and a browser has to reach it to test the integration at all. Rather than adding that host
+ * to the list above — where it would ship to production and quietly widen the CSP for every
+ * real visitor — it is **derived from the API origin this build was configured with.** So the
+ * entry exists exactly where the requests do:
+ *
+ *   - Env unset, or set to the production host → `null`. Production's `connect-src` contains
+ *     no `amazonaws.com` entry, which is the property `securityHeaders.test.ts` pins.
+ *   - Env set to the sandbox → that origin, and nothing else, is allowed.
+ *
+ * `NEXT_PUBLIC_*` is read at build time, so this is decided when the bundle is built and
+ * cannot be flipped by a runtime variable. It is the same rule as `BEARER_SESSION_ALLOWED`
+ * in `client/src/lib/apiClient.ts`, restated because a `.mjs` config cannot import from TS —
+ * and tied to it by the test that asserts this list contains `MBP_API_BASE_URL`'s origin.
+ *
+ * Loosening the CSP is not the dangerous part of pointing a build at `execute-api`; losing
+ * `SameSite=Lax` is, and that is why the bearer hatch is confined to the same condition.
+ */
+function nonProductionApiOrigin() {
+  const configured = process.env.NEXT_PUBLIC_MBP_API_URL;
+  if (!configured) return null;
+  try {
+    const origin = new URL(configured).origin;
+    return origin === PRODUCTION_API_ORIGIN ? null : origin;
+  } catch {
+    // Unparseable is a misconfiguration, and the safe reading of one is "allow nothing extra".
+    return null;
+  }
+}
+
+const NON_PRODUCTION_API_ORIGIN = nonProductionApiOrigin();
+
 const CONNECT_SRC = [
   "'self'",
   "https://va.vercel-insights.com",
   "https://vitals.vercel-insights.com",
   "https://api.indexnow.org",
   // The onboarding wizard and the gym dashboard. Cookie-authenticated, same-site, and the
-  // reason `NEXT_PUBLIC_MBP_API_URL` should stay on this host — see above.
-  "https://api.muscleboxpro.com",
+  // reason `NEXT_PUBLIC_MBP_API_URL` should stay on this host in production — see above.
+  PRODUCTION_API_ORIGIN,
   // Supabase auth, still carrying the gym login until it moves onto the cookie sessions
   // above (TODO A2). Nothing else in the app depends on this origin any more.
   "https://esyfzbcoufjcnakloahc.supabase.co",
+  ...(NON_PRODUCTION_API_ORIGIN ? [NON_PRODUCTION_API_ORIGIN] : []),
 ];
 
 const INDEXNOW_KEY = "a3f7b2e8d4c1f9a6b5e0d7c3f2a8b1e4";

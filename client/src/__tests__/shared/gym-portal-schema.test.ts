@@ -235,7 +235,7 @@ describe("the reporting response boundary", () => {
       ["not hex", "z".repeat(64)],
     ])("rejects an agreement fingerprint that is %s", (_label, value) => {
       const snapshot = valid();
-      snapshot.agreement = { version: "2.2", signedOn: "2026-04-27", contentHash: value };
+      snapshot.agreement = { version: "2.2", signedAt: "2026-04-27T11:42:00.000Z", contentHash: value };
       // The card shows the first twelve characters so a gym can match it against the
       // emailed copy. A malformed digest renders as a plausible fingerprint that
       // matches nothing, which defeats the only thing it is for.

@@ -431,7 +431,11 @@ describe("GymDashboard", () => {
 
       // The reason the endpoint ships partial rather than not at all: these three come
       // from our own table and are exactly what a gym signs in to check.
-      expect(within(screen.getByTestId("card-machine")).getByText("Trading")).toBeInTheDocument();
+      // "Installed and trading" is the label for the backend's `installed`. It read
+      // "Trading" while the frontend had a `trading` status of its own invention.
+      expect(
+        within(screen.getByTestId("card-machine")).getByText("Installed and trading"),
+      ).toBeInTheDocument();
       expect(within(screen.getByTestId("card-deposit")).getByText("₹50,000")).toBeInTheDocument();
       expect(screen.getByTestId("agreement-summary")).toBeInTheDocument();
     });
@@ -558,7 +562,7 @@ describe("GymDashboard", () => {
       // for, and neither must reach a card.
       snapshotOverride.value = {
         ...snapshot,
-        agreement: { version: "2.2", signedOn: "2026-04-27", contentHash: "a".repeat(32) },
+        agreement: { version: "2.2", signedAt: "2026-04-27T11:42:00.000Z", contentHash: "a".repeat(32) },
         statements: {
           available: true,
           data: [{ ...statementsOf(snapshot)[0], documentUrl: "javascript:alert(1)" }],
