@@ -71,7 +71,17 @@ const SHELL = "max-w-3xl mx-auto px-4 sm:px-6";
 /**
  * The prose measure, and why it is `56ch` rather than the `65ch` that looks right.
  *
- * Every paragraph in this flow carries `max-w-[56ch]`. It was `68ch`, chosen against the
+ * **Where it applies: unboxed page prose and long-form reading, not card bodies.** It was
+ * on every paragraph in the flow, including the two- and three-line qualifiers inside
+ * cards — and a card here is only about 630px wide inside its padding, so a `56ch` body
+ * wrapped roughly 170px short of the card's own right edge. That read as a narrow column
+ * of text with a column of dead space beside it, five or six times down a screen, with the
+ * bold labels above each body (which never carried the cap) running wider than the sentence
+ * explaining them. Card copy now fills its card: the padding is the gutter and this shell
+ * is the measure. The cap stays on the ledes, the standalone notes between cards, and
+ * `AgreementReader`'s `PROSE` — forty-seven sections of contract is the case it exists for.
+ *
+ * The value itself: it was `68ch`, chosen against the
  * usual 65–75 characters a line — but `ch` is the advance width of a *zero*, and in Plus
  * Jakarta Sans a zero is 0.6em while the average character in running English is about
  * 0.45em. So `68ch` bought 40.8em of line, which is around 90 characters, not 68: a

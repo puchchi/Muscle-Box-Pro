@@ -104,7 +104,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
               Refundable security deposit
             </h2>
             <p className="text-3xl font-black text-foreground mt-1 tracking-tight">{amount}</p>
-            <p className="text-sm text-gray-700 mt-1 max-w-[56ch]">
+            <p className="text-sm text-gray-700 mt-1">
               One payment, held for the whole term. Not a fee, not rent, and not part-payment for the
               machine.
             </p>
@@ -124,7 +124,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
               <dt className="text-xs font-bold text-primary-ink bg-primary/10 rounded px-2 py-0.5 flex-shrink-0 tabular-nums">
                 §{fact.clause}
               </dt>
-              <dd className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">{fact.text}</dd>
+              <dd className="text-sm text-gray-700 leading-relaxed">{fact.text}</dd>
             </div>
           ))}
         </dl>
@@ -148,7 +148,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
             and the step advances on its own when the webhook lands. Someone not watching
             the screen otherwise gets no indication that either happened.
           */}
-          <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]" role="status" aria-live="polite">
+          <p className="text-sm text-gray-700 leading-relaxed mt-1" role="status" aria-live="polite">
             {checkedAndNotFound
               ? "We still can't see it. Bank transfers and UPI usually land in seconds but can take a few minutes. This page updates itself, and you can close the tab. If it hasn't cleared in an hour, reply to our email and we'll trace it."
               : "This page checks by itself every few seconds. You can safely close the tab, because we confirm the payment from our own records, not from this browser, so nothing depends on you staying here."}
@@ -175,7 +175,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           data-testid="deposit-deferred"
         >
           <h2 className="text-sm font-bold text-amber-900">Still outstanding</h2>
-          <p className="text-sm text-amber-900 leading-relaxed mt-1 max-w-[56ch]">
+          <p className="text-sm text-amber-900 leading-relaxed mt-1">
             You chose to pay this later, which is fine: your agreement stands and the site survey can
             go ahead. Installation is what waits for the {amount}. The link below is the same one in
             your email.
@@ -211,7 +211,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
       )}
 
       {status === "not_started" && canAct && (
-        <p className="text-xs text-gray-700 leading-relaxed max-w-[56ch]">
+        <p className="text-xs text-gray-700 leading-relaxed">
           Paying later does not hold anything up except installation, and it does not change your
           agreement. We'll email the same link and it stays in your dashboard under Deposit.
         </p>
@@ -276,7 +276,7 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         <Wallet className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
         Your payment link is ready
       </h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
+      <p className="text-sm text-gray-700 leading-relaxed mt-1">
         {amount} to MuscleBoxPro, on Razorpay. UPI, netbanking, card or NEFT, whatever your
         accounts team prefers. We've emailed the same link, so this is not your only chance at it.
       </p>
@@ -297,7 +297,7 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         <span className="sr-only">(opens in a new tab)</span>
       </a>
 
-      <p className="text-sm text-gray-700 leading-relaxed mt-3 flex items-start gap-2 max-w-[56ch]">
+      <p className="text-sm text-gray-700 leading-relaxed mt-3 flex items-start gap-2">
         <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           <strong className="text-foreground">You don't have to be the one who pays.</strong> Forward
@@ -348,7 +348,7 @@ function PaidPanel({
         <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" aria-hidden="true" />
         Deposit received: {amount}
       </h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
+      <p className="text-sm text-gray-700 leading-relaxed mt-1">
         Thank you. A receipt is on its way to <strong className="text-foreground">{email}</strong>, and
         it stays in your dashboard under Deposit. It is refundable within 30 days of the machine being
         collected, less anything owing.
@@ -363,7 +363,7 @@ function PaidPanel({
         </dl>
       )}
 
-      <p className="text-xs text-gray-700 leading-relaxed mt-3 flex items-start gap-2 max-w-[56ch]">
+      <p className="text-xs text-gray-700 leading-relaxed mt-3 flex items-start gap-2">
         <Receipt className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           Keep the reference. It is what we both quote when the deposit is refunded at the end of the

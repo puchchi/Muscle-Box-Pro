@@ -51,7 +51,7 @@ export default function StepPartnership({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">
+      <p className="text-sm text-gray-700 leading-relaxed">
         These are the terms on <strong className="text-foreground">{state.gymDisplayName}</strong>'s
         record, not a brochure. Every figure below is what the agreement you sign next will say.
       </p>
@@ -112,7 +112,20 @@ export default function StepPartnership({
           {detailRows(terms).map((row) => (
             <div key={row.label} className="py-2.5 first:pt-0 last:pb-0">
               <dt className="text-sm font-semibold text-foreground">{row.label}</dt>
-              <dd className="text-sm text-gray-700 leading-relaxed mt-0.5 max-w-[56ch]">{row.body}</dd>
+              {/*
+                No `max-w-[56ch]` here, and none on any of the other card bodies on this
+                step. The measure is for running prose; these are two- and three-line
+                qualifiers sitting inside a card that is already only ~630px wide. Capping
+                them at ~470px wrapped every one of them a third of the way short of the
+                card's own right edge, so each row read as a narrow column with a column of
+                dead space beside it — and the bold `dt` above, which has no cap, ran wider
+                than the sentence explaining it.
+
+                The card padding is the gutter and the shell (`max-w-3xl`) is the measure.
+                `AgreementReader` keeps its cap: forty-seven sections of contract prose is
+                the case the measure exists for.
+              */}
+              <dd className="text-sm text-gray-700 leading-relaxed mt-0.5">{row.body}</dd>
             </div>
           ))}
         </dl>
@@ -133,7 +146,7 @@ export default function StepPartnership({
           sentence claiming the list is complete is exactly the sentence that goes stale
           silently when someone adds a sixth item.
         */}
-        <p className="text-sm text-gray-700 leading-relaxed mb-3 max-w-[56ch]">
+        <p className="text-sm text-gray-700 leading-relaxed mb-3">
           The {RESTRICTIONS.length} restrictions that come with a machine we own and run. Every one
           of them is in the agreement you read next, in the order you will meet them there, so none
           of them is a surprise.
@@ -171,7 +184,7 @@ export default function StepPartnership({
               >
                 {index + 1}.
               </span>
-              <span className="text-sm text-foreground leading-relaxed max-w-[56ch]">{item.text}</span>
+              <span className="text-sm text-foreground leading-relaxed">{item.text}</span>
             </li>
           ))}
         </ol>
@@ -261,16 +274,14 @@ export default function StepPartnership({
             <p className="text-sm font-bold text-foreground" data-testid="machine-model">
               {machine.model}
             </p>
-            <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
-              {machineBlurb(machine)}
-            </p>
+            <p className="text-sm text-gray-700 leading-relaxed mt-1">{machineBlurb(machine)}</p>
             {/*
               "See step 5." is gone. It pointed at a screen this gym has not reached, past
               a panel of its own numbered 1 to 5 and a rail numbered 1 to 5 — three
               competing sequences for one reader. The sentence says when the second
               signature happens, and the timeline directly below says it again in place.
             */}
-            <p className="text-sm text-gray-700 leading-relaxed mt-2 max-w-[56ch]">
+            <p className="text-sm text-gray-700 leading-relaxed mt-2">
               On the day it arrives, its serial number and that date are written into Schedule A of
               your agreement, and you and our technician sign that schedule together on site.
             </p>
@@ -296,7 +307,7 @@ export default function StepPartnership({
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                <p className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">{item.body}</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{item.body}</p>
               </div>
             </li>
           ))}
@@ -305,7 +316,7 @@ export default function StepPartnership({
 
       {!readOnly && (
         <div className="space-y-3 pt-1">
-          <p className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">
+          <p className="text-sm text-gray-700 leading-relaxed">
             Continuing records that you've read these terms. It is not a signature and commits you
             to nothing — the full agreement comes next, and you're free to take your time over it
             before you decide.

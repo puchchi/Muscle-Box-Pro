@@ -61,7 +61,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
             <h2 className="text-sm font-bold text-foreground">
               Signed. {state.gymDisplayName} is on board.
             </h2>
-            <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
+            <p className="text-sm text-gray-700 leading-relaxed mt-1">
               {signedAt ? `Signed on ${formatAgreementDate(signedAt)} by ` : "Signed by "}
               {state.details.signatoryName || "your signatory"}
               {state.details.signatoryDesignation ? `, ${state.details.signatoryDesignation}` : ""}.
@@ -164,7 +164,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
               >
                 Choose a password for your dashboard
               </label>
-              <p id="portal-password-hint" className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">
+              <p id="portal-password-hint" className="text-sm text-gray-700 leading-relaxed">
                 It shows cups sold, revenue, your share and every payout statement. You'll sign in
                 with <strong className="text-foreground">{email}</strong>.
               </p>
@@ -238,7 +238,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                  <p className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">{item.body}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{item.body}</p>
                 </div>
               </li>
             ),
@@ -272,7 +272,7 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
           <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
           Deposit received: {amount}
         </h2>
-        <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
+        <p className="text-sm text-gray-700 leading-relaxed mt-1">
           {paidAt ? `Paid on ${formatAgreementDate(paidAt)}. ` : ""}
           Your receipt is in your email and in your dashboard. It is refundable at the end of the
           term, less anything owing under the agreement.
@@ -301,7 +301,7 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
         <ShieldCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
         Deposit still to pay: {amount}
       </h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
+      <p className="text-sm text-gray-700 leading-relaxed mt-1">
         {state.depositStatus === "pending"
           ? "We can see a payment in progress. Once it clears we'll email the receipt, and there is nothing more for you to do."
           : `We'll email you a payment link, and it stays in your dashboard under Deposit. The site survey can go ahead in the meantime, but installation waits for the ${amount}.`}
