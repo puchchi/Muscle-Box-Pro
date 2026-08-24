@@ -65,8 +65,8 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
               {signedAt ? `Signed on ${formatAgreementDate(signedAt)} by ` : "Signed by "}
               {state.details.signatoryName || "your signatory"}
               {state.details.signatoryDesignation ? `, ${state.details.signatoryDesignation}` : ""}.
-              A copy is on its way to <strong className="text-foreground">{email}</strong> — keep it,
-              because §41 makes that address the one we serve notices to.
+              A copy is on its way to <strong className="text-foreground">{email}</strong>. Keep it,
+              because that is the address the agreement has us serve formal notices to.
             </p>
           </div>
         </div>
@@ -220,8 +220,10 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
         data-testid="what-happens-next"
       >
-        <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+        {/* The weight every other card title on this step uses, for the same reason as
+            step 2's panels: this one heads the list a gym reads before it closes the tab. */}
+        <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
           What happens next
         </h2>
         <ol role="list" className="space-y-3">
@@ -268,12 +270,12 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
       >
         <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
-          Deposit received — {amount}
+          Deposit received: {amount}
         </h2>
         <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
           {paidAt ? `Paid on ${formatAgreementDate(paidAt)}. ` : ""}
           Your receipt is in your email and in your dashboard. It is refundable at the end of the
-          term, less anything owing under §5.6.
+          term, less anything owing under the agreement.
         </p>
         {/*
           The reference, here as well as on step 4, because paying advances the wizard
@@ -297,11 +299,11 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
     >
       <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
-        Deposit still to pay — {amount}
+        Deposit still to pay: {amount}
       </h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
         {state.depositStatus === "pending"
-          ? "We can see a payment in progress. Once it clears we'll email the receipt — nothing more for you to do."
+          ? "We can see a payment in progress. Once it clears we'll email the receipt, and there is nothing more for you to do."
           : `We'll email you a payment link, and it stays in your dashboard under Deposit. The site survey can go ahead in the meantime, but installation waits for the ${amount}.`}
       </p>
     </div>
@@ -314,7 +316,7 @@ function nextSteps(installationAddress: string, termMonths: number) {
   return [
     {
       title: "We call you within two working days",
-      body: `To book the site survey${where} — where the machine stands, the power point, and water access.`,
+      body: `To book the site survey${where}: where the machine stands, the power point, and water access.`,
     },
     {
       title: "We confirm an installation date",
@@ -322,7 +324,7 @@ function nextSteps(installationAddress: string, termMonths: number) {
     },
     {
       title: "Schedule A is signed on site",
-      body: `A short second signature at installation: you and our technician confirm the machine's serial number, its condition and the installation date. Your ${termMonths}-month term runs from that date (§4.1), not from today.`,
+      body: `A short second signature at installation: you and our technician confirm the machine's serial number, its condition and the installation date. Your ${termMonths}-month term runs from that date, not from today.`,
     },
     {
       title: "Your first shake, and your first statement",

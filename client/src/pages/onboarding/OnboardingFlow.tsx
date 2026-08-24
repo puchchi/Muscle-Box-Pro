@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, Info, Lock, ShieldCheck } from "lucide-react";
+import Image from "next/image";
+import { AlertCircle, ArrowLeft, Info, Lock, Pencil, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scrollIntoViewGently } from "@/lib/motion";
 import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
 import { stepMeta } from "@shared/onboarding/steps";
 import type { OnboardingError } from "@shared/onboarding/types";
+import OnboardingIntro from "./OnboardingIntro";
 import ProgressRail from "./ProgressRail";
 import { useOnboarding } from "./useOnboarding";
 import StepDetails from "./steps/StepDetails";
@@ -40,6 +42,22 @@ const STEP_COMPONENTS: Record<number, ComponentType<StepViewProps>> = {
   4: StepDeposit,
   5: StepDone,
 };
+
+/**
+ * The steps that render their own list of what is wrong, with a way to each field.
+ *
+ * Step 1 is eleven fields, so it carries an error summary — which meant a rejected submit
+ * printed two red boxes twenty pixels apart: the server's own sentence ("Please check the
+ * highlighted fields.") stacked above the summary that actually highlights them. The
+ * generic one is the one to drop. The specific one names each field, says what is wrong
+ * with it, and focuses it on click; the sentence above it was an instruction to read the
+ * next box.
+ *
+ * A set rather than a `viewStep === 1`, so that giving step 3 a summary is one entry here
+ * rather than a condition to rediscover. Steps that are *not* in it keep the banner — for
+ * them it is the only place a `fieldErrors` payload appears at all.
+ */
+const STEPS_WITH_FIELD_ERROR_SUMMARY: ReadonlySet<number> = new Set([1]);
 
 /**
  * One measure for the header, the rail and the body.
@@ -77,6 +95,32 @@ export default function OnboardingFlow({ token }: { token: string }) {
   const meta = stepMeta(viewStep);
   const StepBody = STEP_COMPONENTS[viewStep];
   const isBehind = viewStep < state.currentStep;
+  /*
+    The introduction, and with it the page header, on the one pass where a gym has not
+    seen this flow before. The condition lived in `StepDetails` when the card sat inside
+    the form; it belongs here now that the card is the thing above the form and carries
+    the `h1`.
+
+    Keyed off `completedSteps` rather than off `isReadOnly`, which is what it used to read and
+    which stopped meaning "first pass" the moment step 1 became editable on a revisit. A gym
+    coming back to correct its GSTIN would otherwise be welcomed to the flow a second time,
+    with "Let's get you set up" over a form it has already submitted.
+  */
+  const showIntro = viewStep === 1 && !state.completedSteps.includes(1);
+  /*
+    Is the step below already saying this, field by field? Then it says it better, and the
+    banner is a second red box repeating it.
+
+    Every named field has to be one the step can actually mark. `StepDetails` drops a
+    `fieldErrors` key that is not on `GymDetails` — it has no input to attach it to — so
+    suppressing the banner for a payload like that would remove the only mention of it on
+    the page. A server that starts validating something this form does not collect should
+    degrade to the banner, not to silence.
+  */
+  const stepOwnsFieldErrors =
+    fieldErrors !== null &&
+    STEPS_WITH_FIELD_ERROR_SUMMARY.has(viewStep) &&
+    Object.keys(fieldErrors).every((name) => name in state.details);
 
   return (
     <div
@@ -126,31 +170,55 @@ export default function OnboardingFlow({ token }: { token: string }) {
         of the document — on the browser most emailed links open in.
       */}
       <main id="onboarding-step" tabIndex={-1} className={`flex-1 w-full ${SHELL} py-8 sm:py-10 outline-none`}>
-        <div className="mb-6">
-          <h1
-            ref={headingRef}
-            tabIndex={-1}
-            className="text-xl sm:text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1 outline-none"
-          >
-            {meta.title}
-          </h1>
-          <p className="text-muted-foreground text-sm">{meta.blurb}</p>
-        </div>
+        {/*
+          One header, not two. The introduction used to render inside the step body,
+          below this heading, which put "Confirm your details" ahead of "somebody sent
+          you this link" — the instruction before the introduction, and two uppercase
+          display headlines competing on the first screen a gym ever sees.
+
+          On that first pass the intro card *is* the header and carries the `h1`; from
+          step 2 onwards, and on any return to a finished step 1, the step's own title
+          is. Either way exactly one `h1` opens the document, and the section headings
+          in the body are the `h2`s under it.
+        */}
+        {showIntro ? (
+          <OnboardingIntro
+            headingRef={headingRef}
+            invitedByName={state.invitedByName}
+            gymDisplayName={state.gymDisplayName}
+          />
+        ) : (
+          <div className="mb-6">
+            <h1
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-xl sm:text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1 outline-none"
+            >
+              {meta.title}
+            </h1>
+            <p className="text-muted-foreground text-sm">{meta.blurb}</p>
+          </div>
+        )}
 
         {/*
           Shown whenever the step on screen is not the step the server is on, so a
           gym reviewing an earlier answer always knows it is looking backwards and
           how to get back. Without this, a read-only form with a disabled button
           reads like a bug.
+
+          `canEdit` is derived rather than passed down separately: behind the current step and
+          *not* read-only is exactly the editable-revisit case, so there is one source for it
+          instead of two conditions to keep agreeing with each other.
         */}
         {isBehind && (
           <ReviewingBanner
             isFrozen={state.isSigned && (viewStep === 1 || viewStep === 2)}
+            canEdit={!isReadOnly}
             onReturn={() => goToStep(state.currentStep)}
           />
         )}
 
-        {actionError && <ActionErrorNotice error={actionError} />}
+        {actionError && !stepOwnsFieldErrors && <ActionErrorNotice error={actionError} />}
 
         <StepBody
           token={token}
@@ -158,6 +226,7 @@ export default function OnboardingFlow({ token }: { token: string }) {
           readOnly={isReadOnly}
           isSubmitting={isSubmitting}
           fieldErrors={fieldErrors}
+          goToStep={goToStep}
           actions={actions}
         />
       </main>
@@ -238,12 +307,18 @@ function Header({ gymName }: { gymName: string }) {
             Intrinsic size given so the row does not reflow when the logo decodes —
             the rail and the whole form below it shift otherwise, on the one paint a
             gym is most likely to be looking at.
+
+            `next/image`, which is what the site's own navbar already uses for this exact
+            asset: the raw tag sent the full 71 KB PNG to render a 36px-tall logo. Marked
+            `priority`, because it is in the fixed chrome above the fold and lazy-loading
+            it would leave a hole in the header on the first paint of an emailed link.
           */}
-          <img
+          <Image
             src="/assets/logo.png"
             alt="MuscleBoxPro"
             width={140}
             height={36}
+            priority
             className="h-8 sm:h-9 w-auto"
           />
         </Link>
@@ -287,7 +362,7 @@ function MockBanner() {
     <div className="bg-amber-50 border-b border-amber-200 py-2">
       <p className={`${SHELL} text-[11px] text-amber-900 flex items-center gap-1.5`}>
         <Info className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-        Preview mode — nothing here is saved to the database yet, and reloading the page starts over.
+        Preview mode: nothing here is saved to the database yet, and reloading the page starts over.
       </p>
     </div>
   );
@@ -333,28 +408,55 @@ function LoadingScreen() {
   );
 }
 
-function ReviewingBanner({ isFrozen, onReturn }: { isFrozen: boolean; onReturn(): void }) {
+/**
+ * "You are not on the step the server is on" — in whichever of its three senses applies.
+ *
+ * The three are genuinely different situations and used to be two, which made one of them
+ * inaccurate: an editable step 1 under the sentence "Nothing here can be changed from this view"
+ * tells a gym not to bother trying the fields that are, in fact, waiting for it.
+ *
+ * `canEdit` wins over the plain backward-looking copy because it is the case with something to
+ * do. The button stays in all three: getting back to the current step has to be one click
+ * whether or not anything on the page can be typed into.
+ */
+function ReviewingBanner({
+  isFrozen,
+  canEdit,
+  onReturn,
+}: {
+  isFrozen: boolean;
+  canEdit: boolean;
+  onReturn(): void;
+}) {
+  const { Icon, title, body } = isFrozen
+    ? {
+        Icon: Lock,
+        title: "Locked after signing",
+        body: "Your agreement is signed against these details, so they can't be edited here. Email us and we'll issue an amendment.",
+      }
+    : canEdit
+      ? {
+          Icon: Pencil,
+          title: "You've come back to an earlier step",
+          body: "Change whatever you need to and press Continue. That saves it and takes you back to where you were — nothing you've already done is undone.",
+        }
+      : {
+          Icon: ArrowLeft,
+          title: "You're looking at an earlier step",
+          body: "Nothing here can be changed from this view.",
+        };
+
   return (
     <div
       className="mb-6 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 flex items-start gap-3"
       data-testid="reviewing-banner"
     >
       <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-        {isFrozen ? (
-          <Lock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        ) : (
-          <ArrowLeft className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-        )}
+        <Icon className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-foreground mb-0.5">
-          {isFrozen ? "Locked after signing" : "You're looking at an earlier step"}
-        </p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {isFrozen
-            ? "Your agreement is signed against these details, so they can't be edited here. Email us and we'll issue an amendment."
-            : "Nothing here can be changed from this view."}
-        </p>
+        <p className="text-sm font-semibold text-foreground mb-0.5">{title}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
       </div>
       <Button
         variant="outline"
@@ -362,6 +464,13 @@ function ReviewingBanner({ isFrozen, onReturn }: { isFrozen: boolean; onReturn()
         className="min-h-11 rounded-xl text-xs font-semibold flex-shrink-0 cursor-pointer"
         data-testid="button-return-to-current"
       >
+        {/*
+          The same words in all three cases, and deliberately not "discard and go back" in the
+          editable one: step 1 autosaves a draft as it is typed, so leaving without pressing
+          Continue does not throw the typing away — it leaves it uncommitted, and a later return
+          to the step shows the draft. Offering to discard would promise something this button
+          does not do.
+        */}
         Back to where I was
       </Button>
     </div>
@@ -382,7 +491,14 @@ function ActionErrorNotice({ error }: { error: OnboardingError }) {
     // Via the helper, which drops to an instant jump under `prefers-reduced-motion`.
     // The stylesheet's blanket override in index.css does not reach here: an explicit
     // `behavior: "smooth"` beats the computed `scroll-behavior` by spec.
-    scrollIntoViewGently(ref.current, { block: "center" });
+    //
+    // `start`, not `center` — which is what the `scroll-mt` below was written for and
+    // never got. Centring puts the banner in the middle of the viewport, which on step 1
+    // scrolled the card above it half under the sticky rail and pushed the fields the
+    // banner is about below the fold. Aligning to the top lands it exactly one rem under
+    // the rail with the form beneath it, and it is the alignment `scroll-margin-top`
+    // actually governs.
+    scrollIntoViewGently(ref.current, { block: "start" });
   }, [error]);
 
   return (
@@ -411,7 +527,7 @@ function TokenProblem({ error }: { error: OnboardingError }) {
   const copy: Record<string, { title: string; body: string; cta: string | null }> = {
     expired_token: {
       title: "This link has expired",
-      body: "Onboarding links are valid for 30 days. Ask us for a fresh one and you'll pick up where you left off — nothing you filled in is lost.",
+      body: "Onboarding links are valid for 30 days. Ask us for a fresh one and you'll pick up where you left off. Nothing you filled in is lost.",
       cta: "Request a new link",
     },
     revoked_token: {
@@ -421,7 +537,7 @@ function TokenProblem({ error }: { error: OnboardingError }) {
     },
     invalid_token: {
       title: "We couldn't find this link",
-      body: "Check that you opened the full link from our email — some mail apps break long URLs across lines.",
+      body: "Check that you opened the full link from our email. Some mail apps break long URLs across lines.",
       cta: "Get in touch",
     },
     network: {

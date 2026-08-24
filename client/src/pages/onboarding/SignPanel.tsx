@@ -93,7 +93,7 @@ export default function SignPanel({
     return (
       <Locked
         title="Read to the end to sign"
-        body="Scroll through the agreement above — including the schedules — and the signing panel will open here. Nothing about this step is a formality; if something in it looks wrong, reply to our email instead of signing."
+        body="Scroll through the agreement above, including the schedules, and the signing panel will open here. Nothing about this step is a formality; if something in it looks wrong, reply to our email instead of signing."
         // A gate with no gauge reads as broken: "read to the end" gives no way to tell
         // whether the end is one schedule away or twelve.
         progress={readPercent}
@@ -198,14 +198,13 @@ export default function SignPanel({
             disabled={!!sentTo}
           >
             I am authorised to bind{" "}
-            <strong className="text-foreground">{legalEntityName || "this entity"}</strong> to it
-            (§32).
+            <strong className="text-foreground">{legalEntityName || "this entity"}</strong> to it.
           </Check>
         </div>
 
         {errors.contentHash && (
           <p className="text-xs font-medium text-red-700" role="alert" data-testid="error-contentHash">
-            {errors.contentHash} — wait a moment for the document to finish loading, then try again.
+            {errors.contentHash}. Wait a moment for the document to finish loading, then try again.
           </p>
         )}
 
@@ -256,7 +255,7 @@ export default function SignPanel({
 
             {previewOtp && (
               <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-                Preview mode — no email was sent. The code is <strong>{previewOtp}</strong>.
+                Preview mode: no email was sent. The code is <strong>{previewOtp}</strong>.
               </p>
             )}
 
@@ -291,7 +290,7 @@ export default function SignPanel({
                 role="alert"
                 data-testid="sign-error"
               >
-                That didn't go through. Check the code, or ask for a new one — there is more detail
+                That didn't go through. Check the code, or ask for a new one. There is more detail
                 at the top of this page.
               </p>
             )}
@@ -331,7 +330,7 @@ export default function SignPanel({
             <p className="text-xs text-gray-700 leading-relaxed flex items-start gap-1.5">
               <KeyRound className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
               We'll email a six-digit code to your notices address. Entering it is what completes
-              the signature — this button on its own does not sign anything.
+              the signature, and this button on its own does not sign anything.
             </p>
           </div>
           ))}

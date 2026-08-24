@@ -118,12 +118,18 @@ export const DEPOSIT_CHOICE_LABEL: Record<DepositChoice, string> = {
   pay_later: "Chose to pay later",
 };
 
-/** The four entity types as they read on a document, not as they are stored. */
+/**
+ * The entity types as they read on a document, not as they are stored.
+ *
+ * `unregistered` is spelled out rather than shortened: on a detail page beside a GSTIN and a legal
+ * entity name, "Unregistered" alone could be read as "we have not checked".
+ */
 export const ENTITY_TYPE_LABEL: Record<EntityType, string> = {
   proprietorship: "Proprietorship",
   partnership: "Partnership",
   llp: "LLP",
   pvt_ltd: "Private Limited",
+  unregistered: "No registered entity",
 };
 
 /**

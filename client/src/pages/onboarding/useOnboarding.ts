@@ -8,6 +8,7 @@ import type {
   GymDetails,
   OnboardingError,
   OnboardingState,
+  OnboardingStatus,
   OnboardingStep,
   SignatureInput,
 } from "@shared/onboarding/types";
@@ -20,12 +21,42 @@ import type {
  * `setStep` for a component to call. Every action returns fresh state and the
  * rendered step follows it.
  *
- * `viewStep` is the one concession — a gym reviewing an earlier completed step —
- * and it is a *view* only. Submitting is still validated server-side against
- * `currentStep`, because the UI is not a security boundary (docs/gym-onboarding.md §4).
+ * `viewStep` is the one concession — a gym reviewing an earlier completed step. It does not
+ * move the server's step, and re-submitting from it is still validated server-side against
+ * `currentStep`, because the UI is not a security boundary (docs/gym-onboarding.md §4). Mostly
+ * it is a *view*; step 1 is the exception, and `isEditableRevisit` is where that is decided.
  */
 
 export type ActionStatus = "idle" | "running";
+
+/**
+ * The statuses a step 1 re-submit still lands from.
+ *
+ * Going back to fix a typo is the ordinary reason to go back at all, and the server supports it:
+ * `isStepReachable` in the backend's `domain/onboardingStatus.ts` allows re-submitting an
+ * already-completed step in so many words. But it is allowed *within a window*, and this set is
+ * that window rather than a plain `!isSigned`.
+ *
+ * The window is the forward-only ladder. A step 1 commit writes `details_submitted`, and
+ * `forwardOnlyCondition` only permits writing onto a status at or behind the one being written —
+ * so the moment step 2 is acknowledged and the row reaches `partnership_ack`, the condition
+ * fires. `classifyCommitRefusal` then finds the step reachable and the gym unsigned, and answers
+ * `wrong_step`.
+ *
+ * Which is why the window is here and not just on the server. Rendering step 1 with live inputs
+ * at `partnership_ack` would give a gym a form that fills in, validates, submits, and comes back
+ * as "Please complete the earlier steps first" — the client promising an edit the server refuses.
+ * Read-only is the honest rendering of a step the server will not take.
+ *
+ * Kept in step with `LADDER` and `statusForStepCommit(1)` in the backend. Note that the mock in
+ * `shared/onboarding/mockApi.ts` is *looser* — `assertSubmittable` allows a re-submit any time
+ * before signing — so preview mode is not what would catch this list going stale.
+ */
+const DETAILS_EDITABLE_FROM: ReadonlySet<OnboardingStatus> = new Set([
+  "invited",
+  "opened",
+  "details_submitted",
+]);
 
 export type OnboardingActions = {
   submitDetails(details: GymDetails): Promise<boolean>;
@@ -58,7 +89,10 @@ export type UseOnboarding = {
   /** Steps a gym may look at again: completed ones, and the current one. */
   canView(step: OnboardingStep): boolean;
   goToStep(step: OnboardingStep): void;
-  /** True when viewing an earlier step, or any frozen step after signing. */
+  /**
+   * True when viewing an earlier step, or any frozen step after signing — except step 1 while
+   * the server would still take a correction to it. See `isEditableRevisit` below.
+   */
   isReadOnly: boolean;
   actions: OnboardingActions;
 };
@@ -198,6 +232,26 @@ export function useOnboarding(token: string): UseOnboarding {
 
   const isFrozenStep = !!state?.isSigned && (viewStep === 1 || viewStep === 2);
 
+  /**
+   * Step 1, revisited while the server would still accept it — editable rather than read-only.
+   *
+   * The one exception to "an earlier step is a view of the past". Every other step behind the
+   * current one is a record of something concluded: step 2 is an acknowledgement that cannot be
+   * un-acknowledged, steps 3 and 4 are a signature and a payment. Step 1 is eleven fields a gym
+   * typed, and a wrong legal entity name in it is the most expensive typo in the flow, because
+   * the signature hash covers the rendered agreement — free to fix here, an amendment to fix
+   * after step 3.
+   *
+   * Deliberately not generalised to "any step behind the current one": each step's re-submit
+   * window is its own question about the ladder, and step 1 is the only one with a form to
+   * correct. See `DETAILS_EDITABLE_FROM` for why the window and not just `isSigned`.
+   */
+  const isEditableRevisit =
+    viewStep === 1 &&
+    !!state &&
+    !state.isSigned &&
+    DETAILS_EDITABLE_FROM.has(state.status);
+
   return {
     state,
     fatalError,
@@ -208,7 +262,7 @@ export function useOnboarding(token: string): UseOnboarding {
     viewStep,
     canView,
     goToStep,
-    isReadOnly: viewStep < currentStep || isFrozenStep,
+    isReadOnly: (viewStep < currentStep && !isEditableRevisit) || isFrozenStep,
     actions,
   };
 }

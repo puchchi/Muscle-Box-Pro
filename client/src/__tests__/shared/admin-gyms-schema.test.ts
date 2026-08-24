@@ -208,6 +208,15 @@ describe("the admin gym view boundary", () => {
     );
   });
 
+  it("accepts a gym with no registered entity", () => {
+    // `unregistered` joined the enum on 2026-08-24, and this schema is the copy of the list a
+    // *reader* hits: the gym form and the backend can both know about the member while this one
+    // does not, and the symptom would be a gym that onboards fine and then takes the admin
+    // detail page down with `Invalid enum value`.
+    const result = parseAdminGymView(corrupt((gym) => (gym.details.entityType = "unregistered")));
+    expect(result.ok).toBe(true);
+  });
+
   it("accepts an empty FSSAI licence number", () => {
     // §24.5 leaves each party to its own registrations, so this is genuinely optional and
     // arrives as `""` rather than absent.

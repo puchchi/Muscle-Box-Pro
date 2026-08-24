@@ -192,10 +192,10 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
           */
           blockedReason={
             check && !check.ok
-              ? "We can't confirm this is the current version of your agreement. Reload this page to fetch a fresh copy — nothing you've entered is lost, and nothing has been signed."
+              ? "We can't confirm this is the current version of your agreement. Reload this page to fetch a fresh copy. Nothing you've entered is lost, and nothing has been signed."
               : issuable.ok || IS_MOCK_ONBOARDING
                 ? null
-                : "There are unresolved items in the document we need to close before you sign it. We're on it — we'll email you as soon as your copy is ready, and nothing you've entered is lost."
+                : "There are unresolved items in the document we need to close before you sign it. We're on it, and we'll email you as soon as your copy is ready, and nothing you've entered is lost."
           }
           previewOtp={IS_MOCK_ONBOARDING ? PREVIEW_OTP : null}
           isSubmitting={isSubmitting}
@@ -230,7 +230,7 @@ function InShort() {
       <h2 className="text-sm font-bold text-foreground">In short</h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1 mb-4">
         The {PLAIN_LANGUAGE.length} clauses that decide how this works in practice, in plain words.
-        This is a summary and the agreement below is what binds — tap a clause number to read the
+        This is a summary and the agreement below is what binds, so tap a clause number to read the
         real thing.
       </p>
       <ul role="list" className="space-y-3">
@@ -247,7 +247,7 @@ function InShort() {
               data-testid={`in-short-link-${item.clause}`}
             >
               §{item.clause}
-              <span className="sr-only"> — read section {item.section} of the agreement</span>
+              <span className="sr-only">, read section {item.section} of the agreement</span>
             </a>
             <span className="text-sm text-foreground leading-relaxed">{item.short}</span>
           </li>
@@ -276,7 +276,7 @@ function PreparingNotice() {
     >
       <h2 className="text-sm font-bold text-foreground">Preparing your copy</h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
-        One moment — we're issuing your agreement. Nothing you've entered is lost.
+        One moment. We're issuing your agreement. Nothing you've entered is lost.
       </p>
     </section>
   );
@@ -313,11 +313,10 @@ function HashLine({
         </code>
         {verified === true && (
           <span className="text-foreground" data-testid="hash-verified">
-            {" "}
-            — this page matches it.
+            . This page matches it.
           </span>
         )}
-        {verified === null && <span data-testid="hash-checking"> — checking this page…</span>}
+        {verified === null && <span data-testid="hash-checking">, checking this page…</span>}
       </span>
     </p>
   );
@@ -344,7 +343,7 @@ function SignedSummary({
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
           Version {version}
           {signedAt ? `, signed on ${formatAgreementDate(signedAt)}` : ""}
-          {signatoryName ? ` by ${signatoryName}` : ""}. This copy is read-only — email us if
+          {signatoryName ? ` by ${signatoryName}` : ""}. This copy is read-only. Email us if
           anything in it needs to change and we'll issue an amendment rather than edit a signed
           document.
         </p>
@@ -372,7 +371,7 @@ function NotReadyNotice({ blockers }: { blockers: Blocker[] }) {
       </p>
       <p className="text-xs text-amber-800 leading-relaxed mb-3">
         {blockers.length} unresolved item{blockers.length === 1 ? "" : "s"} in the source document.
-        Internal view — a gym must never see this list. Signing is enabled here only because this is
+        Internal view: a gym must never see this list. Signing is enabled here only because this is
         a preview build.
       </p>
       <ul role="list" className="space-y-1.5">
@@ -384,7 +383,7 @@ function NotReadyNotice({ blockers }: { blockers: Blocker[] }) {
             >
               {blocker.location}
             </a>{" "}
-            — {blocker.problem}
+            : {blocker.problem}
           </li>
         ))}
       </ul>

@@ -124,7 +124,7 @@ export default function AgreementReader({
         ))}
 
         <p className="text-xs text-muted-foreground mt-8 pt-4 border-t border-gray-200">
-          {agreement.runningFooter} — end of document.
+          {agreement.runningFooter}. End of document.
         </p>
       </div>
     ),
@@ -403,7 +403,7 @@ function BlockView({
         <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50/70 px-3 py-2.5">
           <p className="text-[11px] font-bold uppercase tracking-wide text-amber-800 flex items-center gap-1.5">
             <Wrench className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-            Internal — {block.severity}
+            Internal: {block.severity}
           </p>
           <p className="text-[11px] text-amber-900 leading-relaxed mt-1">{block.problem}</p>
           <p className="text-[11px] text-amber-800 leading-relaxed mt-1">

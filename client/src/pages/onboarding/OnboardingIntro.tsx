@@ -5,7 +5,7 @@ import { Clock, ExternalLink } from "lucide-react";
 import { STEP_META, roughTotalMinutes } from "@shared/onboarding/steps";
 
 /**
- * The cold open, above the step 1 form.
+ * The cold open — and, on the first pass through step 1, the page's own header.
  *
  * Step 1 is a form, and a form with no frame around it — arriving from an email,
  * asking for a GSTIN and a signatory — reads like a phishing page. This says who
@@ -16,15 +16,35 @@ import { STEP_META, roughTotalMinutes } from "@shared/onboarding/steps";
  * actually want, which is the details. Anyone who does want the deal restated gets
  * `/gym-partnership` in one click.
  *
- * Shown only on the first pass through step 1 — a gym coming back to check what it
- * typed does not need to be introduced to the process again.
+ * **Why this carries the `h1`.** For a while it sat *below* the step heading, so the
+ * first thing a gym read was "Confirm your details" and the second was "someone sent
+ * you this link" — an introduction after the instruction. Moving the card above the
+ * heading fixes the reading order but breaks the document: a page whose first heading
+ * is an `h2` sends anyone navigating by heading to the wrong place, and a CSS-only
+ * reorder would have put the visual sequence at odds with the DOM, which is the thing
+ * SC 1.3.2 exists to prevent.
+ *
+ * So on the first pass this *is* the header. "Let's get <gym> set up" is the page's
+ * topic, and the step title it replaces was the fourth thing on screen saying step 1
+ * is about details — the rail says it, the rail's mobile line says it, and the list
+ * below says it in bold. `stepMeta(1).title` comes back the moment the gym returns to
+ * a completed step 1, where there is no introduction and the step title is the topic.
+ *
+ * Shown only on that first pass — a gym coming back to check what it typed does not
+ * need to be introduced to the process again.
  */
 export default function OnboardingIntro({
   invitedByName,
   gymDisplayName,
+  headingRef,
 }: {
   invitedByName: string;
   gymDisplayName: string;
+  /**
+   * The shell's step-focus ref. It moves focus to the heading of each new step, and on
+   * this one pass the heading of the step is in here rather than in the shell.
+   */
+  headingRef?: React.Ref<HTMLHeadingElement>;
 }) {
   return (
     <div
@@ -42,15 +62,23 @@ export default function OnboardingIntro({
         {invitedByName} sent you this link
       </p>
       {/*
-        Sentence case, and bold rather than black. It was uppercase display black at
-        `text-lg` directly under an uppercase display black `h1` at `text-2xl` — two
-        headlines in the same costume, four pixels apart, so the page opened with no
-        hierarchy at all. Size alone was never going to separate them; case and weight
-        do it instantly, and the `h1` gets to own the page.
+        Sentence case, where every other `h1` in the flow is uppercase display black —
+        the one deliberate departure from the house style, because this is the only
+        headline in the product that interpolates a name of unknown length. "LET'S GET
+        SNAP FITNESS KORAMANGALA 4TH BLOCK SET UP" is three lines of shouting, and
+        uppercase is where long strings lose their word shapes and get slower to read.
+        `font-bold` for the same reason: black at this size in sentence case is a slab.
+
+        `tabIndex={-1}` and `outline-none` to match the shell's own heading — this is a
+        focus target rather than something a gym should be able to tab to.
       */}
-      <h2 className="text-lg sm:text-xl font-display font-bold tracking-tight text-foreground mb-2">
+      <h1
+        ref={headingRef}
+        tabIndex={-1}
+        className="text-xl sm:text-2xl font-display font-bold tracking-tight text-foreground mb-2 outline-none"
+      >
         Let's get {gymDisplayName} set up
-      </h2>
+      </h1>
       {/*
         Capped like every other paragraph in the flow. Uncapped it ran the full 672px of
         the card at 14px — around 100 characters a line, half again past the 65–75 that

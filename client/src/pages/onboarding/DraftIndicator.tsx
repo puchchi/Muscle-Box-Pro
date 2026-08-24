@@ -30,7 +30,7 @@ export default function DraftIndicator({ status }: { status: DraftStatus }) {
       {status === "error" && (
         <span className="text-xs text-red-700 font-medium flex items-center gap-1.5" data-testid="draft-error">
           <AlertCircle className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-          Couldn't save — check your connection
+          Couldn't save. Check your connection
         </span>
       )}
       {status === "saved" && (

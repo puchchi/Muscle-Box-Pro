@@ -106,7 +106,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
             <p className="text-3xl font-black text-foreground mt-1 tracking-tight">{amount}</p>
             <p className="text-sm text-gray-700 mt-1 max-w-[68ch]">
               One payment, held for the whole term. Not a fee, not rent, and not part-payment for the
-              machine (§5.2).
+              machine.
             </p>
           </div>
           <span
@@ -150,8 +150,8 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           */}
           <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]" role="status" aria-live="polite">
             {checkedAndNotFound
-              ? "We still can't see it. Bank transfers and UPI usually land in seconds but can take a few minutes — this page updates itself, and you can close the tab. If it hasn't cleared in an hour, reply to our email and we'll trace it."
-              : "This page checks by itself every few seconds. You can safely close the tab — we confirm the payment from our own records, not from this browser, so nothing depends on you staying here."}
+              ? "We still can't see it. Bank transfers and UPI usually land in seconds but can take a few minutes. This page updates itself, and you can close the tab. If it hasn't cleared in an hour, reply to our email and we'll trace it."
+              : "This page checks by itself every few seconds. You can safely close the tab, because we confirm the payment from our own records, not from this browser, so nothing depends on you staying here."}
           </p>
           {canAct && (
             <Button
@@ -162,7 +162,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
               className="min-h-11 rounded-xl text-sm font-semibold mt-3 w-full sm:w-auto cursor-pointer"
               data-testid="button-refresh-deposit"
             >
-              {isSubmitting ? "Checking..." : "I've paid — check now"}
+              {isSubmitting ? "Checking..." : "I've paid, check now"}
             </Button>
           )}
         </section>
@@ -176,7 +176,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
         >
           <h2 className="text-sm font-bold text-amber-900">Still outstanding</h2>
           <p className="text-sm text-amber-900 leading-relaxed mt-1 max-w-[68ch]">
-            You chose to pay this later, which is fine — your agreement stands and the site survey can
+            You chose to pay this later, which is fine: your agreement stands and the site survey can
             go ahead. Installation is what waits for the {amount}. The link below is the same one in
             your email.
           </p>
@@ -240,11 +240,14 @@ const DEPOSIT_FACTS = [
   },
   {
     clause: "5.5",
-    text: "For ordinary accidental damage we deduct the actual reasonable repair cost — not a fixed penalty.",
+    text: "For ordinary accidental damage we deduct the actual reasonable repair cost, not a fixed penalty.",
   },
   {
     clause: "5.6–5.7",
-    text: "Deliberate, reckless or severe damage can forfeit the whole deposit, and anything the damage costs beyond it is still owed. This is the harshest clause in the agreement and it is the reason to read §14 and §21 before signing anything on a machine.",
+    // The two clauses this used to cite by number are the ones about not opening the machine and
+    // not moving it. Named in words instead: the number was only useful to someone already holding
+    // the agreement, and the label beside this line is where a clause number belongs.
+    text: "Deliberate, reckless or severe damage can forfeit the whole deposit, and anything the damage costs beyond it is still owed. This is the harshest clause in the agreement, and the reason to read what you may and may not do with the machine before you sign.",
   },
   {
     clause: "5.8",
@@ -274,7 +277,7 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         Your payment link is ready
       </h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
-        {amount} to MuscleBoxPro, on Razorpay. UPI, netbanking, card or NEFT — whatever your
+        {amount} to MuscleBoxPro, on Razorpay. UPI, netbanking, card or NEFT, whatever your
         accounts team prefers. We've emailed the same link, so this is not your only chance at it.
       </p>
 
@@ -298,14 +301,14 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           <strong className="text-foreground">You don't have to be the one who pays.</strong> Forward
-          this link to whoever releases payments — it works from their inbox, on their device, and we
+          this link to whoever releases payments. It works from their inbox, on their device, and we
           match it to your gym either way.
         </span>
       </p>
 
       {IS_MOCK_ONBOARDING && (
         <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-3">
-          Preview mode — this link is a placeholder and takes no money. Use "check now" twice to walk
+          Preview mode: this link is a placeholder and takes no money. Use "check now" twice to walk
           the settled path.
         </p>
       )}
@@ -343,12 +346,12 @@ function PaidPanel({
     >
       <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
         <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" aria-hidden="true" />
-        Deposit received — {amount}
+        Deposit received: {amount}
       </h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
         Thank you. A receipt is on its way to <strong className="text-foreground">{email}</strong>, and
         it stays in your dashboard under Deposit. It is refundable within 30 days of the machine being
-        collected, less anything owing (§5.8).
+        collected, less anything owing.
       </p>
 
       {receipt && (

@@ -121,7 +121,7 @@ export default function ProgressRail({
                     {isDone ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : meta.step}
                   </span>
                   <span className="sr-only">
-                    {meta.shortTitle} — {stateLabel(meta.step)}
+                    {meta.shortTitle}, {stateLabel(meta.step)}
                     {locked ? ", locked after signing" : ""}
                   </span>
                 </button>
@@ -195,7 +195,7 @@ export default function ProgressRail({
                   {meta.shortTitle}
                 </p>
                 <span className="sr-only">
-                  {" — "}
+                  {", "}
                   {stateLabel(meta.step)}
                   {locked ? ", locked after signing" : ""}
                 </span>

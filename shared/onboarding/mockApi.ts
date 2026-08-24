@@ -266,7 +266,7 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
       return fail("expired_token", "This link has expired. We can send you a fresh one.");
     }
     if (token === MOCK_TOKENS.revoked) {
-      return fail("revoked_token", "This link is no longer valid — a newer one was sent.");
+      return fail("revoked_token", "This link is no longer valid. A newer one was sent.");
     }
     if (token !== MOCK_TOKENS.valid) {
       return fail("invalid_token", "We couldn't find this onboarding link.");
@@ -451,7 +451,7 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
       if (!SIGNING_REQUIRES_OTP) {
         if (parsed.data.otpCode !== undefined) {
           return fail("validation", "Signing codes aren't in use yet.", {
-            fieldErrors: { otpCode: "Remove this field — it is not verified yet." },
+            fieldErrors: { otpCode: "Remove this field. It is not verified yet." },
           });
         }
       } else if (!loaded.data.otpIssued || parsed.data.otpCode !== MOCK_OTP) {
@@ -467,7 +467,7 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
       if (parsed.data.contentHash !== recomputed.contentHash) {
         return fail(
           "content_mismatch",
-          "Your copy of the agreement is out of date. Reload this page to read the current version — nothing has been signed.",
+          "Your copy of the agreement is out of date. Reload this page to read the current version. Nothing has been signed.",
         );
       }
 

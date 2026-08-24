@@ -100,7 +100,7 @@ const onboardingStatus = z.enum([
 
 const depositStatus = z.enum(["not_started", "pending", "paid", "deferred"]);
 const depositChoice = z.enum(["pay_now", "pay_later"]);
-const entityType = z.enum(["proprietorship", "partnership", "llp", "pvt_ltd"]);
+const entityType = z.enum(["proprietorship", "partnership", "llp", "pvt_ltd", "unregistered"]);
 const machineStatus = z.enum(["allocated", "installed", "servicing", "replaced", "removed"]);
 
 /**

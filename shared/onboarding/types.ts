@@ -37,7 +37,19 @@ export type OnboardingStatus =
 
 export type DepositStatus = "not_started" | "pending" | "paid" | "deferred";
 
-export type EntityType = "proprietorship" | "partnership" | "llp" | "pvt_ltd";
+/**
+ * `unregistered` added 2026-08-24, for a gym with no registered entity behind it.
+ *
+ * It is an answer, not the absence of one: without it, a one-person gym had to claim
+ * `proprietorship`, which names a constitution someone could be asked to evidence. Nothing
+ * contractual turns on the choice — the agreement identifies the parties by `legalEntityName` and
+ * the signatory's §32 representation, and never prints the entity type — so this only changes what
+ * we know about who we are invoicing.
+ *
+ * Mirrored in `ENTITY_TYPES` in mbp-backend's `domain/contract.ts`, which is what actually accepts
+ * or refuses the value, and in `entityType` in `shared/admin/gymsSchema.ts`.
+ */
+export type EntityType = "proprietorship" | "partnership" | "llp" | "pvt_ltd" | "unregistered";
 
 // ── The state the server hands back ─────────────────────────────────────────
 

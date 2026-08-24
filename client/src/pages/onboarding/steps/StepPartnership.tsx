@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  ArrowLeft,
   BadgeIndianRupee,
   CalendarClock,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { MACHINE_SPEC, dimensionsSpelled } from "@shared/machine/spec";
 import { INDICATIVE_ECONOMICS, PARTNERSHIP, formatInr } from "@shared/partnership/summary";
@@ -35,18 +37,30 @@ import type { StepViewProps } from "../types";
  * Continuing records `partnership_ack_at`: cheap to store, and it is the evidence
  * that the commercials were shown before the contract was.
  */
-export default function StepPartnership({ state, readOnly, isSubmitting, actions }: StepViewProps) {
+export default function StepPartnership({
+  state,
+  readOnly,
+  isSubmitting,
+  goToStep,
+  actions,
+}: StepViewProps) {
   const { terms, machine } = state;
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">
         These are the terms on <strong className="text-foreground">{state.gymDisplayName}</strong>'s
-        record — not a brochure. Every figure below is what your agreement will say in step 3.
+        record, not a brochure. Every figure below is what your agreement will say in step 3.
       </p>
 
-      {/* ── The six headlines ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3" data-testid="terms-cards">
+      {/*
+        ── The six headlines ────────────────────────────────────────────────
+        Three across from `sm` rather than `lg`. Two columns held all the way to 1024px,
+        which put a 350px-wide card around "₹0" on any tablet and made the six figures
+        read as three unrelated pairs. At 640px three columns are 189px each, which is
+        wider than the longest figure here at `text-lg`.
+      */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" data-testid="terms-cards">
         {headlineCards(terms).map((card) => (
           <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-4 min-w-0">
             <card.icon className="w-4 h-4 text-primary mb-2" aria-hidden="true" />
@@ -56,7 +70,21 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
               is the backstop for a longer figure rather than a horizontal scrollbar.
             */}
             <p className="font-display font-black text-base sm:text-lg leading-tight text-foreground mb-1 tabular-nums break-words">
-              {card.value}
+              {/*
+                A figure whose meaning is carried by a symbol gets a spoken form as well.
+                "20% → 50%" is the one card on this step where the *change* is the point,
+                and an arrow is not a word: VoiceOver reads it as "right arrow" and NVDA
+                skips it outright, leaving "20% 50%" over a label that does not say which
+                comes first. The visible glyph is the compact form and stays.
+              */}
+              {card.readAs ? (
+                <>
+                  <span aria-hidden="true">{card.value}</span>
+                  <span className="sr-only">{card.readAs}</span>
+                </>
+              ) : (
+                card.value
+              )}
             </p>
             <p className="text-xs text-muted-foreground leading-tight">{card.label}</p>
           </div>
@@ -86,7 +114,7 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
         </h2>
         <p className="text-sm text-gray-700 leading-relaxed mb-3 max-w-[68ch]">
           The restrictions that come with a machine we own and run. All five are in the agreement you
-          will read next — they are here so none of them is a surprise.
+          will read next, and they are here so none of them is a surprise.
         </p>
         <ul role="list" className="space-y-2.5">
           {RESTRICTIONS.map((item) => (
@@ -124,7 +152,7 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
             <li className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
               <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span>
-                The refundable deposit of {formatInr(terms.securityDepositInr)} — payable after
+                The refundable deposit of {formatInr(terms.securityDepositInr)}, payable after
                 signing, and you can defer it
               </span>
             </li>
@@ -136,17 +164,24 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
       <Panel title="The machine you're getting" testId="machine-panel">
         <div className="flex flex-col sm:flex-row gap-4">
           {/*
-            Intrinsic size and `loading="lazy"`: it is a 1536×1024 render most of the way
-            down a long page, and without the dimensions the whole panel below it jumped
-            when it decoded.
+            `next/image`, not a raw `<img>`. The asset behind `MACHINE_SPEC.imageSrc` is a
+            1.9 MB 1536×1024 PNG, and this renders it at 128px wide on a desktop and about
+            343px on a phone — so the plain tag spent the better part of two megabytes of a
+            gym owner's mobile data on a thumbnail. `sizes` is what makes the srcset useful
+            rather than decorative: it tells the browser the real display width, so it
+            fetches a ~128px AVIF here instead of picking off the top of the list.
+            `formats: ["image/avif", "image/webp"]` in next.config.mjs is already set.
+
+            Intrinsic dimensions stay, for the reason they were added: without them the
+            whole panel below jumped when the image decoded. `next/image` lazy-loads and
+            decodes async by default, so those two attributes are gone rather than changed.
           */}
-          <img
+          <Image
             src={MACHINE_SPEC.imageSrc}
             alt={`${machine.model} protein shake machine`}
             width={1536}
             height={1024}
-            loading="lazy"
-            decoding="async"
+            sizes="(min-width: 640px) 128px, 100vw"
             className="w-full sm:w-32 h-40 sm:h-auto object-contain rounded-xl bg-gray-50 flex-shrink-0"
           />
           <div className="min-w-0">
@@ -158,7 +193,7 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
             </p>
             <p className="text-sm text-gray-700 leading-relaxed mt-2 max-w-[68ch]">
               Its serial number and installation date go into Schedule A at installation, which you
-              and our technician sign on site — see step 5.
+              and our technician sign on site. See step 5.
             </p>
           </div>
         </div>
@@ -187,18 +222,52 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
       {!readOnly && (
         <div className="space-y-3 pt-1">
           <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">
-            Continuing records that you have read these terms. It is not a signature — the agreement
+            Continuing records that you have read these terms. It is not a signature. The agreement
             comes next, and you can still stop there.
           </p>
-          <Button
-            type="button"
-            onClick={() => actions.ackPartnership()}
-            disabled={isSubmitting}
-            className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
-            data-testid="button-continue"
-          >
-            {isSubmitting ? "Working..." : "These terms look right"}
-          </Button>
+          {/*
+            `sm:flex-row-reverse` with the primary action first in the DOM, matching step 4: the
+            reading and tab order is "the thing you probably want, then the way back", while the
+            visual order puts Continue on the right where this flow has trained a gym to look for
+            it. On a phone they stack, primary on top.
+          */}
+          <div className="flex flex-col sm:flex-row-reverse items-stretch sm:items-center gap-3">
+            <Button
+              type="button"
+              onClick={() => actions.ackPartnership()}
+              disabled={isSubmitting}
+              className="h-11 px-6 rounded-xl font-bold text-sm cursor-pointer"
+              data-testid="button-continue"
+            >
+              {isSubmitting ? "Working..." : "These terms look right"}
+            </Button>
+            {/*
+              The way back to step 1.
+
+              The rail at the top of the page can already do this, but this screen is six panels
+              long and the rail scrolls away with the first of them — so by the time a gym has
+              read the terms and thought "that entity name is wrong", the only control that goes
+              back is off-screen above them. This is the moment the thought occurs, so this is
+              where the button belongs.
+
+              Step 1 is genuinely editable when reached from here rather than a read-only view of
+              itself, which is what makes this worth offering: see `isEditableRevisit` in
+              `useOnboarding`. Hidden along with the rest of this block when step 2 is being
+              revisited, because from there step 1 is behind an acknowledgement and the server
+              will no longer take a correction to it.
+            */}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => goToStep(1)}
+              disabled={isSubmitting}
+              className="h-11 px-4 rounded-xl text-sm font-semibold text-gray-700 cursor-pointer"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1.5" aria-hidden="true" />
+              Back to my details
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -207,6 +276,15 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
 
 // ── Content ─────────────────────────────────────────────────────────────────
 
+type HeadlineCard = {
+  icon: React.ElementType;
+  /** The compact, visible form. May use a symbol. */
+  value: string;
+  /** What a screen reader should say instead, when `value` leans on a glyph. */
+  readAs?: string;
+  label: string;
+};
+
 /**
  * The six figures a gym owner repeats back to a business partner.
  *
@@ -214,7 +292,7 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
  * literal "₹0" so the one case where a gym *is* charged for something would show up
  * instead of being painted over.
  */
-function headlineCards(terms: OnboardingTerms) {
+function headlineCards(terms: OnboardingTerms): HeadlineCard[] {
   return [
     { icon: BadgeIndianRupee, value: formatInr(0), label: "For the machine, ever" },
     {
@@ -226,6 +304,7 @@ function headlineCards(terms: OnboardingTerms) {
     {
       icon: Handshake,
       value: `${terms.gymSharePctBeforeMilestone}% → ${terms.gymSharePctAfterMilestone}%`,
+      readAs: `${terms.gymSharePctBeforeMilestone}% rising to ${terms.gymSharePctAfterMilestone}%`,
       label: "Your share of net profit",
     },
     {
@@ -256,7 +335,7 @@ function detailRows(terms: OnboardingTerms) {
       label: `Your share rises to ${terms.gymSharePctAfterMilestone}% at the milestone`,
       body: `Whichever comes first of ${terms.milestoneCups.toLocaleString("en-IN")} paid cups or ${formatInr(
         terms.milestoneNetProfitInr,
-      )} of cumulative net profit — profit as clause 7 defines it, which is sales less the direct cost of ingredients, cup and payment processing. At a typical ${formatInr(
+      )} of cumulative net profit. Profit is what clause 7 defines it as: sales less the direct cost of ingredients, cup and payment processing. At a typical ${formatInr(
         netProfitPerCupInr,
       )} of profit a cup that second test lands at roughly ${cupsToProfit.toLocaleString(
         "en-IN",
@@ -264,7 +343,7 @@ function detailRows(terms: OnboardingTerms) {
     },
     {
       label: `Advertising stays at ${terms.advertisingGymSharePct}% for the whole term`,
-      body: "Your cut of what the screen on the machine earns. Unlike the profit share, this one never re-ratios — it does not step up and it does not step down.",
+      body: "Your cut of what the screen on the machine earns. Unlike the profit share, this one never re-ratios: it does not step up and it does not step down.",
     },
     {
       label: "Electricity is reimbursed, not estimated",
@@ -299,7 +378,7 @@ const RESTRICTIONS = [
 function machineBlurb(machine: MachineSummary): string {
   const fitted = machine.accessories ? ` Fitted with: ${machine.accessories.toLowerCase()}.` : "";
   return (
-    `${dimensionsSpelled()} — roughly the footprint of a locker bay. ` +
+    `${dimensionsSpelled()}, roughly the footprint of a locker bay. ` +
     `${MACHINE_SPEC.displayInches}-inch touch screen, ${MACHINE_SPEC.canisters} canisters holding ` +
     `${MACHINE_SPEC.capacityLitres} litres, ${MACHINE_SPEC.connectivity}, card and UPI.${fitted}`
   );
@@ -311,7 +390,7 @@ function timeline(terms: OnboardingTerms) {
     { title: "You sign", body: "Online, in step 3. We countersign and email you both copies." },
     {
       title: "Deposit",
-      body: `${formatInr(terms.securityDepositInr)} by card, UPI or bank transfer — or defer it and we'll send the link.`,
+      body: `${formatInr(terms.securityDepositInr)} by card, UPI or bank transfer, or defer it and we'll send the link.`,
     },
     {
       title: "Site survey",
@@ -346,9 +425,18 @@ function Panel({
       className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
       data-testid={testId}
     >
-      {/* A heading, like the other card titles in this flow, under the shell's `h1`. */}
-      <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-1.5">
-        {Icon && <Icon className="w-3.5 h-3.5" aria-hidden="true" />}
+      {/*
+        `text-sm font-bold text-foreground`, which is what every other card title in this
+        flow uses — the sign panel, "In short", all four of step 4's and step 5's.
+
+        These five were 11px uppercase muted, which made each panel heading *smaller and
+        lighter than the rows inside it*: "THE DETAIL" was the least prominent text in a
+        card whose own `dt`s are bold body size. A heading that loses to its content stops
+        working as a heading, and on this step it also meant two different `h2` styles on
+        one screen, since "Worth knowing before you sign" already reads at this weight.
+      */}
+      <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />}
         {title}
       </h2>
       {children}

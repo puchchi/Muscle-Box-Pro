@@ -52,7 +52,7 @@ export const PLAIN_LANGUAGE_V2_1: readonly PlainLanguageItem[] = [
     clause: "5.6",
     section: "5",
     short:
-      "Your deposit is refundable, but we can deduct repair costs for accidental damage and forfeit all of it for damage that is deliberate, negligent or severe — and recover anything beyond it.",
+      "Your deposit is refundable, but we can deduct repair costs for accidental damage and forfeit all of it for damage that is deliberate, negligent or severe, and recover anything beyond it.",
   },
   {
     clause: "14",
@@ -64,7 +64,7 @@ export const PLAIN_LANGUAGE_V2_1: readonly PlainLanguageItem[] = [
     clause: "21",
     section: "21",
     short:
-      "You cannot move the machine — not to another wall, not to another branch — without our written approval.",
+      "You cannot move the machine, not to another wall and not to another branch, without our written approval.",
   },
   {
     clause: "12.4",
@@ -84,14 +84,14 @@ export const PLAIN_LANGUAGE_V2_1: readonly PlainLanguageItem[] = [
     clause: "6",
     section: "6",
     short:
-      "You get 20% of net profit until the milestone and 50% after it. §6.1 sets the milestone at 15,000 paid cups or ₹5,00,000 cumulative gross, whichever comes first — but Schedules B and C state the cup test alone, and the two do not agree.",
+      "You get 20% of net profit until the milestone and 50% after it. §6.1 sets the milestone at 15,000 paid cups or ₹5,00,000 cumulative gross, whichever comes first, but Schedules B and C state the cup test alone, and the two do not agree.",
     quotes: ["15,000", "₹5,00,000"],
   },
   {
     clause: "9.4",
     section: "9",
     short:
-      "Advertising revenue on the machine's screen is split 80:20 in our favour, so your share of it is 20% — and it stays 20% permanently, even after the shake profits step up to 50:50.",
+      "Advertising revenue on the machine's screen is split 80:20 in our favour, so your share of it is 20%, and it stays 20% permanently, even after the shake profits step up to 50:50.",
     quotes: ["80:20"],
   },
 ] as const;
@@ -126,21 +126,21 @@ export const PLAIN_LANGUAGE_V2_2: readonly PlainLanguageItem[] = [
     clause: "6",
     section: "6",
     short:
-      "You get 20% of net profit until the milestone and 50% after it. The milestone is 15,000 paid cups or ₹5,00,000 of cumulative net profit, whichever comes first — and once you reach it, 50% is yours for the rest of the term even if a later bad month drags the total back down.",
+      "You get 20% of net profit until the milestone and 50% after it. The milestone is 15,000 paid cups or ₹5,00,000 of cumulative net profit, whichever comes first, and once you reach it, 50% is yours for the rest of the term even if a later bad month drags the total back down.",
     quotes: ["15,000", "₹5,00,000"],
   },
   {
     clause: "9.4",
     section: "9",
     short:
-      "Advertising revenue on the machine's screen is split 80:20 in our favour, so your share of it is 20% — and it stays 20% permanently, even after the shake profits step up to 50:50.",
+      "Advertising revenue on the machine's screen is split 80:20 in our favour, so your share of it is 20%, and it stays 20% permanently, even after the shake profits step up to 50:50.",
     quotes: ["80:20"],
   },
   {
     clause: "5.6",
     section: "5",
     short:
-      "Your deposit is refundable, but we can deduct repair costs for accidental damage and forfeit all of it for damage that is deliberate, negligent or severe — and recover anything beyond it.",
+      "Your deposit is refundable, but we can deduct repair costs for accidental damage and forfeit all of it for damage that is deliberate, negligent or severe, and recover anything beyond it.",
   },
   {
     clause: "14",
@@ -152,13 +152,13 @@ export const PLAIN_LANGUAGE_V2_2: readonly PlainLanguageItem[] = [
     clause: "24.6",
     section: "24",
     short:
-      "We are the FSSAI food business operator for what the machine dispenses and we hold that licence at our cost, so you do not need one for the machine — but you must not describe yourself as the operator of it either.",
+      "We are the FSSAI food business operator for what the machine dispenses and we hold that licence at our cost, so you do not need one for the machine, but you must not describe yourself as the operator of it either.",
   },
   {
     clause: "21",
     section: "21",
     short:
-      "You cannot move the machine — not to another wall, not to another branch — without our written approval. Moving it does not restart your cup count or your profit total.",
+      "You cannot move the machine, not to another wall and not to another branch, without our written approval. Moving it does not restart your cup count or your profit total.",
   },
   {
     clause: "12.4",
@@ -178,13 +178,13 @@ export const PLAIN_LANGUAGE_V2_2: readonly PlainLanguageItem[] = [
     clause: "34",
     section: "34",
     short:
-      "Neither of us can claim lost profits or other knock-on losses from the other, and neither of us has a cap on liability for direct loss — so damage you cause is recoverable in full, not just up to your deposit.",
+      "Neither of us can claim lost profits or other knock-on losses from the other, and neither of us has a cap on liability for direct loss, so damage you cause is recoverable in full, not just up to your deposit.",
   },
   {
     clause: "46",
     section: "46",
     short:
-      "Indian law applies, there is no arbitration, and any dispute we cannot settle in 30 days goes to the courts at Gautam Buddha Nagar, Uttar Pradesh — which is where we are, and may not be where you are.",
+      "Indian law applies, there is no arbitration, and any dispute we cannot settle in 30 days goes to the courts at Gautam Buddha Nagar, Uttar Pradesh, which is where we are, and may not be where you are.",
     quotes: ["Gautam Buddha Nagar"],
   },
 ] as const;

@@ -73,9 +73,14 @@ describe("OnboardingFlow — opening a link", () => {
 
     await waitFor(() => expect(screen.getByTestId("progress-rail")).toBeInTheDocument());
     expect(screen.getByTestId("header-gym-name")).toHaveTextContent("Iron Temple Fitness");
-    // By role, because the title also appears in the mobile rail — both renderings
-    // are in the DOM under test, only one of them is visible at a given width.
-    expect(screen.getByRole("heading", { level: 1, name: "Confirm your details" })).toBeInTheDocument();
+    // On a first pass the introduction is the page header, so the `h1` is the welcome
+    // rather than the step title — which the rail, its mobile line and the intro's own
+    // step list were all already saying. See `showIntro` in OnboardingFlow.
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Let's get Iron Temple Fitness set up" }),
+    ).toBeInTheDocument();
+    // Whichever header renders, there is exactly one of them.
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByTestId("input-legalEntityName")).toBeInTheDocument();
   });
 
@@ -179,6 +184,29 @@ describe("OnboardingFlow — step 1 to step 2", () => {
     expect(screen.queryByText(/FSSAI/)).not.toBeInTheDocument();
   });
 
+  /**
+   * Added 2026-08-24. A gym with no registered entity behind it used to have to claim
+   * `proprietorship`, which names a constitution someone could be asked to evidence.
+   *
+   * Submitted rather than only counted in the list, because the enum lives in three places — this
+   * schema, `shared/admin/gymsSchema.ts` and `ENTITY_TYPES` in the backend — and the ones that
+   * refuse an unknown value are not the one the dropdown is built from.
+   */
+  it("offers a not-registered entity type, and accepts it", async () => {
+    const user = await open();
+    const select = screen.getByTestId("select-entity-type");
+    expect(within(select).getByRole("option", { name: "Not registered / individual" })).toBeInTheDocument();
+
+    await user.selectOptions(select, "unregistered");
+    await user.type(screen.getByTestId("input-legalEntityName"), "Rohit Menon");
+    await user.type(screen.getByTestId("input-registeredAddress"), VALID.registeredAddress);
+    await user.type(screen.getByTestId("input-signatoryName"), VALID.signatoryName);
+    await user.type(screen.getByTestId("input-signatoryDesignation"), "Proprietor");
+    await user.click(screen.getByTestId("button-continue"));
+
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+  });
+
   it("shows the legal name in the agreement preview as it is typed", async () => {
     const user = await open();
     await user.type(screen.getByTestId("input-legalEntityName"), VALID.legalEntityName);
@@ -217,6 +245,11 @@ describe("OnboardingFlow — the step 1 frame", () => {
 
     await user.click(screen.getByTestId("rail-step-1"));
     expect(screen.queryByTestId("onboarding-intro")).not.toBeInTheDocument();
+    // And the step's own title takes the `h1` back, rather than the page losing its
+    // header along with the introduction that was carrying it.
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Confirm your details" }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -254,6 +287,33 @@ describe("OnboardingFlow — step 2 states the restrictions", () => {
     expect(screen.getByTestId("timeline")).toHaveTextContent("Site survey");
   });
 
+  /**
+   * The machine photo is a 1.9 MB PNG shown at 128px wide on a desktop.
+   *
+   * `srcset` is the property that matters rather than which component produced it: it is
+   * what lets the browser fetch a thumbnail-sized AVIF instead of the full render, and a
+   * plain `<img src>` emits none. Asserted because the cost is invisible on a fast
+   * connection and this page is opened from an email, on a phone, on mobile data.
+   */
+  it("offers the machine photo in sizes a phone can afford", async () => {
+    await reachStepTwo();
+    const photo = screen.getByAltText("MuscleBoxPro MBP-1 protein shake machine");
+    expect(photo).toHaveAttribute("srcset");
+    expect(photo).toHaveAttribute("loading", "lazy");
+  });
+
+  /**
+   * "20% → 50%" is the only figure on this step whose meaning is in a glyph.
+   *
+   * An arrow is not a word: read out, the card becomes "20% 50%" over a label that does
+   * not say which comes first, and that is the number a gym would repeat back to a
+   * business partner.
+   */
+  it("says the profit share rises, for a reader who cannot see the arrow", async () => {
+    await reachStepTwo();
+    expect(screen.getByTestId("terms-cards")).toHaveTextContent("20% rising to 50%");
+  });
+
   it("leads the milestone with whichever-comes-first rather than the cup count alone", async () => {
     await reachStepTwo();
     // Both tests named, in that order: a gym told "15,000 cups" and then stepped up
@@ -265,21 +325,101 @@ describe("OnboardingFlow — step 2 states the restrictions", () => {
 });
 
 describe("OnboardingFlow — going back", () => {
-  it("renders an earlier step read-only, with a way back to the current one", async () => {
+  /**
+   * Step 2 offers its own way back, and step 1 is really editable when reached through it.
+   *
+   * Both halves matter. The rail could already navigate, but it scrolls off the top of a
+   * six-panel page, and it used to land on a step 1 whose every input was disabled — so the
+   * answer to "that entity name is wrong" was to email us. The name is the field the signature
+   * hash covers, which makes it the one worth being able to fix without an amendment.
+   */
+  it("lets a gym go back from step 2 and actually correct step 1", async () => {
     const user = await open();
     await completeDetails(user);
     await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
 
+    await user.click(screen.getByTestId("button-back"));
+
+    const name = screen.getByTestId("input-legalEntityName");
+    expect(name).toBeEnabled();
+    expect(name).toHaveValue(VALID.legalEntityName);
+    // The banner has to say the fields are live, not "nothing here can be changed".
+    expect(screen.getByTestId("reviewing-banner")).toHaveTextContent(/change whatever you need/i);
+
+    await user.clear(name);
+    await user.type(name, "Iron Temple Wellness Private Limited");
+    await user.click(screen.getByTestId("button-continue"));
+
+    // Submitting a correction lands back on step 2 rather than stranding them on step 1:
+    // `run` clears the view override, so the server's step is what renders.
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+    expect(screen.getByTestId("header-gym-name")).toHaveTextContent("Iron Temple Fitness");
+
+    // And the correction stuck, rather than the form having been decorative.
+    await user.click(screen.getByTestId("rail-step-1"));
+    expect(screen.getByTestId("input-legalEntityName")).toHaveValue(
+      "Iron Temple Wellness Private Limited",
+    );
+  });
+
+  it("does not welcome a returning gym to the flow a second time", async () => {
+    const user = await open();
+    await completeDetails(user);
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+
+    await user.click(screen.getByTestId("button-back"));
+
+    // `showIntro` keys off `completedSteps`, not off the form being editable — otherwise an
+    // editable revisit brings back "Let's get you set up" over a form already submitted once.
+    expect(screen.queryByTestId("onboarding-intro")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Confirm your details" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  /**
+   * The window closes when step 2 is acknowledged, and the UI has to close with it.
+   *
+   * The server's ladder is what decides this: a step 1 commit writes `details_submitted`, and
+   * `forwardOnlyCondition` refuses to write that onto a row already at `partnership_ack`, which
+   * comes back as `wrong_step`. An enabled form here would be a gym typing a correction into a
+   * page that answers "Please complete the earlier steps first" — see `DETAILS_EDITABLE_FROM`.
+   */
+  it("renders step 1 read-only once step 2 is acknowledged and the server would refuse it", async () => {
+    const user = await open();
+    await completeDetails(user);
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+    await user.click(screen.getByTestId("button-continue"));
+    await waitFor(() => expect(screen.getByTestId("rail-step-3")).toHaveAttribute("aria-current", "step"));
+
     await user.click(screen.getByTestId("rail-step-1"));
 
-    expect(screen.getByTestId("reviewing-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("reviewing-banner")).toHaveTextContent(
+      /nothing here can be changed/i,
+    );
     expect(screen.getByTestId("input-legalEntityName")).toBeDisabled();
     // No Continue button on a step that cannot be submitted — a disabled one reads
     // like a bug rather than like "you already did this".
     expect(screen.queryByTestId("button-continue")).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId("button-return-to-current"));
+    expect(screen.getByTestId("in-short")).toBeInTheDocument();
+  });
+
+  it("offers no way back from a step 2 that is itself being revisited", async () => {
+    const user = await open();
+    await completeDetails(user);
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+    await user.click(screen.getByTestId("button-continue"));
+    await waitFor(() => expect(screen.getByTestId("rail-step-3")).toHaveAttribute("aria-current", "step"));
+
+    await user.click(screen.getByTestId("rail-step-2"));
+
+    // The whole action row goes with `readOnly`, and it should: from here step 1 is behind an
+    // acknowledgement, so a button promising a trip back to edit it would promise a read-only page.
     expect(screen.getByTestId("terms-list")).toBeInTheDocument();
+    expect(screen.queryByTestId("button-back")).not.toBeInTheDocument();
   });
 
   // Each step carries its state in sr-only text beside the number, because the colour of

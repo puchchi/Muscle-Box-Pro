@@ -145,7 +145,9 @@ after it can then be personalised with the gym's own name and terms.
 Prefilled from the demo request wherever possible; the gym corrects and completes.
 
 - Legal entity name
-- Entity type — proprietorship / partnership / LLP / Pvt Ltd
+- Entity type — proprietorship / partnership / LLP / Pvt Ltd / not registered (added 2026-08-24,
+  so a one-person gym is not made to claim a constitution it does not have; nothing contractual
+  turns on it, since the agreement identifies the parties by name and never prints the type)
 - Trade name (the name on the door, if different)
 - GSTIN — optional since 2026-08-24
 - Registered address
@@ -506,12 +508,35 @@ does goes through `OnboardingApi`, so that is the only thing item 9 changes.
 Two implementation notes worth keeping when the real backend lands:
 
 **`current_step` is derived, never incremented.** It is the lowest step not in `completed_steps`.
-`current_step + 1` looks equivalent until a gym on step 3 goes back and corrects step 1 — then it
-knocks them back to 2. The mock's `recomputeStep()` is the shape to copy.
+`current_step + 1` looks equivalent until a gym goes back and re-submits an earlier step — then it
+knocks them forward or back by one for no reason. The mock's `recomputeStep()` is the shape to copy.
 
 **`viewStep` is a view, not a step.** The hook keeps an override so a gym can re-read a completed
-step, it renders read-only, and any successful action clears it. Submits are still validated against
-`current_step` server-side, which is what makes the override safe to have at all.
+step, and any successful action clears it. Submits are still validated against `current_step`
+server-side, which is what makes the override safe to have at all.
+
+**Step 1 is editable from that view, inside a window.** Added 2026-08-24, with a "Back to my
+details" button on step 2, because the rail was the only way back and it landed on a step 1 whose
+every input was disabled — so the answer to "the legal entity name is wrong" was to email us, on the
+one field the signature hash makes expensive to fix later.
+
+The window is the status ladder, not `is_signed`. A step 1 commit writes `details_submitted`, and
+`forwardOnlyCondition` only writes onto a status at or behind that — so once step 2 is acknowledged
+and the row reaches `partnership_ack`, the commit is refused and `classifyCommitRefusal` answers
+`wrong_step`. `DETAILS_EDITABLE_FROM` in `useOnboarding.ts` mirrors that window so the form is
+read-only exactly when the server would refuse it, rather than offering an edit that round-trips as
+"Please complete the earlier steps first".
+
+Two divergences to know about:
+
+- **The paragraph above used to say a gym on step 3 can go back and correct step 1.** It cannot —
+  the ladder refuses it, per the previous paragraph. Whether it *should* be able to is open: the
+  agreement is issued at step 2's ack and re-issued on view, so a step 1 correction at step 3 would
+  have to re-render and re-hash the document. Nobody has designed that, and until someone does,
+  step 3 is the point of no return for these fields without an admin.
+- **`shared/onboarding/mockApi.ts` is looser than the server.** `assertSubmittable` allows
+  re-submitting any completed step until signing, with no ladder. Preview mode is therefore not
+  what would catch `DETAILS_EDITABLE_FROM` going stale; the sandbox is.
 
 **`gym_onboarding` holds one row per gym**, created when the link is sent:
 

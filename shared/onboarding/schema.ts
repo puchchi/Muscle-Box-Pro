@@ -25,13 +25,26 @@ const FSSAI = /^[0-9]{14}$/;
 /** Indian mobile or landline with optional +91. Deliberately permissive on separators. */
 const PHONE = /^(\+?91[-\s]?)?[0-9][0-9\s-]{8,14}$/;
 
-export const entityTypeSchema = z.enum(["proprietorship", "partnership", "llp", "pvt_ltd"]);
+export const entityTypeSchema = z.enum([
+  "proprietorship",
+  "partnership",
+  "llp",
+  "pvt_ltd",
+  // See `EntityType` in `./types` for why this exists. Last in the list on purpose: the four
+  // registered forms are the answer for most gyms, and this is the one to fall back to.
+  "unregistered",
+]);
 
+/** Label order is dropdown order — `StepDetails` maps this object directly. */
 export const ENTITY_TYPE_LABELS: Record<z.infer<typeof entityTypeSchema>, string> = {
   proprietorship: "Proprietorship",
   partnership: "Partnership firm",
   llp: "LLP",
   pvt_ltd: "Private limited company",
+  // Names the state of affairs rather than offering "Other", which reads as a category and would
+  // leave us guessing which one. Someone who does have an entity type we have not listed picks the
+  // closest registered form; someone who has none picks this.
+  unregistered: "Not registered / individual",
 };
 
 export const gymDetailsSchema = z.object({

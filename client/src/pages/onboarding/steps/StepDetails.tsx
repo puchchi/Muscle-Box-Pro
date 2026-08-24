@@ -13,7 +13,6 @@ import { ENTITY_TYPE_LABELS, gymDetailsSchema } from "@shared/onboarding/schema"
 import type { GymDetails } from "@shared/onboarding/types";
 import { useDraftAutosave } from "../useDraftAutosave";
 import DraftIndicator from "../DraftIndicator";
-import OnboardingIntro from "../OnboardingIntro";
 import type { StepViewProps } from "../types";
 
 /**
@@ -103,35 +102,28 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
   return (
     <Form {...form}>
       {/*
-        The frame goes outside the form, and only while step 1 is still live. On a
-        second visit the gym is checking a field, not being introduced.
+        The introduction that used to sit here now renders in the shell, above the page
+        heading rather than below it — see `showIntro` in OnboardingFlow. It was never
+        part of the form, and it had to move to get the reading order right.
       */}
-      {!readOnly && (
-        <OnboardingIntro
-          invitedByName={state.invitedByName}
-          gymDisplayName={state.gymDisplayName}
-        />
-      )}
-
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" noValidate>
         {/*
           Eleven fields over three cards is more than fits a screen, so a rejected
           submit has to name what is wrong at the top as well as marking it in place —
           otherwise the button appears to do nothing and the problem is two scrolls away.
         */}
+        {/*
+          This owns the scroll unconditionally, which it did not use to. A server-side
+          rejection arrived as `fieldErrors` *and* as the shell's own banner directly
+          above, both calling `scrollIntoView` in the same paint — so the summary sat out
+          that case to stop the two animations racing. The shell now suppresses its banner
+          whenever this summary is going to name the same fields (see
+          `stepOwnsFieldErrors`), so there is one red box and one scroll, and the condition
+          that used to be a prop here has nothing left to decide.
+        */}
         <ErrorSummary
           errors={errors}
           submitCount={submitCount}
-          /*
-            One scroll per rejection, not two. A server-side rejection arrives as
-            `fieldErrors` *and* as the shell's own error banner directly above this
-            summary, and both used to call `scrollIntoView({behavior: "smooth"})` in the
-            same paint — two competing animations, and which one won was undefined. The
-            banner is higher up the page and carries the server's own sentence, so when
-            it is there it owns the scroll; the summary only takes over for a rejection
-            the client made on its own.
-          */
-          scrollIntoView={!fieldErrors}
           onGoToField={(name) => form.setFocus(name)}
         />
 
@@ -156,8 +148,9 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
                 <FormLabel className="text-gray-700 text-sm font-semibold">Entity type</FormLabel>
                 <FormControl>
                   {/*
-                    A native select rather than the Radix one: it is a five-option
-                    list, and the native control is what a phone renders best.
+                    A native select rather than the Radix one: it is a short list, and the native
+                    control is what a phone renders best. The options come from
+                    `ENTITY_TYPE_LABELS` in key order, so adding a member there adds it here.
                   */}
                   <select
                     {...field}
@@ -194,13 +187,16 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             or does not have the certificate to hand, should not be stopped at step 1 by it. A
             number that *is* typed is still checked, because a transposed digit here bills the
             wrong entity for the whole term.
+
+            No description: the placeholder shows the shape and "Optional" answers the only
+            question a gym owner actually has about this field. A line explaining what a GSTIN is
+            to the person who holds one is noise on a form that is already eleven fields long.
           */}
           <Field
             form={form}
             name="gstin"
             label="GSTIN"
             placeholder="29AABCU9603R1ZM"
-            description="The 15-character number on your GST certificate. It goes on the invoices we raise."
             // Typed in lowercase more often than not, and the schema uppercases on
             // parse anyway — so the box may as well show what will be stored.
             uppercase
@@ -215,7 +211,6 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             name="registeredAddress"
             label="Registered address"
             placeholder="Building, street, area, city, state, PIN"
-            description="Where formal notices should be served (§41 of the agreement)."
             autoComplete="street-address"
             disabled={readOnly}
           />
@@ -268,7 +263,10 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             name="signatoryName"
             label="Signatory name"
             placeholder="Rohit Menon"
-            description="The person who will sign on behalf of the entity, and who confirms they can bind it (§32)."
+            // The clause number this used to carry (§32) is gone from the sentence, not the point
+            // of it: step 3 asks this same person to tick that they are authorised to bind the
+            // entity, so saying it here is what stops that tick being the first they hear of it.
+            description="Who signs for the entity, and can bind it."
             autoComplete="name"
             disabled={readOnly}
           />
@@ -277,7 +275,7 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             name="signatoryDesignation"
             label="Designation"
             placeholder="Director"
-            description="Director, Partner, Proprietor — their title in the entity above."
+            description="Director, Partner, Proprietor: their title in the entity above."
             autoComplete="organization-title"
             disabled={readOnly}
           />
@@ -288,7 +286,6 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             type="email"
             inputMode="email"
             placeholder="rohit@irontemple.in"
-            description="Where your signed copy, statements and any formal notice go (§41). Use an address someone still reads in two years."
             autoComplete="email"
             disabled={readOnly}
           />
@@ -460,6 +457,12 @@ const FIELD_LABELS: Record<keyof GymDetails, string> = {
  * `role="alert"` on a node that only exists once there is something to say, so it is
  * announced when it appears rather than being a permanently-live region.
  *
+ * Focus moves here on every rejection, which is the half that was missing: the page
+ * scrolled to the summary while focus stayed on the Continue button at the bottom of
+ * eleven fields, so the next Tab for a keyboard user started below everything the summary
+ * had just offered them. Focusing the container makes those field buttons the immediately
+ * following tab stops. (It is also why the container is focusable but not tabbable.)
+ *
  * Takes `errors` and `submitCount` as values rather than reading them off the form:
  * `formState` only registers a re-render subscription for the component that called
  * `useForm`, so a child that reached into it would go stale.
@@ -467,26 +470,41 @@ const FIELD_LABELS: Record<keyof GymDetails, string> = {
 function ErrorSummary({
   errors,
   submitCount,
-  scrollIntoView,
   onGoToField,
 }: {
   errors: FieldErrors<GymDetails>;
   submitCount: number;
-  /** False when something above this is already scrolling itself into view. */
-  scrollIntoView: boolean;
   onGoToField(name: keyof GymDetails): void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const names = Object.keys(errors) as (keyof GymDetails)[];
 
+  /**
+   * The last submit this announced itself for.
+   *
+   * Not a `useEffect` keyed on `submitCount`, because the two ways a submit gets rejected
+   * arrive on different renders. A client-side rejection has the errors in place on the
+   * render that bumped `submitCount`; a server-side one bumps `submitCount` first and gets
+   * its messages a round trip later, from the `setError` loop above — at which point an
+   * effect keyed on the count has already run and found `ref.current` still null. So the
+   * trigger is "there is now something to announce, and it belongs to a submit we have not
+   * announced yet", which covers both.
+   *
+   * The ref is what keeps it to once per submit. Re-scrolling as each field is fixed would
+   * yank the page away from the field being fixed.
+   */
+  const announced = useRef(0);
+
   useEffect(() => {
-    if (scrollIntoView && names.length > 0 && submitCount > 0) {
-      scrollIntoViewGently(ref.current, { block: "center" });
-    }
-    // Deliberately on submitCount only: re-scrolling as each field is fixed would
-    // yank the page away from the field being fixed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitCount]);
+    if (submitCount === 0 || names.length === 0) return;
+    if (announced.current === submitCount) return;
+    announced.current = submitCount;
+    // `start` rather than `center`, so the `scroll-mt` below — which exists to clear the
+    // sticky rail — is applied to the edge it names.
+    scrollIntoViewGently(ref.current, { block: "start" });
+    // The scroll is already handled, and letting focus scroll again would fight it.
+    ref.current?.focus({ preventScroll: true });
+  });
 
   // Only after a submit has actually been rejected. On-blur errors mark their own
   // field; a summary that appears while somebody is still filling the form in is
@@ -497,7 +515,8 @@ function ErrorSummary({
     <div
       ref={ref}
       role="alert"
-      className="rounded-2xl border border-red-300 bg-red-50 p-4 scroll-mt-[calc(var(--onboarding-chrome,0px)_+_1rem)]"
+      tabIndex={-1}
+      className="rounded-2xl border border-red-300 bg-red-50 p-4 outline-none scroll-mt-[calc(var(--onboarding-chrome,0px)_+_1rem)]"
       data-testid="details-error-summary"
     >
       <p className="text-sm font-bold text-red-800 flex items-center gap-2">
@@ -506,20 +525,57 @@ function ErrorSummary({
           ? "One field needs another look"
           : `${names.length} fields need another look`}
       </p>
-      <ul role="list" className="mt-2 space-y-1">
+      {/*
+        `text-sm` and a padded row, where this was 12px text on 4px gaps. These are the
+        recovery affordance on a form that has just refused to submit, and they were both
+        the smallest type on the screen and stacked targets under SC 2.5.8's 24px — on a
+        phone, two red lines a thumb-width apart. `py-1.5` on an inline-block gets the row
+        to 26px without drawing a button.
+      */}
+      <ul role="list" className="mt-1.5">
         {names.map((name) => (
           <li key={name}>
             <button
               type="button"
               onClick={() => onGoToField(name)}
-              className="text-xs text-red-800 underline decoration-red-400 hover:decoration-red-800 cursor-pointer text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="py-1.5 text-sm text-red-800 underline decoration-red-400 hover:decoration-red-800 cursor-pointer text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span className="font-semibold">{FIELD_LABELS[name]}</span> — {errors[name]?.message}
+              <SummaryMessage label={FIELD_LABELS[name]} message={errors[name]?.message} />
             </button>
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+/**
+ * One line of the summary: which field, and what is wrong with it.
+ *
+ * The field name is prepended because a message on its own ("Enter the full registered
+ * name of the entity signing") does not say which of eleven inputs it belongs to. But
+ * server-side messages tend to lead with the field name already, and prepending it then
+ * produced "GSTIN — GSTIN is required." — a stutter that reads as a bug in the page rather
+ * than a problem with the form. So a message that already opens with its own label keeps
+ * its wording and just gets the label emboldened, which is what the em dash was doing.
+ *
+ * Sliced out of `message` rather than substituted, so the sentence stays in the casing
+ * whoever wrote it chose.
+ */
+function SummaryMessage({ label, message }: { label: string; message?: string }) {
+  if (!message) return <span className="font-semibold">{label}</span>;
+  if (message.toLowerCase().startsWith(label.toLowerCase())) {
+    return (
+      <>
+        <span className="font-semibold">{message.slice(0, label.length)}</span>
+        {message.slice(label.length)}
+      </>
+    );
+  }
+  return (
+    <>
+      <span className="font-semibold">{label}</span>: {message}
+    </>
   );
 }
 
