@@ -257,8 +257,14 @@ reads from `state.terms`. If a gym gets a different deposit or term, this screen
 
 This step carries the legal weight, so it is the one to over-engineer.
 
-**Plain-language summary first**, as a collapsible "In short" panel covering the clauses a gym
-actually cares about. Each item links to the full clause. For v2.2, eleven of them:
+**The "In short" panel is no longer on this step.** It was removed from
+`StepReviewSign.tsx` on 2026-08-24; the data behind it (`plainLanguage.ts`) and its tests
+are untouched, so re-siting it is an import and eleven lines of JSX. What follows is the
+list it held and the reasoning for it, kept because that reasoning has not changed — step 2
+is now the only screen that states the terms in plain words, and it does not carry all
+eleven of these.
+
+For v2.2, eleven items, each linking to the full clause:
 
 | In short | Clause |
 |---|---|
@@ -277,10 +283,11 @@ actually cares about. Each item links to the full clause. For v2.2, eleven of th
 The last two are there because they bite, not because they are reassuring. A summary that lists only
 the comfortable clauses is a sales page wearing a summary's clothes.
 
-This is not decoration. It is what makes "I have read and agree" a true statement, and it is the
-part a court would look at.
+It was not decoration: it was part of what makes "I have read and agree" a true statement.
+With it gone, the load on that statement is carried by the scroll gate, the server-pinned
+content hash, and step 2's plain-English restrictions.
 
-**Full document** below it. Sticky section index on desktop, collapsible accordions on mobile.
+**Full document.** Sticky section index on desktop, collapsible accordions on mobile.
 Assume a phone — a forty-seven-section contract on a 390px screen is the actual design problem
 here, not the desktop layout.
 
@@ -307,7 +314,8 @@ agreement content did not retroactively change what was signed. Without it, the 
 means only "someone agreed to whatever the version file says today".
 
 **As built (2026-08-22).** Four files:
-[plainLanguage.ts](../shared/agreement/plainLanguage.ts) (the panel, as data),
+[plainLanguage.ts](../shared/agreement/plainLanguage.ts) (the summary as data — no longer
+rendered, see §3 step 3),
 [AgreementReader.tsx](../client/src/pages/onboarding/AgreementReader.tsx) (the document plus the
 reading gate), [SignPanel.tsx](../client/src/pages/onboarding/SignPanel.tsx) (assent, then the code),
 and [StepReviewSign.tsx](../client/src/pages/onboarding/steps/StepReviewSign.tsx), which composes
@@ -489,7 +497,7 @@ does goes through `OnboardingApi`, so that is the only thing item 9 changes.
 | [onboarding/OnboardingFlow.tsx](../client/src/pages/onboarding/OnboardingFlow.tsx) | the shell — chrome, rail, token-problem screens, step dispatch |
 | [onboarding/OnboardingIntro.tsx](../client/src/pages/onboarding/OnboardingIntro.tsx) | the step 1 cold open; shown on the first pass only |
 | [shared/machine/spec.ts](../shared/machine/spec.ts) | the hardware, once — `/specs`, step 2 and later Schedule A read from it |
-| [agreement/plainLanguage.ts](../shared/agreement/plainLanguage.ts) | step 3's "In short" panel, as data, one list per agreement version |
+| [agreement/plainLanguage.ts](../shared/agreement/plainLanguage.ts) | the "In short" summary as data, one list per agreement version. No UI reads it since 2026-08-24 — see §3 step 3 |
 | [onboarding/AgreementReader.tsx](../client/src/pages/onboarding/AgreementReader.tsx) | the document on screen, plus the reading gate and `AGREEMENT_RENDER_OPTIONS` |
 | [onboarding/SignPanel.tsx](../client/src/pages/onboarding/SignPanel.tsx) | assent, then the emailed code; never recomputes the hash it is handed |
 | [onboarding-mock-api.test.ts](../client/src/__tests__/shared/onboarding-mock-api.test.ts) | 31 tests — really the spec for item 9 |
@@ -833,7 +841,7 @@ than the clause carrying "Rupees Fifty Thousand Only" as fixed prose. Defaults c
 | [v2_1.ts](../shared/agreement/v2_1.ts) | the source PDF transcribed: 47 sections and Schedules A–H as data, plus a `todo` block at every unresolved spot. **Frozen** |
 | [v2_2.ts](../shared/agreement/v2_2.ts) | the version the flow issues — every one of v2.1's eight `blocks-send` items resolved, plus `AGREEMENT_V2_2_RESOLUTIONS` recording how |
 | [render.ts](../shared/agreement/render.ts) | `renderText` / `renderPlainText` / `collectBlockers` / `canIssue` / `sha256Hex` / `fingerprint` |
-| [plainLanguage.ts](../shared/agreement/plainLanguage.ts) | `PLAIN_LANGUAGE_V2_1` (8 items) and `PLAIN_LANGUAGE_V2_2` (11) — the "In short" panel, one list per version |
+| [plainLanguage.ts](../shared/agreement/plainLanguage.ts) | `PLAIN_LANGUAGE_V2_1` (8 items) and `PLAIN_LANGUAGE_V2_2` (11) — the "In short" summary, one list per version. Still tested, no longer rendered |
 | [amountInWords.ts](../shared/agreement/amountInWords.ts) | `rupeesInWords()`, Indian numbering, so §5.1's figure and its words come from one integer |
 | [agreement.test.ts](../client/src/__tests__/shared/agreement.test.ts) | 37 tests, including the pinned v2.1 hash |
 | [agreement-v2-2.test.ts](../client/src/__tests__/shared/agreement-v2-2.test.ts) | 47 tests: internal consistency, no marker deleted without its clause fixed, pinned v2.2 hash |
@@ -1497,6 +1505,20 @@ Recorded here because each of these is invisible until it breaks:
 - **`POST /gym/account` derives the email server-side** from the gym's §41 notices address. The
   interface signature has no email to send, and a client-supplied one would let a browser choose
   which address can later reset the account's password.
+
+**Open, and the one place the two designs actually disagree (2026-08-24): step 2's acknowledgements.**
+`POST /onboarding/ack` requires four affirmative booleans — `understandsRevenueShare`,
+`understandsDeposit`, `understandsElectricity`, `understandsTerm`, each literally `true` — because on
+that side step 2 *is* four checkboxes, and the row it writes (the four keys, the gym's IP, its
+user-agent, a server timestamp) is the evidence the commercials were accepted. On this side step 2 is
+"no input", so the client sent `{}` and every Continue came back `400 {"code":"validation","message":
+"Please check the highlighted fields."}` — on a screen with no fields and nothing highlighted.
+`PLACEHOLDER_ACKS` in [httpOnboardingApi.ts](../client/src/lib/httpOnboardingApi.ts) hard-codes the
+four as `true` to unblock the flow, which overstates what the gym did and is **temporary by
+agreement**. The resolution is four checkboxes on step 2, one per commercial fact the screen already
+explains, passed in from `StepPartnership` — or a backend change making them optional, which trades
+the evidence row for a bare timestamp. Whichever way it goes, the placeholder and the assertion
+naming it in `httpOnboardingApi.test.ts` come out together.
 
 Still open on our side: **there is no runtime schema for `OnboardingState`** — the symmetric gap to
 `portalSchema.ts`. A renamed `terms` field would render "₹NaN" in the wizard rather than failing.

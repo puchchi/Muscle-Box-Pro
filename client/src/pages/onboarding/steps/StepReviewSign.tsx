@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileSignature } from "lucide-react";
 import { IS_MOCK_ONBOARDING, PREVIEW_OTP } from "@/lib/onboardingApi";
-import { ISSUED_AGREEMENT, ISSUED_PLAIN_LANGUAGE } from "@shared/agreement/issued";
+import { ISSUED_AGREEMENT } from "@shared/agreement/issued";
 import { canIssue, collectBlockers } from "@shared/agreement/render";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
 import {
@@ -17,27 +17,29 @@ import SignPanel from "../SignPanel";
 import type { StepViewProps } from "../types";
 
 /**
- * The version this flow issues, and its matching summary panel — both from
- * `@shared/agreement/issued`, which is the one place that decides.
+ * The version this flow issues, from `@shared/agreement/issued`, which is the one place
+ * that decides.
  *
  * This file used to name `AGREEMENT_V2_2` directly, and the record written at signing
- * named "2.1" independently. Reading both from one module is what makes that particular
- * disagreement unrepresentable. The test file asserts every `section` in the panel
- * resolves to a real section of this agreement.
+ * named "2.1" independently. Reading it from one module is what makes that particular
+ * disagreement unrepresentable.
+ *
+ * `ISSUED_PLAIN_LANGUAGE` is the sibling export, and this step no longer reads it: the
+ * "In short" panel above the contract is gone. The data and its tests stay — step 2
+ * already states the terms in plain words, and a summary is worth re-siting rather than
+ * rewriting if it comes back.
  */
 const AGREEMENT = ISSUED_AGREEMENT;
-const PLAIN_LANGUAGE = ISSUED_PLAIN_LANGUAGE;
 
 /**
  * Step 3 — Review & sign.
  *
  * The step that carries the legal weight, and the one deliberately over-engineered.
- * It composes four things and owns none of their internals:
+ * It composes three things and owns none of their internals:
  *
- *   - the plain-language panel — `PLAIN_LANGUAGE`, one line per clause
- *   - the reader             — `AgreementReader`, which also reports the scroll gate
- *   - the hash check         — this client's own rendering, compared to the server's
- *   - the sign panel         — `SignPanel`, two assertions
+ *   - the reader     — `AgreementReader`, which also reports the scroll gate
+ *   - the hash check — this client's own rendering, compared to the server's
+ *   - the sign panel — `SignPanel`, two assertions
  *
  * **The hash comes from the server now, and this component checks it.** It used to be
  * computed here and sent up as truth, which made the signature evidence only that some
@@ -150,8 +152,6 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
 
   return (
     <div className="space-y-6">
-      <InShort />
-
       {/*
         Internal blocker list, shown only in preview. In production this must stay
         hidden and the gym sees the "isn't ready to sign" panel instead, with the
@@ -204,61 +204,6 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
         />
       )}
     </div>
-  );
-}
-
-// ── The plain-language panel ────────────────────────────────────────────────
-
-/**
- * The clauses that decide how this works, one line each, above the contract.
- *
- * Above, because a summary underneath forty-seven sections is a summary nobody reads.
- * Each row links to the section it comes from, which is what keeps it a summary rather
- * than a substitute: anyone can check it in one tap, including a lawyer looking for
- * the sentence we glossed.
- *
- * The count comes from the list rather than being written into the sentence. It said
- * "eight" while the list held eight, which is exactly the kind of copy that goes stale
- * silently — and a summary that miscounts itself is a summary a gym can point at.
- */
-function InShort() {
-  return (
-    <section
-      className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
-      data-testid="in-short"
-    >
-      <h2 className="text-base font-bold text-foreground">In short</h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1 mb-4">
-        The {PLAIN_LANGUAGE.length} clauses that decide how this works in practice, in plain words.
-        This is a summary and the agreement below is what binds, so tap a clause number to read the
-        real thing.
-      </p>
-      {/*
-        A fixed first column, not a flex row: `§6` and `§12.4` are different widths, so
-        eleven summaries began at eleven different left edges. The order of the items is
-        editorial (see `PLAIN_LANGUAGE`) and untouched — this is only the alignment.
-      */}
-      <ul role="list" className="space-y-3">
-        {PLAIN_LANGUAGE.map((item) => (
-          <li key={item.clause} className="grid grid-cols-[4rem_1fr] items-start">
-            <a
-              href={`#${sectionAnchor(item.section)}`}
-              /*
-                `text-primary` on a 10% tint of itself is 2.8:1 — and at 10px it was the
-                smallest type on the step, on the one element that is also a tap target.
-                `primary-ink` and a taller row fix both.
-              */
-              className="text-xs font-bold text-primary-ink bg-primary/10 hover:bg-primary/20 rounded px-2 py-1 justify-self-start tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-              data-testid={`in-short-link-${item.clause}`}
-            >
-              §{item.clause}
-              <span className="sr-only">, read section {item.section} of the agreement</span>
-            </a>
-            <span className="text-sm text-foreground leading-relaxed">{item.short}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 

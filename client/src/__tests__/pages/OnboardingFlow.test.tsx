@@ -482,7 +482,7 @@ describe("OnboardingFlow — going back", () => {
     expect(screen.queryByTestId("button-continue")).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId("button-return-to-current"));
-    expect(screen.getByTestId("in-short")).toBeInTheDocument();
+    expect(screen.getByTestId("agreement-body")).toBeInTheDocument();
   });
 
   it("offers no way back from a step 2 that is itself being revisited", async () => {
@@ -637,10 +637,12 @@ describe("OnboardingFlow — saving and resuming", () => {
 /**
  * Step 3 — the reader and the signing panel.
  *
- * Four properties, each of which a redesign could quietly drop and each of which the
- * signature's defensibility rests on: the plain-language panel is above the contract
- * and links into it, the whole document is actually rendered rather than summarised,
- * the panel does not sign on one click, and a wrong code fails visibly.
+ * Three properties, each of which a redesign could quietly drop and each of which the
+ * signature's defensibility rests on: the whole document is actually rendered rather
+ * than summarised, the panel does not sign on one click, and a wrong code fails visibly.
+ *
+ * There used to be a fourth, about the "In short" panel above the contract. That panel
+ * is gone from this step; step 2 is where the terms are put in plain words now.
  *
  * Note on the scroll gate: happy-dom has no layout engine, so `getBoundingClientRect()`
  * returns zeros and `AgreementReader` treats an unmeasurable document as scrolled (see
@@ -656,20 +658,6 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
     await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
     return user;
   }
-
-  it("puts the plain-language clauses above the agreement, each linking into it", async () => {
-    await reachStepThree();
-    const inShort = screen.getByTestId("in-short");
-    for (const clause of ["3", "6", "9.4", "5.6", "14", "24.6", "21", "12.4", "36.1", "34", "46"]) {
-      expect(screen.getByTestId(`in-short-link-${clause}`)).toBeInTheDocument();
-    }
-    // The summary is a summary: it says so, so nobody can claim it stood in for the text.
-    expect(inShort).toHaveTextContent("the agreement below is what binds");
-    // The two terms a gym would be most annoyed to discover after signing are in the
-    // panel and not only in the body: liability with no cap, and a forum in our district.
-    expect(inShort).toHaveTextContent(/neither of us has a cap on liability for direct loss/i);
-    expect(inShort).toHaveTextContent(/Gautam Buddha Nagar/);
-  });
 
   it("renders the whole document with a contents index and the server's hash of it", async () => {
     await reachStepThree();

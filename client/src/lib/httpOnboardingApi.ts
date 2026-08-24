@@ -47,6 +47,38 @@ import type {
   GymDetails,
 } from "@shared/onboarding/types";
 
+/**
+ * **TEMPORARY, and it overstates what the gym did. Remove with the checkboxes (2026-08-24).**
+ *
+ * `POST /onboarding/ack` requires four affirmative acknowledgements, each literally `true`:
+ * `REQUIRED_ACKS` in `mbp-backend` `services/onboarding/src/handlers/onboardingAck.ts`. Its
+ * own comment says why — *"Every acknowledgment must be affirmative. An unticked box is not a
+ * 'no' we record, it is a step that has not happened"* — and it names the keys server-side so
+ * a client cannot narrow what the gym agreed to by quietly dropping one.
+ *
+ * This client sent `{}`, because the frontend was built to `docs/gym-onboarding.md`'s step 2:
+ * "No input. Continuing records `partnership_ack_at`." So every Continue on step 2 came back
+ * 400 with "Please check the highlighted fields." on a screen that has no fields — the bug
+ * this replaced, and the reason the banner work that chased the message was reverted.
+ *
+ * Sending them hard-coded unblocks the flow and is the wrong permanent answer: the four keys
+ * become `partnershipAck` on the onboarding item, with the gym's IP, user-agent and a server
+ * timestamp beside them, and that row is what anyone would point at if the acceptance were
+ * ever questioned. It would be asserting four separate acknowledgements the gym was never
+ * shown a box for.
+ *
+ * The fix is four checkboxes on step 2 — one per commercial fact the screen already explains,
+ * which is what the backend was built expecting — passed in from `StepPartnership` instead of
+ * being invented here. Until then this constant is the whole of the debt, in one place, under
+ * a name that cannot be mistaken for a real acknowledgement.
+ */
+const PLACEHOLDER_ACKS = {
+  understandsRevenueShare: true,
+  understandsDeposit: true,
+  understandsElectricity: true,
+  understandsTerm: true,
+} as const;
+
 export function createHttpOnboardingApi(): OnboardingApi {
   return {
     /**
@@ -86,10 +118,7 @@ export function createHttpOnboardingApi(): OnboardingApi {
     },
 
     ackPartnership(token: string) {
-      // No payload, and the POST still carries `{}` — §4.2's content-type check refuses a
-      // bodyless write. Continuing past step 2 is itself the evidence, so there is nothing
-      // to send.
-      return commit(token, "POST", "/onboarding/ack");
+      return commit(token, "POST", "/onboarding/ack", PLACEHOLDER_ACKS);
     },
 
     /**

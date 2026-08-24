@@ -131,10 +131,29 @@ describe("route mapping", () => {
     expect(requests()[0].body).toMatchObject({ contentHash: "a".repeat(64) });
   });
 
-  it("posts an acknowledgment with no payload", async () => {
+  it("sends the four acknowledgements the ack route requires", async () => {
+    /*
+      This used to post `{}`, per the frontend doc's "step 2 — no input", and the deployed
+      route requires four affirmative booleans (`REQUIRED_ACKS` in the backend's
+      `onboardingAck.ts`). The mismatch showed up as a 400 — "Please check the highlighted
+      fields." — at the top of a screen with no fields on it.
+
+      Pinned here because they are hard-coded, which is a debt with a real cost: the row they
+      write is the evidence of acceptance. This assertion is what the four checkboxes on step
+      2 have to replace, and a passing test that still names `PLACEHOLDER_ACKS` is the
+      reminder.
+    */
     queue(state({ completedSteps: [1, 2] }));
     await api.ackPartnership(HANDLE);
-    expect(requests()[0]).toMatchObject({ method: "POST", body: {} });
+    expect(requests()[0]).toMatchObject({
+      method: "POST",
+      body: {
+        understandsRevenueShare: true,
+        understandsDeposit: true,
+        understandsElectricity: true,
+        understandsTerm: true,
+      },
+    });
   });
 
   it("does not call an endpoint that does not exist", async () => {
