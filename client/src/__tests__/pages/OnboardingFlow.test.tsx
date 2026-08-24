@@ -641,9 +641,6 @@ describe("OnboardingFlow — saving and resuming", () => {
  * signature's defensibility rests on: the whole document is actually rendered rather
  * than summarised, the panel does not sign on one click, and a wrong code fails visibly.
  *
- * There used to be a fourth, about the "In short" panel above the contract. That panel
- * is gone from this step; step 2 is where the terms are put in plain words now.
- *
  * Note on the scroll gate: happy-dom has no layout engine, so `getBoundingClientRect()`
  * returns zeros and `AgreementReader` treats an unmeasurable document as scrolled (see
  * its `rect.height === 0` branch). That is why the panel is open here without any

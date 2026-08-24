@@ -93,16 +93,6 @@ export default function AgreementReader({
   const documentBody = useMemo(
     () => (
       <div ref={bodyRef} className="px-4 sm:px-6 py-5" data-testid="agreement-body">
-        <header className="pb-4 mb-4 border-b border-gray-200">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary-ink">
-            {agreement.subtitle}
-          </p>
-          <h2 className="font-display font-black text-lg sm:text-xl uppercase tracking-tight text-foreground mt-1">
-            {agreement.title}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1">Version {agreement.version}</p>
-        </header>
-
         <div className="space-y-3">
           {agreement.cover.map((block, i) => (
             <BlockView
@@ -132,13 +122,30 @@ export default function AgreementReader({
   );
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+    // `overflow-clip`, not `overflow-hidden`: `hidden` makes this card a scroll container,
+    // and the sticky strip below would stick to it rather than to the page.
+    <div className="rounded-2xl border border-gray-200 bg-white overflow-clip">
+      {/* Above the strip, so the document is titled before anything offers to navigate
+          it, and so the display capitals never travel under the strip. */}
+      <header className="px-4 sm:px-6 pt-5 pb-4">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary-ink">
+          {agreement.subtitle}
+        </p>
+        <h2 className="font-display font-black text-lg sm:text-xl uppercase tracking-tight text-foreground mt-1 break-words">
+          {agreement.title}
+        </h2>
+        <p className="text-xs text-muted-foreground mt-1">Version {agreement.version}</p>
+      </header>
+
       {/*
         Below the wizard's own sticky rail rather than at `top-0`, where the two
         overlapped and the contents strip disappeared behind the step indicator.
         The offset is published by the shell as a measured value.
+
+        Fully opaque and no `backdrop-blur`: content scrolls under this, and at
+        `bg-white/95` it bled through.
       */}
-      <div className="sticky top-[var(--onboarding-chrome,0px)] z-10 bg-white/95 backdrop-blur border-b border-gray-200">
+      <div className="sticky top-[var(--onboarding-chrome,0px)] z-10 bg-white border-y border-gray-200 shadow-sm">
         <details className="group">
           <summary
             className={`flex items-center gap-2 px-4 py-3 cursor-pointer list-none min-h-11 ${SUMMARY_FOCUS}`}
@@ -170,18 +177,20 @@ export default function AgreementReader({
               aria-hidden="true"
             />
           </summary>
-          <nav className="px-4 pb-3 max-h-64 overflow-y-auto" data-testid="agreement-index" aria-label="Agreement contents">
+          <nav className="px-4 pb-3 max-h-80 overflow-y-auto" data-testid="agreement-index" aria-label="Agreement contents">
             <ul role="list" className="grid sm:grid-cols-2 gap-x-4">
               {index.map((section) => (
                 <li key={section.number}>
                   <a
                     href={`#${sectionAnchor(section.number)}`}
-                    className="text-xs text-gray-700 hover:text-primary-ink py-1.5 flex gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    // Headings wrap rather than truncate: a contents entry cropped to
+                    // "Ownership, Title and Risk of…" fails at the one job it has.
+                    className="text-sm text-gray-700 hover:text-primary-ink py-2 flex items-start gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <span className="font-semibold text-foreground flex-shrink-0 tabular-nums">
                       {section.number}
                     </span>
-                    <span className="truncate">{section.heading}</span>
+                    <span className="min-w-0">{section.heading}</span>
                   </a>
                 </li>
               ))}
@@ -283,8 +292,11 @@ function SectionView({
  * readable, and the measure is capped near 68 characters because at the card's full
  * width the lines ran to about 130, which is roughly double the length at which the eye
  * starts losing its place on the way back to the left margin.
+ *
+ * `break-words` because the card clips its overflow: an unbreakable token (a URL, one of
+ * Schedule G's underscore blanks) would otherwise be cut off at the right edge silently.
  */
-const PROSE = "text-sm text-gray-700 leading-relaxed max-w-[56ch]";
+const PROSE = "text-sm text-gray-700 leading-relaxed max-w-[56ch] break-words";
 
 function BlockView({
   block,
@@ -356,7 +368,7 @@ function BlockView({
                 {block.header.map((cell, i) => (
                   <th
                     key={i}
-                    className="text-left font-semibold text-foreground border-b border-gray-300 py-1.5 pr-3 align-bottom"
+                    className="text-left font-semibold text-foreground border-b border-gray-300 py-1.5 pr-3 align-bottom break-words"
                   >
                     {r(cell)}
                   </th>
@@ -369,7 +381,7 @@ function BlockView({
                   {row.map((cell, j) => (
                     <td
                       key={j}
-                      className="text-gray-700 border-b border-gray-200 py-1.5 pr-3 align-top leading-relaxed"
+                      className="text-gray-700 border-b border-gray-200 py-1.5 pr-3 align-top leading-relaxed break-words"
                     >
                       {r(cell)}
                     </td>
@@ -397,9 +409,11 @@ function BlockView({
         <dl className="space-y-1.5">
           {block.items.map((blank, i) => (
             <div key={i} className="flex items-baseline gap-2 text-sm">
-              <dt className="text-gray-700 flex-shrink-0">{r(blank.label)}</dt>
+              {/* `min-w-16` on the rule: a long label used to squeeze it to nothing,
+                  leaving a blank line that isn't there. */}
+              <dt className="text-gray-700 min-w-0 break-words">{r(blank.label)}</dt>
               <dd
-                className={`border-b border-dashed border-gray-400 flex-1 ${
+                className={`border-b border-dashed border-gray-400 flex-1 min-w-16 ${
                   blank.width === "short" ? "max-w-24" : ""
                 }`}
               />
@@ -417,8 +431,8 @@ function BlockView({
               <dl className="space-y-1.5">
                 {party.fields.map((field, j) => (
                   <div key={j} className="flex items-baseline gap-2 text-sm">
-                    <dt className="text-gray-700 flex-shrink-0">{r(field)}</dt>
-                    <dd className="border-b border-dashed border-gray-400 flex-1" />
+                    <dt className="text-gray-700 min-w-0 break-words">{r(field)}</dt>
+                    <dd className="border-b border-dashed border-gray-400 flex-1 min-w-16" />
                   </div>
                 ))}
               </dl>

@@ -24,10 +24,8 @@ import type { StepViewProps } from "../types";
  * named "2.1" independently. Reading it from one module is what makes that particular
  * disagreement unrepresentable.
  *
- * `ISSUED_PLAIN_LANGUAGE` is the sibling export, and this step no longer reads it: the
- * "In short" panel above the contract is gone. The data and its tests stay — step 2
- * already states the terms in plain words, and a summary is worth re-siting rather than
- * rewriting if it comes back.
+ * `ISSUED_PLAIN_LANGUAGE` is the sibling export and no longer read here — the "In short"
+ * panel is gone. The data and its tests stay, for re-siting.
  */
 const AGREEMENT = ISSUED_AGREEMENT;
 
