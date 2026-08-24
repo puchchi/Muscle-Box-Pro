@@ -48,6 +48,7 @@
  * and nothing else.
  */
 
+import { ONBOARDING_STEPS } from "@shared/onboarding/types";
 import type {
   OnboardingError,
   OnboardingErrorCode,
@@ -444,7 +445,7 @@ function messageForStatus(status: number): string {
  * `wrong_step` we cannot place is to leave the client where it is and show the message.
  */
 function asStep(value: unknown): OnboardingStep | null {
-  return value === 1 || value === 2 || value === 3 || value === 4 || value === 5 ? value : null;
+  return ONBOARDING_STEPS.includes(value as OnboardingStep) ? (value as OnboardingStep) : null;
 }
 
 /**

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { Clock, ExternalLink } from "lucide-react";
-import { STEP_META, roughTotalMinutes } from "@shared/onboarding/steps";
+import { roughTotalMinutes, timedSteps } from "@shared/onboarding/steps";
 
 /**
  * The cold open — and, on the first pass through step 1, the page's own header.
  *
  * Step 1 is a form, and a form with no frame around it — arriving from an email,
  * asking for a GSTIN and a signatory — reads like a phishing page. This says who
- * sent it, what the five steps are, and that stopping halfway is safe.
+ * sent it, what the steps are, and that stopping halfway is safe.
  *
  * It stays short on purpose. The link arrives off the back of a sales call, so the
  * deal has already been explained once; re-selling it here delays the thing we
@@ -88,12 +88,13 @@ export default function OnboardingIntro({
       <p className="text-sm text-muted-foreground leading-relaxed">
         Five short steps: your details, your terms, the agreement, the refundable deposit, and your
         dashboard password. Nothing is committed until you sign the agreement at step 3, and the
-        deposit can wait until after that.
+        deposit can wait until after that. The sixth step is ours — installing your machine — and
+        this same link is where you'll track it.
       </p>
 
       {/*
         The step names, with what each one costs.
-        This used to repeat the five titles that the progress rail already shows
+        This used to repeat the titles that the progress rail already shows
         directly above it, which is the kind of duplication that makes a page feel
         longer than it is. The times are the new information — and they are the reason
         somebody decides to start now rather than "later", which in practice means
@@ -102,7 +103,7 @@ export default function OnboardingIntro({
       {/*
         `role="list"` because Tailwind's preflight sets `list-style: none` on every
         `ol`, and Safari drops the list role along with the marker — so VoiceOver
-        announced five loose fragments instead of "list, five items". Restored here and
+        announced loose fragments instead of "list, five items". Restored here and
         on every list in the flow; these links are opened from email, which on iOS means
         Safari.
 
@@ -119,7 +120,7 @@ export default function OnboardingIntro({
         className="mt-4 flex flex-wrap gap-x-6 gap-y-2"
         data-testid="intro-steps"
       >
-        {STEP_META.map((meta) => (
+        {timedSteps().map((meta) => (
           <li key={meta.step} className="text-xs whitespace-nowrap">
             <span className="font-semibold text-foreground">{meta.shortTitle}</span>{" "}
             <span className="text-muted-foreground tabular-nums">{meta.estimate}</span>

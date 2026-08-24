@@ -14,10 +14,21 @@
 
 // ── Steps and status ────────────────────────────────────────────────────────
 
-/** 1 Confirm Your Details · 2 Your Partnership · 3 Review & Sign · 4 Deposit · 5 You're Set Up */
-export type OnboardingStep = 1 | 2 | 3 | 4 | 5;
+/**
+ * 1 Confirm Your Details · 2 Your Partnership · 3 Review & Sign · 4 Deposit ·
+ * 5 You're Set Up · 6 Installation
+ *
+ * Step 6 is the odd one and deliberately in the list anyway. Every step before it is
+ * something the gym does; 6 is something we do, and the gym's copy of it is read-only —
+ * which unit was allocated, when it is going in, and what gets verified on site. It is a
+ * step rather than a dashboard panel because it is the answer to the question every gym
+ * asks the day after signing, and because the emailed link is where they will look for it.
+ * Nothing completes it from the client: the server marks it done when the Installation
+ * Certificate exists (agreement §17.2, Schedule A).
+ */
+export type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
 
-export const ONBOARDING_STEPS: readonly OnboardingStep[] = [1, 2, 3, 4, 5];
+export const ONBOARDING_STEPS: readonly OnboardingStep[] = [1, 2, 3, 4, 5, 6];
 
 /**
  * Lifecycle, in order. Persisted as `gym_onboarding.status`.

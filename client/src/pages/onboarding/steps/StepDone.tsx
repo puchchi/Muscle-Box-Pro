@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Clock, FileText, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,9 +23,15 @@ import type { StepViewProps } from "../types";
  * installation visit come before a single cup is sold, and that there is a *second*
  * signature at installation (Schedule A, §6). Saying so here costs one paragraph;
  * not saying it costs a support call per gym.
+ *
+ * **Creating the password no longer redirects to the dashboard.** It used to push
+ * `/gym/dashboard`, which was the end of the flow when step 5 was the last step. Step 6
+ * is now where installation is tracked, and a redirect fired the moment the account
+ * exists meant the one screen a gym has any reason to come back to was the one screen
+ * they were never shown. The button sets the password and the wizard advances; step 6
+ * carries the dashboard link.
  */
 export default function StepDone({ state, readOnly, isSubmitting, actions }: StepViewProps) {
-  const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -43,9 +48,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
       return;
     }
     setError(null);
-    if (await actions.createAccount(parsed.data)) {
-      router.push("/gym/dashboard");
-    }
+    await actions.createAccount(parsed.data);
   }
 
   return (
@@ -211,7 +214,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
               className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
               data-testid="button-continue"
             >
-              {isSubmitting ? "Creating..." : "Create my password and open my dashboard"}
+              {isSubmitting ? "Creating..." : "Create my password"}
             </Button>
           </div>
         )
@@ -313,7 +316,7 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
   );
 }
 
-/** Survey → installation → Schedule A → first shake. */
+/** Survey → installation → Schedule A → first shake, the middle of it tracked on step 6. */
 function nextSteps(installationAddress: string, termMonths: number) {
   const where = installationAddress.trim() ? " at your installation address" : "";
   return [
@@ -323,7 +326,7 @@ function nextSteps(installationAddress: string, termMonths: number) {
     },
     {
       title: "We confirm an installation date",
-      body: "Usually within two weeks of the survey, once the unit is allocated to you.",
+      body: "Usually within two weeks of the survey, once a unit is allocated to you. Which unit, and when it goes in, show up on the next step — come back to this same link any time to check.",
     },
     {
       title: "Schedule A is signed on site",

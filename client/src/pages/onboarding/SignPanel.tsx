@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, Lock, MailCheck, PenLine } from "lucide-react";
+import { KeyRound, Lock, MailCheck, PenLine, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signatureSchema, toFieldErrors } from "@shared/onboarding/schema";
 import { SIGNING_REQUIRES_OTP } from "@shared/onboarding/types";
@@ -17,6 +17,19 @@ import { SIGNING_REQUIRES_OTP } from "@shared/onboarding/types";
  * evidences delivery and opportunity to read, not reading — nothing in a browser can
  * evidence reading — and it is a UX honesty measure rather than the legal load-bearer,
  * which is the server-computed content hash plus the server timestamps.
+ *
+ * ## Who is signing is shown, not asked
+ *
+ * This panel used to open with two text inputs for the signatory's name and designation,
+ * seeded from step 1's answers. They collected nothing: the same two values are already on
+ * the record, they are what §47 of the agreement now prints, and — because the signature
+ * block is rendered *into* the hashed text — a name retyped here to something else would
+ * describe a document this gym is not being shown. Worse, the pair read as the gym's half
+ * of a form the other party was filling in beside it, which is the impression the whole
+ * step is meant not to give. So they are displayed, with a way back to the step that owns
+ * them and a plain statement of what to do if either is wrong.
+ *
+ * Both checkboxes stay. Those are representations being made now, not data already held.
  *
  * ## The second phase, and why it is switched off
  *
@@ -35,20 +48,22 @@ import { SIGNING_REQUIRES_OTP } from "@shared/onboarding/types";
  */
 export default function SignPanel({
   legalEntityName,
-  defaultName,
-  defaultDesignation,
+  signatoryName,
+  signatoryDesignation,
   contentHash,
   hasReadToEnd,
   readPercent,
   blockedReason,
   previewOtp,
   isSubmitting,
+  onReviewDetails,
   onRequestOtp,
   onSign,
 }: {
   legalEntityName: string;
-  defaultName: string;
-  defaultDesignation: string;
+  /** From step 1, and what §47 prints. Shown here, never re-collected. */
+  signatoryName: string;
+  signatoryDesignation: string;
   /**
    * Null until this client has rendered the agreement and confirmed it hashes to the
    * value the server pinned. Not "still computing" — "not yet vouched for".
@@ -62,6 +77,8 @@ export default function SignPanel({
   /** Preview builds show the fixed code, so the flow can be walked without an inbox. */
   previewOtp?: string | null;
   isSubmitting: boolean;
+  /** Takes the gym back to step 1 to read what it submitted. */
+  onReviewDetails(): void;
   onRequestOtp(): Promise<string | null>;
   onSign(input: {
     fullName: string;
@@ -70,8 +87,6 @@ export default function SignPanel({
     otpCode?: string;
   }): Promise<boolean>;
 }) {
-  const [fullName, setFullName] = useState(defaultName);
-  const [designation, setDesignation] = useState(defaultDesignation);
   const [agreed, setAgreed] = useState(false);
   const [authorised, setAuthorised] = useState(false);
   const [otpCode, setOtpCode] = useState("");
@@ -105,8 +120,8 @@ export default function SignPanel({
   /** Everything except the code, checked before we spend an email on it. */
   function validateAssent(): boolean {
     const result = signatureSchema.omit({ otpCode: true }).safeParse({
-      fullName,
-      designation,
+      fullName: signatoryName,
+      designation: signatoryDesignation,
       agreedToAgreement: agreed,
       authorisedToBind: authorised,
       contentHash: contentHash ?? "",
@@ -127,8 +142,8 @@ export default function SignPanel({
     // The field is omitted rather than sent empty when OTP is off: the server rejects a
     // payload that carries it at all, and `""` is a value that carries it.
     const result = signatureSchema.safeParse({
-      fullName,
-      designation,
+      fullName: signatoryName,
+      designation: signatoryDesignation,
       agreedToAgreement: agreed,
       authorisedToBind: authorised,
       contentHash: contentHash ?? "",
@@ -139,11 +154,11 @@ export default function SignPanel({
       return;
     }
     setErrors({});
-    // The panel passes back only what it collected. The hash it was handed was verified
+    // The panel passes back only what it was given. The hash it was handed was verified
     // against the server's by the caller, so this component never computes one.
     const submitted = await onSign({
-      fullName,
-      designation,
+      fullName: signatoryName,
+      designation: signatoryDesignation,
       ...(SIGNING_REQUIRES_OTP ? { otpCode } : {}),
     });
     if (!submitted) setFailed(true);
@@ -161,23 +176,11 @@ export default function SignPanel({
       </h2>
 
       <div className="mt-4 space-y-4">
-        <Field
-          id="sign-name"
-          label="Your full name"
-          value={fullName}
-          onChange={setFullName}
-          error={errors.fullName}
-          autoComplete="name"
-          disabled={!!sentTo}
-        />
-        <Field
-          id="sign-designation"
-          label="Your designation"
-          value={designation}
-          onChange={setDesignation}
-          error={errors.designation}
-          autoComplete="organization-title"
-          disabled={!!sentTo}
+        <SigningAs
+          name={signatoryName}
+          designation={signatoryDesignation}
+          error={errors.fullName ?? errors.designation}
+          onReviewDetails={onReviewDetails}
         />
 
         <div className="space-y-3 pt-1">
@@ -378,49 +381,59 @@ function Locked({
   );
 }
 
-function Field({
-  id,
-  label,
-  value,
-  onChange,
+/**
+ * Who is signing, as a statement rather than a form.
+ *
+ * The error branch is not dead code for a case step 1 already validates: it is what shows if
+ * a record ever reaches this panel without a signatory on it, and the alternative is a
+ * submit that fails with nothing on screen to explain why.
+ */
+function SigningAs({
+  name,
+  designation,
   error,
-  autoComplete,
-  disabled,
+  onReviewDetails,
 }: {
-  id: string;
-  label: string;
-  value: string;
-  onChange(value: string): void;
+  name: string;
+  designation: string;
   error?: string;
-  autoComplete?: string;
-  disabled?: boolean;
+  onReviewDetails(): void;
 }) {
   return (
-    <div>
-      <label htmlFor={id} className="text-sm font-semibold text-foreground block mb-1">
-        {label}
-      </label>
-      <input
-        id={id}
-        value={value}
-        autoComplete={autoComplete}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        // `aria-invalid`/`aria-describedby` rather than a red message alone: the name and
-        // designation here are what get printed on the signature block, and a screen
-        // reader was getting no indication which box the complaint belonged to.
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `error-${id}` : undefined}
-        // 16px, so iOS does not zoom the page on focus, and so the value someone is
-        // about to sign under is legible.
-        className={`w-full h-11 rounded-xl border bg-gray-50 px-3 text-base sm:text-sm text-foreground focus:border-primary focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors disabled:opacity-100 disabled:bg-gray-100 disabled:text-gray-700 disabled:cursor-not-allowed ${
-          error ? "border-red-400 bg-red-50" : "border-gray-200"
-        }`}
-        data-testid={`input-${id}`}
-      />
+    <div
+      className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5"
+      data-testid="signing-as"
+    >
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Signing as
+      </p>
+      <p className="text-sm text-foreground leading-relaxed mt-1 flex items-start gap-2">
+        <UserCheck className="w-4 h-4 text-primary-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <span>
+          <strong className="font-bold" data-testid="signing-as-name">
+            {name || "—"}
+          </strong>
+          {designation && (
+            <span data-testid="signing-as-designation">, {designation}</span>
+          )}
+        </span>
+      </p>
+      <p className="text-xs text-gray-700 leading-relaxed mt-2">
+        From the details you gave us in step 1, and printed in the signature block above. If either
+        is wrong, email us before you sign — they are part of the document, so changing them means a
+        fresh copy rather than an edit.{" "}
+        <button
+          type="button"
+          onClick={onReviewDetails}
+          className="font-semibold text-primary-ink hover:underline cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          data-testid="button-review-details"
+        >
+          See your details
+        </button>
+      </p>
       {error && (
-        <p id={`error-${id}`} className={ERROR_TEXT} data-testid={`error-${id}`}>
-          {error}
+        <p className={ERROR_TEXT} role="alert" data-testid="error-signing-as">
+          {error}. Go back to step 1 and add it before signing.
         </p>
       )}
     </div>

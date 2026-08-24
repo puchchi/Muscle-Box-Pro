@@ -8,7 +8,11 @@
  * directly, it stops being true, so don't. See docs/gym-onboarding.md §8.
  */
 
-import { MOCK_OTP, createMockOnboardingApi } from "@shared/onboarding/mockApi";
+import {
+  MOCK_OTP,
+  advanceMockInstallation,
+  createMockOnboardingApi,
+} from "@shared/onboarding/mockApi";
 import { createHttpOnboardingApi } from "./httpOnboardingApi";
 import type { OnboardingApi } from "@shared/onboarding/types";
 
@@ -50,3 +54,12 @@ export const IS_MOCK_ONBOARDING = !USE_LIVE_API;
  * end-to-end; the real code is emailed and rate-limited (§7).
  */
 export const PREVIEW_OTP = MOCK_OTP;
+
+/**
+ * Moves the mock's installation on a state, for the same reason `PREVIEW_OTP` exists: step 6
+ * is filled in by us over the following fortnight, and a preview cannot wait for that.
+ *
+ * Re-exported rather than imported from `mockApi` at the call site, and every caller has to
+ * be behind `IS_MOCK_ONBOARDING` — against the live API there is no store to move.
+ */
+export const previewAdvanceInstallation = advanceMockInstallation;

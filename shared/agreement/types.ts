@@ -33,10 +33,17 @@ export type Block =
   | { kind: "checklist"; lead?: string; items: string[] }
   /** Lines to be completed by hand on the printed copy. */
   | { kind: "blanks"; items: Blank[] }
-  /** Side-by-side execution blocks. */
+  /**
+   * Side-by-side execution blocks.
+   *
+   * `lines` are statements printed as text — a signatory's name, how the party executed.
+   * `fields` are labels each followed by a rule to be completed by hand on a printed
+   * copy. A party may carry either or both, and both are hashed: moving a name from a
+   * blank rule into a printed line is a content change, so it needs a new version.
+   */
   | {
       kind: "signatures";
-      parties: { heading: string; fields: string[] }[];
+      parties: { heading: string; lines?: string[]; fields?: string[] }[];
     }
   /**
    * Content that is missing or unresolved in the source document.

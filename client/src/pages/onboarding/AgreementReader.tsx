@@ -296,7 +296,7 @@ function SectionView({
  * `break-words` because the card clips its overflow: an unbreakable token (a URL, one of
  * Schedule G's underscore blanks) would otherwise be cut off at the right edge silently.
  */
-const PROSE = "text-sm text-gray-700 leading-relaxed max-w-[56ch] break-words";
+const PROSE = "text-sm text-gray-700 leading-relaxed break-words";
 
 function BlockView({
   block,
@@ -428,14 +428,25 @@ function BlockView({
           {block.parties.map((party, i) => (
             <div key={i} className="rounded-xl border border-gray-200 p-3">
               <p className="text-sm font-bold text-foreground mb-2">{r(party.heading)}</p>
-              <dl className="space-y-1.5">
-                {party.fields.map((field, j) => (
-                  <div key={j} className="flex items-baseline gap-2 text-sm">
-                    <dt className="text-gray-700 min-w-0 break-words">{r(field)}</dt>
-                    <dd className="border-b border-dashed border-gray-400 flex-1 min-w-16" />
-                  </div>
-                ))}
-              </dl>
+              {party.lines && (
+                <div className="space-y-1 mb-1.5 last:mb-0">
+                  {party.lines.map((line, j) => (
+                    <p key={j} className="text-sm text-gray-700 leading-relaxed break-words">
+                      {r(line)}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {party.fields && (
+                <dl className="space-y-1.5">
+                  {party.fields.map((field, j) => (
+                    <div key={j} className="flex items-baseline gap-2 text-sm">
+                      <dt className="text-gray-700 min-w-0 break-words">{r(field)}</dt>
+                      <dd className="border-b border-dashed border-gray-400 flex-1 min-w-16" />
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
           ))}
         </div>

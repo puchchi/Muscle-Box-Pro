@@ -7,9 +7,9 @@ import type { OnboardingStep } from "@shared/onboarding/types";
 /**
  * The step indicator.
  *
- * Two renderings rather than one responsive one: five labelled steps do not fit a
+ * Two renderings rather than one responsive one: six labelled steps do not fit a
  * 390px screen at a readable size, and shrinking them to fit produces a rail
- * nobody can read. Mobile gets "Step 3 of 5" with the title, a bar, and a row of
+ * nobody can read. Mobile gets "Step 3 of 6" with the title, a bar, and a row of
  * numbered targets — which is the information that actually matters on a phone.
  *
  * The mobile row is not decoration. Until it existed, going back to check what you
@@ -45,11 +45,11 @@ export default function ProgressRail({
   const active = STEP_META.find((m) => m.step === viewStep);
 
   /**
-   * The mobile bar, filled by the same rule the desktop rail's five bars use.
+   * The mobile bar, filled by the same rule the desktop rail's bars use.
    *
    * It was `completedSteps.length / 5`, which is a different measurement from the one
    * beside it at every width: on step 2 with step 1 done, the desktop rail draws two
-   * filled bars out of five and the phone drew a bar at 20%. Same state, same product,
+   * filled bars and the phone drew a bar at 20%. Same state, same product,
    * two answers — and the phone's was the pessimistic one, on the layout where the bar
    * is the *only* sense of progress there is room for.
    *
@@ -67,7 +67,7 @@ export default function ProgressRail({
    * Keyed off `currentStep`, not `viewStep`. `canView` also allows the step the server
    * is on — which is by definition *not* in `completedSteps` — so testing against the
    * step being viewed announced "not available yet" on an enabled button the moment a
-   * gym went back to check an earlier answer. Which of the five is on screen is already
+   * gym went back to check an earlier answer. Which one is on screen is already
    * carried by `aria-current`; this says what state each one is in.
    */
   function stateLabel(step: OnboardingStep): string {
@@ -155,7 +155,7 @@ export default function ProgressRail({
           `role="list"` restores what Tailwind's preflight takes away: it sets
           `list-style: none` on every `ol`, and Safari drops the list role with the
           marker — which left an `aria-label` of "Onboarding steps" attached to a generic
-          container, so VoiceOver announced neither the name nor "five items". These
+          container, so VoiceOver announced neither the name nor the item count. These
           links are opened from email, and on iOS that means Safari.
         */
         role="list"

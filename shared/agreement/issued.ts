@@ -23,22 +23,24 @@
  * constant. See docs/gym-onboarding.md §12.
  */
 
-import { AGREEMENT_V2_2 } from "./v2_2";
-import { PLAIN_LANGUAGE_V2_2, type PlainLanguageItem } from "./plainLanguage";
+import { AGREEMENT_V2_3 } from "./v2_3";
+import { PLAIN_LANGUAGE_V2_3, type PlainLanguageItem } from "./plainLanguage";
 import type { RenderOptions } from "./render";
 import type { Agreement } from "./types";
 
-export const ISSUED_AGREEMENT: Agreement = AGREEMENT_V2_2;
+export const ISSUED_AGREEMENT: Agreement = AGREEMENT_V2_3;
 
 /**
  * How tokens with no value render — part of the issued document's identity, not a
  * display preference.
  *
- * `placeholder` rather than `throw`, because step 3 has to render for a gym whose
- * machine has not been allocated yet: serial number and installation date are genuinely
- * blank until Schedule A is signed on site (§6, §17). The signing path is still
- * protected — `canIssue()` refuses any agreement with unresolved tokens, so a
- * placeholder can be *read* but never *signed* around.
+ * `placeholder` rather than `throw`, because a reader that throws leaves a gym on a blank
+ * screen over a missing serial number. v2.3 removed the tokens that made that routine —
+ * the machine identifiers and the installation date are no longer in the document at all,
+ * so an issued 2.3 should resolve completely — but 2.1 and 2.2 still contain them and
+ * still have to render from current state for verification. The signing path is protected
+ * either way: `canIssue()` refuses any agreement with unresolved tokens, so a placeholder
+ * can be *read* but never *signed* around.
  *
  * It lives here, next to the version it applies to, because the reader, the PDF and
  * whoever computes the hash must all pass the same object. It used to be exported from
@@ -53,7 +55,7 @@ export const ISSUED_RENDER_OPTIONS: RenderOptions = {
   placeholder: "__________",
 };
 
-export const ISSUED_PLAIN_LANGUAGE: readonly PlainLanguageItem[] = PLAIN_LANGUAGE_V2_2;
+export const ISSUED_PLAIN_LANGUAGE: readonly PlainLanguageItem[] = PLAIN_LANGUAGE_V2_3;
 
 /**
  * Read off the document rather than written out again, so the string stored on a

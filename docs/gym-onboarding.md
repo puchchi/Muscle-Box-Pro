@@ -7,14 +7,16 @@ Two things change at once:
 
 1. **Consumer login/signup is removed.** There are no customer accounts. Members buy a shake at
    the machine; they do not have profiles, wallets, or logins.
-2. **Gyms are onboarded through a single emailed link** — a five-step flow that ends with a signed
-   agreement, a paid security deposit, and a working portal account.
+2. **Gyms are onboarded through a single emailed link** — a six-step flow that ends with a signed
+   agreement, a paid security deposit, a working portal account, and a machine on the floor. The
+   sixth step is the only one the gym does not do: see §20.
 
 The agreement started from
 `docs/MuscleBoxPro_Machine_Placement_Profit_Sharing_Agreement_v2_1.pdf` (Execution Draft v2.0 in its
-own header). That PDF is transcribed as `v2_1.ts` and frozen. The version the flow actually issues is
-**2.2**, which resolves every unfinished clause in it — see §12 for the defect-by-defect mapping and
-the thirteen commercial decisions behind it.
+own header). That PDF is transcribed as `v2_1.ts` and frozen. **2.2** resolved every unfinished clause
+in it — see §12 for the defect-by-defect mapping and the thirteen commercial decisions behind it. The
+version the flow actually issues is **2.3**, which takes the blanks nobody could fill at signing out
+of the signed document; see §20.
 
 ---
 
@@ -129,6 +131,7 @@ create gym + machine + terms
                                     │ 3  Review & Sign           │  agreement
                                     │ 4  Security Deposit        │  payment
                                     │ 5  You're Set Up           │  password
+                                    │ 6  Installation            │  ours
                                     └─────────────┬──────────────┘
                                                   ↓
                                           /gym/dashboard
@@ -156,7 +159,7 @@ Prefilled from the demo request wherever possible; the gym corrects and complete
 - Notices email + phone (§41)
 
 Because this is now the cold open, it needs a compact "what this is" hero above the form — who sent
-the link, what the five steps are, how long it takes, and a link to `/gym-partnership` for anyone
+the link, what the steps are, how long it takes, and a link to `/gym-partnership` for anyone
 who wants the deal restated. A form as the first thing a gym sees, with no frame around it, reads
 like a data-harvesting page. The link arrives off the back of a sales call, so one short paragraph
 is enough; it does not need to re-sell.
@@ -444,7 +447,8 @@ the server emails says it, one place, rather than every screen implying it.
 - Signed PDF on screen, and emailed to the gym, `contact@muscleboxpro.com`, and the
   `*_REQUEST_CC` list
 - Deposit receipt, if paid
-- Set a portal password → straight into `/gym/dashboard`
+- Set a portal password → step 6, which carries the dashboard link (it used to redirect straight
+  into `/gym/dashboard`; see §20)
 - "What happens next": site survey, installation date, Schedule A signing at install
 
 Account creation lands after signing on purpose. No logins for gyms that never signed, and no
@@ -487,7 +491,7 @@ does goes through `OnboardingApi`, so that is the only thing item 9 changes.
 | File | What it is |
 |---|---|
 | [onboarding/types.ts](../shared/onboarding/types.ts) | the API contract — `OnboardingState`, `OnboardingApi`, the error codes |
-| [onboarding/steps.ts](../shared/onboarding/steps.ts) | `STEP_META` — the five titles and blurbs, in one place |
+| [onboarding/steps.ts](../shared/onboarding/steps.ts) | `STEP_META` — the titles, blurbs and time estimates, in one place |
 | [onboarding/schema.ts](../shared/onboarding/schema.ts) | zod schemas shared by the form, the mock and later the edge function |
 | [onboarding/mockApi.ts](../shared/onboarding/mockApi.ts) | the state machine, not a stub — step derivation, freezing, the conditional signing write |
 | [onboarding/agreementFields.ts](../shared/onboarding/agreementFields.ts) | `OnboardingState` → `AgreementFields`, so §12's renderer has every token |
@@ -684,6 +688,12 @@ So Schedule A renders as *"To be completed at installation"* inside the signed a
 becomes a separate signing event: same token mechanism, on a phone, on-site, gym representative and
 technician both signing. Schedule H (Machine Return Certificate) works the same way at the other
 end of the relationship.
+
+**Revised in v2.3 (2026-08-25).** "Renders as *To be completed at installation*" turned out to mean,
+in practice, a printed blank form with two placeholder cells and a ten-item checklist sitting inside
+a document being executed electronically. v2.3 replaces the form with a description of what the
+certificate records, and the gym's read-only view of that record as it fills in is **step 6**. Same
+for Schedule H. See §20.
 
 **Consequence for the build:** make the signature component and the token flow generic enough to
 serve all three moments — agreement, installation certificate, return certificate. Building it
@@ -1418,6 +1428,8 @@ like a compile step.
 - [ ] `enable row level security` in the same migration as the `create table`
 - [ ] No business state in `user_metadata` — it is writable by the user
 - [ ] The server decides the onboarding step; the client never asserts it
+- [ ] A new step means `OnboardingStep`, `ONBOARDING_STEPS`, `STEP_META`, `asStep`, `gymsSchema`'s step
+      union and `STEP_LABEL` — the last two fail silently, one by rejecting the whole admin view (§20)
 - [ ] Payment amounts verified server-side in paise; webhook is the source of truth
 - [ ] Webhook handlers idempotent on the provider's payment id
 - [ ] No PII in `localStorage`
@@ -1442,6 +1454,8 @@ like a compile step.
       included; a field stays on `AgreementFields` while any version references it
 - [ ] Clearing a `todo` marker means fixing the defect and recording the resolution, never deleting
       the marker
+- [ ] A signed document never prints a blank for something nobody can know at signing; it names where
+      that value is recorded instead (§20)
 - [ ] Amounts stated twice in a clause — figure and words — derive from one integer
 - [ ] The milestone reads identically in §6.1, §21.5, Schedule B, Schedule C and `PARTNERSHIP`
 - [ ] `compute.ts` change comes with a test for the milestone-splitting month
@@ -1714,3 +1728,144 @@ re-evaluate `next.config.mjs`**, so a server that was already running has the ol
 will block the sandbox request with the env looking correct. Restart it. And the CORS allowlist names
 `localhost:3000` — port 3001 fails with an opaque CORS error, which `apiClient` reports as
 "couldn't reach us", indistinguishable from being offline.
+
+## 20. Review & sign, simplified — agreement v2.3 and the sixth step (2026-08-25)
+
+Step 3 read like a form both parties were filling in at the same time. It is not: it is one party
+being shown a finished document and asked to agree to it. The work started by inventorying every value
+anywhere in that step that somebody was being asked to supply, and asking of each one *who knows this,
+and when*.
+
+| Value | Where step 3 asked for it | Who knows it, and when |
+| --- | --- | --- |
+| Signatory name, designation | Two text inputs at the top of the sign panel, pre-filled from step 1 | The gym, at step 1. Already on the record. |
+| "I have read and agree", "I am authorised to bind" | Two checkboxes | The gym, **now**. Genuinely collected here. |
+| Machine ID, serial number, installation date | §2's table of particulars, rendering as "To be completed at installation" | Nobody at signing. Us, once a unit is allocated. |
+| Installation condition, accessories, four on-site tests, photographs, two signatures | Schedule A, printed as a certificate: two placeholder cells, a ten-item checklist, three signature rules | A technician and a gym representative, on installation day. |
+| Return date, condition, damage cost, deposit adjustment, refund balance, two signatures | Schedule H, printed as a certificate: eight `__________` cells, three signature rules | Both parties, at the end of a 24-month term at the earliest. |
+| Name, designation, signature, date, seal — for each party | §47, ten blank rules | Nobody. The document is executed by clicking a button. |
+
+Twenty-six blank rules. Exactly two of them held a value that was the gym's to give at signing, and
+both were already on the record from step 1. The other twenty-four belonged to events months or years
+away, or to a paper apparatus that does not apply.
+
+### The document: v2.3
+
+`v2_3.ts`, and 2.2 untouched — it has the same standing as 2.1 now. 2.3 changes no commercial term and
+resolves no `todo` marker; the four differences are recorded in `AGREEMENT_V2_3_CHANGES`, keyed by
+location rather than by marker id, because 2.2 did not think its blank forms were a defect and so
+nothing in the tree flagged them:
+
+- **§2** drops the Machine ID, Serial Number and Installation Date rows and gains a sentence saying
+  they are recorded on the Installation Certificate under §17. The table now lists only particulars
+  known at execution, rather than settled facts with three holes in the middle of them.
+- **§47** is headed *Execution* rather than *Signatures* and says how execution works: electronically,
+  by the gym's authorised signatory confirming in this flow (47.1), evidenced by the recorded SHA-256
+  fingerprint and timestamp, both of which we give the gym with its copy (47.2), with Schedules A and
+  H signed separately and affecting neither (47.3). The gym's party block prints `{{signatoryName}}`
+  and `{{signatoryDesignation}}`.
+- **Schedules A and H** describe what their certificates record and when they are signed, in place of
+  printing them. That is what §17.2 and §37 always said the certificates were — separate documents
+  completed on site.
+- The plain-language panel gains a **twelfth item, for §47**. It is not a term that binds and bites,
+  which is what the other eleven are, and it is there anyway: "clicking this is the signature" is the
+  one thing about the mechanics a non-lawyer needs to have been told before they click.
+
+**MuscleBoxPro's party block names the LLP and its authorised signatory with no personal name.** Which
+of our people issued a given agreement is on our own record; a name printed into the hashed text is a
+second copy of that fact, free to be wrong, and it would have needed a constant somewhere naming a
+specific person as the signatory for every agreement we issue.
+
+The type change this needed is small and worth knowing about: a `signatures` party may now carry
+`lines` (statements printed as text) as well as `fields` (a label followed by a rule to write on), and
+both are optional. **A party with no `lines` renders exactly what it rendered before they existed**,
+which is what keeps 2.1's and 2.2's pinned hashes where they are — both suites still pass unedited,
+and that is the evidence, not the intention.
+
+`GOLDEN_V2_3` pins `085df8bf92f471792630691c2625057e05c898278ec74c3478bd70c611cb7b64` at 38,306
+characters. Two things about that vector:
+
+- `signatoryName` and `signatoryDesignation` are inputs to a pinned hash for the first time. Neither
+  2.1 nor 2.2 referenced them by any token, so a step-1 typo could not reach the document. In 2.3 it
+  can, which is the point — the name in the agreement is the name in the record, or the record is
+  wrong.
+- 2.3 is **longer** than 2.2, by about 2,000 characters. The instinct is the opposite. Removing
+  twenty-six blank rules added length, because a described certificate is prose and a printed one is
+  mostly empty cells. Length is not the measure of this change.
+
+### The panel: shown, not asked
+
+`SignPanel` no longer carries the two text inputs. Name and designation are displayed, with a way back
+to the step that owns them and a line saying what to do if either is wrong. They collected nothing: the
+values were already on the record, and now that §47 renders them *into the hashed text*, a name
+retyped here to something else would describe a document the gym is not being shown. Both checkboxes
+stay — those are representations being made at that moment, not data already held.
+
+### Step 6, and the redirect that had to go
+
+Installation is a sixth step in the rail rather than a card on the done screen or a panel on the
+dashboard. It is the question every gym asks the day after signing, and the emailed link is where they
+will look for the answer.
+
+It is read-only, and **nothing completes it from the client.** The server marks it done when the
+Installation Certificate exists (§17.2, Schedule A) — see §6, which is the same second-signing problem
+seen from the other end.
+
+Making it reachable meant deleting `StepDone`'s `router.push("/gym/dashboard")`. That redirect was
+correct while step 5 was the last step; with a step behind it, it fired the moment the account existed
+and meant the one screen a gym has a reason to come back to was the one screen it would never be
+shown. The dashboard link now lives on step 6.
+
+Six steps, still "about 20 minutes", because `StepMeta.estimate` is now `string | null` and step 6 is
+null — installation is not the gym's time. `timedSteps()` is what the intro and the invitation email
+list, and `totalEstimateMinutes()` skips the nulls. "Installation, 0 minutes" in a list of times is
+worse than an absence.
+
+For preview builds, `advanceMockInstallation(token)` walks the mock record forward one stage —
+unallocated, allocated, installed — and is re-exported as `previewAdvanceInstallation` through
+`onboardingApi.ts` so nothing imports `mockApi` directly. The date derives from `signedAt` plus 14
+days rather than a clock, so the same walk always produces the same screen.
+
+### Three silent failures adding a step would have caused
+
+Worth listing, because none of them fails loudly and two of them are nowhere near the onboarding flow:
+
+- `shared/admin/gymsSchema.ts` had `step` as a union of the literals 1 to 5. A gym on step 6 fails
+  validation of **the whole admin gym view**, not just that field.
+- `adminFormat.ts`'s `STEP_LABEL` had no entry for 6, so the admin list would have read "On step 6 —
+  undefined".
+- `apiClient`'s `asStep` rejects an out-of-range step from the wire, which is correct and meant its
+  own fixture had to move to 7 to keep testing the range rather than testing step 6.
+
+`/gym-partnership` deliberately does **not** gain an installation card. Its three-across grid would
+leave a row of one, and the page's story ends with a working dashboard; the step list on it now says
+"Step 1 of 6" and nothing else changed.
+
+### For `mbp-backend`
+
+Two things, and the first blocks a real gym reaching any of this:
+
+1. **Re-copy `shared/agreement/`** — `types.ts`, `render.ts`, `v2_3.ts`, `goldenVector.ts`. The
+   optional `lines` field is handled in the *renderer*, so a backend without it cannot compute 2.3's
+   hash at all, and `issued.ts` here already points at 2.3.
+2. **Accept `currentStep: 6`** and set it from the Installation Certificate. Its own step validation
+   is the same 1-to-5 union this side had.
+
+### Verified
+
+`npx tsc --noEmit` clean. **55 test files, 1,098 tests passing.**
+
+New: [agreement-v2-3.test.ts](../client/src/__tests__/shared/agreement-v2-3.test.ts), 50 tests. Three
+of them are the ones worth having:
+
+- Every section and schedule outside §2, §47, Schedule A and Schedule H is **byte-identical to 2.2**,
+  and the four locations that moved are exactly the four keys in `AGREEMENT_V2_3_CHANGES`. That is
+  2.3's whole claim as an assertion — a term edited in passing during a formatting change is precisely
+  what no reviewer would catch by reading the diff.
+- The document renders identically whatever `machineId`, `serialNumber` and `installationDate` say, so
+  an issued 2.3 cannot be made to differ by a unit allocated after it was signed.
+- No `blanks` or `checklist` block anywhere in the tree, and no `_{3,}` in the rendered text — checked
+  against 2.2, which still matches, so the assertion cannot pass vacuously.
+
+`OnboardingFlow.test.tsx` gained four step-6 tests and its whole-flow walk now ends on step 6,
+asserting that no redirect fired and that the dashboard link is there.

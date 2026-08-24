@@ -3,7 +3,7 @@
  *
  * `mbp-backend` computes the `contentHash` that `POST /onboarding/sign` compares against
  * (see that repo's `docs/gym-onboarding-api-design.md` §2.9). It does so by taking a
- * **verbatim copy** of `shared/agreement/` — `types.ts`, `render.ts`, `v2_1.ts`, `v2_2.ts`
+ * **verbatim copy** of `shared/agreement/` — `types.ts`, `render.ts`, `v2_1.ts`, `v2_2.ts`, `v2_3.ts`
  * and this file — rather than reimplementing the renderer, because the hash covers the
  * rendered text a human read and two renderers agreeing on that byte for byte is not a
  * property anyone can maintain by inspection.
@@ -17,8 +17,8 @@
  * DO NOT UPDATE A HASH OR LENGTH HERE TO MAKE A FAILING TEST PASS.
  *
  * These pin the exact bytes a signature against each version attests to. If one fails,
- * either the agreement content changed — in which case add `v2_3.ts` rather than editing
- * a published version — or `renderPlainText`'s format changed, which invalidates every
+ * either the agreement content changed — in which case add the next version file rather
+ * than editing a published one — or `renderPlainText`'s format changed, which invalidates every
  * signature already stored. Both are things to stop and think about. If it fails in only
  * one of the two repos, that repo's copy has drifted and the fix is to re-copy, not to
  * re-pin.
@@ -47,9 +47,11 @@ export type AgreementGoldenVector = {
  *
  * The values below happen to be identical, and the temptation to write
  * `{...BASE, termMonths: "36"}` is exactly the mistake: a value edited to suit a future
- * v2.3 vector would move v2.1's and v2.2's hashes as a side effect, and the fix at that
+ * vector would move v2.1's, v2.2's and v2.3's hashes as a side effect, and the fix at that
  * point *looks* like "update the expected hash" — the one thing no version may do once
- * it has signatures. Duplication here buys independence, which is worth more than brevity
+ * it has signatures. v2.3 is the live illustration: it is the first version to render
+ * `signatoryName`, so a vector sharing one base would have made that name unchangeable in
+ * three places at once for three different reasons. Duplication here buys independence, which is worth more than brevity
  * in a file whose whole job is to not move.
  */
 export const GOLDEN_V2_1: AgreementGoldenVector = {
@@ -120,6 +122,51 @@ export const GOLDEN_V2_2: AgreementGoldenVector = {
   },
   contentHash: "99a1394bd545d9e8f87666dfd4896cefa65c246ceffa5153f111a0a5b63152b0",
   length: 36_242,
+};
+
+/**
+ * The vector for 2.3 — the version the flow issues.
+ *
+ * `signatoryName` and `signatoryDesignation` are load-bearing here for the first time.
+ * Neither 2.1 nor 2.2 referenced them by any token, so the two values in the vectors above
+ * are present only because `AgreementFields` requires them and cannot move those hashes.
+ * 2.3's §47 prints both, so in this vector they are inputs to the pinned bytes: change
+ * `"A. Owner"` and the hash below is wrong.
+ *
+ * The machine identifiers and the installation date go the other way. 2.3 has no token for
+ * any of them, so the three values here cannot affect this hash — kept because the type
+ * requires them, exactly as `securityDepositInWords` was kept in the 2.1 vector.
+ */
+export const GOLDEN_V2_3: AgreementGoldenVector = {
+  version: "2.3",
+  fields: {
+    gymLegalName: "Iron Temple Fitness LLP",
+    effectiveDate: "01 September 2026",
+    machineModel: "MuscleBoxPro MBP-1",
+    machineId: "MBP-0001",
+    serialNumber: "SN-TEST-0001",
+    machineValue: "₹4,50,000",
+    installationDate: "05 September 2026",
+    installationAddress: "12 MG Road, Bengaluru, Karnataka 560001",
+    accessories: "Cup dispenser, water line kit",
+    securityDeposit: "₹50,000",
+    securityDepositInWords: "Rupees Fifty Thousand Only",
+    termMonths: "24",
+    mbpNotices: {
+      address: "BlendBox Innovations LLP, Bengaluru",
+      email: "legal@muscleboxpro.com",
+      phone: "+91 00000 00000",
+    },
+    gymNotices: {
+      address: "12 MG Road, Bengaluru, Karnataka 560001",
+      email: "owner@irontemple.example",
+      phone: "+91 11111 11111",
+    },
+    signatoryName: "A. Owner",
+    signatoryDesignation: "Designated Partner",
+  },
+  contentHash: "085df8bf92f471792630691c2625057e05c898278ec74c3478bd70c611cb7b64",
+  length: 38_306,
 };
 
 export type GoldenVectorVerdict =

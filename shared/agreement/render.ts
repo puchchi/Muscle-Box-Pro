@@ -195,7 +195,8 @@ function* allStrings(agreement: Agreement): Generator<string> {
       case "signatures":
         for (const party of block.parties) {
           yield party.heading;
-          yield* party.fields;
+          if (party.lines) yield* party.lines;
+          if (party.fields) yield* party.fields;
         }
         break;
       case "todo":
@@ -238,7 +239,13 @@ function blockToLines(block: Block, fields: Partial<AgreementFields>, opts: Rend
     case "blanks":
       return block.items.map((b) => `${r(b.label)}: ____________`);
     case "signatures":
-      return block.parties.flatMap((p) => [r(p.heading), ...p.fields.map((f) => `${r(f)}: ____`)]);
+      // A party with no `lines` emits exactly what it did before they existed, which is
+      // what keeps v2.1's and v2.2's pinned hashes where they are.
+      return block.parties.flatMap((p) => [
+        r(p.heading),
+        ...(p.lines ?? []).map(r),
+        ...(p.fields ?? []).map((f) => `${r(f)}: ____`),
+      ]);
     case "todo":
       // Excluded from the rendering for the same reason it is excluded from
       // `allStrings` — see the comment there.

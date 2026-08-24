@@ -17,6 +17,7 @@ vi.mock("next/link", () => ({
 }));
 
 import { DEMO_TOKEN, MOCK_TOKENS, resetMockOnboarding } from "@shared/onboarding/mockApi";
+import { STEP_META } from "@shared/onboarding/steps";
 import OnboardingFlow from "@/pages/onboarding/OnboardingFlow";
 
 /**
@@ -107,7 +108,7 @@ describe("OnboardingFlow — the rail", () => {
   it("locks every step ahead of the one the server is on", async () => {
     await open();
     expect(screen.getByTestId("rail-step-1")).toHaveAttribute("aria-current", "step");
-    for (const step of [2, 3, 4, 5]) {
+    for (const step of [2, 3, 4, 5, 6]) {
       expect(screen.getByTestId(`rail-step-${step}`)).toBeDisabled();
     }
   });
@@ -115,28 +116,35 @@ describe("OnboardingFlow — the rail", () => {
   it("says where the gym is on a phone as well as on a desktop", async () => {
     await open();
     expect(screen.getByTestId("mobile-step-title")).toHaveTextContent("Confirm your details");
-    expect(screen.getByText("Step 1 of 5")).toBeInTheDocument();
+    expect(screen.getByText(`Step 1 of ${STEP_META.length}`)).toBeInTheDocument();
   });
 
   /**
-   * The phone's one bar and the desktop's five have to be the same measurement.
+   * The phone's one bar and the desktop's row of them have to be the same measurement.
    *
    * The bar was drawn from `completedSteps.length`, so on step 2 with step 1 behind it the
-   * desktop rail filled two of five while the phone filled one — and the phone is the
-   * layout where the bar is the only sense of progress there is room for. Asserted at
-   * step 1 as well as step 2, because the bug was invisible at the first step (0 done, 1
-   * filled, both a fifth of the way apart) and only opened up as the flow ran.
+   * desktop rail filled two while the phone filled one — and the phone is the layout where
+   * the bar is the only sense of progress there is room for. Asserted at step 1 as well as
+   * step 2, because the bug was invisible at the first step (0 done, 1 filled, both one
+   * step apart) and only opened up as the flow ran.
+   *
+   * The denominator comes from `STEP_META` rather than being written out, so adding a step
+   * moves this test's expectation with the rail instead of failing it.
    */
-  it("fills the phone's bar by the same rule the desktop rail's five bars use", async () => {
+  it("fills the phone's bar by the same rule the desktop rail's bars use", async () => {
     const user = await open();
-    expect(screen.getByTestId("mobile-progress-bar")).toHaveStyle({ transform: "scaleX(0.2)" });
+    expect(screen.getByTestId("mobile-progress-bar")).toHaveStyle({
+      transform: `scaleX(${1 / STEP_META.length})`,
+    });
 
     await completeDetails(user);
     await waitFor(() =>
       expect(screen.getByTestId("rail-step-2")).toHaveAttribute("aria-current", "step"),
     );
-    // Step 1 done and step 2 on screen: two of five, not one.
-    expect(screen.getByTestId("mobile-progress-bar")).toHaveStyle({ transform: "scaleX(0.4)" });
+    // Step 1 done and step 2 on screen: two, not one.
+    expect(screen.getByTestId("mobile-progress-bar")).toHaveStyle({
+      transform: `scaleX(${2 / STEP_META.length})`,
+    });
   });
 });
 
@@ -861,15 +869,114 @@ describe("OnboardingFlow — the whole flow", () => {
     // The second signature at installation (§6) is disclosed before anyone leaves.
     expect(screen.getByTestId("what-happens-next")).toHaveTextContent("Schedule A is signed on site");
 
-    // A short password is caught in the browser: no round trip, no navigation.
+    // A short password is caught in the browser: no round trip, and the step does not move.
     await user.type(screen.getByTestId("input-portal-password"), "short");
     await user.click(screen.getByTestId("button-continue"));
     expect(screen.getByTestId("error-portal-password")).toHaveTextContent("at least 8 characters");
-    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByTestId("input-portal-password")).toBeInTheDocument();
 
     await user.clear(screen.getByTestId("input-portal-password"));
     await user.type(screen.getByTestId("input-portal-password"), "a-long-enough-password");
     await user.click(screen.getByTestId("button-continue"));
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/gym/dashboard"));
+
+    /*
+      Onto step 6, not off to `/gym/dashboard`. Creating the account used to `router.push`,
+      which meant the step that tracks the installation was the one screen a gym never saw
+      — so the dashboard link moved onto step 6 and this assertion moved with it. `mockPush`
+      is still checked, because a redirect coming back would take the step with it.
+    */
+    await waitFor(() => expect(screen.getByTestId("installation-status")).toBeInTheDocument());
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "Open my dashboard" })).toHaveAttribute(
+      "href",
+      "/gym/dashboard",
+    );
+  });
+});
+
+/**
+ * Step 6 — installation.
+ *
+ * The one step the gym does not do, so what is worth pinning is that nothing on it
+ * pretends otherwise: it renders on a record with no unit allocated, it names the
+ * particulars that used to be blanks inside the signed agreement once they exist, and it
+ * says the term runs from the installation date rather than from signing (§4.1) — the most
+ * common wrong assumption available at this point in the flow.
+ */
+describe("OnboardingFlow — step 6 tracks the installation", () => {
+  /** Signs, defers the deposit, sets a password: the shortest walk to step 6. */
+  async function reachStepSix() {
+    const user = await open();
+    await completeDetails(user);
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+    await user.click(screen.getByTestId("button-continue"));
+    await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
+    await user.click(screen.getByTestId("checkbox-agreed"));
+    await user.click(screen.getByTestId("checkbox-authorised"));
+    await user.click(screen.getByTestId("button-sign"));
+    await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
+    await user.click(screen.getByTestId("button-pay-later"));
+    await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
+    await user.type(screen.getByTestId("input-portal-password"), "a-long-enough-password");
+    await user.click(screen.getByTestId("button-continue"));
+    await waitFor(() => expect(screen.getByTestId("installation-status")).toBeInTheDocument());
+    return user;
+  }
+
+  it("renders the empty record honestly rather than inventing a machine", async () => {
+    await reachStepSix();
+    expect(screen.getByTestId("installation-status")).toHaveTextContent("Allocating your machine");
+    // No unit yet, so no table of particulars — a Machine ID column of dashes reads as
+    // data we hold and cannot show.
+    expect(screen.queryByTestId("installation-unit")).not.toBeInTheDocument();
+    // §4.1, at the point it matters.
+    expect(screen.getByTestId("installation-status")).toHaveTextContent(
+      /term runs from the installation date/,
+    );
+  });
+
+  it("says installation waits for a deposit that was deferred", async () => {
+    const user = await reachStepSix();
+    const note = screen.getByTestId("installation-deposit-note");
+    expect(note).toHaveTextContent("Installation waits for the deposit");
+    // And it is one click back to paying it, rather than an instruction to find step 4.
+    await user.click(screen.getByTestId("button-go-to-deposit"));
+    expect(screen.getByTestId("deposit-amount")).toBeInTheDocument();
+  });
+
+  /**
+   * The particulars that left the agreement in v2.3.
+   *
+   * Machine ID, serial number and installation date were blanks on the signature page up
+   * to v2.2 — fields inside a document being executed electronically, describing a unit
+   * nobody had allocated. They are recorded on the Installation Certificate now, and this
+   * is the gym's view of that record, so the values have to actually appear here.
+   */
+  it("names the unit and the date once they exist", async () => {
+    const user = await reachStepSix();
+    await user.click(screen.getByTestId("button-preview-advance-installation"));
+
+    const unit = screen.getByTestId("installation-unit");
+    expect(unit).toHaveTextContent("MuscleBoxPro MBP-1");
+    expect(unit).toHaveTextContent("MBP-0001-01");
+    expect(screen.getByTestId("installation-status")).toHaveTextContent(
+      "Booking your installation date",
+    );
+
+    await user.click(screen.getByTestId("button-preview-advance-installation"));
+    expect(screen.getByTestId("installation-status")).toHaveTextContent(/^Installed on /);
+    // Nothing on this step is a control the gym completes: the record moved because we
+    // moved it, and there is no button here that could have signed anything.
+    expect(screen.queryByTestId("button-sign")).not.toBeInTheDocument();
+  });
+
+  it("offers a way to read Schedule A rather than paraphrasing it and stopping there", async () => {
+    const user = await reachStepSix();
+    expect(screen.getByTestId("installation-checks")).toHaveTextContent(
+      /sign the Installation Certificate/,
+    );
+    await user.click(screen.getByTestId("button-open-agreement"));
+    expect(screen.getByTestId("section-Schedule A")).toBeInTheDocument();
   });
 });

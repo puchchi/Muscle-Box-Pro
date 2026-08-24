@@ -147,11 +147,12 @@ export const MACHINE_STATUS_LABEL: Record<MachineStatus, string> = {
   removed: "Removed",
 };
 
-/** The five steps, by name, so a step number is legible without counting. */
+/** The steps, by name, so a step number is legible without counting. */
 export const STEP_LABEL: Record<number, string> = {
   1: "Confirm details",
   2: "Your partnership",
   3: "Review & sign",
   4: "Deposit",
   5: "You're set up",
+  6: "Installation",
 };

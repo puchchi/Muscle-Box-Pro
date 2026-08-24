@@ -20,13 +20,14 @@
 import { PARTNERSHIP } from "../partnership/summary";
 import { fingerprintIssuedAgreement, issuanceDateInIndia } from "./issuedAgreement";
 import { gymDetailsSchema, portalPasswordSchema, signatureSchema, toFieldErrors } from "./schema";
-import { SIGNING_REQUIRES_OTP } from "./types";
+import { ONBOARDING_STEPS, SIGNING_REQUIRES_OTP } from "./types";
 import type {
   DepositChoice,
   DepositLink,
   DraftKey,
   DraftSaveResult,
   GymDetails,
+  MachineSummary,
   OnboardingApi,
   OnboardingError,
   OnboardingResult,
@@ -78,6 +79,42 @@ const store = new Map<string, MockRecord>();
 /** Clears the in-memory store. Tests call this; nothing in the app should. */
 export function resetMockOnboarding(): void {
   store.clear();
+}
+
+/** How long after signing the mock says the machine went in. */
+const MOCK_DAYS_TO_INSTALLATION = 14;
+
+/**
+ * Walks the mock's installation forward one state: unallocated → allocated → installed.
+ *
+ * Step 6 is the one step nothing in the wizard completes. A real record moves when we
+ * allocate a unit and again when a technician signs Schedule A on site — neither of which
+ * a preview can wait for, so without this the only reachable rendering of the step is the
+ * empty one and the two that carry actual particulars would ship unlooked at.
+ *
+ * Preview only. Reached through `previewAdvanceInstallation` in
+ * `client/src/lib/onboardingApi.ts`, because a component importing this module directly is
+ * what the mock/live seam exists to prevent. Returns the machine as it now stands, or null
+ * if this token has no record yet.
+ */
+export function advanceMockInstallation(token: string): MachineSummary | null {
+  const record = store.get(token);
+  if (!record) return null;
+  const { machine, gymId, timestamps } = record.state;
+
+  if (machine.deviceNo === null) {
+    machine.deviceNo = `MBP-${gymId.slice(-4)}-01`;
+    machine.serialNumber = `MBP1-2026-${gymId.slice(-4)}`;
+  } else if (machine.installationDate === null && timestamps.signedAt) {
+    // Derived from the signature rather than read off a clock, so the same walk through
+    // the preview always produces the same date.
+    const signed = Date.parse(timestamps.signedAt);
+    machine.installationDate = new Date(signed + MOCK_DAYS_TO_INSTALLATION * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+  }
+
+  return { ...machine };
 }
 
 // ── Seed ────────────────────────────────────────────────────────────────────
@@ -173,10 +210,12 @@ function fail(code: OnboardingError["code"], message: string, extra: Partial<Onb
  * `currentStep + 1` would knock them backwards.
  */
 function recomputeStep(completed: OnboardingStep[]): OnboardingStep {
-  for (const step of [1, 2, 3, 4, 5] as OnboardingStep[]) {
+  for (const step of ONBOARDING_STEPS) {
     if (!completed.includes(step)) return step;
   }
-  return 5;
+  // Every step done: stay on the last one. It is the installation record, and it reads
+  // as a record once it is complete rather than turning into a sixth blank screen.
+  return ONBOARDING_STEPS[ONBOARDING_STEPS.length - 1];
 }
 
 function complete(state: OnboardingState, step: OnboardingStep): void {

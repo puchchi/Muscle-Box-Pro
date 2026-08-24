@@ -224,7 +224,7 @@ describe("what it refuses to take from the network", () => {
     // `currentStep` drives which screen renders. A 9 from a confused server would send the
     // wizard to a step that does not exist; leaving it absent keeps the gym where it is and
     // shows the message, which is recoverable.
-    for (const currentStep of [0, 6, 9, "2", 2.5, null]) {
+    for (const currentStep of [0, 7, 9, "2", 2.5, null]) {
       fetchMock.mockReset();
       respond(409, { code: "wrong_step", message: "Moved on.", currentStep });
       const result = await apiRequest("POST", "/onboarding/ack");

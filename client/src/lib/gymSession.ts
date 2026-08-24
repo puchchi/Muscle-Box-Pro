@@ -168,11 +168,11 @@ export async function signOutOfPortal(): Promise<void> {
 /**
  * Set a password against a single-use handle.
  *
- * The same `POST /gym/account` the onboarding wizard's last step calls, reached the other way
- * round: there, the handle is the onboarding invite and setting a password is the final act of
- * a five-step flow; here, an admin has issued a set-password handle for a gym that has
- * forgotten its password, and a person has relayed the link. One route, because from the
- * server's side both are "this handle proves who you are, take a password".
+ * The same `POST /gym/account` the onboarding wizard's step 5 calls, reached the other way
+ * round: there, the handle is the onboarding invite and setting a password is the last thing
+ * the gym does before installation; here, an admin has issued a set-password handle for a gym
+ * that has forgotten its password, and a person has relayed the link. One route, because from
+ * the server's side both are "this handle proves who you are, take a password".
  *
  * **There is no self-service reset, and this function is not one.** It cannot be reached
  * without a handle somebody at MuscleBoxPro deliberately issued. Delivery is a human — the

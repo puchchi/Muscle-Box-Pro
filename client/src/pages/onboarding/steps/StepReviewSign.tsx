@@ -56,7 +56,13 @@ const AGREEMENT = ISSUED_AGREEMENT;
  * all of v2.1's blocking markers, so this path is currently dormant rather than dead:
  * it is what stops a future v2_3 being issued half-drafted.
  */
-export default function StepReviewSign({ state, readOnly, isSubmitting, actions }: StepViewProps) {
+export default function StepReviewSign({
+  state,
+  readOnly,
+  isSubmitting,
+  goToStep,
+  actions,
+}: StepViewProps) {
   /** Null until this client has rendered the text and hashed it for itself. */
   const [check, setCheck] = useState<IssuedAgreementCheck | null>(null);
   const [hasReadToEnd, setHasReadToEnd] = useState(false);
@@ -177,8 +183,8 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
       ) : (
         <SignPanel
           legalEntityName={state.details.legalEntityName}
-          defaultName={state.details.signatoryName}
-          defaultDesignation={state.details.signatoryDesignation}
+          signatoryName={state.details.signatoryName}
+          signatoryDesignation={state.details.signatoryDesignation}
           contentHash={check?.ok ? check.contentHash : null}
           hasReadToEnd={hasReadToEnd}
           readPercent={readPercent}
@@ -197,6 +203,7 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
           }
           previewOtp={IS_MOCK_ONBOARDING ? PREVIEW_OTP : null}
           isSubmitting={isSubmitting}
+          onReviewDetails={() => goToStep(1)}
           onRequestOtp={actions.requestSigningOtp}
           onSign={handleSign}
         />

@@ -110,7 +110,14 @@ const machineStatus = z.enum(["allocated", "installed", "servicing", "replaced",
  * from a confused server would drive the panel to a step that does not exist. Same reasoning
  * as `asStep` in `apiClient.ts`.
  */
-const step = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]);
+const step = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+  z.literal(5),
+  z.literal(6),
+]);
 
 // ── The list ────────────────────────────────────────────────────────────────
 

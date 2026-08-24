@@ -129,7 +129,12 @@ const responsibilities = {
  * in as a sixth. Steps 1–5 are the wizard's own steps: they carry these numbers in
  * `shared/onboarding/steps.ts`, in the onboarding progress rail and in the invitation
  * email. Calling the demo request "step 1" here would have every gym open its link
- * and find that "Step 1 of 5" was the thing this page called step 2.
+ * and find that "Step 1 of 6" was the thing this page called step 2.
+ *
+ * The wizard's step 6 — installation — is not in the list below for the mirror-image
+ * reason: this section runs from demo to dashboard, and installation comes after the
+ * dashboard exists. What this page owes a visitor about it is that we do it and that the
+ * term counts from it, and both are said above.
  */
 const firstMove = {
   icon: Send,
@@ -644,7 +649,7 @@ export default function GymPartnership() {
           <SectionHeading
             eyebrow="Getting started"
             title="From demo to dashboard"
-            blurb="Placement is invite-only. If your gym is a fit after the demo we send one link with all five steps on it. Stop partway and pick up later."
+            blurb="Placement is invite-only. If your gym is a fit after the demo we send one link that walks you through every step. Stop partway and pick up later."
           />
 
           {/*

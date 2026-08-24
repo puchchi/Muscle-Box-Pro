@@ -7,7 +7,7 @@ import { AlertCircle, ArrowLeft, Info, Lock, Pencil, ShieldCheck } from "lucide-
 import { Button } from "@/components/ui/button";
 import { scrollIntoViewGently } from "@/lib/motion";
 import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
-import { stepMeta } from "@shared/onboarding/steps";
+import { STEP_META, stepMeta } from "@shared/onboarding/steps";
 import type { OnboardingError } from "@shared/onboarding/types";
 import OnboardingIntro from "./OnboardingIntro";
 import ProgressRail from "./ProgressRail";
@@ -17,6 +17,7 @@ import StepPartnership from "./steps/StepPartnership";
 import StepReviewSign from "./steps/StepReviewSign";
 import StepDeposit from "./steps/StepDeposit";
 import StepDone from "./steps/StepDone";
+import StepInstallation from "./steps/StepInstallation";
 import type { StepViewProps } from "./types";
 
 /**
@@ -41,6 +42,7 @@ const STEP_COMPONENTS: Record<number, ComponentType<StepViewProps>> = {
   3: StepReviewSign,
   4: StepDeposit,
   5: StepDone,
+  6: StepInstallation,
 };
 
 /**
@@ -162,8 +164,8 @@ export default function OnboardingFlow({ token }: { token: string }) {
       style={{ "--onboarding-chrome": `${chromeHeight}px` } as React.CSSProperties}
     >
       {/*
-        Six focusable things (logo, five rail steps) sit between the top of the
-        document and the form. On a keyboard that is six tabs per step, every step.
+        Seven focusable things (logo, six rail steps) sit between the top of the
+        document and the form. On a keyboard that is seven tabs per step, every step.
       */}
       <a
         href="#onboarding-step"
@@ -176,7 +178,7 @@ export default function OnboardingFlow({ token }: { token: string }) {
 
       {/*
         Sticky, because these steps are long — step 1 is eleven fields and step 3 is a
-        contract. Losing "which of five am I on, and can I go back" the moment you
+        contract. Losing "which one am I on, and can I go back" the moment you
         start scrolling is the difference between a wizard and a wall of forms.
       */}
       <div ref={railRef} className="sticky top-0 z-30">
@@ -417,8 +419,10 @@ function LoadingScreen() {
       </div>
       <div className="bg-white border-b border-gray-200 py-4">
         <div className={`${SHELL} flex gap-2`} aria-hidden="true">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex-1 space-y-2">
+          {/* One placeholder per step, off the same list the rail draws, so the skeleton
+              cannot end up a column short of the thing it is standing in for. */}
+          {STEP_META.map((meta) => (
+            <div key={meta.step} className="flex-1 space-y-2">
               <div className="h-6 w-6 rounded-full bg-gray-100 animate-pulse" />
               <div className="h-1 rounded-full bg-gray-100" />
             </div>
