@@ -149,7 +149,7 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <InShort />
 
       {/*
@@ -233,9 +233,14 @@ function InShort() {
         This is a summary and the agreement below is what binds, so tap a clause number to read the
         real thing.
       </p>
+      {/*
+        A fixed first column, not a flex row: `§6` and `§12.4` are different widths, so
+        eleven summaries began at eleven different left edges. The order of the items is
+        editorial (see `PLAIN_LANGUAGE`) and untouched — this is only the alignment.
+      */}
       <ul role="list" className="space-y-3">
         {PLAIN_LANGUAGE.map((item) => (
-          <li key={item.clause} className="flex items-start gap-3">
+          <li key={item.clause} className="grid grid-cols-[4rem_1fr] items-start">
             <a
               href={`#${sectionAnchor(item.section)}`}
               /*
@@ -243,7 +248,7 @@ function InShort() {
                 smallest type on the step, on the one element that is also a tap target.
                 `primary-ink` and a taller row fix both.
               */
-              className="text-xs font-bold text-primary-ink bg-primary/10 hover:bg-primary/20 rounded px-2 py-1 flex-shrink-0 tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              className="text-xs font-bold text-primary-ink bg-primary/10 hover:bg-primary/20 rounded px-2 py-1 justify-self-start tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               data-testid={`in-short-link-${item.clause}`}
             >
               §{item.clause}

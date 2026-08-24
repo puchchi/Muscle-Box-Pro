@@ -117,6 +117,27 @@ describe("OnboardingFlow — the rail", () => {
     expect(screen.getByTestId("mobile-step-title")).toHaveTextContent("Confirm your details");
     expect(screen.getByText("Step 1 of 5")).toBeInTheDocument();
   });
+
+  /**
+   * The phone's one bar and the desktop's five have to be the same measurement.
+   *
+   * The bar was drawn from `completedSteps.length`, so on step 2 with step 1 behind it the
+   * desktop rail filled two of five while the phone filled one — and the phone is the
+   * layout where the bar is the only sense of progress there is room for. Asserted at
+   * step 1 as well as step 2, because the bug was invisible at the first step (0 done, 1
+   * filled, both a fifth of the way apart) and only opened up as the flow ran.
+   */
+  it("fills the phone's bar by the same rule the desktop rail's five bars use", async () => {
+    const user = await open();
+    expect(screen.getByTestId("mobile-progress-bar")).toHaveStyle({ transform: "scaleX(0.2)" });
+
+    await completeDetails(user);
+    await waitFor(() =>
+      expect(screen.getByTestId("rail-step-2")).toHaveAttribute("aria-current", "step"),
+    );
+    // Step 1 done and step 2 on screen: two of five, not one.
+    expect(screen.getByTestId("mobile-progress-bar")).toHaveStyle({ transform: "scaleX(0.4)" });
+  });
 });
 
 describe("OnboardingFlow — step 1 to step 2", () => {
@@ -278,13 +299,53 @@ describe("OnboardingFlow — step 2 states the restrictions", () => {
     }
   });
 
+  /**
+   * The clause chips are only useful if they can be followed.
+   *
+   * A gym owner checking this summary against the real thing scrolls the agreement,
+   * and the agreement is in numerical order — so a list that runs §3, §14, §21, §12.4,
+   * §5.6 asks them to scroll back twice and reads as no order at all. The count in the
+   * sentence above the list is derived from the list for the same reason "In short"
+   * derives its own: a hardcoded "All five" is the one claim that goes stale silently.
+   */
+  it("lists the restrictions in the order the agreement does, and counts them itself", async () => {
+    await reachStepTwo();
+    const block = screen.getByTestId("worth-knowing");
+    const text = block.textContent ?? "";
+    const positions = ["§3", "§5.6", "§12.4", "§14", "§21"].map((clause) =>
+      text.indexOf(clause),
+    );
+    expect(positions.every((at) => at >= 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    expect(block).toHaveTextContent("The 5 restrictions");
+
+    // Numbered, and an `ol` rather than a `ul` painted to look like one: the sentence
+    // says there are five, so the list has to let a reader count them. Read off the
+    // first cell of each row rather than the block's text, where "5." would also match
+    // the "§5.6" two columns over.
+    const rows = block.querySelectorAll("ol > li");
+    expect(rows).toHaveLength(5);
+    expect([...rows].map((row) => row.firstElementChild?.textContent)).toEqual([
+      "1.",
+      "2.",
+      "3.",
+      "4.",
+      "5.",
+    ]);
+  });
+
   it("describes the machine from the shared spec and what the gym has to provide", async () => {
     await reachStepTwo();
     expect(screen.getByTestId("machine-model")).toHaveTextContent("MuscleBoxPro MBP-1");
     // Spelled out rather than "76×60×180", because the question is whether it fits.
     expect(screen.getByTestId("machine-panel")).toHaveTextContent("180 cm tall");
     expect(screen.getByTestId("what-we-need")).toBeInTheDocument();
-    expect(screen.getByTestId("timeline")).toHaveTextContent("Site survey");
+    // The survey is on the timeline, and the timeline says whose move each step is — two
+    // of the five are the gym's, which is the question a reader brings to this list.
+    const timeline = screen.getByTestId("timeline");
+    expect(timeline).toHaveTextContent("We survey the site");
+    expect(timeline).toHaveTextContent("You sign");
+    expect(timeline).toHaveTextContent("You pay the deposit");
   });
 
   /**
@@ -611,6 +672,26 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
     // a future version carries a blocks-send marker, which is what agreement-v2-2.test.ts
     // asserts is currently not the case.
     expect(screen.queryByTestId("agreement-not-issuable")).not.toBeInTheDocument();
+  });
+
+  /**
+   * Reading progress reaches a screen reader as a progressbar, not as part of a control's name.
+   *
+   * The figure used to be plain text inside the `<summary>` that opens the contents, which
+   * made it part of that control's accessible name — so the name changed about a hundred
+   * times over one read of the document, and a name that mutates while the control is
+   * focused is re-announced on every change. Moving it to a `progressbar` means it is
+   * available on demand and quiet in between. `100` here because jsdom lays nothing out and
+   * `useReadingPercent` deliberately treats an unmeasurable document as scrolled.
+   */
+  it("exposes reading progress without putting it in the contents control's name", async () => {
+    await reachStepThree();
+    const bar = screen.getByRole("progressbar", { name: "Agreement read" });
+    expect(bar).toHaveAttribute("aria-valuenow", "100");
+    expect(bar).toHaveAttribute("aria-valuetext", "100% read");
+    // The visible figure stays, and stays out of the accessible name of the summary.
+    expect(screen.getByTestId("reading-progress")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByRole("group", { name: "Contents" })).toBeInTheDocument();
   });
 
   it("will not sign until both assertions are ticked", async () => {

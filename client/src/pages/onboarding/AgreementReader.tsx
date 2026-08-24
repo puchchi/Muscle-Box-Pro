@@ -147,7 +147,19 @@ export default function AgreementReader({
             <span className="text-xs font-bold uppercase tracking-wide text-foreground">
               Contents
             </span>
+            {/*
+              `aria-hidden`, and the progress is exposed by the bar below instead.
+
+              A `<summary>` is a control, and its accessible name is the text inside it — so
+              with this figure in the name, the name was "Contents 3% read", then "Contents
+              4% read", a hundred times over one read of the document. A control whose name
+              mutates under a screen reader while it is focused is announced again on each
+              change, which turns the one control that reveals the table of contents into a
+              stream of numbers. Sighted readers keep the number; it is the same glance as
+              the bar and cheaper to read than a bar.
+            */}
             <span
+              aria-hidden="true"
               className="text-xs text-muted-foreground ml-auto tabular-nums"
               data-testid="reading-progress"
             >
@@ -176,11 +188,31 @@ export default function AgreementReader({
             </ul>
           </nav>
         </details>
-        {/* The number beside "Contents" is the accessible version of this. */}
-        <div className="h-0.5 bg-gray-200" aria-hidden="true">
+        {/*
+          The bar carries the progress for everybody, which is why it is no longer
+          `aria-hidden`: a `progressbar` with a value is read on demand and, unlike text in
+          a control's name, is not announced on every change. `aria-valuetext` because
+          "47" on its own is a number without a unit.
+        */}
+        <div
+          role="progressbar"
+          aria-label="Agreement read"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+          aria-valuetext={`${percent}% read`}
+          className="h-0.5 bg-gray-200"
+        >
+          {/*
+            `scaleX` on a full-width bar, not an animated `width` — the same correction the
+            progress rail carries, and it matters more here: this one is driven by the scroll
+            position, so a `width` transition put a relayout of the sticky bar into frames
+            that already have forty-seven sections of contract to paint. Transform stays on
+            the compositor.
+          */}
           <div
-            className="h-full bg-primary transition-[width] duration-150"
-            style={{ width: `${percent}%` }}
+            className="h-full w-full bg-primary origin-left transition-transform duration-150"
+            style={{ transform: `scaleX(${percent / 100})` }}
           />
         </div>
       </div>
@@ -252,7 +284,7 @@ function SectionView({
  * width the lines ran to about 130, which is roughly double the length at which the eye
  * starts losing its place on the way back to the left margin.
  */
-const PROSE = "text-sm text-gray-700 leading-relaxed max-w-[68ch]";
+const PROSE = "text-sm text-gray-700 leading-relaxed max-w-[56ch]";
 
 function BlockView({
   block,
@@ -468,10 +500,25 @@ function useReadingPercent(ref: React.RefObject<HTMLElement | null>): number {
     measure();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
+    /*
+      The document's own height, which neither `scroll` nor `resize` reports.
+
+      Every section is a `<details open>` that a gym can fold away, and folding one changes
+      `rect.height` under a percentage computed from it. Without this the figure went stale
+      until the next scroll — and in the one case that matters it could not be un-staled at
+      all: fold enough sections and the document is shorter than the viewport, so there is
+      nothing left to scroll and no event to recompute on, leaving the sign panel locked at
+      whatever percentage it happened to be showing. Absent in jsdom, where `measure()`
+      returns 100 for an unlaid-out element anyway.
+    */
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
+    observer?.observe(element);
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
+      observer?.disconnect();
     };
   }, [ref]);
 

@@ -68,6 +68,21 @@ const STEPS_WITH_FIELD_ERROR_SUMMARY: ReadonlySet<number> = new Set([1]);
  */
 const SHELL = "max-w-3xl mx-auto px-4 sm:px-6";
 
+/**
+ * The prose measure, and why it is `56ch` rather than the `65ch` that looks right.
+ *
+ * Every paragraph in this flow carries `max-w-[56ch]`. It was `68ch`, chosen against the
+ * usual 65–75 characters a line — but `ch` is the advance width of a *zero*, and in Plus
+ * Jakarta Sans a zero is 0.6em while the average character in running English is about
+ * 0.45em. So `68ch` bought 40.8em of line, which is around 90 characters, not 68: a
+ * quarter past the top of the band, on a page that is almost entirely prose. Counted off
+ * step 2's milestone paragraph, which wrapped at "…of cumulative net profit. Profit is".
+ *
+ * `56ch` ≈ 33.6em ≈ 74 characters, which is inside the band with the measurement error
+ * pointing the right way. Anything expressed in `ch` against a proportional font is an
+ * estimate; if the typeface changes, this number has to be recounted rather than kept.
+ */
+
 export default function OnboardingFlow({ token }: { token: string }) {
   const {
     state,

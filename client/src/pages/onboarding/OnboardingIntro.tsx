@@ -85,10 +85,10 @@ export default function OnboardingIntro({
         the eye tracks without losing its place, and it was the longest line on the
         first screen a gym ever sees.
       */}
-      <p className="text-sm text-muted-foreground leading-relaxed max-w-[68ch]">
+      <p className="text-sm text-muted-foreground leading-relaxed max-w-[56ch]">
         Five short steps: your details, your terms, the agreement, the refundable deposit, and your
-        dashboard password. Nothing is committed until you sign in step 3, and the deposit can wait
-        until after that.
+        dashboard password. Nothing is committed until you sign the agreement at step 3, and the
+        deposit can wait until after that.
       </p>
 
       {/*
@@ -129,7 +129,7 @@ export default function OnboardingIntro({
 
       <div className="mt-5 pt-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-5">
         {/*
-          Not capped to 68ch like the paragraph above, on purpose: at 12px inside a flex
+          Not capped to the measure like the paragraph above, on purpose: at 12px inside a flex
           row this line already sits well inside the comfortable measure, and capping it
           would fold a one-line caption onto two for no gain.
         */}

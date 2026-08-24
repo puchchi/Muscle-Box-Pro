@@ -45,6 +45,23 @@ export default function ProgressRail({
   const active = STEP_META.find((m) => m.step === viewStep);
 
   /**
+   * The mobile bar, filled by the same rule the desktop rail's five bars use.
+   *
+   * It was `completedSteps.length / 5`, which is a different measurement from the one
+   * beside it at every width: on step 2 with step 1 done, the desktop rail draws two
+   * filled bars out of five and the phone drew a bar at 20%. Same state, same product,
+   * two answers — and the phone's was the pessimistic one, on the layout where the bar
+   * is the *only* sense of progress there is room for.
+   *
+   * "Done" and "on screen" are the same predicate as `isDone || isViewing` below, so a
+   * gym looking back at step 1 sees the bar retreat to match the rail rather than stay
+   * ahead of it. The "N done" count next to it is the other, stricter fact, and stays.
+   */
+  const filledSteps = STEP_META.filter(
+    (meta) => completedSteps.includes(meta.step) || meta.step === viewStep,
+  ).length;
+
+  /**
    * What a screen reader hears instead of a coloured circle.
    *
    * Keyed off `currentStep`, not `viewStep`. `canView` also allows the step the server
@@ -81,7 +98,8 @@ export default function ProgressRail({
           */}
           <div
             className="h-full w-full rounded-full bg-primary origin-left transition-transform duration-300"
-            style={{ transform: `scaleX(${completedSteps.length / STEP_META.length})` }}
+            style={{ transform: `scaleX(${filledSteps / STEP_META.length})` }}
+            data-testid="mobile-progress-bar"
           />
         </div>
 

@@ -96,7 +96,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5" data-testid="deposit-amount">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -104,7 +104,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
               Refundable security deposit
             </h2>
             <p className="text-3xl font-black text-foreground mt-1 tracking-tight">{amount}</p>
-            <p className="text-sm text-gray-700 mt-1 max-w-[68ch]">
+            <p className="text-sm text-gray-700 mt-1 max-w-[56ch]">
               One payment, held for the whole term. Not a fee, not rent, and not part-payment for the
               machine.
             </p>
@@ -124,7 +124,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
               <dt className="text-xs font-bold text-primary-ink bg-primary/10 rounded px-2 py-0.5 flex-shrink-0 tabular-nums">
                 §{fact.clause}
               </dt>
-              <dd className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">{fact.text}</dd>
+              <dd className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">{fact.text}</dd>
             </div>
           ))}
         </dl>
@@ -148,7 +148,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
             and the step advances on its own when the webhook lands. Someone not watching
             the screen otherwise gets no indication that either happened.
           */}
-          <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]" role="status" aria-live="polite">
+          <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]" role="status" aria-live="polite">
             {checkedAndNotFound
               ? "We still can't see it. Bank transfers and UPI usually land in seconds but can take a few minutes. This page updates itself, and you can close the tab. If it hasn't cleared in an hour, reply to our email and we'll trace it."
               : "This page checks by itself every few seconds. You can safely close the tab, because we confirm the payment from our own records, not from this browser, so nothing depends on you staying here."}
@@ -175,7 +175,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           data-testid="deposit-deferred"
         >
           <h2 className="text-sm font-bold text-amber-900">Still outstanding</h2>
-          <p className="text-sm text-amber-900 leading-relaxed mt-1 max-w-[68ch]">
+          <p className="text-sm text-amber-900 leading-relaxed mt-1 max-w-[56ch]">
             You chose to pay this later, which is fine: your agreement stands and the site survey can
             go ahead. Installation is what waits for the {amount}. The link below is the same one in
             your email.
@@ -211,7 +211,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
       )}
 
       {status === "not_started" && canAct && (
-        <p className="text-xs text-gray-700 leading-relaxed max-w-[68ch]">
+        <p className="text-xs text-gray-700 leading-relaxed max-w-[56ch]">
           Paying later does not hold anything up except installation, and it does not change your
           agreement. We'll email the same link and it stays in your dashboard under Deposit.
         </p>
@@ -276,7 +276,7 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         <Wallet className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
         Your payment link is ready
       </h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
+      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
         {amount} to MuscleBoxPro, on Razorpay. UPI, netbanking, card or NEFT, whatever your
         accounts team prefers. We've emailed the same link, so this is not your only chance at it.
       </p>
@@ -297,7 +297,7 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         <span className="sr-only">(opens in a new tab)</span>
       </a>
 
-      <p className="text-sm text-gray-700 leading-relaxed mt-3 flex items-start gap-2 max-w-[68ch]">
+      <p className="text-sm text-gray-700 leading-relaxed mt-3 flex items-start gap-2 max-w-[56ch]">
         <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           <strong className="text-foreground">You don't have to be the one who pays.</strong> Forward
@@ -348,7 +348,7 @@ function PaidPanel({
         <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" aria-hidden="true" />
         Deposit received: {amount}
       </h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
+      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
         Thank you. A receipt is on its way to <strong className="text-foreground">{email}</strong>, and
         it stays in your dashboard under Deposit. It is refundable within 30 days of the machine being
         collected, less anything owing.
@@ -363,7 +363,7 @@ function PaidPanel({
         </dl>
       )}
 
-      <p className="text-xs text-gray-700 leading-relaxed mt-3 flex items-start gap-2 max-w-[68ch]">
+      <p className="text-xs text-gray-700 leading-relaxed mt-3 flex items-start gap-2 max-w-[56ch]">
         <Receipt className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           Keep the reference. It is what we both quote when the deposit is refunded at the end of the
@@ -378,7 +378,17 @@ function Fact({ label, value, mono }: { label: string; value: string; mono?: boo
   return (
     <div className="min-w-0">
       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">{label}</dt>
-      <dd className={`text-sm text-foreground mt-0.5 truncate ${mono ? "font-mono" : "font-semibold"}`}>
+      {/*
+        `title` alongside the `truncate`. Two columns of this at 375px is about 150px a
+        cell, and a receipt number is the one value on the screen that has to be readable
+        in full — it is what the gym quotes back to us when the deposit is refunded two
+        years from now. Truncation with no way to recover the rest is a dead end on
+        exactly that value, and the same fix step 5 already gives the fingerprint.
+      */}
+      <dd
+        title={value}
+        className={`text-sm text-foreground mt-0.5 truncate ${mono ? "font-mono" : "font-semibold"}`}
+      >
         {value}
       </dd>
     </div>

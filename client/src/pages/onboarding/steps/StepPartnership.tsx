@@ -5,10 +5,13 @@ import {
   ArrowLeft,
   BadgeIndianRupee,
   CalendarClock,
+  Calculator,
   CheckCircle2,
+  ClipboardList,
+  Clock,
   Handshake,
   Megaphone,
-  Ruler,
+  Package,
   ShieldCheck,
   Wrench,
   Zap,
@@ -16,7 +19,7 @@ import {
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { MACHINE_SPEC, dimensionsSpelled } from "@shared/machine/spec";
-import { INDICATIVE_ECONOMICS, PARTNERSHIP, formatInr } from "@shared/partnership/summary";
+import { PARTNERSHIP, formatInr } from "@shared/partnership/summary";
 import type { MachineSummary, OnboardingTerms } from "@shared/onboarding/types";
 import type { StepViewProps } from "../types";
 
@@ -31,8 +34,8 @@ import type { StepViewProps } from "../types";
  * deliberately.** A gym owner surprised by §14 in month three is a dispute; one who
  * read it here is a partner. The temptation is to make this page pure sell, and the
  * "Worth knowing" block below exists to resist that. If someone later asks to move
- * those five items further down or into a collapsed panel, the answer is no — they
- * are the reason "I have read and agree" can be a true statement in step 3.
+ * those items further down or into a collapsed panel, the answer is no — they are the
+ * reason "I have read and agree" can be a true statement on the step after this one.
  *
  * Continuing records `partnership_ack_at`: cheap to store, and it is the evidence
  * that the commercials were shown before the contract was.
@@ -47,10 +50,10 @@ export default function StepPartnership({
   const { terms, machine } = state;
 
   return (
-    <div className="space-y-5">
-      <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">
+    <div className="space-y-6">
+      <p className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">
         These are the terms on <strong className="text-foreground">{state.gymDisplayName}</strong>'s
-        record, not a brochure. Every figure below is what your agreement will say in step 3.
+        record, not a brochure. Every figure below is what the agreement you sign next will say.
       </p>
 
       {/*
@@ -92,12 +95,24 @@ export default function StepPartnership({
       </div>
 
       {/* ── The detail behind them ─────────────────────────────────────────── */}
-      <Panel title="The detail">
+      {/*
+        An icon, because two of the five panels on this step carried one and three did not,
+        which on a six-panel page meant the eye had nothing consistent to jump between — and
+        it left "The detail" with no mark to separate it from the four bold `dt`s underneath,
+        all of them `text-sm` and all of them dark. `Calculator` for the panel that holds
+        every figure the cards above could not fit into three words.
+
+        `py-2.5`, not `py-3`. At `py-3` two adjacent rows sat 24px apart inside a card
+        while the cards themselves sat 20px apart, so the page read as one continuous
+        list of eleven things rather than six groups. The rows now clear 20px and the
+        stack clears 24px, which is the order those two gaps should be in.
+      */}
+      <Panel title="The detail" icon={Calculator}>
         <dl className="divide-y divide-gray-200" data-testid="terms-list">
           {detailRows(terms).map((row) => (
-            <div key={row.label} className="py-3 first:pt-0 last:pb-0">
+            <div key={row.label} className="py-2.5 first:pt-0 last:pb-0">
               <dt className="text-sm font-semibold text-foreground">{row.label}</dt>
-              <dd className="text-sm text-gray-700 leading-relaxed mt-0.5 max-w-[68ch]">{row.body}</dd>
+              <dd className="text-sm text-gray-700 leading-relaxed mt-0.5 max-w-[56ch]">{row.body}</dd>
             </div>
           ))}
         </dl>
@@ -112,20 +127,54 @@ export default function StepPartnership({
           <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0" aria-hidden="true" />
           Worth knowing before you sign
         </h2>
-        <p className="text-sm text-gray-700 leading-relaxed mb-3 max-w-[68ch]">
-          The restrictions that come with a machine we own and run. All five are in the agreement you
-          will read next, and they are here so none of them is a surprise.
+        {/*
+          The count is derived, not typed. It said "All five" over a list rendered from
+          `RESTRICTIONS`, which is the same trap "In short" already fell into once: the
+          sentence claiming the list is complete is exactly the sentence that goes stale
+          silently when someone adds a sixth item.
+        */}
+        <p className="text-sm text-gray-700 leading-relaxed mb-3 max-w-[56ch]">
+          The {RESTRICTIONS.length} restrictions that come with a machine we own and run. Every one
+          of them is in the agreement you read next, in the order you will meet them there, so none
+          of them is a surprise.
         </p>
-        <ul role="list" className="space-y-2.5">
-          {RESTRICTIONS.map((item) => (
-            <li key={item.clause} className="flex items-start gap-2.5">
-              <span className="text-xs font-bold text-amber-900 bg-amber-100 rounded px-2 py-0.5 flex-shrink-0 tabular-nums">
-                {item.clause}
+        {/*
+          An `ol`, and the count is visible.
+
+          The plain "1." to "5." is what makes the sentence above checkable: a reader told
+          there are five of these can see that they have read five, and can say "the third
+          one" on a phone call.
+
+          It used to carry a §-chip beside the numeral too — "§3", "§5.6" — which went
+          straight to that clause in the agreement on the next step. Removed deliberately:
+          two markers on every row meant the restriction itself started 80px in, and a gym
+          owner reading a plain-language summary is not the reader who wants a citation.
+          `RESTRICTIONS` still records which clause each item summarises (see its docstring),
+          so the mapping is one grep away for anyone checking this list is honest — it is
+          just no longer on screen. Note that this is now the only place the summary can
+          drift from the document without a reader being able to tell.
+
+          Two fixed-width columns rather than a flex row: the numeral column is sized once
+          so all five sentences share a left edge. Five sentences with five different left
+          edges read as five unrelated notes.
+
+          The numeral is `aria-hidden`: an `ol` already announces "1 of 5", and the visible
+          copy of it would make that "one, one, the machine stays…". Same reason the timeline
+          below and step 5's list hide theirs.
+        */}
+        <ol role="list" className="space-y-2.5">
+          {RESTRICTIONS.map((item, index) => (
+            <li key={item.clause} className="grid grid-cols-[1.5rem_1fr] items-start">
+              <span
+                aria-hidden="true"
+                className="text-xs font-bold text-amber-900 py-0.5 tabular-nums"
+              >
+                {index + 1}.
               </span>
-              <span className="text-sm text-foreground leading-relaxed max-w-[68ch]">{item.text}</span>
+              <span className="text-sm text-foreground leading-relaxed max-w-[56ch]">{item.text}</span>
             </li>
           ))}
-        </ul>
+        </ol>
       </div>
 
       {/* ── Both sides of the arrangement ──────────────────────────────────── */}
@@ -141,27 +190,51 @@ export default function StepPartnership({
           </ul>
         </Panel>
 
-        <Panel title="What we need from you" icon={Ruler} testId="what-we-need">
+        {/*
+          `ClipboardList`, not `Ruler`: the list under it is a power point, access and a
+          {formatInr} deposit as well as floor space, and a ruler labelled the one item
+          that happens to be a measurement.
+
+          The ticks are `text-primary`, like the panel beside them. They were
+          `text-accent` — the flow's magenta, and the only magenta in any of the five
+          steps — which made two lists of the same glyph, side by side, look like one of
+          them meant something different. The headings and their icons are what separate
+          "ours" from "yours"; a second brand hue on the same tick reads as an accident.
+        */}
+        <Panel title="What we need from you" icon={ClipboardList} testId="what-we-need">
           <ul role="list" className="space-y-2">
             {PARTNERSHIP.gymProvides.map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
-                <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span>{item}</span>
               </li>
             ))}
             <li className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
-              <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
+              {/*
+                A noun phrase, like the three items above it. It read "…, payable after
+                signing, and you can defer it" — a clause bolted onto a list of things,
+                and the only item on the screen that changed grammatical person halfway
+                through.
+              */}
               <span>
-                The refundable deposit of {formatInr(terms.securityDepositInr)}, payable after
-                signing, and you can defer it
+                The refundable deposit of {formatInr(terms.securityDepositInr)} after signing, which
+                you can defer
               </span>
             </li>
           </ul>
         </Panel>
       </div>
 
-      {/* ── The actual machine ─────────────────────────────────────────────── */}
-      <Panel title="The machine you're getting" testId="machine-panel">
+      {/*
+        ── The actual machine ───────────────────────────────────────────────
+        "The machine we'll install", not "the machine you're getting". Four hundred pixels
+        above this, §3 says the machine stays our property and the gym is its custodian
+        rather than its owner — so a heading promising they are getting one contradicts the
+        block whose whole job is to be honest about that. This says the same warm thing
+        ("one is coming, at no cost to you") without the ownership claim.
+      */}
+      <Panel title="The machine we'll install" icon={Package} testId="machine-panel">
         <div className="flex flex-col sm:flex-row gap-4">
           {/*
             `next/image`, not a raw `<img>`. The asset behind `MACHINE_SPEC.imageSrc` is a
@@ -188,19 +261,30 @@ export default function StepPartnership({
             <p className="text-sm font-bold text-foreground" data-testid="machine-model">
               {machine.model}
             </p>
-            <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
+            <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[56ch]">
               {machineBlurb(machine)}
             </p>
-            <p className="text-sm text-gray-700 leading-relaxed mt-2 max-w-[68ch]">
-              Its serial number and installation date go into Schedule A at installation, which you
-              and our technician sign on site. See step 5.
+            {/*
+              "See step 5." is gone. It pointed at a screen this gym has not reached, past
+              a panel of its own numbered 1 to 5 and a rail numbered 1 to 5 — three
+              competing sequences for one reader. The sentence says when the second
+              signature happens, and the timeline directly below says it again in place.
+            */}
+            <p className="text-sm text-gray-700 leading-relaxed mt-2 max-w-[56ch]">
+              On the day it arrives, its serial number and that date are written into Schedule A of
+              your agreement, and you and our technician sign that schedule together on site.
             </p>
           </div>
         </div>
       </Panel>
 
       {/* ── What happens after this ────────────────────────────────────────── */}
-      <Panel title="From here to your first payout" testId="timeline">
+      {/* `Clock`, the same icon step 5 gives "What happens next" — the two panels are the
+          same list of the same milestones seen from either side of the signature, and
+          reaching for a second sequence icon would have said they were different things.
+          `CalendarClock` is already spoken for by the "Initial term" card further up this
+          screen, and one glyph meaning two things on one page is worse than no glyph. */}
+      <Panel title="From here to your first payout" icon={Clock} testId="timeline">
         <ol role="list" className="space-y-3">
           {timeline(terms).map((item, index) => (
             <li key={item.title} className="flex items-start gap-3">
@@ -212,7 +296,7 @@ export default function StepPartnership({
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">{item.body}</p>
+                <p className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">{item.body}</p>
               </div>
             </li>
           ))}
@@ -221,9 +305,10 @@ export default function StepPartnership({
 
       {!readOnly && (
         <div className="space-y-3 pt-1">
-          <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">
-            Continuing records that you have read these terms. It is not a signature. The agreement
-            comes next, and you can still stop there.
+          <p className="text-sm text-gray-700 leading-relaxed max-w-[56ch]">
+            Continuing records that you've read these terms. It is not a signature and commits you
+            to nothing — the full agreement comes next, and you're free to take your time over it
+            before you decide.
           </p>
           {/*
             `sm:flex-row-reverse` with the primary action first in the DOM, matching step 4: the
@@ -232,6 +317,21 @@ export default function StepPartnership({
             it. On a phone they stack, primary on top.
           */}
           <div className="flex flex-col sm:flex-row-reverse items-stretch sm:items-center gap-3">
+            {/*
+              "Continue to the agreement", not "These terms look right".
+
+              The old label asked a gym to assert something this action does not record and
+              this screen has not earned. `ackPartnership` writes `partnership_ack_at` — an
+              audit fact that the commercials were shown before the contract was — and the
+              sentence directly above the button says exactly that. A button reading "these
+              terms look right" turns that into an approval, so a gym with a question about
+              the profit share had a choice between endorsing terms it had not finished
+              thinking about and appearing to refuse them.
+
+              This one makes no claim at all. It names where the button goes, which is the
+              part a reader at the bottom of six panels actually wants to know, and it leaves
+              agreeing to the step that asks for a signature.
+            */}
             <Button
               type="button"
               onClick={() => actions.ackPartnership()}
@@ -239,7 +339,7 @@ export default function StepPartnership({
               className="h-11 px-6 rounded-xl font-bold text-sm cursor-pointer"
               data-testid="button-continue"
             >
-              {isSubmitting ? "Working..." : "These terms look right"}
+              {isSubmitting ? "Working..." : "Continue to the agreement"}
             </Button>
             {/*
               The way back to step 1.
@@ -317,45 +417,57 @@ function headlineCards(terms: OnboardingTerms): HeadlineCard[] {
 }
 
 /**
- * The four things the cards can't say in three words.
+ * The four things the cards can't say in three words — in one line each, not four.
  *
- * The milestone row leads with "whichever comes first" rather than the cup count,
- * and names the margin the second test depends on. Which of the two lands first is a
- * fact about this machine's economics, not about the contract — see
- * `bindingMilestone()` — so the row states both and shows the arithmetic rather than
- * quoting one figure the gym may then watch not happen.
+ * Every row is a bold label that already carries the fact, so the body underneath only
+ * has to carry the qualifier. Three things came out on that principle:
+ *
+ * **The worked arithmetic.** The milestone row used to show its own sums — "at a typical
+ * ₹55 of profit a cup that second test lands at roughly 9,091 cups" — which is a third of
+ * this panel's text spent on a figure derived from `INDICATIVE_ECONOMICS`, marketing
+ * midpoints rather than anything in this gym's terms row. Worse, it is the one number here
+ * a gym might hold us to and we have not promised: 9,091 is what *our* example machine
+ * does. The example belongs on `/gym-partnership`, where it still is, with the ranges and
+ * the caveats around it. What survives is "whichever comes first", which is the fact.
+ *
+ * **The clause reference.** "Profit is what clause 7 defines it as: sales less…" made a
+ * gym look up a clause to be told what the same sentence then told them. The definition
+ * stays; the pointer goes. The §-chips in "Worth knowing" are different and stay — those
+ * are a summary of restrictions offering a way to check itself against the document, and
+ * the chip is the check.
+ *
+ * **The restatements.** "never re-ratios: it does not step up and it does not step down"
+ * is one fact said twice, and "a minimum of ₹1,000 a period whatever the machine sells" is
+ * what a minimum is.
+ *
+ * The milestone row still leads with "whichever comes first" rather than the cup count. A
+ * gym told "15,000 cups" and then stepped up at 9,000 has been undersold its own deal, and
+ * which of the two tests binds is a fact about this machine's margins rather than about the
+ * contract — see `bindingMilestone()`.
  */
 function detailRows(terms: OnboardingTerms) {
-  const netProfitPerCupInr =
-    INDICATIVE_ECONOMICS.avgSellingPriceInr - INDICATIVE_ECONOMICS.directCostPerCupInr;
-  const cupsToProfit = Math.ceil(terms.milestoneNetProfitInr / netProfitPerCupInr);
-
   return [
     {
       label: `Your share rises to ${terms.gymSharePctAfterMilestone}% at the milestone`,
       body: `Whichever comes first of ${terms.milestoneCups.toLocaleString("en-IN")} paid cups or ${formatInr(
         terms.milestoneNetProfitInr,
-      )} of cumulative net profit. Profit is what clause 7 defines it as: sales less the direct cost of ingredients, cup and payment processing. At a typical ${formatInr(
-        netProfitPerCupInr,
-      )} of profit a cup that second test lands at roughly ${cupsToProfit.toLocaleString(
-        "en-IN",
-      )} cups. A machine with thinner margins reaches the cup count first instead, and your share rises on whichever happens.`,
+      )} of cumulative net profit — sales less the direct cost of ingredients, cup and payment processing.`,
     },
     {
       label: `Advertising stays at ${terms.advertisingGymSharePct}% for the whole term`,
-      body: "Your cut of what the screen on the machine earns. Unlike the profit share, this one never re-ratios: it does not step up and it does not step down.",
+      body: "Your cut of what the screen on the machine earns. Unlike the profit share, it never steps up or down.",
     },
     {
       label: "Electricity is reimbursed, not estimated",
       body: `${formatInr(terms.electricityInrPerBlock)} for every completed ${terms.electricityCupsPerBlock.toLocaleString(
         "en-IN",
-      )} paid cups, assessed over each ${terms.electricityReviewWindowMonths}-month review period rather than monthly, with a minimum of ${formatInr(
+      )} paid cups, assessed over ${terms.electricityReviewWindowMonths}-month periods rather than monthly, with a floor of ${formatInr(
         PARTNERSHIP.electricity.floorInrPerWindow,
-      )} a period whatever the machine sells.`,
+      )} a period.`,
     },
     {
       label: `You are paid within ${terms.settlementDaysAfterMonthEnd} days of month-end`,
-      body: "Against a statement showing cups, gross sales, direct costs and your share. Your dashboard shows the running numbers in the meantime, marked provisional until the statement.",
+      body: "Against a statement showing cups, gross sales, direct costs and your share. Your dashboard carries running figures in the meantime, marked provisional.",
     },
   ];
 }
@@ -364,45 +476,83 @@ function detailRows(terms: OnboardingTerms) {
  * The restrictions, with clause numbers.
  *
  * Clause references are deliberate: they let a gym owner — or their lawyer — go
- * straight to the text in step 3 and check that this summary is honest.
+ * straight to the text on the next step and check that this summary is honest.
+ *
+ * **Document order, ascending, and it must stay that way.** This ran §3, §14, §21,
+ * §12.4, §5.6 — an escalating narrative (whose machine it is, what you can't do to it,
+ * what we can do about it, what it can cost you) that nothing on the screen signposts.
+ * What a reader sees is five clause numbers in no order at all, which undercuts the
+ * point of printing clause numbers: checking the summary against the agreement means
+ * scrolling the agreement, and the agreement is in numerical order. So is this.
  */
 const RESTRICTIONS = [
   { clause: "§3", text: "The machine stays our property throughout. You are its custodian, not its owner." },
-  { clause: "§14", text: "You cannot open it, refill it, or change what goes into a shake. Ingredients and hygiene are ours, and it is a food-safety line rather than a preference." },
-  { clause: "§21", text: "You cannot move the machine, even within your own premises, without our written agreement." },
-  { clause: "§12.4", text: `If the machine persistently underperforms we may remove it on ${PARTNERSHIP.noticeDays.mbpUnderperformance} days' notice rather than leave it occupying your floor.` },
   { clause: "§5.6", text: "Your deposit can be drawn against loss or avoidable damage while the machine is in your custody. It is returned in full if there is nothing owing." },
+  { clause: "§12.4", text: `If the machine persistently underperforms we may remove it on ${PARTNERSHIP.noticeDays.mbpUnderperformance} days' notice rather than leave it occupying your floor.` },
+  { clause: "§14", text: "You cannot open the machine, refill it, or change what goes into a shake. Ingredients and hygiene are our responsibility, and that is a food-safety line rather than a preference." },
+  { clause: "§21", text: "You cannot move the machine, even within your own premises, without our written agreement." },
 ] as const;
 
-/** Machine facts: the model from the gym's own record, the hardware from the spec. */
+/**
+ * Machine facts: the model from the gym's own record, the hardware from the spec.
+ *
+ * Two sentences rather than a spec sheet with commas in it. The second half used to run
+ * "27-inch touch screen, 7 canisters holding 28 litres, 4G + WiFi, card and UPI" — four
+ * unrelated facts in one comma list, which is how a datasheet reads and not how a paragraph
+ * does. The dimensions stay first and stay spelled out, because the question a gym owner is
+ * actually asking is whether it fits against a particular wall.
+ */
 function machineBlurb(machine: MachineSummary): string {
-  const fitted = machine.accessories ? ` Fitted with: ${machine.accessories.toLowerCase()}.` : "";
+  // A sentence, not a labelled field. "Fitted with: wall mount kit." was a colon dropped
+  // into prose, and the only line in the panel that read as a form.
+  const fitted = machine.accessories
+    ? ` This one also comes fitted with ${machine.accessories.toLowerCase()}.`
+    : "";
   return (
-    `${dimensionsSpelled()}, roughly the footprint of a locker bay. ` +
-    `${MACHINE_SPEC.displayInches}-inch touch screen, ${MACHINE_SPEC.canisters} canisters holding ` +
-    `${MACHINE_SPEC.capacityLitres} litres, ${MACHINE_SPEC.connectivity}, card and UPI.${fitted}`
+    `${dimensionsSpelled()} — roughly the footprint of a locker bay. ` +
+    `It has a ${MACHINE_SPEC.displayInches}-inch touch screen and ${MACHINE_SPEC.canisters} ` +
+    `canisters holding ${MACHINE_SPEC.capacityLitres} litres between them, connects over ` +
+    `${MACHINE_SPEC.connectivity}, and takes both card and UPI.${fitted}`
   );
 }
 
-/** Sign → deposit → survey → installation → first payout. */
+/**
+ * Sign → deposit → survey → installation → first payout.
+ *
+ * Every title names **whose move it is**, because that is the one thing a reader wants from
+ * a list like this and the one thing it was not saying. It ran "You sign", "Deposit", "Site
+ * survey", "Installation", "First payout" — one sentence followed by four bare nouns, which
+ * left a gym owner to work out from each body which of the five were waiting on them. Two of
+ * the five are; the titles now say so at a glance.
+ *
+ * Deliberately no durations on the middle three. Survey and installation lead times are not
+ * in `PARTNERSHIP` or anywhere else in this repo, and a timeline is exactly the screen where
+ * an invented "within a week" becomes a promise a gym holds us to.
+ */
 function timeline(terms: OnboardingTerms) {
   return [
-    { title: "You sign", body: "Online, in step 3. We countersign and email you both copies." },
     {
-      title: "Deposit",
-      body: `${formatInr(terms.securityDepositInr)} by card, UPI or bank transfer, or defer it and we'll send the link.`,
+      title: "You sign",
+      // "Online, in step 3" sat inside a circle labelled "1", under a rail whose own
+      // step 3 is this list's step 1. "The next screen" is the same fact without
+      // asking a reader to reconcile two numbering schemes.
+      body: "Online, on the next screen. We countersign the same document and email both copies to you.",
     },
     {
-      title: "Site survey",
-      body: "We check the spot, the power point and the water access before anything ships.",
+      title: "You pay the deposit",
+      body: `${formatInr(terms.securityDepositInr)} by card, UPI or bank transfer. If the timing is awkward you can defer it, and we'll email you a payment link instead.`,
     },
     {
-      title: "Installation",
-      body: `We deliver, install and commission it. You and our technician sign Schedule A on site, and your ${terms.termMonths}-month term starts from that date.`,
+      title: "We survey the site",
+      body: "We visit to check the spot, the power point and the water access before anything ships.",
     },
     {
-      title: "First payout",
-      body: `Within ${terms.settlementDaysAfterMonthEnd} days of the first month-end, with the statement behind it.`,
+      title: "We install it",
+      body: `We deliver, install and commission the machine. You and our technician sign Schedule A on site, and your ${terms.termMonths}-month term runs from that date.`,
+    },
+    {
+      title: "We pay you",
+      body: `Within ${terms.settlementDaysAfterMonthEnd} days of the first month-end, alongside the statement showing the cups sold and how your share was worked out.`,
     },
   ];
 }

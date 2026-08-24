@@ -94,9 +94,17 @@ export const PARTNERSHIP = {
     "Payment processing",
   ],
 
-  /** What the gym provides — the full obligation set is §§13–24. */
+  /**
+   * What the gym provides — the full obligation set is §§13–24.
+   *
+   * Metric first on the floor space, feet in brackets. Onboarding step 2 puts this list
+   * a few hundred pixels above the machine's own dimensions from `MACHINE_SPEC`, which
+   * are centimetres ("76 cm wide, 60 cm deep, 180 cm tall") — so a gym owner deciding
+   * whether it fits against a particular wall was being asked to convert one of the two
+   * figures. The feet stay because that is what a floor gets measured in here.
+   */
   gymProvides: [
-    "Floor space of roughly 3 ft × 3 ft",
+    "Floor space of roughly 90 × 90 cm (3 ft × 3 ft)",
     "A standard power point",
     "Reasonable access for restocking and servicing",
   ],
