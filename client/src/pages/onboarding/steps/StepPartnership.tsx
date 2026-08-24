@@ -352,10 +352,14 @@ export default function StepPartnership({
 
       {!readOnly && (
         <div className="space-y-3 pt-1">
+          {/*
+            One line. It was three, and two of them said the same thing twice: "not a
+            signature", "commits you to nothing", "free to take your time". A reader at the
+            bottom of six panels needs to know this button is not the signature and where it
+            goes, which is what the button itself says.
+          */}
           <p className="text-sm text-gray-700 leading-relaxed">
-            Continuing records that you've read these terms. It is not a signature and commits you
-            to nothing — the full agreement comes next, and you're free to take your time over it
-            before you decide.
+            This only records that you've read the terms. Nothing is committed until you sign.
           </p>
           {/*
             `sm:flex-row-reverse` with the primary action first in the DOM, matching step 4: the
@@ -498,7 +502,7 @@ function detailRows(terms: OnboardingTerms) {
       label: `Your share rises to ${terms.gymSharePctAfterMilestone}% at the milestone`,
       body: `Whichever comes first of ${terms.milestoneCups.toLocaleString("en-IN")} paid cups or ${formatInr(
         terms.milestoneNetProfitInr,
-      )} of cumulative net profit — sales less the direct cost of ingredients, cup and payment processing.`,
+      )} of cumulative net profit, which is sales less the direct cost of ingredients, cup and payment processing.`,
     },
     {
       label: `Advertising stays at ${terms.advertisingGymSharePct}% for the whole term`,
@@ -556,7 +560,7 @@ function machineBlurb(machine: MachineSummary): string {
     ? ` This one also comes fitted with ${machine.accessories.toLowerCase()}.`
     : "";
   return (
-    `${dimensionsSpelled()} — roughly the footprint of a locker bay. ` +
+    `${dimensionsSpelled()}, roughly the footprint of a locker bay. ` +
     `It has a ${MACHINE_SPEC.displayInches}-inch touch screen and ${MACHINE_SPEC.canisters} ` +
     `canisters holding ${MACHINE_SPEC.capacityLitres} litres between them, connects over ` +
     `${MACHINE_SPEC.connectivity}, and takes both card and UPI.${fitted}`
