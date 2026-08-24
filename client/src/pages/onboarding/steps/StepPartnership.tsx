@@ -113,17 +113,11 @@ export default function StepPartnership({
             <div key={row.label} className="py-2.5 first:pt-0 last:pb-0">
               <dt className="text-sm font-semibold text-foreground">{row.label}</dt>
               {/*
-                No `max-w-[56ch]` here, and none on any of the other card bodies on this
-                step. The measure is for running prose; these are two- and three-line
-                qualifiers sitting inside a card that is already only ~630px wide. Capping
-                them at ~470px wrapped every one of them a third of the way short of the
-                card's own right edge, so each row read as a narrow column with a column of
-                dead space beside it — and the bold `dt` above, which has no cap, ran wider
-                than the sentence explaining it.
-
-                The card padding is the gutter and the shell (`max-w-3xl`) is the measure.
-                `AgreementReader` keeps its cap: forty-seven sections of contract prose is
-                the case the measure exists for.
+                No measure on the body, here or anywhere else on this step — the card edge
+                is the measure. See the note above `SHELL` in `OnboardingFlow` for why: at
+                `max-w-[56ch]` each of these four qualifiers stopped a third of the way
+                short of its own card, under a `dt` that had no cap and so ran wider than
+                the sentence explaining it.
               */}
               <dd className="text-sm text-gray-700 leading-relaxed mt-0.5">{row.body}</dd>
             </div>
@@ -136,7 +130,9 @@ export default function StepPartnership({
         className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5"
         data-testid="worth-knowing"
       >
-        <h2 className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
+        {/* `text-base font-bold`, the same level as the white panels' headings — this block
+            is their peer, not a note attached to one of them. See the scale in `Panel`. */}
+        <h2 className="text-base font-bold text-foreground mb-1.5 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0" aria-hidden="true" />
           Worth knowing before you sign
         </h2>
@@ -146,7 +142,18 @@ export default function StepPartnership({
           sentence claiming the list is complete is exactly the sentence that goes stale
           silently when someone adds a sixth item.
         */}
-        <p className="text-sm text-gray-700 leading-relaxed mb-3">
+        {/*
+          `text-gray-600` and not `gray-700`, which is the one place on this step that colour
+          is doing hierarchy work. This sentence is *about* the list rather than part of it,
+          and at body colour it was three lines of the same ink as the five restrictions
+          under it — the heaviest paragraph in the block sitting above the thing a gym owner
+          is meant to read. A notch lighter puts the restrictions themselves on top, which is
+          the order they should be in. Still 7.5:1 on this amber, well past AA.
+
+          `mb-4`: the items clear 10px of each other, so the gap between them and this
+          framing has to be larger than that or the sentence joins the list as item zero.
+        */}
+        <p className="text-sm text-gray-600 leading-relaxed mb-4">
           The {RESTRICTIONS.length} restrictions that come with a machine we own and run. Every one
           of them is in the agreement you read next, in the order you will meet them there, so none
           of them is a surprise.
@@ -251,27 +258,56 @@ export default function StepPartnership({
         <div className="flex flex-col sm:flex-row gap-4">
           {/*
             `next/image`, not a raw `<img>`. The asset behind `MACHINE_SPEC.imageSrc` is a
-            1.9 MB 1536×1024 PNG, and this renders it at 128px wide on a desktop and about
+            1.9 MB 1536×1024 PNG, and this renders it at 144px wide on a desktop and about
             343px on a phone — so the plain tag spent the better part of two megabytes of a
             gym owner's mobile data on a thumbnail. `sizes` is what makes the srcset useful
             rather than decorative: it tells the browser the real display width, so it
-            fetches a ~128px AVIF here instead of picking off the top of the list.
+            fetches a ~144px AVIF here instead of picking off the top of the list.
             `formats: ["image/avif", "image/webp"]` in next.config.mjs is already set.
 
             Intrinsic dimensions stay, for the reason they were added: without them the
             whole panel below jumped when the image decoded. `next/image` lazy-loads and
             decodes async by default, so those two attributes are gone rather than changed.
+
+            ── Why an aspect ratio and a crop, and not `h-40 object-contain` ──
+
+            This is a flex row, so its default `align-items: stretch` gave the image box the
+            full height of the paragraphs beside it — about 300px — and `sm:h-auto` cannot
+            win against stretch, because stretch resolves a definite cross-size. So a 3:2
+            photo sat `object-contain`ed inside a 144×300 box: an 96px-tall strip of picture
+            with ~100px of `bg-gray-50` above and below it, which is the grey slab that made
+            this panel look broken rather than photographed. `self-stretch sm:self-start` is
+            the half of the fix that stops the stretching — and it has to be written per
+            breakpoint, because on a phone this is a flex *column*, where the cross axis is
+            horizontal and a bare `self-start` would collapse the image to its content width
+            instead of spanning the card.
+
+            The other half is the crop. The machine occupies the middle ~45% of a wide, dark
+            frame — a blurred gym to the left of it and empty floor to the right — so a
+            landscape thumbnail spends more than half its pixels on background. Centre of
+            the machine is x≈730 against an image centre of 768, near enough that the default
+            `object-center` needs no nudging: `aspect-[3/4] object-cover` keeps the full
+            height of the machine and throws away the room around it, which is how the
+            product ends up roughly twice the size in the same corner of the card.
+
+            The phone keeps the photo's own 3:2 and crops nothing. Portrait at `w-full` would
+            be 457px tall on a 375px screen — the machine would push the specs that explain
+            it off the fold, and this panel's job is the sentence about whether it fits
+            against a wall.
           */}
           <Image
             src={MACHINE_SPEC.imageSrc}
             alt={`${machine.model} protein shake machine`}
             width={1536}
             height={1024}
-            sizes="(min-width: 640px) 128px, 100vw"
-            className="w-full sm:w-32 h-40 sm:h-auto object-contain rounded-xl bg-gray-50 flex-shrink-0"
+            sizes="(min-width: 640px) 144px, 100vw"
+            className="w-full sm:w-36 aspect-[3/2] sm:aspect-[3/4] object-cover rounded-xl bg-gray-50 flex-shrink-0 self-stretch sm:self-start"
           />
           <div className="min-w-0">
-            <p className="text-sm font-bold text-foreground" data-testid="machine-model">
+            {/* `font-semibold`, like every other labelled thing inside a panel on this step —
+                the `dt`s in "The detail" and the timeline titles below. Bold at this size is
+                the panel heading's weight, and this sits under one. */}
+            <p className="text-sm font-semibold text-foreground" data-testid="machine-model">
               {machine.model}
             </p>
             <p className="text-sm text-gray-700 leading-relaxed mt-1">{machineBlurb(machine)}</p>
@@ -587,16 +623,30 @@ function Panel({
       data-testid={testId}
     >
       {/*
-        `text-sm font-bold text-foreground`, which is what every other card title in this
-        flow uses — the sign panel, "In short", all four of step 4's and step 5's.
+        `text-base font-bold`, which is what every card title in this flow uses — the sign
+        panel, "In short", all four of step 4's and step 5's. There are four levels of text
+        on these screens and each one is a step down from the one above it:
 
-        These five were 11px uppercase muted, which made each panel heading *smaller and
-        lighter than the rows inside it*: "THE DETAIL" was the least prominent text in a
-        card whose own `dt`s are bold body size. A heading that loses to its content stops
-        working as a heading, and on this step it also meant two different `h2` styles on
-        one screen, since "Worth knowing before you sign" already reads at this weight.
+          16px bold foreground   — a panel heading (this)
+          14px semibold foreground — a labelled thing inside it: a `dt`, a timeline title
+          14px regular gray-700  — the sentence explaining that thing
+          14px/12px gray-600     — framing copy and card captions
+
+        These five started at 11px uppercase muted, which made each heading *smaller and
+        lighter than the rows inside it*. The fix at the time was bold body size, which
+        stopped the heading losing to its content but left it tying with it: "The detail" at
+        `text-sm font-bold` and "Your share rises to 50%…" at `text-sm font-semibold` are
+        one notch of weight apart at the same size, so the panel read as five peer rows
+        rather than a heading over four. Size is the only lever that survives being
+        squinted at, and `--font-display` is an alias of `--font-sans` here, so a heading
+        cannot borrow a second typeface to do the job instead.
+
+        `mb-4`, not `mb-3`. The rows below clear 20px of each other and the heading cleared
+        12px of the first one, which puts the heading *closer to row one than row one is to
+        row two* — the grouping the eye reads is "heading+row1, row2, row3, row4". A heading
+        needs at least as much air beneath it as its content has between its own items.
       */}
-      <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+      <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
         {Icon && <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />}
         {title}
       </h2>

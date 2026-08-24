@@ -414,7 +414,7 @@ function AgreementPreview({ legalName }: { legalName?: string }) {
       <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
         In your agreement
       </h3>
-      <p className="text-sm text-foreground leading-relaxed max-w-[56ch]">
+      <p className="text-sm text-foreground leading-relaxed">
         This Agreement is between <strong>BlendBox Innovations LLP</strong> and{" "}
         {legalName?.trim() ? (
           <strong data-testid="preview-legal-name">{legalName.trim()}</strong>

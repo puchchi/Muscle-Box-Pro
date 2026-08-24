@@ -139,7 +139,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           className="rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5"
           data-testid="deposit-waiting"
         >
-          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
             <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
             Waiting for the payment to clear
           </h2>
@@ -174,7 +174,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5"
           data-testid="deposit-deferred"
         >
-          <h2 className="text-sm font-bold text-amber-900">Still outstanding</h2>
+          <h2 className="text-base font-bold text-amber-900">Still outstanding</h2>
           <p className="text-sm text-amber-900 leading-relaxed mt-1">
             You chose to pay this later, which is fine: your agreement stands and the site survey can
             go ahead. Installation is what waits for the {amount}. The link below is the same one in
@@ -272,7 +272,7 @@ const STATUS_LABEL: Record<string, string> = {
 function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
   return (
     <section className="rounded-2xl border-2 border-primary/30 bg-white p-4 sm:p-5" data-testid="deposit-link-panel">
-      <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+      <h2 className="text-base font-bold text-foreground flex items-center gap-2">
         <Wallet className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
         Your payment link is ready
       </h2>
@@ -344,7 +344,7 @@ function PaidPanel({
       className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5"
       data-testid="deposit-paid"
     >
-      <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+      <h2 className="text-base font-bold text-foreground flex items-center gap-2">
         <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" aria-hidden="true" />
         Deposit received: {amount}
       </h2>

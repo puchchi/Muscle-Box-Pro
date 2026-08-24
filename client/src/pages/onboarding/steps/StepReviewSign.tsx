@@ -227,7 +227,7 @@ function InShort() {
       className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
       data-testid="in-short"
     >
-      <h2 className="text-sm font-bold text-foreground">In short</h2>
+      <h2 className="text-base font-bold text-foreground">In short</h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1 mb-4">
         The {PLAIN_LANGUAGE.length} clauses that decide how this works in practice, in plain words.
         This is a summary and the agreement below is what binds, so tap a clause number to read the
@@ -279,7 +279,7 @@ function PreparingNotice() {
       role="status"
       data-testid="agreement-preparing"
     >
-      <h2 className="text-sm font-bold text-foreground">Preparing your copy</h2>
+      <h2 className="text-base font-bold text-foreground">Preparing your copy</h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
         One moment. We're issuing your agreement. Nothing you've entered is lost.
       </p>
@@ -344,7 +344,7 @@ function SignedSummary({
     >
       <CheckCircle2 className="w-5 h-5 text-primary-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
       <div className="min-w-0">
-        <h2 className="text-sm font-bold text-foreground">Signed</h2>
+        <h2 className="text-base font-bold text-foreground">Signed</h2>
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
           Version {version}
           {signedAt ? `, signed on ${formatAgreementDate(signedAt)}` : ""}

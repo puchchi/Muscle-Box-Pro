@@ -80,12 +80,12 @@ export default function OnboardingIntro({
         Let's get {gymDisplayName} set up
       </h1>
       {/*
-        Capped like every other paragraph in the flow. Uncapped it ran the full 672px of
-        the card at 14px — around 100 characters a line, half again past the 65–75 that
-        the eye tracks without losing its place, and it was the longest line on the
-        first screen a gym ever sees.
+        Uncapped, like the rest of the flow's screen copy — see the measure note in
+        `OnboardingFlow`. This ran at `max-w-[56ch]`, which stopped it two-thirds of the
+        way across its own card and left a visible column of white beside it; the card is
+        the frame the reader sees, so the paragraph fills it.
       */}
-      <p className="text-sm text-muted-foreground leading-relaxed max-w-[56ch]">
+      <p className="text-sm text-muted-foreground leading-relaxed">
         Five short steps: your details, your terms, the agreement, the refundable deposit, and your
         dashboard password. Nothing is committed until you sign the agreement at step 3, and the
         deposit can wait until after that.

@@ -155,7 +155,7 @@ export default function SignPanel({
       data-testid="sign-panel"
     >
       {/* An `h2`, like the other card titles on this step, under the shell's `h1`. */}
-      <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+      <h2 className="text-base font-bold text-foreground flex items-center gap-2">
         <PenLine className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
         Sign the agreement
       </h2>
@@ -364,7 +364,9 @@ function Locked({
         <Lock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-foreground">{title}</p>
+        {/* This heads its own card, so it reads at the card-title level the rest of the flow
+            uses — 16px bold. See the scale documented on `Panel` in `StepPartnership`. */}
+        <p className="text-base font-bold text-foreground">{title}</p>
         <p className="text-sm text-gray-700 leading-relaxed mt-1">{body}</p>
         {typeof progress === "number" && (
           <p className="text-xs font-semibold text-gray-700 mt-2 tabular-nums" data-testid="sign-locked-progress">

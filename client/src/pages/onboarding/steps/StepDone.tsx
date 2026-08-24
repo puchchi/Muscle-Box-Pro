@@ -58,7 +58,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         <div className="flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div className="min-w-0">
-            <h2 className="text-sm font-bold text-foreground">
+            <h2 className="text-base font-bold text-foreground">
               Signed. {state.gymDisplayName} is on board.
             </h2>
             <p className="text-sm text-gray-700 leading-relaxed mt-1">
@@ -123,7 +123,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         A "Download" button that 404s would be worse than this sentence.
       */}
       <p
-        className="text-sm text-gray-700 leading-relaxed flex items-start gap-2 max-w-[56ch]"
+        className="text-sm text-gray-700 leading-relaxed flex items-start gap-2"
         data-testid="agreement-copy-note"
       >
         <FileText className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -140,7 +140,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
       {/* ── The account ────────────────────────────────────────────────────── */}
       {isActive ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
-          <h2 className="text-sm font-bold text-foreground">Your dashboard is ready</h2>
+          <h2 className="text-base font-bold text-foreground">Your dashboard is ready</h2>
           <p className="text-sm text-gray-700 leading-relaxed mt-1">
             Sign in at <strong className="text-foreground">{email}</strong> with the password you
             chose.
@@ -160,7 +160,9 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
             <div>
               <label
                 htmlFor="portal-password"
-                className="text-sm font-bold text-foreground block mb-1"
+                // `font-semibold`: an input label is a labelled thing, not a card title, and
+                // 16px bold is what card titles read at on this step.
+                className="text-sm font-semibold text-foreground block mb-1"
               >
                 Choose a password for your dashboard
               </label>
@@ -220,9 +222,10 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
         data-testid="what-happens-next"
       >
-        {/* The weight every other card title on this step uses, for the same reason as
-            step 2's panels: this one heads the list a gym reads before it closes the tab. */}
-        <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+        {/* The level every other card title on this step reads at, for the same reason as
+            step 2's panels: this one heads the list a gym reads before it closes the tab.
+            `mb-4` so the heading clears the list by more than the list's own `space-y-3`. */}
+        <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
           <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
           What happens next
         </h2>
@@ -268,7 +271,7 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
         className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
         data-testid="deposit-outcome"
       >
-        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+        <h2 className="text-base font-bold text-foreground flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
           Deposit received: {amount}
         </h2>
@@ -297,7 +300,7 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
       className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
       data-testid="deposit-outcome"
     >
-      <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+      <h2 className="text-base font-bold text-foreground flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
         Deposit still to pay: {amount}
       </h2>

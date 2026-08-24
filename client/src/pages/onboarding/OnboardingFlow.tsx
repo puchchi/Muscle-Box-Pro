@@ -69,28 +69,31 @@ const STEPS_WITH_FIELD_ERROR_SUMMARY: ReadonlySet<number> = new Set([1]);
 const SHELL = "max-w-3xl mx-auto px-4 sm:px-6";
 
 /**
- * The prose measure, and why it is `56ch` rather than the `65ch` that looks right.
+ * The prose measure. **This shell is it. Screen copy carries no `max-w-[Nch]` of its own.**
  *
- * **Where it applies: unboxed page prose and long-form reading, not card bodies.** It was
- * on every paragraph in the flow, including the two- and three-line qualifiers inside
- * cards — and a card here is only about 630px wide inside its padding, so a `56ch` body
- * wrapped roughly 170px short of the card's own right edge. That read as a narrow column
- * of text with a column of dead space beside it, five or six times down a screen, with the
- * bold labels above each body (which never carried the cap) running wider than the sentence
- * explaining them. Card copy now fills its card: the padding is the gutter and this shell
- * is the measure. The cap stays on the ledes, the standalone notes between cards, and
- * `AgreementReader`'s `PROSE` — forty-seven sections of contract is the case it exists for.
+ * Every paragraph in the flow used to carry `max-w-[56ch]` — about 470px at `text-sm`.
+ * Against a 768px shell that is a card roughly 630px wide inside its padding, and unboxed
+ * notes about 720px, so each paragraph stopped a third of the way short of the edge the
+ * reader can actually see and left a column of white beside itself. Five or six of those
+ * down one screen is the whole page reading as a narrow strip pinned to the left, and
+ * inside the cards it was worse: the bold label above each body never had the cap, so the
+ * heading ran wider than the sentence explaining it.
  *
- * The value itself: it was `68ch`, chosen against the
- * usual 65–75 characters a line — but `ch` is the advance width of a *zero*, and in Plus
- * Jakarta Sans a zero is 0.6em while the average character in running English is about
- * 0.45em. So `68ch` bought 40.8em of line, which is around 90 characters, not 68: a
- * quarter past the top of the band, on a page that is almost entirely prose. Counted off
- * step 2's milestone paragraph, which wrapped at "…of cumulative net profit. Profit is".
+ * The frames on these screens — the card edge, the shell — are now what set line length,
+ * and the card padding is the gutter. That buys around 95 characters a line at `text-sm`,
+ * past the 65–75 the eye tracks best, and it is the deliberate trade: this copy is short
+ * (one to three lines, under a heading that says what it is), and for short copy a visible
+ * ragged gap costs more than a long line does.
  *
- * `56ch` ≈ 33.6em ≈ 74 characters, which is inside the band with the measurement error
- * pointing the right way. Anything expressed in `ch` against a proportional font is an
- * estimate; if the typeface changes, this number has to be recounted rather than kept.
+ * The one exception is `AgreementReader`'s `PROSE`, which keeps `56ch`. Forty-seven
+ * sections of contract read top to bottom is the case the measure exists for — there the
+ * reader is tracking back to the left margin hundreds of times, and its card is wide
+ * enough that uncapped lines ran to about 130 characters.
+ *
+ * If a measure is ever reintroduced here, note that `ch` lies about this: it is the advance
+ * width of a *zero*, and in Plus Jakarta Sans a zero is 0.6em while the average character
+ * in running English is about 0.45–0.5em. `56ch` ≈ 33.6em ≈ 74 characters, not 56, and the
+ * count has to be recounted rather than kept if the typeface changes.
  */
 
 export default function OnboardingFlow({ token }: { token: string }) {
