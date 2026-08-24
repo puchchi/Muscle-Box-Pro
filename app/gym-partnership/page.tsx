@@ -3,14 +3,14 @@ import GymPartnership from "@/pages/GymPartnership";
 import { PARTNERSHIP_FAQ } from "@shared/partnership/faq";
 
 export const metadata: Metadata = {
-  title: "Gym Partnership — Terms & Revenue Share | MuscleBoxPro",
+  title: "Gym Partnership: Terms & Revenue Share | MuscleBoxPro",
   description:
     "The MuscleBoxPro gym partnership in plain English: ₹0 for the machine, a refundable ₹50,000 deposit, 20% of net profit rising to 50%, advertising revenue share, electricity reimbursed, and payouts within 15 days of month-end.",
   alternates: { canonical: "/gym-partnership" },
   openGraph: {
     type: "website",
     url: "/gym-partnership",
-    title: "Gym Partnership — Terms & Revenue Share | MuscleBoxPro",
+    title: "Gym Partnership: Terms & Revenue Share | MuscleBoxPro",
     description:
       "What a MuscleBoxPro machine costs your gym, how the profit share works, who pays for what, and how to get started. The full standard offer, published openly.",
     images: [

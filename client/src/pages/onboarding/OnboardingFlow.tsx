@@ -1,9 +1,10 @@
 "use client";
 
-import type { ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, Info, Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { scrollIntoViewGently } from "@/lib/motion";
 import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
 import { stepMeta } from "@shared/onboarding/steps";
 import type { OnboardingError } from "@shared/onboarding/types";
@@ -40,6 +41,15 @@ const STEP_COMPONENTS: Record<number, ComponentType<StepViewProps>> = {
   5: StepDone,
 };
 
+/**
+ * One measure for the header, the rail and the body.
+ *
+ * They were `max-w-4xl` / `max-w-4xl` / `max-w-3xl`, which put the rail's left edge
+ * 48px outside the card stack it labels — visible as a misalignment on any screen
+ * wider than 896px.
+ */
+const SHELL = "max-w-3xl mx-auto px-4 sm:px-6";
+
 export default function OnboardingFlow({ token }: { token: string }) {
   const {
     state,
@@ -55,6 +65,11 @@ export default function OnboardingFlow({ token }: { token: string }) {
     actions,
   } = useOnboarding(token);
 
+  // Before the early returns, so the hook order is the same on every path.
+  const railRef = useRef<HTMLDivElement>(null);
+  const chromeHeight = useStickyChromeHeight(railRef, !isLoading && !fatalError);
+  const headingRef = useStepFocus(viewStep, isLoading);
+
   if (isLoading) return <LoadingScreen />;
   if (fatalError) return <TokenProblem error={fatalError} />;
   if (!state) return <TokenProblem error={{ code: "network", message: "Something went wrong." }} />;
@@ -64,23 +79,59 @@ export default function OnboardingFlow({ token }: { token: string }) {
   const isBehind = viewStep < state.currentStep;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div
+      className="min-h-screen bg-gray-50 flex flex-col"
+      /*
+        Read by anything that has to sit below the sticky rail — the agreement
+        reader's own contents bar, and the `scroll-mt` on every clause anchor. Measured
+        rather than hardcoded, because the rail is two different heights at two
+        breakpoints and grows if a step title wraps.
+      */
+      style={{ "--onboarding-chrome": `${chromeHeight}px` } as React.CSSProperties}
+    >
+      {/*
+        Six focusable things (logo, five rail steps) sit between the top of the
+        document and the form. On a keyboard that is six tabs per step, every step.
+      */}
+      <a
+        href="#onboarding-step"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-xl focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to this step
+      </a>
+
       <Header gymName={state.gymDisplayName} />
 
-      <ProgressRail
-        currentStep={state.currentStep}
-        viewStep={viewStep}
-        completedSteps={state.completedSteps}
-        isSigned={state.isSigned}
-        canView={canView}
-        onSelect={goToStep}
-      />
+      {/*
+        Sticky, because these steps are long — step 1 is eleven fields and step 3 is a
+        contract. Losing "which of five am I on, and can I go back" the moment you
+        start scrolling is the difference between a wizard and a wall of forms.
+      */}
+      <div ref={railRef} className="sticky top-0 z-30">
+        <ProgressRail
+          currentStep={state.currentStep}
+          viewStep={viewStep}
+          completedSteps={state.completedSteps}
+          isSigned={state.isSigned}
+          canView={canView}
+          onSelect={goToStep}
+        />
+        {IS_MOCK_ONBOARDING && <MockBanner />}
+      </div>
 
-      {IS_MOCK_ONBOARDING && <MockBanner />}
-
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      {/*
+        `tabIndex={-1}` is what makes the skip link above actually skip. Chrome and
+        Firefox set a focus navigation starting point at a fragment target; Safari does
+        not, so without this the next Tab after "Skip to this step" went back to the top
+        of the document — on the browser most emailed links open in.
+      */}
+      <main id="onboarding-step" tabIndex={-1} className={`flex-1 w-full ${SHELL} py-8 sm:py-10 outline-none`}>
         <div className="mb-6">
-          <h1 className="text-xl sm:text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1">
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-xl sm:text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1 outline-none"
+          >
             {meta.title}
           </h1>
           <p className="text-muted-foreground text-sm">{meta.blurb}</p>
@@ -116,18 +167,92 @@ export default function OnboardingFlow({ token }: { token: string }) {
   );
 }
 
+// ── Shell behaviour ─────────────────────────────────────────────────────────
+
+/**
+ * The height of the sticky rail, in pixels, kept current across breakpoints.
+ *
+ * Published as a CSS variable rather than consumed in JS, so the things that need to
+ * clear it — the reader's own sticky bar, `scroll-mt` on every clause anchor — can say
+ * so in a class instead of being handed a prop. A `ResizeObserver` rather than a
+ * `resize` listener: the rail also changes height when a step title wraps, which no
+ * window event reports.
+ */
+function useStickyChromeHeight(ref: React.RefObject<HTMLElement | null>, ready: boolean): number {
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    const element = ref.current;
+    // `ResizeObserver` is absent in jsdom; the fallback keeps the offset at 0 there,
+    // which is the correct answer for a layout engine that has no sticky positioning.
+    if (!element || !ready || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      setHeight(Math.round(entry.contentRect.height));
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref, ready]);
+
+  return height;
+}
+
+/**
+ * Moves the page to the top of the new step and puts focus on its heading.
+ *
+ * Without this, finishing step 2 — a long page — leaves the viewport most of the way
+ * down step 3 with no indication anything changed, and leaves a keyboard user's focus
+ * on a button that no longer exists, which sends the next Tab back to the top of the
+ * document. Focusing the heading is also what makes a screen reader announce the step
+ * it just landed on.
+ *
+ * Skipped on the first paint: an arriving gym has not navigated anywhere, and stealing
+ * focus on load is its own bug.
+ */
+function useStepFocus(viewStep: number, isLoading: boolean) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const previous = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (isLoading) return;
+    const from = previous.current;
+    previous.current = viewStep;
+    if (from === null || from === viewStep) return;
+    window.scrollTo?.({ top: 0, behavior: "auto" });
+    ref.current?.focus({ preventScroll: true });
+  }, [viewStep, isLoading]);
+
+  return ref;
+}
+
 // ── Chrome ──────────────────────────────────────────────────────────────────
 
 function Header({ gymName }: { gymName: string }) {
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-4">
-        <Link href="/" className="flex-shrink-0">
-          <img src="/assets/logo.png" alt="MuscleBoxPro" className="h-8 sm:h-9 w-auto" />
+      <div className={`${SHELL} h-14 sm:h-16 flex items-center justify-between gap-4`}>
+        <Link
+          href="/"
+          className="flex-shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          {/*
+            Intrinsic size given so the row does not reflow when the logo decodes —
+            the rail and the whole form below it shift otherwise, on the one paint a
+            gym is most likely to be looking at.
+          */}
+          <img
+            src="/assets/logo.png"
+            alt="MuscleBoxPro"
+            width={140}
+            height={36}
+            className="h-8 sm:h-9 w-auto"
+          />
         </Link>
-        <p className="text-xs sm:text-sm text-muted-foreground truncate" data-testid="header-gym-name">
-          {gymName}
-        </p>
+        {gymName && (
+          <p className="min-w-0 text-xs sm:text-sm text-muted-foreground truncate" data-testid="header-gym-name">
+            <span className="sr-only">Onboarding for </span>
+            {gymName}
+          </p>
+        )}
       </div>
     </header>
   );
@@ -136,14 +261,14 @@ function Header({ gymName }: { gymName: string }) {
 function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white py-5">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className={`${SHELL} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}>
         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />
+          <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
           Your progress saves automatically. You can close this and come back to the same link.
         </p>
         <a
           href="mailto:contact@muscleboxpro.com"
-          className="text-xs text-primary font-semibold hover:underline flex-shrink-0"
+          className="text-xs text-primary-ink font-semibold hover:underline flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           Need help?
         </a>
@@ -159,22 +284,51 @@ function Footer() {
  */
 function MockBanner() {
   return (
-    <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
-      <p className="max-w-3xl mx-auto text-[11px] text-amber-800 flex items-center gap-1.5">
-        <Info className="w-3 h-3 flex-shrink-0" />
+    <div className="bg-amber-50 border-b border-amber-200 py-2">
+      <p className={`${SHELL} text-[11px] text-amber-900 flex items-center gap-1.5`}>
+        <Info className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
         Preview mode — nothing here is saved to the database yet, and reloading the page starts over.
       </p>
     </div>
   );
 }
 
+/**
+ * The wait while the token resolves.
+ *
+ * A skeleton of the shell rather than a line of centred text: the text version paints
+ * a full-height empty page and then replaces it wholesale, which reads as a redirect
+ * rather than as loading. This holds the same boxes the real page will fill, so the
+ * layout does not jump when it arrives.
+ *
+ * `role="status"` and the visually-hidden sentence are what a screen reader gets —
+ * pulsing rectangles announce nothing.
+ */
 function LoadingScreen() {
   return (
-    <div
-      className="min-h-screen bg-gray-50 flex items-center justify-center text-muted-foreground text-sm"
-      data-testid="onboarding-loading"
-    >
-      Opening your onboarding...
+    <div className="min-h-screen bg-gray-50 flex flex-col" data-testid="onboarding-loading">
+      <div className="bg-white border-b border-gray-200">
+        <div className={`${SHELL} h-14 sm:h-16 flex items-center`}>
+          <div className="h-8 w-32 rounded-lg bg-gray-100 animate-pulse" />
+        </div>
+      </div>
+      <div className="bg-white border-b border-gray-200 py-4">
+        <div className={`${SHELL} flex gap-2`} aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex-1 space-y-2">
+              <div className="h-6 w-6 rounded-full bg-gray-100 animate-pulse" />
+              <div className="h-1 rounded-full bg-gray-100" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className={`flex-1 w-full ${SHELL} py-8 sm:py-10 space-y-4`} role="status">
+        <p className="sr-only">Opening your onboarding…</p>
+        <div className="h-7 w-2/3 rounded-lg bg-gray-200 animate-pulse" />
+        <div className="h-4 w-1/2 rounded bg-gray-100 animate-pulse" />
+        <div className="h-32 rounded-2xl border border-gray-200 bg-white" />
+        <div className="h-64 rounded-2xl border border-gray-200 bg-white" />
+      </div>
     </div>
   );
 }
@@ -187,9 +341,9 @@ function ReviewingBanner({ isFrozen, onReturn }: { isFrozen: boolean; onReturn()
     >
       <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
         {isFrozen ? (
-          <Lock className="w-4 h-4 text-muted-foreground" />
+          <Lock className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
         ) : (
-          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+          <ArrowLeft className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -205,26 +359,43 @@ function ReviewingBanner({ isFrozen, onReturn }: { isFrozen: boolean; onReturn()
       <Button
         variant="outline"
         onClick={onReturn}
-        className="h-9 rounded-xl text-xs font-semibold flex-shrink-0"
+        className="min-h-11 rounded-xl text-xs font-semibold flex-shrink-0 cursor-pointer"
         data-testid="button-return-to-current"
       >
-        Continue
+        Back to where I was
       </Button>
     </div>
   );
 }
 
-/** A rejected submit. Field-level messages render on the inputs; this is the summary. */
+/**
+ * A rejected submit. Field-level messages render on the inputs; this is the summary.
+ *
+ * `role="alert"` and the scroll: on step 1 the submit button is a screen and a half
+ * below this banner, so a server rejection used to appear somewhere the gym was not
+ * looking and the button simply seemed not to work.
+ */
 function ActionErrorNotice({ error }: { error: OnboardingError }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Via the helper, which drops to an instant jump under `prefers-reduced-motion`.
+    // The stylesheet's blanket override in index.css does not reach here: an explicit
+    // `behavior: "smooth"` beats the computed `scroll-behavior` by spec.
+    scrollIntoViewGently(ref.current, { block: "center" });
+  }, [error]);
+
   return (
     <div
-      className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5"
+      ref={ref}
+      role="alert"
+      className="mb-6 flex items-start gap-3 rounded-2xl border border-red-300 bg-red-50 px-4 py-3.5 scroll-mt-[calc(var(--onboarding-chrome,0px)_+_1rem)]"
       data-testid="action-error"
     >
       <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-        <AlertCircle className="w-4 h-4 text-red-500" />
+        <AlertCircle className="w-4 h-4 text-red-700" aria-hidden="true" />
       </div>
-      <p className="text-sm text-red-700 leading-relaxed">{error.message}</p>
+      <p className="text-sm text-red-800 leading-relaxed">{error.message}</p>
     </div>
   );
 }
@@ -266,26 +437,38 @@ function TokenProblem({ error }: { error: OnboardingError }) {
       <Header gymName="" />
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div
+          role="alert"
           className="w-full max-w-md bg-white border border-gray-200 rounded-2xl p-6 sm:p-8"
           data-testid="token-problem"
         >
           <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
-            <AlertCircle className="w-5 h-5 text-amber-600" />
+            <AlertCircle className="w-5 h-5 text-amber-700" aria-hidden="true" />
           </div>
           <h1 className="text-lg font-display font-black text-foreground uppercase tracking-tight mb-2">
             {title}
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-6">{body}</p>
           {cta && (
-            <a href="mailto:contact@muscleboxpro.com">
-              <Button className="h-11 rounded-xl font-bold text-sm w-full" data-testid="button-token-cta">
-                {cta}
-              </Button>
-            </a>
+            /*
+              `asChild`, so this is one anchor — not a `<button>` inside an `<a>`, which
+              is invalid HTML and leaves the accessible object a button that does
+              nothing. This is the screen a gym with a dead link *only* ever sees, so
+              the one control on it has to work.
+            */
+            <Button
+              asChild
+              className="min-h-11 w-full rounded-xl font-bold text-sm cursor-pointer"
+              data-testid="button-token-cta"
+            >
+              <a href="mailto:contact@muscleboxpro.com">{cta}</a>
+            </Button>
           )}
           <p className="text-xs text-muted-foreground mt-4">
             Already a partner?{" "}
-            <Link href="/gym/login" className="text-primary font-semibold hover:underline">
+            <Link
+              href="/gym/login"
+              className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
               Sign in to your dashboard
             </Link>
           </p>

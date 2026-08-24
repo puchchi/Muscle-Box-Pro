@@ -151,13 +151,13 @@ const moneyRows = [
     // month". The "about N a day" gloss lives here rather than in a paragraph above
     // the table, which stated the same cup count a second time three lines earlier.
     label: `Shakes sold`,
-    detail: `${example.cups.toLocaleString("en-IN")} cups — about ${Math.round(example.cups / 30)} a day`,
+    detail: `${example.cups.toLocaleString("en-IN")} cups, about ${Math.round(example.cups / 30)} a day`,
     amount: null,
   },
   { label: "Gross revenue", detail: `at ${formatInr(INDICATIVE_ECONOMICS.avgSellingPriceInr)} a cup`, amount: example.grossInr },
   {
     label: "Direct costs",
-    detail: `ingredients, cup, consumables — ${formatInr(INDICATIVE_ECONOMICS.directCostPerCupInr)} a cup`,
+    detail: `ingredients, cup, consumables at ${formatInr(INDICATIVE_ECONOMICS.directCostPerCupInr)} a cup`,
     amount: -example.directCostsInr,
   },
   { label: "Net profit", detail: "what the split applies to", amount: example.netProfitInr, emphasis: true },
@@ -456,7 +456,7 @@ export default function GymPartnership() {
                   </div>
                 </div>
                 <p className="text-muted-foreground text-xs leading-relaxed mt-4">
-                  Illustration only — your footfall sets the volume.
+                  Illustration only. Your footfall sets the volume.
                 </p>
               </div>
             </div>
@@ -475,8 +475,8 @@ export default function GymPartnership() {
                     Whichever comes first of{" "}
                     {PARTNERSHIP.milestone.cups.toLocaleString("en-IN")} paid cups or{" "}
                     {formatInr(PARTNERSHIP.milestone.cumulativeNetProfitInr)} of cumulative net
-                    profit — about {milestone.cups.toLocaleString("en-IN")} cups at the margin
-                    above. Thinner margins hit the cup count first.
+                    profit, which is about {milestone.cups.toLocaleString("en-IN")} cups at the
+                    margin above. Thinner margins hit the cup count first.
                   </>
                 }
               />
@@ -644,7 +644,7 @@ export default function GymPartnership() {
           <SectionHeading
             eyebrow="Getting started"
             title="From demo to dashboard"
-            blurb="Placement is invite-only. If your gym is a fit after the demo we send one link with all five steps on it — stop partway and pick up later."
+            blurb="Placement is invite-only. If your gym is a fit after the demo we send one link with all five steps on it. Stop partway and pick up later."
           />
 
           {/*
@@ -800,7 +800,7 @@ export default function GymPartnership() {
               cannot carry small white text at all; see the note on `Section`.
             */}
             <p className="text-white text-[15px] sm:text-lg leading-relaxed mb-8">
-              We will come back honestly — including if your volumes would not justify a machine.
+              We will come back honestly, including if your volumes would not justify a machine.
               No cost, no commitment.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">

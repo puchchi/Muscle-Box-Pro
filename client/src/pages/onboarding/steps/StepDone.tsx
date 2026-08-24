@@ -56,12 +56,12 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         data-testid="signed-confirmation"
       >
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+          <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div className="min-w-0">
-            <p className="text-sm font-bold text-foreground">
+            <h2 className="text-sm font-bold text-foreground">
               Signed. {state.gymDisplayName} is on board.
-            </p>
-            <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+            </h2>
+            <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
               {signedAt ? `Signed on ${formatAgreementDate(signedAt)} by ` : "Signed by "}
               {state.details.signatoryName || "your signatory"}
               {state.details.signatoryDesignation ? `, ${state.details.signatoryDesignation}` : ""}.
@@ -84,14 +84,14 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         */}
         {state.agreement && (
           <dl
-            className="mt-4 pt-3 border-t border-primary/15 grid grid-cols-2 gap-3"
+            className="mt-4 pt-3 border-t border-primary/25 grid grid-cols-2 gap-3"
             data-testid="agreement-record"
           >
             <div>
               <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">
                 Version
               </dt>
-              <dd className="text-xs text-foreground font-semibold mt-0.5">
+              <dd className="text-sm text-foreground font-semibold mt-0.5">
                 {state.agreement.version}
               </dd>
             </div>
@@ -106,7 +106,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
                 to verify the whole thing.
               */}
               <dd
-                className="text-xs text-foreground font-mono mt-0.5 truncate"
+                className="text-sm text-foreground font-mono mt-0.5 truncate"
                 data-testid="agreement-hash-short"
                 title={state.agreement.contentHash}
               >
@@ -123,10 +123,10 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         A "Download" button that 404s would be worse than this sentence.
       */}
       <p
-        className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2"
+        className="text-sm text-gray-700 leading-relaxed flex items-start gap-2 max-w-[68ch]"
         data-testid="agreement-copy-note"
       >
-        <FileText className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+        <FileText className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           Your countersigned PDF is generated and emailed once we counter-sign, usually the same
           working day. It will also live permanently in your dashboard under Agreement, so you never
@@ -140,20 +140,19 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
       {/* ── The account ────────────────────────────────────────────────────── */}
       {isActive ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
-          <p className="text-sm font-bold text-foreground">Your dashboard is ready</p>
-          <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+          <h2 className="text-sm font-bold text-foreground">Your dashboard is ready</h2>
+          <p className="text-sm text-gray-700 leading-relaxed mt-1">
             Sign in at <strong className="text-foreground">{email}</strong> with the password you
             chose.
           </p>
-          <Link href="/gym/dashboard">
-            <Button
-              type="button"
-              className="h-11 px-6 rounded-xl font-bold text-sm mt-4 w-full sm:w-auto"
-              data-testid="link-dashboard"
-            >
+          <Button
+            asChild
+            className="h-11 px-6 rounded-xl font-bold text-sm mt-4 w-full sm:w-auto cursor-pointer"
+          >
+            <Link href="/gym/dashboard" data-testid="link-dashboard">
               Open my dashboard
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       ) : (
         !readOnly && (
@@ -165,7 +164,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
               >
                 Choose a password for your dashboard
               </label>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p id="portal-password-hint" className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">
                 It shows cups sold, revenue, your share and every payout statement. You'll sign in
                 with <strong className="text-foreground">{email}</strong>.
               </p>
@@ -177,11 +176,29 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="At least 8 characters"
-              className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm focus:border-primary focus:bg-white focus:outline-none transition-colors"
+              /*
+                The hint above is part of the field's description, and the error joins it
+                when there is one — without `aria-describedby` a screen reader got the
+                label and nothing else, on the field that decides whether this gym can
+                ever log in. `role="alert"` because the message appears in response to
+                pressing the button.
+              */
+              aria-invalid={error ? true : undefined}
+              aria-describedby={
+                error ? "portal-password-hint error-portal-password" : "portal-password-hint"
+              }
+              className={`w-full h-11 rounded-xl border bg-gray-50 px-3 text-base sm:text-sm text-foreground focus:border-primary focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors ${
+                error ? "border-red-400 bg-red-50" : "border-gray-200"
+              }`}
               data-testid="input-portal-password"
             />
             {error && (
-              <p className="text-xs text-red-600" data-testid="error-portal-password">
+              <p
+                id="error-portal-password"
+                className="text-xs font-medium text-red-700"
+                role="alert"
+                data-testid="error-portal-password"
+              >
                 {error}
               </p>
             )}
@@ -189,7 +206,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
               type="button"
               onClick={createAccount}
               disabled={isSubmitting}
-              className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto"
+              className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
               data-testid="button-continue"
             >
               {isSubmitting ? "Creating..." : "Create my password and open my dashboard"}
@@ -203,20 +220,23 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
         data-testid="what-happens-next"
       >
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" />
+        <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" aria-hidden="true" />
           What happens next
-        </p>
-        <ol className="space-y-3">
+        </h2>
+        <ol role="list" className="space-y-3">
           {nextSteps(state.details.installationAddress, state.terms.termMonths).map(
             (item, index) => (
               <li key={item.title} className="flex items-start gap-3">
-                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span
+                  aria-hidden="true"
+                  className="w-6 h-6 rounded-full bg-primary/10 text-primary-ink text-xs font-bold flex items-center justify-center flex-shrink-0 tabular-nums"
+                >
                   {index + 1}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-foreground">{item.title}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{item.body}</p>
+                  <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">{item.body}</p>
                 </div>
               </li>
             ),
@@ -246,11 +266,11 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
         className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
         data-testid="deposit-outcome"
       >
-        <p className="text-sm font-bold text-foreground flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
+        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
           Deposit received — {amount}
-        </p>
-        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+        </h2>
+        <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
           {paidAt ? `Paid on ${formatAgreementDate(paidAt)}. ` : ""}
           Your receipt is in your email and in your dashboard. It is refundable at the end of the
           term, less anything owing under §5.6.
@@ -261,7 +281,7 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
           see it before the email arrives.
         */}
         {state.depositReceipt && (
-          <p className="text-[11px] text-muted-foreground mt-2" data-testid="deposit-receipt-no">
+          <p className="text-xs text-gray-700 mt-2" data-testid="deposit-receipt-no">
             Receipt <span className="font-mono text-foreground">{state.depositReceipt.receiptNo}</span>
             {state.depositReceipt.method ? ` · paid by ${state.depositReceipt.method}` : ""}
           </p>
@@ -275,11 +295,11 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
       className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
       data-testid="deposit-outcome"
     >
-      <p className="text-sm font-bold text-foreground flex items-center gap-2">
-        <ShieldCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+        <ShieldCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
         Deposit still to pay — {amount}
-      </p>
-      <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+      </h2>
+      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
         {state.depositStatus === "pending"
           ? "We can see a payment in progress. Once it clears we'll email the receipt — nothing more for you to do."
           : `We'll email you a payment link, and it stays in your dashboard under Deposit. The site survey can go ahead in the meantime, but installation waits for the ${amount}.`}

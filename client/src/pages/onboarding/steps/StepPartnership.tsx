@@ -40,7 +40,7 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground leading-relaxed">
+      <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">
         These are the terms on <strong className="text-foreground">{state.gymDisplayName}</strong>'s
         record — not a brochure. Every figure below is what your agreement will say in step 3.
       </p>
@@ -48,23 +48,28 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
       {/* ── The six headlines ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3" data-testid="terms-cards">
         {headlineCards(terms).map((card) => (
-          <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-4">
-            <card.icon className="w-4 h-4 text-primary mb-2" />
-            <p className="font-display font-black text-lg leading-none text-foreground mb-1">
+          <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-4 min-w-0">
+            <card.icon className="w-4 h-4 text-primary mb-2" aria-hidden="true" />
+            {/*
+              `text-base` first: at 375px these are two columns about 160px wide, and
+              "₹1,00,000" or "20% → 35%" at `text-lg` was wider than that. `break-words`
+              is the backstop for a longer figure rather than a horizontal scrollbar.
+            */}
+            <p className="font-display font-black text-base sm:text-lg leading-tight text-foreground mb-1 tabular-nums break-words">
               {card.value}
             </p>
-            <p className="text-[11px] text-muted-foreground leading-tight">{card.label}</p>
+            <p className="text-xs text-muted-foreground leading-tight">{card.label}</p>
           </div>
         ))}
       </div>
 
       {/* ── The detail behind them ─────────────────────────────────────────── */}
       <Panel title="The detail">
-        <dl className="divide-y divide-gray-100" data-testid="terms-list">
+        <dl className="divide-y divide-gray-200" data-testid="terms-list">
           {detailRows(terms).map((row) => (
             <div key={row.label} className="py-3 first:pt-0 last:pb-0">
               <dt className="text-sm font-semibold text-foreground">{row.label}</dt>
-              <dd className="text-xs text-muted-foreground leading-relaxed mt-0.5">{row.body}</dd>
+              <dd className="text-sm text-gray-700 leading-relaxed mt-0.5 max-w-[68ch]">{row.body}</dd>
             </div>
           ))}
         </dl>
@@ -75,21 +80,21 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
         className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5"
         data-testid="worth-knowing"
       >
-        <p className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+        <h2 className="text-sm font-bold text-foreground mb-1 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0" aria-hidden="true" />
           Worth knowing before you sign
-        </p>
-        <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+        </h2>
+        <p className="text-sm text-gray-700 leading-relaxed mb-3 max-w-[68ch]">
           The restrictions that come with a machine we own and run. All five are in the agreement you
           will read next — they are here so none of them is a surprise.
         </p>
-        <ul className="space-y-2.5">
+        <ul role="list" className="space-y-2.5">
           {RESTRICTIONS.map((item) => (
             <li key={item.clause} className="flex items-start gap-2.5">
-              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 rounded px-1.5 py-0.5 mt-0.5 flex-shrink-0 tabular-nums">
+              <span className="text-xs font-bold text-amber-900 bg-amber-100 rounded px-2 py-0.5 flex-shrink-0 tabular-nums">
                 {item.clause}
               </span>
-              <span className="text-xs text-foreground leading-relaxed">{item.text}</span>
+              <span className="text-sm text-foreground leading-relaxed max-w-[68ch]">{item.text}</span>
             </li>
           ))}
         </ul>
@@ -98,10 +103,10 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
       {/* ── Both sides of the arrangement ──────────────────────────────────── */}
       <div className="grid sm:grid-cols-2 gap-3">
         <Panel title="What we cover" icon={Wrench}>
-          <ul className="space-y-2">
+          <ul role="list" className="space-y-2">
             {PARTNERSHIP.includedInService.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-xs leading-relaxed">
-                <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+              <li key={item} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
+                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span>{item}</span>
               </li>
             ))}
@@ -109,15 +114,15 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
         </Panel>
 
         <Panel title="What we need from you" icon={Ruler} testId="what-we-need">
-          <ul className="space-y-2">
+          <ul role="list" className="space-y-2">
             {PARTNERSHIP.gymProvides.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-xs leading-relaxed">
-                <CheckCircle2 className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
+              <li key={item} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
+                <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span>{item}</span>
               </li>
             ))}
-            <li className="flex items-start gap-2 text-xs leading-relaxed">
-              <CheckCircle2 className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5" />
+            <li className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
+              <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span>
                 The refundable deposit of {formatInr(terms.securityDepositInr)} — payable after
                 signing, and you can defer it
@@ -130,19 +135,28 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
       {/* ── The actual machine ─────────────────────────────────────────────── */}
       <Panel title="The machine you're getting" testId="machine-panel">
         <div className="flex flex-col sm:flex-row gap-4">
+          {/*
+            Intrinsic size and `loading="lazy"`: it is a 1536×1024 render most of the way
+            down a long page, and without the dimensions the whole panel below it jumped
+            when it decoded.
+          */}
           <img
             src={MACHINE_SPEC.imageSrc}
             alt={`${machine.model} protein shake machine`}
+            width={1536}
+            height={1024}
+            loading="lazy"
+            decoding="async"
             className="w-full sm:w-32 h-40 sm:h-auto object-contain rounded-xl bg-gray-50 flex-shrink-0"
           />
           <div className="min-w-0">
             <p className="text-sm font-bold text-foreground" data-testid="machine-model">
               {machine.model}
             </p>
-            <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+            <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
               {machineBlurb(machine)}
             </p>
-            <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+            <p className="text-sm text-gray-700 leading-relaxed mt-2 max-w-[68ch]">
               Its serial number and installation date go into Schedule A at installation, which you
               and our technician sign on site — see step 5.
             </p>
@@ -152,15 +166,18 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
 
       {/* ── What happens after this ────────────────────────────────────────── */}
       <Panel title="From here to your first payout" testId="timeline">
-        <ol className="space-y-3">
+        <ol role="list" className="space-y-3">
           {timeline(terms).map((item, index) => (
             <li key={item.title} className="flex items-start gap-3">
-              <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span
+                aria-hidden="true"
+                className="w-6 h-6 rounded-full bg-primary/10 text-primary-ink text-xs font-bold flex items-center justify-center flex-shrink-0 tabular-nums"
+              >
                 {index + 1}
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground">{item.title}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{item.body}</p>
+                <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">{item.body}</p>
               </div>
             </li>
           ))}
@@ -169,7 +186,7 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
 
       {!readOnly && (
         <div className="space-y-3 pt-1">
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">
             Continuing records that you have read these terms. It is not a signature — the agreement
             comes next, and you can still stop there.
           </p>
@@ -177,7 +194,7 @@ export default function StepPartnership({ state, readOnly, isSubmitting, actions
             type="button"
             onClick={() => actions.ackPartnership()}
             disabled={isSubmitting}
-            className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto"
+            className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
             data-testid="button-continue"
           >
             {isSubmitting ? "Working..." : "These terms look right"}
@@ -329,10 +346,11 @@ function Panel({
       className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
       data-testid={testId}
     >
-      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-1.5">
-        {Icon && <Icon className="w-3.5 h-3.5" />}
+      {/* A heading, like the other card titles in this flow, under the shell's `h1`. */}
+      <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-1.5">
+        {Icon && <Icon className="w-3.5 h-3.5" aria-hidden="true" />}
         {title}
-      </p>
+      </h2>
       {children}
     </section>
   );

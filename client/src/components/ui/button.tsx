@@ -11,8 +11,12 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-           // @replit: no hover, and add primary border
-           "bg-primary text-primary-foreground border border-primary-border",
+           /*
+             `bg-primary-fill`, not `bg-primary`. White on `--primary` is 3.25:1, and
+             this label is 14px — under AA on every filled CTA in the product. The fill
+             token is the same hue at 5.11:1. See the token block in index.css.
+           */
+           "bg-primary-fill text-primary-foreground border border-primary-fill",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm border-destructive-border",
         outline:
@@ -25,7 +29,8 @@ const buttonVariants = cva(
           "border bg-secondary text-secondary-foreground border border-secondary-border ",
         // @replit no hover, transparent border
         ghost: "border border-transparent",
-        link: "text-primary underline-offset-4 hover:underline",
+        // `-ink` for the same reason: this variant is nothing but brand-coloured text.
+        link: "text-primary-ink underline-offset-4 hover:underline",
       },
       size: {
         // @replit changed sizes

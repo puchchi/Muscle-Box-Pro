@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useRef, useState } from "react";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle } from "lucide-react";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { scrollIntoViewGently } from "@/lib/motion";
 import { ENTITY_TYPE_LABELS, gymDetailsSchema } from "@shared/onboarding/schema";
 import type { GymDetails } from "@shared/onboarding/types";
 import { useDraftAutosave } from "../useDraftAutosave";
@@ -89,6 +91,15 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
 
   const legalName = form.watch("legalEntityName");
 
+  /*
+    Read here rather than inside `ErrorSummary`. `formState` is a proxy that records
+    which slices a component uses in order to decide what to re-render, and it only
+    tracks reads made by the component that called `useForm`. Reading `errors` in a
+    child would subscribe nothing, and the summary would appear a render late or not
+    at all.
+  */
+  const { errors, submitCount } = form.formState;
+
   return (
     <Form {...form}>
       {/*
@@ -102,26 +113,27 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
         />
       )}
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" noValidate>
         {/*
-          The live preview. Seeing their own legal name land in the contract is what
-          turns a form into a contract negotiation, and it catches typos in the one
-          field that is hardest to fix afterwards.
+          Eleven fields over three cards is more than fits a screen, so a rejected
+          submit has to name what is wrong at the top as well as marking it in place —
+          otherwise the button appears to do nothing and the problem is two scrolls away.
         */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4" data-testid="agreement-preview">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
-            In your agreement
-          </p>
-          <p className="text-sm text-foreground leading-relaxed">
-            This Agreement is between <strong>BlendBox Innovations LLP</strong> and{" "}
-            {legalName?.trim() ? (
-              <strong data-testid="preview-legal-name">{legalName.trim()}</strong>
-            ) : (
-              <span className="text-muted-foreground italic">your legal entity name</span>
-            )}
-            .
-          </p>
-        </div>
+        <ErrorSummary
+          errors={errors}
+          submitCount={submitCount}
+          /*
+            One scroll per rejection, not two. A server-side rejection arrives as
+            `fieldErrors` *and* as the shell's own error banner directly above this
+            summary, and both used to call `scrollIntoView({behavior: "smooth"})` in the
+            same paint — two competing animations, and which one won was undefined. The
+            banner is higher up the page and carries the server's own sentence, so when
+            it is there it owns the scroll; the summary only takes over for a rejection
+            the client made on its own.
+          */
+          scrollIntoView={!fieldErrors}
+          onGoToField={(name) => form.setFocus(name)}
+        />
 
         <Section title="The entity signing">
           <Field
@@ -130,13 +142,16 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             label="Legal entity name"
             placeholder="Iron Temple Fitness Private Limited"
             description="Exactly as registered. This goes into the agreement."
+            autoComplete="organization"
             disabled={readOnly}
           />
+
+          <AgreementPreview legalName={legalName} />
 
           <FormField
             control={form.control}
             name="entityType"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel className="text-gray-700 text-sm font-semibold">Entity type</FormLabel>
                 <FormControl>
@@ -148,7 +163,9 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
                     {...field}
                     disabled={readOnly}
                     data-testid="select-entity-type"
-                    className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-foreground focus:border-primary focus:bg-white transition-colors disabled:opacity-60"
+                    className={`w-full min-h-11 rounded-xl border bg-gray-50 px-3 text-base sm:text-sm text-foreground transition-colors focus:border-primary focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-700 ${
+                      fieldState.error ? "border-red-400 bg-red-50" : "border-gray-200 cursor-pointer"
+                    }`}
                   >
                     {Object.entries(ENTITY_TYPE_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>
@@ -157,7 +174,7 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
                     ))}
                   </select>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className={ERROR_TEXT} />
               </FormItem>
             )}
           />
@@ -168,6 +185,7 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             label="Trade name"
             placeholder="Iron Temple Fitness"
             description="The name on the door, if it differs. Leave blank if it's the same."
+            optional
             disabled={readOnly}
           />
           <Field
@@ -175,6 +193,12 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             name="gstin"
             label="GSTIN"
             placeholder="29AABCU9603R1ZM"
+            // Was the one required field on the screen with no help text, and it is
+            // also the one people copy out of a certificate rather than know.
+            description="The 15-character number on your GST certificate. It goes on every invoice we raise."
+            // Typed in lowercase more often than not, and the schema uppercases on
+            // parse anyway — so the box may as well show what will be stored.
+            uppercase
             disabled={readOnly}
           />
           <Field
@@ -182,9 +206,11 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             name="fssaiLicenceNumber"
             label="FSSAI licence number"
             placeholder="12345678901234"
+            inputMode="numeric"
             // §24.5 and Schedule F make each party responsible for its own
             // registrations, so this is a day-one question, not an inspection-day one.
-            description="If your gym holds one. Optional — we handle the food-safety side of the machine itself."
+            description="If your gym holds one. We handle the food-safety side of the machine itself."
+            optional
             disabled={readOnly}
           />
         </Section>
@@ -194,7 +220,9 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             form={form}
             name="registeredAddress"
             label="Registered address"
+            placeholder="Building, street, area, city, state, PIN"
             description="Where formal notices should be served (§41 of the agreement)."
+            autoComplete="street-address"
             disabled={readOnly}
           />
 
@@ -204,16 +232,21 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             on a revisit: there is nothing to tick when both fields are disabled anyway.
           */}
           {!readOnly && (
-            <label htmlFor="same-address" className="flex items-start gap-2.5 cursor-pointer">
+            <label
+              htmlFor="same-address"
+              // `py-2.5 -my-2.5` gets the pressable row to 44px without drawing a 44px
+              // checkbox. The box stays 16px; the target around it does not.
+              className="flex items-start gap-2.5 cursor-pointer py-2.5 -my-2.5"
+            >
               <input
                 id="same-address"
                 type="checkbox"
                 checked={sameAddress}
                 onChange={(event) => setSameAddress(event.target.checked)}
-                className="w-4 h-4 mt-0.5 flex-shrink-0 accent-primary"
+                className="w-4 h-4 mt-0.5 flex-shrink-0 accent-primary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 data-testid="checkbox-same-address"
               />
-              <span className="text-xs text-muted-foreground leading-relaxed">
+              <span className="text-sm text-gray-700 leading-relaxed">
                 The machine will stand at the registered address
               </span>
             </label>
@@ -223,6 +256,7 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             form={form}
             name="installationAddress"
             label="Installation address"
+            placeholder="Building, street, area, city, state, PIN"
             description={
               sameAddress
                 ? "Taken from the registered address. Untick above to enter a different one."
@@ -235,12 +269,22 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
         </Section>
 
         <Section title="Who signs, and where we write">
-          <Field form={form} name="signatoryName" label="Signatory name" disabled={readOnly} />
+          <Field
+            form={form}
+            name="signatoryName"
+            label="Signatory name"
+            placeholder="Rohit Menon"
+            description="The person who will sign on behalf of the entity, and who confirms they can bind it (§32)."
+            autoComplete="name"
+            disabled={readOnly}
+          />
           <Field
             form={form}
             name="signatoryDesignation"
             label="Designation"
             placeholder="Director"
+            description="Director, Partner, Proprietor — their title in the entity above."
+            autoComplete="organization-title"
             disabled={readOnly}
           />
           <Field
@@ -248,13 +292,30 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             name="noticesEmail"
             label="Notices email"
             type="email"
+            inputMode="email"
+            placeholder="rohit@irontemple.in"
+            description="Where your signed copy, statements and any formal notice go (§41). Use an address someone still reads in two years."
+            autoComplete="email"
             disabled={readOnly}
           />
-          <Field form={form} name="noticesPhone" label="Notices phone" disabled={readOnly} />
+          <Field
+            form={form}
+            name="noticesPhone"
+            label="Notices phone"
+            type="tel"
+            inputMode="tel"
+            placeholder="+91 98765 43210"
+            description="For the site survey and installation calls."
+            autoComplete="tel"
+            disabled={readOnly}
+          />
         </Section>
 
         {!readOnly && (
-          <div className="space-y-3 pt-2">
+          // Sticky, because Continue sits below eleven fields and the draft indicator
+          // beside it is the only evidence a gym has that closing the tab is safe.
+          // Both were only reachable by scrolling to the very bottom.
+          <div className="sticky bottom-0 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-3 pb-4 bg-gray-50/95 backdrop-blur border-t border-gray-200 space-y-2">
             {/* Says what the button does *not* do. Nobody fills in a GSTIN happily
                 if they think Continue might be the thing that commits them. */}
             <p className="text-xs text-muted-foreground">
@@ -265,7 +326,7 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-11 px-6 rounded-xl font-bold text-sm"
+                className="min-h-11 px-6 rounded-xl font-bold text-sm cursor-pointer"
                 data-testid="button-continue"
               >
                 {isSubmitting ? "Saving..." : "Continue"}
@@ -280,17 +341,187 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
 
 // ── Local helpers ───────────────────────────────────────────────────────────
 
-const inputClass =
-  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl disabled:opacity-60";
+/**
+ * `text-destructive` is `#EF4444` — 3.8:1 on white, and it was the colour of every
+ * validation message in this flow. `red-700` is 6.3:1 and reads as the same red.
+ */
+const ERROR_TEXT = "text-red-700 text-xs font-medium flex items-start gap-1.5";
 
+const inputClass =
+  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-500 focus:border-primary focus:bg-white focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors h-11 rounded-xl " +
+  // A red message beside an untouched-looking grey box is colour-as-the-only-signal
+  // twice over: the field itself has to show it is the one being complained about.
+  "aria-[invalid=true]:border-red-400 aria-[invalid=true]:bg-red-50 " +
+  // shadcn's `disabled:opacity-50` puts 44%-grey label text at 22% — unreadable, on
+  // the exact screens a gym revisits to check what it typed. A locked field should
+  // look locked and stay legible.
+  "disabled:opacity-100 disabled:bg-gray-100 disabled:text-gray-700 disabled:cursor-not-allowed";
+
+const areaClass =
+  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-500 focus:border-primary focus:bg-white focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors rounded-xl resize-none " +
+  "aria-[invalid=true]:border-red-400 aria-[invalid=true]:bg-red-50 " +
+  "disabled:opacity-100 disabled:bg-gray-100 disabled:text-gray-700 disabled:cursor-not-allowed";
+
+/**
+ * A card of related fields.
+ *
+ * `<fieldset>`/`<legend>` for the grouping, which is what a screen reader needs — but
+ * the legend is floated to a full-width block instead of being left to sit in the gap
+ * a browser cuts for it in the top border, where it rendered as a label straddling the
+ * card's edge.
+ */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
-      <legend className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">
-        {title}
+    <fieldset className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+      {/*
+        An `h2` *inside* the legend — which the HTML spec allows, legend taking phrasing
+        content optionally intermixed with heading content. The fieldset is what a screen
+        reader needs to group eleven fields; the heading is what it needs to *navigate*
+        them, and a legend is not a heading. Without it, the longest form in the flow was
+        the one step with nothing between its `h1` and its inputs.
+      */}
+      <legend className="float-left w-full mb-4">
+        <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </h2>
       </legend>
-      {children}
+      <div className="clear-both space-y-4">{children}</div>
     </fieldset>
+  );
+}
+
+/**
+ * The live preview, sitting directly under the field it previews.
+ *
+ * Seeing their own legal name land in the contract is what turns a form into a contract
+ * negotiation, and it catches typos in the one field that is hardest to fix afterwards —
+ * the signature hash covers the rendered name, so a typo found here is free and the same
+ * typo found after signing needs an amendment.
+ *
+ * It used to be a card of its own above the whole form, which meant that on a phone the
+ * sentence had scrolled off the top by the time anybody typed the name into it: the one
+ * moment the panel exists for was the one moment it was not on screen. Cause and effect
+ * now share a viewport at every width.
+ *
+ * Inset, tinted, and an `h3` rather than a fourth white card with a fake heading: it is
+ * a consequence of the field above it, not a section alongside it. The tint is the same
+ * `primary/5` on `primary/20` the deposit receipt uses, and deliberately not the
+ * `gray-50` every input in this form is filled with — an inset grey box inside a form
+ * card reads as another thing to type in.
+ *
+ * No live region. This rewrites on every keystroke of a company name, and
+ * `aria-live="polite"` here would queue an announcement per character; the field's own
+ * description already carries the point ("This goes into the agreement") to anyone who
+ * cannot see the sentence change.
+ */
+function AgreementPreview({ legalName }: { legalName?: string }) {
+  return (
+    <div
+      className="rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3"
+      data-testid="agreement-preview"
+    >
+      <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+        In your agreement
+      </h3>
+      <p className="text-sm text-foreground leading-relaxed max-w-[68ch]">
+        This Agreement is between <strong>BlendBox Innovations LLP</strong> and{" "}
+        {legalName?.trim() ? (
+          <strong data-testid="preview-legal-name">{legalName.trim()}</strong>
+        ) : (
+          <span className="text-muted-foreground italic">your legal entity name</span>
+        )}
+        .
+      </p>
+    </div>
+  );
+}
+
+/** Field name → the words the summary uses. Keyed off the schema's own shape. */
+const FIELD_LABELS: Record<keyof GymDetails, string> = {
+  legalEntityName: "Legal entity name",
+  entityType: "Entity type",
+  tradeName: "Trade name",
+  gstin: "GSTIN",
+  fssaiLicenceNumber: "FSSAI licence number",
+  registeredAddress: "Registered address",
+  installationAddress: "Installation address",
+  signatoryName: "Signatory name",
+  signatoryDesignation: "Designation",
+  noticesEmail: "Notices email",
+  noticesPhone: "Notices phone",
+};
+
+/**
+ * What is wrong, at the top, with a way to each one.
+ *
+ * The buttons call `setFocus` rather than linking to an anchor, because the ids on
+ * these inputs come from `useId` and are not addressable — and moving focus is the
+ * behaviour that actually helps, since it works the same for a mouse, a keyboard and a
+ * screen reader.
+ *
+ * `role="alert"` on a node that only exists once there is something to say, so it is
+ * announced when it appears rather than being a permanently-live region.
+ *
+ * Takes `errors` and `submitCount` as values rather than reading them off the form:
+ * `formState` only registers a re-render subscription for the component that called
+ * `useForm`, so a child that reached into it would go stale.
+ */
+function ErrorSummary({
+  errors,
+  submitCount,
+  scrollIntoView,
+  onGoToField,
+}: {
+  errors: FieldErrors<GymDetails>;
+  submitCount: number;
+  /** False when something above this is already scrolling itself into view. */
+  scrollIntoView: boolean;
+  onGoToField(name: keyof GymDetails): void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const names = Object.keys(errors) as (keyof GymDetails)[];
+
+  useEffect(() => {
+    if (scrollIntoView && names.length > 0 && submitCount > 0) {
+      scrollIntoViewGently(ref.current, { block: "center" });
+    }
+    // Deliberately on submitCount only: re-scrolling as each field is fixed would
+    // yank the page away from the field being fixed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitCount]);
+
+  // Only after a submit has actually been rejected. On-blur errors mark their own
+  // field; a summary that appears while somebody is still filling the form in is
+  // nagging rather than help.
+  if (submitCount === 0 || names.length === 0) return null;
+
+  return (
+    <div
+      ref={ref}
+      role="alert"
+      className="rounded-2xl border border-red-300 bg-red-50 p-4 scroll-mt-[calc(var(--onboarding-chrome,0px)_+_1rem)]"
+      data-testid="details-error-summary"
+    >
+      <p className="text-sm font-bold text-red-800 flex items-center gap-2">
+        <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+        {names.length === 1
+          ? "One field needs another look"
+          : `${names.length} fields need another look`}
+      </p>
+      <ul role="list" className="mt-2 space-y-1">
+        {names.map((name) => (
+          <li key={name}>
+            <button
+              type="button"
+              onClick={() => onGoToField(name)}
+              className="text-xs text-red-800 underline decoration-red-400 hover:decoration-red-800 cursor-pointer text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="font-semibold">{FIELD_LABELS[name]}</span> — {errors[name]?.message}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -304,54 +535,117 @@ type FieldProps = {
   placeholder?: string;
   description?: string;
   type?: string;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  /** Renders the value uppercase and stops a phone auto-capitalising the first letter only. */
+  uppercase?: boolean;
+  /** Says so on the label. The schema is the truth; this stops it being a guess. */
+  optional?: boolean;
   disabled?: boolean;
 };
 
-function Field({ form, name, label, placeholder, description, type, disabled }: FieldProps) {
+function Label({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
+  return (
+    <FormLabel className="text-gray-700 text-sm font-semibold flex items-baseline gap-2">
+      {children}
+      {optional && (
+        <span className="text-[11px] font-medium normal-case text-muted-foreground">Optional</span>
+      )}
+    </FormLabel>
+  );
+}
+
+function Field({
+  form,
+  name,
+  label,
+  placeholder,
+  description,
+  type,
+  autoComplete,
+  inputMode,
+  uppercase,
+  optional,
+  disabled,
+}: FieldProps) {
   return (
     <FormField
       control={form.control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <FormItem>
-          <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>
-          <FormControl>
-            <Input
-              {...field}
-              type={type}
-              placeholder={placeholder}
-              disabled={disabled}
-              className={inputClass}
-              data-testid={`input-${name}`}
-            />
-          </FormControl>
+          <Label optional={optional}>{label}</Label>
+          {/*
+            The wrapper sits *outside* `FormControl` on purpose. `FormControl` is a Radix
+            `Slot`: it clones its single child to attach the id, `aria-describedby` and
+            `aria-invalid`. Give it a `<div>` and every one of those lands on the div
+            instead of the input, silently unlabelling the field.
+          */}
+          <div className="relative">
+            <FormControl>
+              <Input
+                {...field}
+                type={type}
+                inputMode={inputMode}
+                autoComplete={autoComplete}
+                autoCapitalize={uppercase ? "characters" : undefined}
+                spellCheck={uppercase ? false : undefined}
+                aria-required={!optional || undefined}
+                placeholder={placeholder}
+                disabled={disabled}
+                className={`${inputClass} ${uppercase ? "uppercase placeholder:normal-case" : ""} ${
+                  fieldState.error ? "pr-10" : ""
+                }`}
+                data-testid={`input-${name}`}
+              />
+            </FormControl>
+            {/* The non-colour half of the invalid signal, on the field itself. */}
+            {fieldState.error && (
+              <AlertCircle
+                className="w-4 h-4 text-red-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                aria-hidden="true"
+              />
+            )}
+          </div>
           {description && <FormDescription className="text-xs">{description}</FormDescription>}
-          <FormMessage />
+          <FormMessage className={ERROR_TEXT} />
         </FormItem>
       )}
     />
   );
 }
 
-function AreaField({ form, name, label, description, disabled }: Omit<FieldProps, "type" | "placeholder">) {
+function AreaField({
+  form,
+  name,
+  label,
+  placeholder,
+  description,
+  autoComplete,
+  optional,
+  disabled,
+}: Omit<FieldProps, "type" | "inputMode" | "uppercase">) {
   return (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>
+          <Label optional={optional}>{label}</Label>
           <FormControl>
             <Textarea
               {...field}
               rows={3}
+              placeholder={placeholder}
+              autoComplete={autoComplete}
+              aria-required={!optional || undefined}
               disabled={disabled}
-              className="bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors rounded-xl resize-none disabled:opacity-60"
+              className={areaClass}
               data-testid={`input-${name}`}
             />
           </FormControl>
           {description && <FormDescription className="text-xs">{description}</FormDescription>}
-          <FormMessage />
+          <FormMessage className={ERROR_TEXT} />
         </FormItem>
       )}
     />

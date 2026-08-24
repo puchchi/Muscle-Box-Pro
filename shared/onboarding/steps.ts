@@ -66,7 +66,19 @@ export function stepMeta(step: OnboardingStep): StepMeta {
   return meta;
 }
 
-/** "about 18 minutes" — for the hero. Summed rather than hardcoded. */
+/** The exact sum of the per-step estimates. Summed rather than hardcoded. */
 export function totalEstimateMinutes(): number {
   return STEP_META.reduce((total, m) => total + Number.parseInt(m.estimate, 10), 0);
+}
+
+/**
+ * The same total, rounded to the nearest five — which is what "about" means.
+ *
+ * "About 18 minutes" is an exact sum wearing a hedge: the precision contradicts the
+ * word in front of it, so it reads as a measurement and gets held to it. It also meant
+ * that adding a minute to any one step's estimate silently changed a number a gym had
+ * already read as a promise. Rounding makes the hedge true and makes the number stable.
+ */
+export function roughTotalMinutes(): number {
+  return Math.round(totalEstimateMinutes() / 5) * 5;
 }

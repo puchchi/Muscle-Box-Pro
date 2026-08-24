@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -121,10 +121,20 @@ describe("OnboardingFlow — step 1 to step 2", () => {
     await user.type(screen.getByTestId("input-gstin"), "NOT-A-GSTIN");
     await user.click(screen.getByTestId("button-continue"));
 
-    await waitFor(() =>
-      expect(screen.getByText(/15-character GSTIN/)).toBeInTheDocument(),
-    );
+    // Twice on purpose: once under the field, and once in the summary at the top of the
+    // form. Eleven fields do not fit a screen, so a rejected submit that only marked the
+    // input left the button looking broken and the reason two scrolls away.
+    await waitFor(() => expect(screen.getByTestId("details-error-summary")).toBeInTheDocument());
+    const summary = within(screen.getByTestId("details-error-summary"));
+    expect(summary.getByText(/15-character GSTIN/)).toBeInTheDocument();
+    expect(screen.getAllByText(/15-character GSTIN/)).toHaveLength(2);
+    // Not colour alone: the input says it is the invalid one.
+    expect(screen.getByTestId("input-gstin")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByTestId("input-legalEntityName")).toBeInTheDocument();
+
+    // And the summary is a way back to the field, not just a list of complaints.
+    await user.click(summary.getByRole("button", { name: /GSTIN/ }));
+    expect(screen.getByTestId("input-gstin")).toHaveFocus();
   });
 
   it("advances on valid details and shows that gym's own commercials", async () => {
@@ -228,6 +238,26 @@ describe("OnboardingFlow — going back", () => {
 
     await user.click(screen.getByTestId("button-return-to-current"));
     expect(screen.getByTestId("terms-list")).toBeInTheDocument();
+  });
+
+  // Each step carries its state in sr-only text beside the number, because the colour of
+  // a circle is not information. Going back was exactly when that text lied: `canView`
+  // also allows the step the server is on, which is by definition not in
+  // `completedSteps`, so the one step the gym was being invited to return to announced
+  // itself as "not available yet" on a button that worked.
+  it("does not call the step it is working on unavailable", async () => {
+    const user = await open();
+    await completeDetails(user);
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+
+    await user.click(screen.getByTestId("rail-step-1"));
+
+    const current = screen.getByTestId("rail-step-2");
+    expect(current).toBeEnabled();
+    expect(current).toHaveTextContent(/in progress/);
+    expect(screen.getByTestId("rail-step-1")).toHaveTextContent(/completed/);
+    // Still the right words for a step nobody can reach yet.
+    expect(screen.getByTestId("rail-step-4")).toHaveTextContent(/not available yet/);
   });
 });
 

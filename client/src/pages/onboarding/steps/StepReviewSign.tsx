@@ -60,6 +60,8 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
   /** Null until this client has rendered the text and hashed it for itself. */
   const [check, setCheck] = useState<IssuedAgreementCheck | null>(null);
   const [hasReadToEnd, setHasReadToEnd] = useState(false);
+  /** Whole percent of the document scrolled, so the locked sign panel can say how far. */
+  const [readPercent, setReadPercent] = useState(0);
 
   /**
    * §4.1's Effective Date comes from the server, and this component renders nothing
@@ -119,6 +121,8 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
   }, [state, issued]);
 
   const onReachedEnd = useCallback(() => setHasReadToEnd(true), []);
+  // Stable, because the reader calls it from an effect keyed on its own progress.
+  const onProgress = useCallback((percent: number) => setReadPercent(percent), []);
 
   // After every hook, so the hook order is identical on both paths. The normal route
   // here never sees this: step 2's acknowledgement issues the document, so it is
@@ -161,6 +165,7 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
         fields={fields}
         showInternalMarkers={IS_MOCK_ONBOARDING}
         onReachedEnd={onReachedEnd}
+        onProgress={onProgress}
       />
 
       <HashLine contentHash={issued.contentHash} verified={check?.ok ?? null} />
@@ -178,6 +183,7 @@ export default function StepReviewSign({ state, readOnly, isSubmitting, actions 
           defaultDesignation={state.details.signatoryDesignation}
           contentHash={check?.ok ? check.contentHash : null}
           hasReadToEnd={hasReadToEnd}
+          readPercent={readPercent}
           /*
             Two reasons the panel can be shut, and the mismatch outranks the drafting
             one — a document whose bytes we cannot account for is not something to let a
@@ -221,23 +227,29 @@ function InShort() {
       className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
       data-testid="in-short"
     >
-      <p className="text-sm font-bold text-foreground">In short</p>
-      <p className="text-xs text-muted-foreground leading-relaxed mt-1 mb-4">
+      <h2 className="text-sm font-bold text-foreground">In short</h2>
+      <p className="text-sm text-gray-700 leading-relaxed mt-1 mb-4">
         The {PLAIN_LANGUAGE.length} clauses that decide how this works in practice, in plain words.
         This is a summary and the agreement below is what binds — tap a clause number to read the
         real thing.
       </p>
-      <ul className="space-y-3">
+      <ul role="list" className="space-y-3">
         {PLAIN_LANGUAGE.map((item) => (
           <li key={item.clause} className="flex items-start gap-3">
             <a
               href={`#${sectionAnchor(item.section)}`}
-              className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded px-1.5 py-0.5 mt-0.5 flex-shrink-0 tabular-nums transition-colors"
+              /*
+                `text-primary` on a 10% tint of itself is 2.8:1 — and at 10px it was the
+                smallest type on the step, on the one element that is also a tap target.
+                `primary-ink` and a taller row fix both.
+              */
+              className="text-xs font-bold text-primary-ink bg-primary/10 hover:bg-primary/20 rounded px-2 py-1 flex-shrink-0 tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               data-testid={`in-short-link-${item.clause}`}
             >
               §{item.clause}
+              <span className="sr-only"> — read section {item.section} of the agreement</span>
             </a>
-            <span className="text-xs text-foreground leading-relaxed">{item.short}</span>
+            <span className="text-sm text-foreground leading-relaxed">{item.short}</span>
           </li>
         ))}
       </ul>
@@ -259,10 +271,11 @@ function PreparingNotice() {
   return (
     <section
       className="rounded-2xl border border-gray-200 bg-white p-6 text-center"
+      role="status"
       data-testid="agreement-preparing"
     >
-      <p className="text-sm font-bold text-foreground">Preparing your copy</p>
-      <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+      <h2 className="text-sm font-bold text-foreground">Preparing your copy</h2>
+      <p className="text-sm text-gray-700 leading-relaxed mt-1">
         One moment — we're issuing your agreement. Nothing you've entered is lost.
       </p>
     </section>
@@ -291,8 +304,8 @@ function HashLine({
   verified: boolean | null;
 }) {
   return (
-    <p className="text-[11px] text-muted-foreground leading-relaxed flex items-start gap-2">
-      <FileSignature className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+    <p className="text-xs text-gray-700 leading-relaxed flex items-start gap-2">
+      <FileSignature className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
       <span>
         Document fingerprint (SHA-256), stored with your signature and printed on your copy:{" "}
         <code className="break-all font-mono text-foreground" data-testid="content-hash">
@@ -325,10 +338,10 @@ function SignedSummary({
       className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5 flex items-start gap-3"
       data-testid="already-signed"
     >
-      <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+      <CheckCircle2 className="w-5 h-5 text-primary-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
       <div className="min-w-0">
-        <p className="text-sm font-bold text-foreground">Signed</p>
-        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+        <h2 className="text-sm font-bold text-foreground">Signed</h2>
+        <p className="text-sm text-gray-700 leading-relaxed mt-1">
           Version {version}
           {signedAt ? `, signed on ${formatAgreementDate(signedAt)}` : ""}
           {signatoryName ? ` by ${signatoryName}` : ""}. This copy is read-only — email us if
@@ -354,7 +367,7 @@ function NotReadyNotice({ blockers }: { blockers: Blocker[] }) {
       data-testid="agreement-not-issuable"
     >
       <p className="text-sm font-semibold text-amber-900 mb-1 flex items-center gap-2">
-        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+        <AlertTriangle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
         This agreement can't be issued yet
       </p>
       <p className="text-xs text-amber-800 leading-relaxed mb-3">
@@ -362,7 +375,7 @@ function NotReadyNotice({ blockers }: { blockers: Blocker[] }) {
         Internal view — a gym must never see this list. Signing is enabled here only because this is
         a preview build.
       </p>
-      <ul className="space-y-1.5">
+      <ul role="list" className="space-y-1.5">
         {blockers.map((blocker) => (
           <li key={blocker.id} className="text-[11px] text-amber-800 leading-relaxed">
             <a

@@ -32,7 +32,7 @@ export const PARTNERSHIP_FAQ: FaqEntry[] = [
       `On net profit, not gross sales. Gross shake revenue less the direct cost of the ingredients, cup and ` +
       `consumables gives net profit. Your share of that starts at ${PARTNERSHIP.gymNetProfitSharePct.beforeMilestone}% ` +
       `and rises to ${PARTNERSHIP.gymNetProfitSharePct.afterMilestone}% once the machine passes its performance ` +
-      `milestone — whichever comes first of ${PARTNERSHIP.milestone.cups.toLocaleString("en-IN")} paid cups or ` +
+      `milestone: whichever comes first of ${PARTNERSHIP.milestone.cups.toLocaleString("en-IN")} paid cups or ` +
       `${formatInr(PARTNERSHIP.milestone.cumulativeNetProfitInr)} of cumulative net profit. On typical margins the ` +
       `profit figure is reached first; on thinner ones the cup count is.`,
   },
@@ -41,7 +41,7 @@ export const PARTNERSHIP_FAQ: FaqEntry[] = [
     answer:
       `Within ${PARTNERSHIP.settlementDaysAfterMonthEnd} days of the end of each month, against a statement showing ` +
       `cups sold, gross revenue, direct costs and your share. Your partner dashboard shows live figures during the ` +
-      `month, but those are provisional — the statement is the settled amount.`,
+      `month, but those are provisional; the statement is the settled amount.`,
   },
   {
     question: "Who pays for the electricity the machine uses?",
@@ -55,7 +55,7 @@ export const PARTNERSHIP_FAQ: FaqEntry[] = [
   {
     question: "Do I earn anything from the advertising screen?",
     answer:
-      `Yes — ${PARTNERSHIP.advertisingGymSharePct}% of the advertising revenue the machine in your gym generates. ` +
+      `Yes. ${PARTNERSHIP.advertisingGymSharePct}% of the advertising revenue the machine in your gym generates. ` +
       `Unlike the shake share, this percentage stays flat for the life of the agreement; it does not step up at the ` +
       `performance milestone.`,
   },

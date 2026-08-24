@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Clock, ExternalLink } from "lucide-react";
-import { STEP_META, totalEstimateMinutes } from "@shared/onboarding/steps";
+import { STEP_META, roughTotalMinutes } from "@shared/onboarding/steps";
 
 /**
  * The cold open, above the step 1 form.
@@ -31,48 +31,102 @@ export default function OnboardingIntro({
       className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 mb-6"
       data-testid="onboarding-intro"
     >
-      <p className="text-[11px] font-bold uppercase tracking-wide text-primary mb-2">
+      {/*
+        12px, not 11px, and it is the only eyebrow in the flow that gets the extra
+        pixel. The rest label a section; this one is the sentence that stops a page
+        asking for a GSTIN from reading as phishing, and the smallest type on the card
+        was the wrong home for it. Uppercase at 11px with tracking is decoration —
+        legible enough to skip, which is exactly what nobody should do here.
+      */}
+      <p className="text-xs font-bold uppercase tracking-wide text-primary-ink mb-2">
         {invitedByName} sent you this link
       </p>
-      <h2 className="text-lg sm:text-xl font-display font-black uppercase tracking-tight text-foreground mb-2">
+      {/*
+        Sentence case, and bold rather than black. It was uppercase display black at
+        `text-lg` directly under an uppercase display black `h1` at `text-2xl` — two
+        headlines in the same costume, four pixels apart, so the page opened with no
+        hierarchy at all. Size alone was never going to separate them; case and weight
+        do it instantly, and the `h1` gets to own the page.
+      */}
+      <h2 className="text-lg sm:text-xl font-display font-bold tracking-tight text-foreground mb-2">
         Let's get {gymDisplayName} set up
       </h2>
-      <p className="text-sm text-muted-foreground leading-relaxed">
+      {/*
+        Capped like every other paragraph in the flow. Uncapped it ran the full 672px of
+        the card at 14px — around 100 characters a line, half again past the 65–75 that
+        the eye tracks without losing its place, and it was the longest line on the
+        first screen a gym ever sees.
+      */}
+      <p className="text-sm text-muted-foreground leading-relaxed max-w-[68ch]">
         Five short steps: your details, your terms, the agreement, the refundable deposit, and your
         dashboard password. Nothing is committed until you sign in step 3, and the deposit can wait
         until after that.
       </p>
 
-      <ol className="flex flex-wrap gap-x-2 gap-y-1.5 mt-4" data-testid="intro-steps">
-        {STEP_META.map((meta, index) => (
-          <li key={meta.step} className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">{meta.shortTitle}</span>
-            {index < STEP_META.length - 1 && <span aria-hidden="true">→</span>}
+      {/*
+        The step names, with what each one costs.
+        This used to repeat the five titles that the progress rail already shows
+        directly above it, which is the kind of duplication that makes a page feel
+        longer than it is. The times are the new information — and they are the reason
+        somebody decides to start now rather than "later", which in practice means
+        never.
+      */}
+      {/*
+        `role="list"` because Tailwind's preflight sets `list-style: none` on every
+        `ol`, and Safari drops the list role along with the marker — so VoiceOver
+        announced five loose fragments instead of "list, five items". Restored here and
+        on every list in the flow; these links are opened from email, which on iOS means
+        Safari.
+
+        `gap-x-6 gap-y-2`: the horizontal gap was 16px while the space between a step's
+        name and its own estimate was a 4px word-space, and 4 versus 16 is not enough
+        difference for the eye to group them — "3 minutes Partnership" read as a pair as
+        readily as "Partnership 2 minutes" did. The vertical gap was smaller still, so
+        the moment this wrapped on a phone the five items lined up as a grid with no
+        rows. `whitespace-nowrap` keeps a name and its number on one line at 375px,
+        where "Review & sign / 10 minutes" was splitting across the break.
+      */}
+      <ol
+        role="list"
+        className="mt-4 flex flex-wrap gap-x-6 gap-y-2"
+        data-testid="intro-steps"
+      >
+        {STEP_META.map((meta) => (
+          <li key={meta.step} className="text-xs whitespace-nowrap">
+            <span className="font-semibold text-foreground">{meta.shortTitle}</span>{" "}
+            <span className="text-muted-foreground tabular-nums">{meta.estimate}</span>
           </li>
         ))}
       </ol>
 
-      <div className="mt-5 pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
+      <div className="mt-5 pt-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-5">
+        {/*
+          Not capped to 68ch like the paragraph above, on purpose: at 12px inside a flex
+          row this line already sits well inside the comfortable measure, and capping it
+          would fold a one-line caption onto two for no gain.
+        */}
         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+          <Clock className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
           {/*
-            An estimate, not a promise, and it is the sum of the per-step estimates
-            in STEP_META rather than a number typed here — so it moves when a step's
-            scope does. Step 3 is most of it: reading a contract takes as long as it
-            takes.
+            Rounded to the nearest five rather than printed exactly, because "about 18"
+            is a measurement with a hedge in front of it and gets held to the number, not
+            the hedge. Still derived from STEP_META rather than typed here, so it moves
+            when a step's scope does. Step 3 is most of it: reading a contract takes as
+            long as it takes.
           */}
-          About {totalEstimateMinutes()} minutes in total. You can stop anywhere and come back to
-          this same link.
+          About {roughTotalMinutes()} minutes in total. You can stop anywhere and come back to this
+          same link.
         </p>
         <Link
           href="/gym-partnership"
           target="_blank"
           rel="noopener"
-          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 flex-shrink-0"
+          className="text-xs font-semibold text-primary-ink hover:underline flex items-center gap-1 flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           data-testid="link-partnership"
         >
           The deal, restated
-          <ExternalLink className="w-3 h-3" />
+          <ExternalLink className="w-3 h-3" aria-hidden="true" />
+          <span className="sr-only">(opens in a new tab)</span>
         </Link>
       </div>
     </div>

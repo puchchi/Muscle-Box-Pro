@@ -100,30 +100,31 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
       <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5" data-testid="deposit-amount">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Refundable security deposit
-            </p>
+            </h2>
             <p className="text-3xl font-black text-foreground mt-1 tracking-tight">{amount}</p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-sm text-gray-700 mt-1 max-w-[68ch]">
               One payment, held for the whole term. Not a fee, not rent, and not part-payment for the
               machine (§5.2).
             </p>
           </div>
           <span
-            className="text-[11px] font-bold text-muted-foreground bg-gray-100 rounded-full px-2.5 py-1 flex-shrink-0"
+            className="text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1 flex-shrink-0"
             data-testid="deposit-status"
           >
+            <span className="sr-only">Deposit status: </span>
             {STATUS_LABEL[status]}
           </span>
         </div>
 
-        <dl className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+        <dl className="mt-4 pt-4 border-t border-gray-200 space-y-3">
           {DEPOSIT_FACTS.map((fact) => (
             <div key={fact.clause} className="flex items-start gap-3">
-              <dt className="text-[10px] font-bold text-primary bg-primary/10 rounded px-1.5 py-0.5 mt-0.5 flex-shrink-0 tabular-nums">
+              <dt className="text-xs font-bold text-primary-ink bg-primary/10 rounded px-2 py-0.5 flex-shrink-0 tabular-nums">
                 §{fact.clause}
               </dt>
-              <dd className="text-xs text-muted-foreground leading-relaxed">{fact.text}</dd>
+              <dd className="text-sm text-gray-700 leading-relaxed max-w-[68ch]">{fact.text}</dd>
             </div>
           ))}
         </dl>
@@ -138,11 +139,16 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           className="rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:p-5"
           data-testid="deposit-waiting"
         >
-          <p className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
             Waiting for the payment to clear
-          </p>
-          <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+          </h2>
+          {/*
+            A live region, because this sentence rewrites itself about fifteen seconds in
+            and the step advances on its own when the webhook lands. Someone not watching
+            the screen otherwise gets no indication that either happened.
+          */}
+          <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]" role="status" aria-live="polite">
             {checkedAndNotFound
               ? "We still can't see it. Bank transfers and UPI usually land in seconds but can take a few minutes — this page updates itself, and you can close the tab. If it hasn't cleared in an hour, reply to our email and we'll trace it."
               : "This page checks by itself every few seconds. You can safely close the tab — we confirm the payment from our own records, not from this browser, so nothing depends on you staying here."}
@@ -153,7 +159,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
               variant="outline"
               onClick={checkNow}
               disabled={isSubmitting}
-              className="h-10 rounded-xl text-sm font-semibold mt-3 w-full sm:w-auto"
+              className="min-h-11 rounded-xl text-sm font-semibold mt-3 w-full sm:w-auto cursor-pointer"
               data-testid="button-refresh-deposit"
             >
               {isSubmitting ? "Checking..." : "I've paid — check now"}
@@ -168,8 +174,8 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5"
           data-testid="deposit-deferred"
         >
-          <p className="text-sm font-bold text-amber-900">Still outstanding</p>
-          <p className="text-xs text-amber-800 leading-relaxed mt-1">
+          <h2 className="text-sm font-bold text-amber-900">Still outstanding</h2>
+          <p className="text-sm text-amber-900 leading-relaxed mt-1 max-w-[68ch]">
             You chose to pay this later, which is fine — your agreement stands and the site survey can
             go ahead. Installation is what waits for the {amount}. The link below is the same one in
             your email.
@@ -184,7 +190,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
             type="button"
             onClick={payNow}
             disabled={isSubmitting}
-            className="h-11 px-6 rounded-xl font-bold text-sm"
+            className="h-11 px-6 rounded-xl font-bold text-sm cursor-pointer"
             data-testid="button-continue"
           >
             {isSubmitting ? "Creating your link..." : `Pay ${amount} now`}
@@ -195,7 +201,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
               variant="ghost"
               onClick={() => actions.chooseDeposit("pay_later")}
               disabled={isSubmitting}
-              className="h-11 px-4 rounded-xl text-sm font-semibold text-muted-foreground"
+              className="h-11 px-4 rounded-xl text-sm font-semibold text-gray-700 cursor-pointer"
               data-testid="button-pay-later"
             >
               I'll pay this later
@@ -205,7 +211,7 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
       )}
 
       {status === "not_started" && canAct && (
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
+        <p className="text-xs text-gray-700 leading-relaxed max-w-[68ch]">
           Paying later does not hold anything up except installation, and it does not change your
           agreement. We'll email the same link and it stays in your dashboard under Deposit.
         </p>
@@ -263,11 +269,11 @@ const STATUS_LABEL: Record<string, string> = {
 function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
   return (
     <section className="rounded-2xl border-2 border-primary/30 bg-white p-4 sm:p-5" data-testid="deposit-link-panel">
-      <p className="text-sm font-bold text-foreground flex items-center gap-2">
-        <Wallet className="w-4 h-4 text-primary flex-shrink-0" />
+      <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+        <Wallet className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
         Your payment link is ready
-      </p>
-      <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+      </h2>
+      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
         {amount} to MuscleBoxPro, on Razorpay. UPI, netbanking, card or NEFT — whatever your
         accounts team prefers. We've emailed the same link, so this is not your only chance at it.
       </p>
@@ -276,15 +282,20 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         href={link.paymentUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-4 inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-primary text-primary-foreground font-bold text-sm w-full sm:w-auto"
+        // `bg-primary-fill`, matching `Button`: white on `--primary` is 3.25:1, and this
+        // is a 14px bold label. The token is the same hue dark enough to carry it.
+        className="mt-4 inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-primary-fill text-primary-foreground font-bold text-sm w-full sm:w-auto hover:bg-primary-fill/90 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         data-testid="link-payment"
       >
         Open the payment page
-        <ArrowUpRight className="w-4 h-4" />
+        <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+        {/* It leaves the site for a payment gateway; that is worth saying rather than
+            leaving as a surprise to anyone who cannot see the new tab open. */}
+        <span className="sr-only">(opens in a new tab)</span>
       </a>
 
-      <p className="text-xs text-muted-foreground leading-relaxed mt-3 flex items-start gap-2">
-        <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+      <p className="text-sm text-gray-700 leading-relaxed mt-3 flex items-start gap-2 max-w-[68ch]">
+        <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           <strong className="text-foreground">You don't have to be the one who pays.</strong> Forward
           this link to whoever releases payments — it works from their inbox, on their device, and we
@@ -293,7 +304,7 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
       </p>
 
       {IS_MOCK_ONBOARDING && (
-        <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-3">
+        <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-3">
           Preview mode — this link is a placeholder and takes no money. Use "check now" twice to walk
           the settled path.
         </p>
@@ -330,18 +341,18 @@ function PaidPanel({
       className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5"
       data-testid="deposit-paid"
     >
-      <p className="text-sm font-bold text-foreground flex items-center gap-2">
-        <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
+      <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+        <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" aria-hidden="true" />
         Deposit received — {amount}
-      </p>
-      <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+      </h2>
+      <p className="text-sm text-gray-700 leading-relaxed mt-1 max-w-[68ch]">
         Thank you. A receipt is on its way to <strong className="text-foreground">{email}</strong>, and
         it stays in your dashboard under Deposit. It is refundable within 30 days of the machine being
         collected, less anything owing (§5.8).
       </p>
 
       {receipt && (
-        <dl className="mt-4 pt-3 border-t border-primary/15 grid grid-cols-2 gap-3" data-testid="deposit-receipt">
+        <dl className="mt-4 pt-3 border-t border-primary/25 grid grid-cols-2 gap-3" data-testid="deposit-receipt">
           <Fact label="Receipt" value={receipt.receiptNo} mono />
           <Fact label="Paid" value={formatAgreementDate(receipt.paidAt)} />
           <Fact label="Amount" value={formatInr(receipt.amountPaise / 100)} />
@@ -349,8 +360,8 @@ function PaidPanel({
         </dl>
       )}
 
-      <p className="text-[11px] text-muted-foreground leading-relaxed mt-3 flex items-start gap-2">
-        <Receipt className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-gray-700 leading-relaxed mt-3 flex items-start gap-2 max-w-[68ch]">
+        <Receipt className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           Keep the reference. It is what we both quote when the deposit is refunded at the end of the
           term, which may be two years and a change of front-desk staff from now.
@@ -364,7 +375,7 @@ function Fact({ label, value, mono }: { label: string; value: string; mono?: boo
   return (
     <div className="min-w-0">
       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">{label}</dt>
-      <dd className={`text-xs text-foreground mt-0.5 truncate ${mono ? "font-mono" : "font-semibold"}`}>
+      <dd className={`text-sm text-foreground mt-0.5 truncate ${mono ? "font-mono" : "font-semibold"}`}>
         {value}
       </dd>
     </div>

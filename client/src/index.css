@@ -17,6 +17,8 @@
   --color-popover-foreground: hsl(var(--popover-foreground));
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-ink: hsl(var(--primary-ink));
+  --color-primary-fill: hsl(var(--primary-fill));
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
   --color-muted: hsl(var(--muted));
@@ -57,6 +59,26 @@
   /* Primary: Orange-Red #FF512F */
   --primary: 10 100% 59%;
   --primary-foreground: 0 0% 100%;
+  /*
+   * Three roles for one hue, because `--primary` is too light to be near text in
+   * either direction. Measured, not estimated:
+   *
+   *   white       on --primary       3.25:1   ✗
+   *   --primary   on white           3.25:1   ✗
+   *   white       on --primary-fill  5.11:1   ✓
+   *   --primary-ink on white         5.11:1   ✓
+   *
+   * `--primary`      — fills with no text on them, bars, rings, icons, >24px display type.
+   * `--primary-ink`  — brand-coloured *text* on a light surface: links, chips, numerals.
+   * `--primary-fill` — brand-coloured surfaces that *carry* text, i.e. every filled button.
+   *
+   * The last one is the one that is easy to get wrong: a button label is text, and
+   * 4.5:1 applies to it at 14px bold (WCAG "large" starts at 18.66px bold). White on
+   * `--primary` is 3.25:1, so `bg-primary text-white` fails on every CTA in the
+   * product. 3:1 is the threshold for *non-text* contrast, which a label is not.
+   */
+  --primary-ink: 10 85% 44%;
+  --primary-fill: 10 85% 44%;
 
   /* Secondary: Light gray surface */
   --secondary: 0 0% 96%;
@@ -76,7 +98,12 @@
   /* Border: #DDDDDD — Airbnb subtle border */
   --border: 0 0% 87%;
   --input: 0 0% 87%;
-  --ring: 10 100% 59%;
+  /*
+   * The focus ring, one step darker than `--primary`. SC 1.4.11 wants 3:1 against the
+   * adjacent colour, and the light coral was 3.11:1 on `gray-50` — passing by 0.11,
+   * which is not a margin so much as a rounding error. This is 4.3:1 there.
+   */
+  --ring: 10 85% 44%;
 
   --radius: 0.5rem;
 
@@ -99,6 +126,12 @@
   --popover-foreground: 0 0% 100%;
   --primary: 10 100% 59%;
   --primary-foreground: 0 0% 100%;
+  /* Lighter than the light-theme ink: on a near-black surface the contrast runs the
+     other way, and 44% lightness on #141414 is 3.4:1. */
+  --primary-ink: 10 100% 68%;
+  /* Not lightened, unlike the ink above. This one is measured against the white label
+     sitting on it, which does not change with the theme. */
+  --primary-fill: 10 85% 44%;
   --secondary: 0 0% 16%;
   --secondary-foreground: 0 0% 100%;
   --muted: 0 0% 14%;
@@ -129,6 +162,26 @@
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-wide;
+  }
+
+  /*
+   * Motion is decoration everywhere in this app — progress bars, chevrons, colour
+   * fades — so honouring the OS setting costs nothing and is the one accessibility
+   * rule that cannot be fixed per-component after the fact.
+   *
+   * `!important` because the durations it is overriding come from utility classes,
+   * which win on specificity otherwise. `0.01ms` rather than `0` so transitionend
+   * still fires for anything that waits on it.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

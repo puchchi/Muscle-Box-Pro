@@ -11,32 +11,34 @@ import type { DraftStatus } from "./useDraftAutosave";
  *
  * `idle` renders nothing rather than "Not saved" — on a form nobody has touched,
  * "not saved" is alarming and untrue.
+ *
+ * The live region is the outer span, which is always in the tree even when it is
+ * empty. A region that appears at the same moment as its text is usually not
+ * announced at all, so "Couldn't save" would have been a purely visual message on the
+ * one status that matters — and it is the failure case, not the success case, that a
+ * gym needs told rather than shown.
  */
 export default function DraftIndicator({ status }: { status: DraftStatus }) {
-  if (status === "idle") return <span />;
-
-  if (status === "saving") {
-    return (
-      <span className="text-xs text-muted-foreground flex items-center gap-1.5" data-testid="draft-saving">
-        <Loader2 className="w-3 h-3 animate-spin" />
-        Saving...
-      </span>
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <span className="text-xs text-red-600 flex items-center gap-1.5" data-testid="draft-error">
-        <AlertCircle className="w-3 h-3" />
-        Couldn't save — check your connection
-      </span>
-    );
-  }
-
   return (
-    <span className="text-xs text-muted-foreground flex items-center gap-1.5" data-testid="draft-saved">
-      <Check className="w-3 h-3 text-primary" />
-      Saved
+    <span role="status" aria-live="polite" className="min-w-0">
+      {status === "saving" && (
+        <span className="text-xs text-muted-foreground flex items-center gap-1.5" data-testid="draft-saving">
+          <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+          Saving...
+        </span>
+      )}
+      {status === "error" && (
+        <span className="text-xs text-red-700 font-medium flex items-center gap-1.5" data-testid="draft-error">
+          <AlertCircle className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+          Couldn't save — check your connection
+        </span>
+      )}
+      {status === "saved" && (
+        <span className="text-xs text-muted-foreground flex items-center gap-1.5" data-testid="draft-saved">
+          <Check className="w-3 h-3 text-primary-ink flex-shrink-0" aria-hidden="true" />
+          Saved
+        </span>
+      )}
     </span>
   );
 }
