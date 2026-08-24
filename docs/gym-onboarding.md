@@ -147,8 +147,7 @@ Prefilled from the demo request wherever possible; the gym corrects and complete
 - Legal entity name
 - Entity type — proprietorship / partnership / LLP / Pvt Ltd
 - Trade name (the name on the door, if different)
-- GSTIN
-- FSSAI licence number, if held
+- GSTIN — optional since 2026-08-24
 - Registered address
 - Installation address
 - Signatory name + designation
@@ -160,16 +159,29 @@ who wants the deal restated. A form as the first thing a gym sees, with no frame
 like a data-harvesting page. The link arrives off the back of a sales call, so one short paragraph
 is enough; it does not need to re-sell.
 
-Two details worth building:
+One detail worth building, one field since dropped, and one since made optional:
 
 **A live preview panel.** As they type, show `This Agreement is between BlendBox Innovations LLP
 and <legal name>`. Seeing their own legal name land in the contract is what turns a form into a
 contract negotiation, and it catches typos in the one field that is hardest to fix afterwards.
 
-**Ask for FSSAI.** §24.5 and Schedule F make each party responsible for its own registrations.
-Whether the gym holds a licence is a question you want answered on day one, not at an inspection.
+**~~Ask for FSSAI.~~ Dropped 2026-08-24.** The reasoning was that §24.5 and Schedule F make each
+party responsible for its own registrations, so whether the gym holds a licence is a question you
+want answered on day one rather than at an inspection. It reads differently now that §24.6 is
+resolved the other way: **MuscleBoxPro is the FBO** and holds the licence at its own cost (see the
+clause table below), so the gym's own licence is not a fact this contract turns on — the agreement
+does not print it either. `fssaiLicenceNumber` stays on `GymDetails`, in
+`gymDetailsSchema` and in the stored item, so the values gyms did give still round-trip and still
+render on the admin detail page. No screen collects it.
 
-**As built (2026-08-22).** All eleven fields, the live preview, the hero, autosave and server-side
+**GSTIN is optional, as of the same day.** The agreement never renders a GSTIN — see
+`toAgreementFields` — so it is an invoicing detail, not a contractual one, and stopping step 1 over
+a certificate someone has to go and find costs more than raising the first invoice late. A number
+that *is* entered is still refused unless it is well-formed — shape on the client, shape plus the
+mod-36 check digit on the server — because a transposed digit bills the wrong entity for the whole
+term.
+
+**As built (2026-08-22).** The live preview, the hero, autosave and server-side
 field errors are in [StepDetails.tsx](../client/src/pages/onboarding/steps/StepDetails.tsx). The hero
 is its own component, [OnboardingIntro.tsx](../client/src/pages/onboarding/OnboardingIntro.tsx), and
 it renders **only while step 1 is still live** — a gym that comes back to check what it typed is not

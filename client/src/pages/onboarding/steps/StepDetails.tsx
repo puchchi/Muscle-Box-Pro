@@ -188,28 +188,22 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             optional
             disabled={readOnly}
           />
+          {/*
+            Optional since 2026-08-24. It is an invoicing field, not a contractual one — the
+            agreement never renders it (see `toAgreementFields`) — so a gym that is not registered,
+            or does not have the certificate to hand, should not be stopped at step 1 by it. A
+            number that *is* typed is still checked, because a transposed digit here bills the
+            wrong entity for the whole term.
+          */}
           <Field
             form={form}
             name="gstin"
             label="GSTIN"
             placeholder="29AABCU9603R1ZM"
-            // Was the one required field on the screen with no help text, and it is
-            // also the one people copy out of a certificate rather than know.
-            description="The 15-character number on your GST certificate. It goes on every invoice we raise."
+            description="The 15-character number on your GST certificate. It goes on the invoices we raise."
             // Typed in lowercase more often than not, and the schema uppercases on
             // parse anyway — so the box may as well show what will be stored.
             uppercase
-            disabled={readOnly}
-          />
-          <Field
-            form={form}
-            name="fssaiLicenceNumber"
-            label="FSSAI licence number"
-            placeholder="12345678901234"
-            inputMode="numeric"
-            // §24.5 and Schedule F make each party responsible for its own
-            // registrations, so this is a day-one question, not an inspection-day one.
-            description="If your gym holds one. We handle the food-safety side of the machine itself."
             optional
             disabled={readOnly}
           />
@@ -442,6 +436,10 @@ const FIELD_LABELS: Record<keyof GymDetails, string> = {
   entityType: "Entity type",
   tradeName: "Trade name",
   gstin: "GSTIN",
+  // No input carries this any more (removed 2026-08-24), and the label stays because the record is
+  // keyed off `GymDetails` — which still has the field so old values round-trip. If the server ever
+  // returns a `fieldError` on it, the summary should name it in words rather than print the key,
+  // even though the button next to it has nothing on screen to focus.
   fssaiLicenceNumber: "FSSAI licence number",
   registeredAddress: "Registered address",
   installationAddress: "Installation address",

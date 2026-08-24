@@ -58,6 +58,7 @@ export default function AgreementReader({
   fields,
   showInternalMarkers = false,
   onReachedEnd,
+  onProgress,
 }: {
   agreement: Agreement;
   fields: Partial<AgreementFields>;

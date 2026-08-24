@@ -148,10 +148,52 @@ describe("OnboardingFlow — step 1 to step 2", () => {
     expect(screen.getByText("24 months")).toBeInTheDocument();
   });
 
+  /**
+   * GSTIN became optional on 2026-08-24 and this is the half of it that is easy to get wrong: the
+   * label can say "Optional" while the resolver still refuses to submit, and the only symptom is a
+   * Continue button that does nothing. So the assertion is reaching step 2, not the absence of a
+   * message.
+   *
+   * The malformed case above still stands unchanged, which is the point of the pair — blank bills
+   * nobody, a transposed digit bills the wrong entity for the whole term.
+   */
+  it("advances with the GSTIN left blank, because it is an invoicing field and not a contractual one", async () => {
+    const user = await open();
+    await user.type(screen.getByTestId("input-legalEntityName"), VALID.legalEntityName);
+    await user.type(screen.getByTestId("input-registeredAddress"), VALID.registeredAddress);
+    await user.type(screen.getByTestId("input-signatoryName"), VALID.signatoryName);
+    await user.type(screen.getByTestId("input-signatoryDesignation"), VALID.signatoryDesignation);
+    expect(screen.getByTestId("input-gstin")).toHaveValue("");
+    await user.click(screen.getByTestId("button-continue"));
+
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+    expect(screen.queryByTestId("details-error-summary")).not.toBeInTheDocument();
+  });
+
+  // Removed 2026-08-24. The field stays on `GymDetails` so old values round-trip, which is exactly
+  // why this is asserted on the DOM: nothing about the type or the schema would notice the input
+  // coming back.
+  it("does not ask for an FSSAI licence number", async () => {
+    await open();
+    expect(screen.queryByTestId("input-fssaiLicenceNumber")).not.toBeInTheDocument();
+    expect(screen.queryByText(/FSSAI/)).not.toBeInTheDocument();
+  });
+
   it("shows the legal name in the agreement preview as it is typed", async () => {
     const user = await open();
     await user.type(screen.getByTestId("input-legalEntityName"), VALID.legalEntityName);
     expect(screen.getByTestId("preview-legal-name")).toHaveTextContent(VALID.legalEntityName);
+  });
+
+  // The preview is only useful if it is on screen while the name is being typed, and it
+  // spent a while as a card of its own above the whole form — where a phone had scrolled
+  // it off the top by the time anyone reached the field. Asserting the grouping rather
+  // than the pixels: same fieldset means same viewport at every width.
+  it("keeps the agreement preview in the same group as the field it previews", async () => {
+    await open();
+    const group = screen.getByTestId("input-legalEntityName").closest("fieldset");
+    expect(group).not.toBeNull();
+    expect(group).toContainElement(screen.getByTestId("agreement-preview"));
   });
 });
 

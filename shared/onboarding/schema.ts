@@ -47,13 +47,33 @@ export const gymDetailsSchema = z.object({
   // input and output types match and it can drive a react-hook-form resolver
   // directly. `.default()` would make the input type optional and break that.
   tradeName: z.string().trim().max(200),
+  /**
+   * Optional since 2026-08-24, and blank-or-valid rather than loosened.
+   *
+   * It was required, on the reasoning that a gym selling through a machine on its floor is making
+   * supplies. What changed is not that reasoning but where it belongs: the agreement never renders
+   * a GSTIN (see `toAgreementFields`), so this is an invoicing detail, and blocking step 1 on a
+   * certificate someone has to go and find costs more than raising the first invoice late.
+   *
+   * A number that *is* entered still has to be a real one. A transposed digit bills the wrong
+   * entity for the whole term, which is worse than no number at all.
+   */
   gstin: z
     .string()
     .trim()
     .toUpperCase()
-    .regex(GSTIN, "That doesn't look like a valid 15-character GSTIN"),
-  // Blank is allowed because not every gym holds one, and §24.6 has not settled
-  // who must. We ask anyway — better to know on day one than at an inspection.
+    .refine((v) => v === "" || GSTIN.test(v), "That doesn't look like a valid 15-character GSTIN"),
+  /**
+   * Still stored, no longer asked for.
+   *
+   * No screen collects this as of 2026-08-24: the admin invite form dropped it and step 1 dropped
+   * it. It stays on the type and in this schema so the value round-trips — gyms that answered it
+   * before then have one, `GET /admin/gyms/{gymId}` still reports it, and the deployed server still
+   * accepts it. Blank is what every new gym will have.
+   *
+   * §24.5 and Schedule F leave each party responsible for its own registrations, which is why
+   * dropping the question costs nothing contractually.
+   */
   fssaiLicenceNumber: z
     .string()
     .trim()
