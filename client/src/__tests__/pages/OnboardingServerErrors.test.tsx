@@ -67,6 +67,12 @@ async function submitWithoutGstin(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByTestId("button-continue"));
 }
 
+/** The same, GSTIN included, so the mock accepts it and the flow reaches step 2. */
+async function submitWithGstin(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByTestId("input-gstin"), "29AABCU9603R1ZM");
+  await submitWithoutGstin(user);
+}
+
 async function open() {
   const user = userEvent.setup();
   render(<OnboardingFlow token={DEMO_TOKEN} />);
@@ -134,5 +140,30 @@ describe("StepDetails — a rejection from the server", () => {
     await waitFor(() => expect(screen.getByTestId("action-error")).toBeInTheDocument());
     expect(screen.getByTestId("action-error")).toHaveTextContent("Please check the highlighted fields.");
     expect(screen.queryByTestId("details-error-summary")).not.toBeInTheDocument();
+  });
+
+  /**
+   * The rejection does not follow the gym to another step.
+   *
+   * "Please check the highlighted fields." above step 2, which has no fields on it at all,
+   * and no highlighting anywhere on the screen. `actionError` used to live until the *next*
+   * action ran, so a rejected correction on step 1 followed by a click on the rail carried
+   * the banner forward. Cleared in `goToStep` now.
+   */
+  it("does not carry the rejection to a step with no fields on it", async () => {
+    const user = await open();
+    await submitWithGstin(user);
+    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+
+    // Back to step 1, where a correction is now refused by the server.
+    vi.spyOn(onboardingApi, "submitDetails").mockResolvedValue(SERVER_REJECTION);
+    await user.click(screen.getByTestId("button-back"));
+    await user.click(screen.getByTestId("button-continue"));
+    await waitFor(() => expect(screen.getByTestId("details-error-summary")).toBeInTheDocument());
+
+    await user.click(screen.getByTestId("rail-step-2"));
+
+    expect(screen.getByTestId("terms-list")).toBeInTheDocument();
+    expect(screen.queryByTestId("action-error")).not.toBeInTheDocument();
   });
 });

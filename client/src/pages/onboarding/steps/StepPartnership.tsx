@@ -552,6 +552,11 @@ const RESTRICTIONS = [
  * unrelated facts in one comma list, which is how a datasheet reads and not how a paragraph
  * does. The dimensions stay first and stay spelled out, because the question a gym owner is
  * actually asking is whether it fits against a particular wall.
+ *
+ * **UPI only.** The machine does not take cards. The card claim was in this sentence and is
+ * still on `/` and `/protein-shake-vending-machine`, which is what the note in
+ * `MACHINE_SPEC` warns about: the payment method is prose on three surfaces rather than a
+ * field, so it drifts. Nothing here should mention cards until the hardware does.
  */
 function machineBlurb(machine: MachineSummary): string {
   // A sentence, not a labelled field. "Fitted with: wall mount kit." was a colon dropped
@@ -563,7 +568,7 @@ function machineBlurb(machine: MachineSummary): string {
     `${dimensionsSpelled()}, roughly the footprint of a locker bay. ` +
     `It has a ${MACHINE_SPEC.displayInches}-inch touch screen and ${MACHINE_SPEC.canisters} ` +
     `canisters holding ${MACHINE_SPEC.capacityLitres} litres between them, connects over ` +
-    `${MACHINE_SPEC.connectivity}, and takes both card and UPI.${fitted}`
+    `${MACHINE_SPEC.connectivity}, and takes payment by UPI.${fitted}`
   );
 }
 

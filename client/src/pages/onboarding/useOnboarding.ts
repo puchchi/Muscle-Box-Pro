@@ -223,9 +223,25 @@ export function useOnboarding(token: string): UseOnboarding {
   // disagree, render the server's step.
   const viewStep = viewOverride !== null && canView(viewOverride) ? viewOverride : currentStep;
 
+  /**
+   * Navigating clears the last action's error.
+   *
+   * An `actionError` is about the step whose action produced it, and it used to survive
+   * until the *next* action ran — so a rejected step 1 ("Please check the highlighted
+   * fields.") followed by a click on the rail put that banner at the top of step 2, a
+   * screen with no fields on it at all. Whatever the gym does next on the new step clears
+   * it anyway, which is why this was invisible until someone went back to correct a detail
+   * and came forward again.
+   *
+   * Cleared here rather than in an effect on `viewStep`: the `wrong_step` and `frozen`
+   * paths in `run` deliberately re-read state and move the view, and their message is the
+   * explanation for the jump. An effect would erase it on arrival.
+   */
   const goToStep = useCallback(
     (step: OnboardingStep) => {
-      if (canView(step)) setViewOverride(step === currentStep ? null : step);
+      if (!canView(step)) return;
+      setActionError(null);
+      setViewOverride(step === currentStep ? null : step);
     },
     [canView, currentStep],
   );

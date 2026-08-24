@@ -291,38 +291,55 @@ describe("OnboardingFlow — step 2 states the restrictions", () => {
     return user;
   }
 
-  it("shows the uncomfortable parts with the clauses they come from", async () => {
+  /**
+   * The five restrictions, in the words a gym owner will meet them in.
+   *
+   * Asserted by their text and not by a "§3" chip: the chips used to sit beside each
+   * numeral and were removed on purpose (see `RESTRICTIONS` in `StepPartnership`), on the
+   * grounds that two markers per row pushed the sentence 80px in and a gym reading a
+   * plain-language summary is not the reader who wants a citation. The clause each phrase
+   * summarises is named here so this test still pins the mapping the screen no longer
+   * shows — the data keeps `clause`, and this is what stops the list quietly losing one.
+   */
+  const RESTRICTIONS_IN_DOCUMENT_ORDER = [
+    { clause: "§3", phrase: "stays our property" },
+    { clause: "§5.6", phrase: "deposit can be drawn against" },
+    { clause: "§12.4", phrase: "persistently underperforms" },
+    { clause: "§14", phrase: "cannot open the machine" },
+    { clause: "§21", phrase: "cannot move the machine" },
+  ];
+
+  it("shows the uncomfortable parts rather than leaving them to the contract", async () => {
     await reachStepTwo();
     const block = screen.getByTestId("worth-knowing");
-    for (const clause of ["§3", "§14", "§21", "§12.4", "§5.6"]) {
-      expect(block).toHaveTextContent(clause);
+    for (const { phrase } of RESTRICTIONS_IN_DOCUMENT_ORDER) {
+      expect(block).toHaveTextContent(phrase);
     }
   });
 
   /**
-   * The clause chips are only useful if they can be followed.
+   * Document order, and a count derived from the list.
    *
-   * A gym owner checking this summary against the real thing scrolls the agreement,
-   * and the agreement is in numerical order — so a list that runs §3, §14, §21, §12.4,
-   * §5.6 asks them to scroll back twice and reads as no order at all. The count in the
-   * sentence above the list is derived from the list for the same reason "In short"
-   * derives its own: a hardcoded "All five" is the one claim that goes stale silently.
+   * A gym owner checking this summary against the real thing scrolls the agreement, and
+   * the agreement is in numerical order — so a list that runs §3, §14, §21, §12.4, §5.6
+   * asks them to scroll back twice and reads as no order at all. That property outlived
+   * the visible chips: the order is the reason the mapping above is worth pinning. The
+   * count in the sentence above the list is derived from the list for the same reason "In
+   * short" derives its own: a hardcoded "All five" is the one claim that goes stale
+   * silently.
    */
   it("lists the restrictions in the order the agreement does, and counts them itself", async () => {
     await reachStepTwo();
     const block = screen.getByTestId("worth-knowing");
     const text = block.textContent ?? "";
-    const positions = ["§3", "§5.6", "§12.4", "§14", "§21"].map((clause) =>
-      text.indexOf(clause),
-    );
+    const positions = RESTRICTIONS_IN_DOCUMENT_ORDER.map(({ phrase }) => text.indexOf(phrase));
     expect(positions.every((at) => at >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
     expect(block).toHaveTextContent("The 5 restrictions");
 
     // Numbered, and an `ol` rather than a `ul` painted to look like one: the sentence
-    // says there are five, so the list has to let a reader count them. Read off the
-    // first cell of each row rather than the block's text, where "5." would also match
-    // the "§5.6" two columns over.
+    // says there are five, so the list has to let a reader count them. Read off the first
+    // cell of each row rather than the block's text, which is prose with digits in it.
     const rows = block.querySelectorAll("ol > li");
     expect(rows).toHaveLength(5);
     expect([...rows].map((row) => row.firstElementChild?.textContent)).toEqual([
@@ -681,17 +698,31 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
    * made it part of that control's accessible name — so the name changed about a hundred
    * times over one read of the document, and a name that mutates while the control is
    * focused is re-announced on every change. Moving it to a `progressbar` means it is
-   * available on demand and quiet in between. `100` here because jsdom lays nothing out and
-   * `useReadingPercent` deliberately treats an unmeasurable document as scrolled.
+   * available on demand and quiet in between. `100` here because happy-dom lays nothing out
+   * and `useReadingPercent` deliberately treats an unmeasurable document as scrolled.
    */
   it("exposes reading progress without putting it in the contents control's name", async () => {
     await reachStepThree();
     const bar = screen.getByRole("progressbar", { name: "Agreement read" });
-    expect(bar).toHaveAttribute("aria-valuenow", "100");
+    /*
+      Awaited, because the figure is one effect behind the paint that this test's
+      `agreement-body` wait returns on: the hook measures after commit, so the bar renders
+      at 0 and is at 100 on the render after. Asserting it synchronously was reading the
+      first of those two renders.
+    */
+    await waitFor(() => expect(bar).toHaveAttribute("aria-valuenow", "100"));
     expect(bar).toHaveAttribute("aria-valuetext", "100% read");
     // The visible figure stays, and stays out of the accessible name of the summary.
     expect(screen.getByTestId("reading-progress")).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByRole("group", { name: "Contents" })).toBeInTheDocument();
+    /*
+      The contents control itself is asserted through the index it reveals rather than by
+      `getByRole("group", { name: "Contents" })`, which cannot pass in this environment
+      whatever the markup says: a `<details>` maps to `group`, but `dom-accessibility-api`
+      does not implement "name a details from its summary", so the computed name is "".
+      What this test is actually about is that the progress figure is not in that name, and
+      the `aria-hidden` above is the assertion for it.
+    */
+    expect(screen.getByRole("navigation", { name: "Agreement contents" })).toBeInTheDocument();
   });
 
   it("will not sign until both assertions are ticked", async () => {
