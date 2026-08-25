@@ -713,20 +713,37 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
     expect(screen.getByRole("navigation", { name: "Agreement contents" })).toBeInTheDocument();
   });
 
-  it("will not sign until both assertions are ticked", async () => {
+  it("will not sign until the assertion is ticked", async () => {
     const user = await reachStepThree();
     await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
 
-    // §32 authority is a separate representation, so ticking only the first is not assent.
-    await user.click(screen.getByTestId("checkbox-agreed"));
     await user.click(screen.getByTestId("button-sign"));
-    expect(screen.getByTestId("error-authorised")).toBeInTheDocument();
+    expect(screen.getByTestId("error-agreed")).toBeInTheDocument();
     expect(screen.getByTestId("agreement-body")).toBeInTheDocument();
     expect(screen.queryByTestId("deposit-amount")).not.toBeInTheDocument();
 
-    await user.click(screen.getByTestId("checkbox-authorised"));
+    await user.click(screen.getByTestId("checkbox-agreed"));
     await user.click(screen.getByTestId("button-sign"));
     await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
+  });
+
+  it("states §32 authority in the sentence that is ticked, and records it", async () => {
+    // The checkbox sets `authorisedToBind` as well as `agreedToAgreement`, so what it says
+    // is what makes that stored field true. One without the other is a record claiming a
+    // representation nobody was asked to make.
+    const user = await reachStepThree();
+    expect(screen.getByTestId("checkbox-agreed").closest("label")).toHaveTextContent(
+      /I have read and agree to this Agreement, and I am authorised to bind Iron Temple Fitness LLP to it/,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
+    await user.click(screen.getByTestId("checkbox-agreed"));
+    await user.click(screen.getByTestId("button-sign"));
+    await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
+
+    const state = await mockOnboardingApi.fetchState(DEMO_TOKEN);
+    expect(state.signature?.agreedToAgreement).toBe(true);
+    expect(state.signature?.authorisedToBind).toBe(true);
   });
 
   it("does not ask for a signing code it cannot verify", async () => {

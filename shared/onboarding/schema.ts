@@ -110,8 +110,8 @@ export const signatureSchema = z.object({
   agreedToAgreement: z.literal(true, {
     errorMap: () => ({ message: "You need to confirm you have read the agreement" }),
   }),
-  // §32 is a distinct representation about authority. Bundling it into a general
-  // "I agree" weakens it, so it is validated as its own required assertion.
+  // §32 is a distinct representation about authority, so it stays its own required field
+  // on the record even though step 3 now collects both in one sentence.
   authorisedToBind: z.literal(true, {
     errorMap: () => ({ message: "You need to confirm you are authorised to bind the entity" }),
   }),

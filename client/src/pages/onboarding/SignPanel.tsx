@@ -9,9 +9,11 @@ import { SIGNING_REQUIRES_OTP } from "@shared/onboarding/types";
 /**
  * The signing panel.
  *
- * Two checkboxes rather than one because §32 is a separate representation about
- * authority to bind the entity. Bundling it into a general "I agree" is exactly the
- * kind of shortcut that gets a signature disputed by the person who clicked it.
+ * One checkbox, stating both representations: assent to the agreement and §32 authority
+ * to bind the entity. It was two, on the reasoning that authority bundled into a general
+ * "I agree" is weaker. The record still carries them as two fields, and the sentence the
+ * gym ticks still says both in terms — what went is a second click on the same screen for
+ * a person who has just been shown, by name and designation, that they are the signatory.
  *
  * The panel stays locked until the document has been scrolled through. That gate
  * evidences delivery and opportunity to read, not reading — nothing in a browser can
@@ -29,7 +31,7 @@ import { SIGNING_REQUIRES_OTP } from "@shared/onboarding/types";
  * step is meant not to give. So they are displayed, with a way back to the step that owns
  * them and a plain statement of what to do if either is wrong.
  *
- * Both checkboxes stay. Those are representations being made now, not data already held.
+ * The checkbox stays. That is a representation being made now, not data already held.
  *
  * ## The second phase, and why it is switched off
  *
@@ -85,7 +87,6 @@ export default function SignPanel({
   }): Promise<boolean>;
 }) {
   const [agreed, setAgreed] = useState(false);
-  const [authorised, setAuthorised] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -114,13 +115,21 @@ export default function SignPanel({
     );
   }
 
+  /**
+   * The two fields the record keeps, from the one sentence that was ticked.
+   *
+   * They stay separate on the wire because the signature record and the admin view read
+   * them separately, and a stored `authorisedToBind` is only true if the label the gym
+   * ticked said so — which is why the copy below states both representations.
+   */
+  const assent = () => ({ agreedToAgreement: agreed, authorisedToBind: agreed });
+
   /** Everything except the code, checked before we spend an email on it. */
   function validateAssent(): boolean {
     const result = signatureSchema.omit({ otpCode: true }).safeParse({
       fullName: signatoryName,
       designation: signatoryDesignation,
-      agreedToAgreement: agreed,
-      authorisedToBind: authorised,
+      ...assent(),
       contentHash,
     });
     setErrors(result.success ? {} : toFieldErrors(result.error));
@@ -141,8 +150,7 @@ export default function SignPanel({
     const result = signatureSchema.safeParse({
       fullName: signatoryName,
       designation: signatoryDesignation,
-      agreedToAgreement: agreed,
-      authorisedToBind: authorised,
+      ...assent(),
       contentHash,
       ...(SIGNING_REQUIRES_OTP ? { otpCode } : {}),
     });
@@ -180,25 +188,15 @@ export default function SignPanel({
           onReviewDetails={onReviewDetails}
         />
 
-        <div className="space-y-3 pt-1">
+        <div className="pt-1">
           <Check
             id="agreed"
             checked={agreed}
             onChange={setAgreed}
-            error={errors.agreedToAgreement}
+            error={errors.agreedToAgreement ?? errors.authorisedToBind}
             disabled={!!sentTo}
           >
             I have read and agree to this Agreement.
-          </Check>
-          <Check
-            id="authorised"
-            checked={authorised}
-            onChange={setAuthorised}
-            error={errors.authorisedToBind}
-            disabled={!!sentTo}
-          >
-            I am authorised to bind{" "}
-            <strong className="text-foreground">{legalEntityName || "this entity"}</strong> to it.
           </Check>
         </div>
 
@@ -211,7 +209,7 @@ export default function SignPanel({
 
         {/* ── Signing, without the code ──────────────────────────────────
             The live path. One button, and the copy says plainly that pressing it signs —
-            a panel that has already collected two assertions must not then also have a
+            a panel that has already collected the gym's assent must not then also have a
             step that looks preparatory. */}
         {!SIGNING_REQUIRES_OTP && (
           <div className="space-y-2 pt-1">
@@ -458,7 +456,7 @@ function Check({
       <label
         htmlFor={id}
         // `py-2.5 -my-2.5` brings the pressable row to 44px without drawing a 44px
-        // checkbox, and without adding a gap between the two assertions.
+        // checkbox, and without adding a gap around it.
         className={`flex items-start gap-2.5 py-2.5 -my-2.5 ${disabled ? "cursor-default" : "cursor-pointer"}`}
       >
         <input
@@ -473,10 +471,9 @@ function Check({
           data-testid={`checkbox-${id}`}
         />
         {/*
-          Full contrast, body size. These two sentences are the representations the
-          signature is made on — "I have read and agree", "I am authorised to bind" —
-          and they were set in 12px muted grey, lighter and smaller than the marketing
-          copy elsewhere in the flow.
+          Full contrast, body size. This sentence is the representation the signature is
+          made on, and it was set in 12px muted grey — lighter and smaller than the
+          marketing copy elsewhere in the flow.
         */}
         <span className="text-sm text-foreground leading-relaxed">{children}</span>
       </label>
