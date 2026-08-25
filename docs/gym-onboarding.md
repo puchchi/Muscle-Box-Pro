@@ -309,6 +309,10 @@ with a ₹50,000 deposit.
 Two checkboxes rather than one because §32 is a distinct representation about authority, and
 bundling it into a general "I agree" weakens it.
 
+> **Both halves of that changed.** The name and designation are shown rather than typed (see below),
+> and the §32 checkbox was removed on 2026-08-25 — the representation is a clause of the document
+> being agreed to, so a second tick restated a term the first already accepts. §23.
+
 **Captured with the signature:** server timestamp, IP, user-agent, OTP verification record,
 agreement version, and a **SHA-256 of the exact rendered text that was on screen**.
 
@@ -1452,6 +1456,9 @@ like a compile step.
       shared machine
 - [ ] A `network` failure never signs anyone out, and never gets copy blaming their credentials
 - [ ] Copy never promises a message the system cannot send
+- [ ] Every representation the signature record stores is stated in what the gym ticked, or in the
+      document they ticked it against — `authorisedToBind` is derived from one checkbox and relies on
+      §32 being in the signed text (§23)
 - [ ] Agreement content changes bump the version; never edit a version that has signatures
 - [ ] A new agreement version pins its own golden length and hash, and does not share a fixture with
       an older one — a shared fixture lets one version's edit move another version's hash
@@ -1754,7 +1761,7 @@ and when*.
 | Value | Where step 3 asked for it | Who knows it, and when |
 | --- | --- | --- |
 | Signatory name, designation | Two text inputs at the top of the sign panel, pre-filled from step 1 | The gym, at step 1. Already on the record. |
-| "I have read and agree", "I am authorised to bind" | Two checkboxes | The gym, **now**. Genuinely collected here. |
+| "I have read and agree", "I am authorised to bind" | Two checkboxes | The gym, **now**. Genuinely collected here. (One checkbox from 2026-08-25 — §23.) |
 | Machine ID, serial number, installation date | §2's table of particulars, rendering as "To be completed at installation" | Nobody at signing. Us, once a unit is allocated. |
 | Installation condition, accessories, four on-site tests, photographs, two signatures | Schedule A, printed as a certificate: two placeholder cells, a ten-item checklist, three signature rules | A technician and a gym representative, on installation day. |
 | Return date, condition, damage cost, deposit adjustment, refund balance, two signatures | Schedule H, printed as a certificate: eight `__________` cells, three signature rules | Both parties, at the end of a 24-month term at the earliest. |
@@ -1766,7 +1773,7 @@ away, or to a paper apparatus that does not apply.
 
 ### The document: v2.3
 
-`v2_3.ts`, and 2.2 untouched — it has the same standing as 2.1 now. 2.3 changes no commercial term and
+`v2_3.ts`, with 2.2 untouched beside it at the time and deleted the following day (§22). 2.3 changes no commercial term and
 resolves no `todo` marker; the four differences are recorded in `AGREEMENT_V2_3_CHANGES`, keyed by
 location rather than by marker id, because 2.2 did not think its blank forms were a defect and so
 nothing in the tree flagged them:
@@ -2091,3 +2098,41 @@ stays, optional, server-side only.
 
 `npx tsc --noEmit` clean. **54 test files, 1,031 tests passing** — three files and 88 tests fewer than
 before, for coverage that is narrower only where it was covering a version nobody signed.
+
+## 23. One checkbox on the sign panel (2026-08-25)
+
+The §32 authority checkbox — "I am authorised to bind `<legal entity name>` to it" — is gone. Step 3
+asks for assent once:
+
+> I have read and agree to this Agreement.
+
+The reasoning for two, recorded in §3 step 3 and defended twice since, was that authority to bind is a
+distinct representation and bundling it into a general "I agree" weakens it. What that argument misses
+is where the representation actually lives: **§32 is a clause of the document being agreed to.** The
+gym is not being asked to make a side representation next to the contract; the contract contains it, and
+the signature block above the panel prints this person's name and designation as the signatory. So the
+second tick restated a term the first tick already accepts — and a screen that asks twice for one thing
+reads as a form, which is the exact impression §20's work went to remove.
+
+The wire format is unchanged. `signatureSchema` still requires `agreedToAgreement` **and**
+`authorisedToBind`, both `z.literal(true)`; `SignPanel` sets both from the one checkbox through a small
+`assent()` helper, so the stored signature and the admin view
+([AdminGymDetail.tsx](../client/src/pages/admin/AdminGymDetail.tsx) prints "Read and agreed, authorised
+to bind") keep reading exactly as they did. That is deliberate rather than lazy: the field is what a
+dispute would be resolved against, and its truth now rests on §32 inside the hashed text rather than on
+a checkbox, which is a stronger place for it to rest. **The one thing that would make it false is copy
+that no longer states it while the field still claims it** — so if the sentence above is ever
+weakened to something that is not assent to the whole document, `authorisedToBind` has to stop being
+derived from it.
+
+`legalEntityName` came off `SignPanel`'s props with the sentence that used it; step 1 still labels the
+signatory field "Who signs for the entity, and can bind it", which is now the only place the point is
+made outside the document.
+
+[OnboardingFlow.test.tsx](../client/src/__tests__/pages/OnboardingFlow.test.tsx) asserts the panel
+holds exactly one checkbox, that its label is that sentence, and that the panel says nothing about
+authority to bind — a test against the copy drifting back apart from the field it sets.
+
+### Verified
+
+`npx tsc --noEmit` clean. **54 test files, 1,032 tests passing.**

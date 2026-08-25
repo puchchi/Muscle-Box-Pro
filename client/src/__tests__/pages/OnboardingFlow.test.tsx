@@ -727,23 +727,18 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
     await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
   });
 
-  it("states §32 authority in the sentence that is ticked, and records it", async () => {
-    // The checkbox sets `authorisedToBind` as well as `agreedToAgreement`, so what it says
-    // is what makes that stored field true. One without the other is a record claiming a
-    // representation nobody was asked to make.
-    const user = await reachStepThree();
-    expect(screen.getByTestId("checkbox-agreed").closest("label")).toHaveTextContent(
-      /I have read and agree to this Agreement, and I am authorised to bind Iron Temple Fitness LLP to it/,
-    );
-
+  it("asks for assent once, and does not restate §32 beside it", async () => {
+    // The §32 authority checkbox was removed on 2026-08-25. The representation is in the
+    // document being agreed to, so the panel must not grow a second tick back — and it
+    // must not be left claiming authority in copy that no longer collects it either.
+    await reachStepThree();
     await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
-    await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("button-sign"));
-    await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
-
-    const state = await mockOnboardingApi.fetchState(DEMO_TOKEN);
-    expect(state.signature?.agreedToAgreement).toBe(true);
-    expect(state.signature?.authorisedToBind).toBe(true);
+    const panel = screen.getByTestId("sign-panel");
+    expect(within(panel).getAllByRole("checkbox")).toHaveLength(1);
+    expect(screen.getByTestId("checkbox-agreed").closest("label")).toHaveTextContent(
+      "I have read and agree to this Agreement.",
+    );
+    expect(panel).not.toHaveTextContent(/authorised to bind/i);
   });
 
   it("does not ask for a signing code it cannot verify", async () => {
@@ -772,11 +767,10 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
     await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
     await user.click(screen.getByTestId("button-continue"));
     await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
-    // Enabled only once this browser has re-rendered the document and matched the
-    // server's hash — the check that replaced computing the hash here.
+    // Awaited rather than asserted: the panel is locked until the reading gate reports the
+    // document scrolled, which happens an effect after `agreement-body` first paints.
     await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
     await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("checkbox-authorised"));
     await user.click(screen.getByTestId("button-sign"));
     await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
   }
@@ -857,7 +851,6 @@ describe("OnboardingFlow — the whole flow", () => {
     // to the value the server pinned at issuance.
     await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
     await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("checkbox-authorised"));
     await user.click(screen.getByTestId("button-sign"));
 
     await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
@@ -925,7 +918,6 @@ describe("OnboardingFlow — step 6 tracks the installation", () => {
     await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
     await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
     await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("checkbox-authorised"));
     await user.click(screen.getByTestId("button-sign"));
     await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
     await user.click(screen.getByTestId("button-pay-later"));

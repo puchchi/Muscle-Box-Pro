@@ -136,7 +136,6 @@ export default function StepReviewSign({
         />
       ) : (
         <SignPanel
-          legalEntityName={state.details.legalEntityName}
           signatoryName={state.details.signatoryName}
           signatoryDesignation={state.details.signatoryDesignation}
           contentHash={contentHash}

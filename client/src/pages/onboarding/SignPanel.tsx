@@ -9,11 +9,15 @@ import { SIGNING_REQUIRES_OTP } from "@shared/onboarding/types";
 /**
  * The signing panel.
  *
- * One checkbox, stating both representations: assent to the agreement and §32 authority
- * to bind the entity. It was two, on the reasoning that authority bundled into a general
- * "I agree" is weaker. The record still carries them as two fields, and the sentence the
- * gym ticks still says both in terms — what went is a second click on the same screen for
- * a person who has just been shown, by name and designation, that they are the signatory.
+ * One checkbox: "I have read and agree to this Agreement."
+ *
+ * There was a second one for §32 authority to bind the entity, on the reasoning that
+ * authority bundled into a general "I agree" is weaker. It went on 2026-08-25. The
+ * representation is not lost with it — §32 is a clause *of the document being agreed to*,
+ * and the signature block prints the signatory's name and designation — so what the second
+ * tick added was a restatement of a term the first tick already accepts. The record still
+ * carries `authorisedToBind`, and it is true for that reason rather than because it was
+ * asked separately (docs/gym-onboarding.md §23).
  *
  * The panel stays locked until the document has been scrolled through. That gate
  * evidences delivery and opportunity to read, not reading — nothing in a browser can
@@ -49,7 +53,6 @@ import { SIGNING_REQUIRES_OTP } from "@shared/onboarding/types";
  * flag's docstring for why.
  */
 export default function SignPanel({
-  legalEntityName,
   signatoryName,
   signatoryDesignation,
   contentHash,
@@ -62,7 +65,6 @@ export default function SignPanel({
   onRequestOtp,
   onSign,
 }: {
-  legalEntityName: string;
   /** From step 1, and what §47 prints. Shown here, never re-collected. */
   signatoryName: string;
   signatoryDesignation: string;
@@ -116,11 +118,11 @@ export default function SignPanel({
   }
 
   /**
-   * The two fields the record keeps, from the one sentence that was ticked.
+   * The two fields the record keeps, from the one box that was ticked.
    *
-   * They stay separate on the wire because the signature record and the admin view read
-   * them separately, and a stored `authorisedToBind` is only true if the label the gym
-   * ticked said so — which is why the copy below states both representations.
+   * `authorisedToBind` is no longer collected separately. It stays on the wire because the
+   * record and the admin view read it, and it tracks `agreed` because §32 is a term of the
+   * agreement being agreed to — not because a second checkbox was ever optional to tick.
    */
   const assent = () => ({ agreedToAgreement: agreed, authorisedToBind: agreed });
 

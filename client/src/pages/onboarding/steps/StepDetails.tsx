@@ -264,8 +264,8 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
             label="Signatory name"
             placeholder="Rohit Menon"
             // The clause number this used to carry (§32) is gone from the sentence, not the point
-            // of it: step 3 asks this same person to tick that they are authorised to bind the
-            // entity, so saying it here is what stops that tick being the first they hear of it.
+            // of it: this name is printed in the signature block and §32 has them representing
+            // that they can bind the entity, and step 3 no longer asks it as its own question.
             description="Who signs for the entity, and can bind it."
             autoComplete="name"
             disabled={readOnly}
