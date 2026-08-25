@@ -399,12 +399,13 @@ button back to the signed document (§24).
 split of scope:
 
 **The link is presented as forwardable, in those words.** The reason we use Payment Links rather than
-a checkout is that the signatory usually cannot release ₹50,000 — so the screen says "you don't have
-to be the one who pays" and explains that a forwarded link works from someone else's inbox. A feature
+a checkout is that the signatory usually cannot release ₹50,000 — so the screen said "you don't have
+to be the one who pays" and explained that a forwarded link works from someone else's inbox. A feature
 nobody is told about is a feature nobody uses, and this one is the difference between a deposit paid
-today and a deposit paid next Friday. **The card that held the link went on 2026-08-25 (§25): paying
-navigates this tab, the line about forwarding moved to the pending card, and it points at the emailed
-copy of the link rather than at an anchor on screen.**
+today and a deposit paid next Friday. **Both of those went on 2026-08-25.** The card that held the
+link went with §25 — paying navigates this tab — and the paragraph about forwarding went with the
+step-4 trim (§28), leaving one clause: we'll spot the payment *"including from the copy in your
+email"*. Said once, in passing, on a screen the accountant is not the one reading.
 
 **Nothing client-side can mark a deposit paid.** The screen polls our own record every five seconds
 while a payment is settling, stops after ~5 minutes, and never inspects a redirect or a gateway
@@ -2477,6 +2478,33 @@ On the unpaid card, the eyebrow read "Refundable security deposit" directly unde
 saying "Security deposit" and a blurb saying "Refundable, and held for the whole term". It reads
 "Amount to pay", and the sentence below no longer repeats "held for the whole term" either.
 
+> remove "Refundable within 30 days of the machine being collected, less anything owing under the
+> agreement."
+
+And then the refund terms came off the paid panel entirely. That sentence was the fourth statement of
+refundability on one screen — the page blurb, the unpaid card, the line under the reference, and this
+— and it is the only one of the four that restates a clause the gym has already read and signed (§5.6
+on the thirty days, §5.7 on the deductions). By the time this panel renders the money has moved; what
+it needs to say is where the receipt is, which is now all it says. The mechanics stay one step back in
+the agreement, which is the same call §24 made about the clause list.
+
+### The green is one glyph
+
+> i think we can make it slightly positive color
+
+> doesnt go with theme. maybe just keep color to small part and make sure to follow theme
+
+Both tinted panels were wrong at this size. `bg-primary/5` is the same orange as every *unpaid*
+state on the screen, so an outcome and an outstanding obligation looked alike; `bg-emerald-50` put a
+green field under an orange rail and an orange logo and read as a different product.
+
+What ships is a white card with `border-gray-200`, like every other card in the wizard, and the
+positive signal confined to the `CheckCircle2` in `text-emerald-600` — plus the tick the copy button
+flashes. The nested receipt surface is `bg-gray-50`, the same treatment as the invite link on
+`AdminInviteGym`. The settling spinner stays `text-primary`, because that one is progress rather than
+an outcome, and step 5's `ShieldCheck` is emerald too so money received is not one colour on step 4
+and another one screen later.
+
 ### Paid, and stuck
 
 The screenshot that prompted this was a dead end: deposit `paid`, step 4 still the server's
@@ -2503,3 +2531,49 @@ reference on screen, the copy button handing over exactly that string, the human
 amount stated once. `settling` itself is not covered, for the reason §26 gives about the other
 server-state combinations: the mock completes step 4 in the same call that marks the money paid, so
 the state cannot be reached without contorting it into a shape the real API never takes.
+
+---
+
+## 28. The pending card, trimmed (2026-08-25)
+
+> many things to change here
+> move button to right and remove arrow from it.
+> remvoe You don't have to be the one who pays. Forward the emailed link to whoever releases payments.
+> It works from their inbox, and we match it to your gym either way.
+>
+> remove UPI, netbanking etc line
+
+Three cuts to the card a gym looks at while it waits, all of them the same cut: the screen was
+explaining itself where it only needed to hold still.
+
+**The methods list.** *"₹50,000 on Razorpay: UPI, netbanking, card or NEFT"* stated the amount for the
+third time on one screen — page blurb, the card above, this line — and then listed methods the gym is
+about to be shown by Razorpay itself, on a card that appears *after* the choice of method is out of our
+hands. The sentence now starts at the part that is ours to say: we'll spot it whenever it lands.
+
+**The forwarding paragraph.** Two lines and an icon making the case for a feature, on the one screen
+where the case has already been won: the link exists, it is in the gym's inbox, and forwarding it needs
+no encouragement from us. What survives is the clause that carries the same fact without arguing for
+it — *"including from the copy in your email"*. §5's note about presenting the link as forwardable is
+amended rather than deleted, because the reasoning behind Payment Links has not changed; only the
+number of times the screen says so.
+
+**The arrow, and the button's place.** `ArrowUpRight` on *"Open the payment page"* was a leaving-the-site
+glyph on a control that navigates this tab (§25) — true when the button was an `_blank` anchor, wrong
+since. And the button sat left, hard against the paragraph, while every other primary action in the
+wizard sits right; `sm:justify-end` puts it where the eye already goes. The unconfirmed state's pair
+keeps its order — help, then retry — and moves right together.
+
+> change open the payment page to pay deposit now
+
+**And then the label.** *"Open the payment page"* named the mechanism; **"Pay deposit now"** names the
+obligation, and matches the button on the card above it — the same action, offered again to a gym that
+came back to a link already issued. Nothing on this screen should read as a detour to somewhere the
+paying happens.
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,045 tests passing.** The two step-4 tests that asserted
+the forwarding paragraph now assert the clause that replaced it: present on the waiting card, and
+absent on the confirming one — where anything implying a link somebody else can still pay is how one
+₹50,000 becomes two.

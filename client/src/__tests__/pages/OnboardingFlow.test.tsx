@@ -874,7 +874,7 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
     expect(screen.getByTestId("deposit-paid")).not.toHaveTextContent("Deposit received: ₹");
   });
 
-  it("keeps the forwardable link in front of a gym that reopened the page", async () => {
+  it("keeps a way back to the payment in front of a gym that reopened the page", async () => {
     const user = await open();
     await signTheAgreement(user);
 
@@ -891,14 +891,14 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
     const panel = screen.getByTestId("deposit-waiting");
     expect(panel).toHaveTextContent("Waiting for the payment");
     expect(panel).toHaveTextContent(/close the tab/);
-    // Safe to hand to someone else — the reason this is a Payment Link rather than an
-    // in-page checkout.
-    expect(panel).toHaveTextContent(/don't have to be the one who pays/);
+    // The one thing left on the screen saying a forwarded link works. The paragraph that
+    // said it outright came off on 2026-08-25.
+    expect(panel).toHaveTextContent(/copy in your email/);
     expect(screen.getByTestId("deposit-status")).toHaveTextContent("Awaiting payment");
     expect(screen.queryByTestId("button-refresh-deposit")).not.toBeInTheDocument();
     // `sessionStorage` died with the tab that left, so there is no stashed payment URL — and
     // this button asks for the link again rather than being absent and stranding the gym.
-    expect(screen.getByTestId("button-open-payment")).toHaveTextContent("Open the payment page");
+    expect(screen.getByTestId("button-open-payment")).toHaveTextContent("Pay deposit now");
   });
 
   it("confirms on what the return route hands it, not on the query string", async () => {
@@ -923,9 +923,9 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
       const panel = screen.getByTestId("deposit-waiting");
       expect(panel).toHaveTextContent("Confirming your payment");
       expect(panel).toHaveTextContent(/back from Razorpay/i);
-      // No advice to forward it now. Somebody has just paid; a forwarded link at this point
-      // buys a second ₹50,000 and a refund conversation.
-      expect(panel).not.toHaveTextContent(/don't have to be the one who pays/);
+      // Nothing inviting a second payment. Somebody has just paid; another mention of a
+      // link anyone can pay buys a second ₹50,000 and a refund conversation.
+      expect(panel).not.toHaveTextContent(/copy in your email/);
     });
 
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());

@@ -1,16 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  AlertCircle,
-  ArrowUpRight,
-  Check,
-  CheckCircle2,
-  Clock,
-  Copy,
-  Forward,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, Clock, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
 import {
@@ -38,8 +29,9 @@ import type { StepViewProps } from "../types";
  *
  * **A forwardable link, not an in-page checkout.** The person authorised to sign a
  * placement agreement frequently has no access to the account that releases ₹50,000.
- * That is the whole reason for Razorpay Payment Links (§5), so the screen *says* the
- * link can be forwarded — a feature nobody uses is a feature nobody was told about.
+ * That is the whole reason for Razorpay Payment Links (§5). The screen used to explain
+ * that in a paragraph of its own; since 2026-08-25 it does not, and the one clause left
+ * of it is that we'll spot the payment "including from the copy in your email".
  *
  * **The link is a journey, not a URL to hand over.** Since 2026-08-25 paying navigates
  * this tab to the payment page and the link's `callback_url` brings the gym back to the
@@ -309,7 +301,7 @@ export default function StepDeposit({
                       ? "This page has stopped watching; reload it to see where it stands."
                       : "We're still watching, and this page moves on by itself if it lands."
                   }`
-                : `${amount} on Razorpay: UPI, netbanking, card or NEFT. We'll spot it whenever it lands, including from the copy in your email${
+                : `We'll spot it whenever it lands, including from the copy in your email${
                     phase === "stopped"
                       ? ". Reload this page to see where it stands."
                       : ", and this page moves on by itself. You can close the tab."
@@ -317,7 +309,7 @@ export default function StepDeposit({
           </p>
 
           {canAct && !confirming && (
-            <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
               {/*
                 Help before a second attempt, and in that order on purpose. This state is
                 far more often a late webhook than a decline, so the button most likely to
@@ -352,26 +344,9 @@ export default function StepDeposit({
                 }
                 data-testid="button-open-payment"
               >
-                {unconfirmed ? "Try the payment again" : "Open the payment page"}
-                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+                {unconfirmed ? "Try the payment again" : "Pay deposit now"}
               </Button>
             </div>
-          )}
-
-          {/*
-            The reason this is a link rather than a checkout, said where the link is. Only
-            while nobody has paid yet: after the gateway has sent someone back, telling them
-            to forward it invites a second payment.
-          */}
-          {!cameBack && (
-            <p className="text-sm text-gray-700 leading-relaxed mt-4 flex items-start gap-2">
-              <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-              <span>
-                <strong className="text-foreground">You don't have to be the one who pays.</strong>{" "}
-                Forward the emailed link to whoever releases payments. It works from their inbox,
-                and we match it to your gym either way.
-              </span>
-            </p>
           )}
 
           {IS_MOCK_ONBOARDING && (
@@ -497,8 +472,7 @@ function PaidPanel({
 
       <p className="text-sm text-gray-700 leading-relaxed mt-4">
         We've emailed the receipt to <strong className="text-foreground">{email}</strong>, and it
-        stays in your dashboard under Deposit. Refundable within 30 days of the machine being
-        collected, less anything owing under the agreement.
+        stays in your dashboard under Deposit.
       </p>
 
       {settling && (
