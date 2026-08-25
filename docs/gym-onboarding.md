@@ -2898,3 +2898,263 @@ reads as the flow ending a step early. Unchanged for the reason §32 gives: one 
 whole-flow test's single assertion on this card grew to four: the Schedule A title in its new
 active voice, the sentence that decides when the 24 months start, and two of the four timings,
 because the timings are the part of this card a future trim would think was decoration.
+
+## 34. Back goes left (2026-08-25)
+
+> should this "back to my details" button to left?
+
+Step 2's footer, where "Back to my details" and "Continue to the agreement" were parked side by
+side at the right edge of a `max-w-3xl` row, under a left-aligned sentence, with the whole left
+half of the row empty.
+
+Yes. `sm:justify-between` added to the row in `StepPartnership.tsx`. Two reasons:
+
+- **The rail numbers left to right.** Step 1 is on the left of every screen in this flow and step 6
+  is on the right, so on the screen below it backwards should be leftwards. Grouping both buttons
+  at the right made "back" a rightward-sitting control.
+- **It was touching the primary.** Same height, same radius, ghost fill, and its label begins with
+  the word a reader scanning for "the way on" does not want. Mis-tapping it costs a gym the six
+  panels it just finished reading. Step 4's row already spans the full width for the same reason
+  (§29), with its handoff note on the left and the pay button on the right.
+
+`justify-content` rather than a DOM reorder, so the tab order the row's comment argues for — the
+primary first, the way back second — is unchanged, as is the mobile stack (primary on top, full
+width, no `justify` in a column).
+
+### Verified
+
+`npx tsc --noEmit` clean. `OnboardingFlow.test.tsx`: **55 tests passing**, no change needed — the
+suite asserts `button-back` goes to step 1 and says nothing about which edge it sits at, which is
+the right level for it to care about.
+
+## 35. "Please check the highlighted fields." with nothing highlighted (2026-08-25)
+
+> why am i getting error "Please check the highlighted fields." when there are no highlight field in
+> this page
+
+Step 5, on `test-gym-5`, after typing `12345678` and pressing "Create my password". Reproduced
+against the sandbox with the exact payload the client sends:
+
+```
+POST /gym/account  { "password": "12345678" }
+400 {"code":"validation","message":"Please check the highlighted fields.",
+     "fieldErrors":{"email":"That does not look like an email address.",
+                    "password":"Use at least 12 characters. …"}}
+```
+
+Three faults, none of which the screen could show.
+
+**1. No `email` in the body, and the route requires one.** `gymAccount.ts` reads `ctx.body.email`
+and answers `fieldErrors.email` when it is missing. `httpOnboardingApi.createAccount` sent only the
+password, on the argument written at length in that file's own header: the address is the gym's §41
+notices email, already on the profile the handle is scoped to, and a browser naming it is a browser
+choosing which address can later reset the password. That reasoning is better than what is deployed
+and it was not what was deployed, so the effect of holding the line was that **no gym could finish
+step 5 at all**.
+
+Settled in favour of sending it, from `state.details.noticesEmail` — the state the server itself
+returned, threaded through `useOnboarding`, not a field anyone types on step 5. The authorisation
+argument is recorded in `httpOnboardingApi.ts` against the day the route is changed to derive it.
+
+**2. The form's minimum was 8 and the server's is 12.** `portalPasswordSchema` said
+`.min(8)`/`.max(72)`; `MIN_PASSWORD_LENGTH`/`MAX_PASSWORD_LENGTH` in the backend's
+`domain/password.ts` are 12 and 200. So `12345678` passed the browser check, cost a round trip, and
+came back as a field error. Both bounds now mirror the server, with the placeholder and
+`GymSetPassword`'s copy moved to match. A number on this side that is looser than the server's is a
+form that lies about what it will accept.
+
+**3. `StepDone` read no `fieldErrors` at all.** It rendered only its own zod message, so anything
+the server said about the password was dropped and the shell's generic sentence was the only thing
+left on screen. That is not merely a symptom of fault 2: the server screens a denylist and a
+distinct-character count that a schema on this side cannot mirror, so a password this form accepts
+can still be refused, and `passwordpassword` would have produced the same empty banner after the
+length fix. The input now shows `fieldErrors.password`, local message first.
+
+With the message under the field, the banner above it became the second red box §26 already argued
+about for step 1. `STEPS_WITH_FIELD_ERROR_SUMMARY` is now `stepMarksField(step, field, details)` —
+step 1 marks any key on `GymDetails`, step 5 marks `password` — and the banner survives for
+anything not named there, because for a field the step cannot mark it is the only mention on the
+page.
+
+### The mock was complicit
+
+`mockApi.createAccount` ignored the email, so the live client's `{ password }` passed every test in
+the suite and failed against the deployed route. The mock now applies `portalEmailSchema` first and
+answers `fieldErrors.email`, which is the assertion that would have caught this before a gym did.
+It remains looser than the server on the denylist and the character count, and says so.
+
+### Still broken, and it is the same fault
+
+`setPortalPassword` in `gymSession.ts` posts to the same route with `{ password }` and has no
+address to send: `GymSetPassword` collects a password and a confirmation, and nothing about the gym
+whose password it is. So the interim forgot-password path (§9.2) cannot succeed either. It is not
+fixable from this side — putting an email box on that screen asks a person who has just lost their
+password to guess which address the account is under, and it makes the route an enumeration oracle.
+That one needs `gymAccount.ts` to take the address from `agg.profile.noticesEmail` on the `setpw`
+branch, the way `depositCreate.ts` already reads it.
+
+### Verified
+
+`npx tsc --noEmit` clean. `npx vitest run`: **56 files, 1,048 tests passing** — two new
+(`OnboardingFlow.test.tsx`: a server-refused password lands under the input with no banner and one
+`role="alert"`; `onboarding-mock-api.test.ts`: no address, no account), three assertions moved from
+8 characters to 12, and `httpOnboardingApi.test.ts`'s "sends only the password" inverted into "sends
+the email as well".
+
+Against the sandbox, `{"email":"singhanurag50@gmail.com","password":"short"}` now comes back with a
+`password` error and no `email` error, which is the whole of what changed. Deliberately not sent
+with a valid password: that would have created the account and this is `test-gym-5`'s only handle.
+
+## 36. One tab, two gyms, one payment link (2026-08-25)
+
+> for http://localhost:3000/gym/onboarding/test-gym-6/55143a71… i made a failed payment...and came
+> back to this page...but when i clicked pay now button it opened already paid razorpay link
+> https://razorpay.com/payment-link/plink_TU4RlJU441NJL3/test
+
+The link that opened is `test-gym-5`'s. Razorpay's own page says so: *"Muscle Box Pro security
+deposit — test gym 5"*, `Payment Completed`, `INR 50,000.00`. So `test-gym-6` was offered a link
+belonging to another gym, which that other gym had already paid, on a page whose only button was
+"Pay deposit now". Nothing on step 4 could recover from that.
+
+**Not the server.** `depositCreate.ts` resolves a `gymId` from the credential and reads
+`agg.deposit`; there is no path by which a `test-gym-6` request sees a `test-gym-5` row. The stale
+link never came from an API call.
+
+**`sessionStorage`, unscoped.** `lib/depositReturn.ts` stashed the payment URL under one global key,
+`mbp.deposit.payment-url`, and `readPaymentUrl()` validated one thing about it: that it began with
+`https://`. `sessionStorage` is per *tab*, not per page, and it survives navigation — so a tab that
+had been through `test-gym-5`'s step 4 carried that gym's link into `test-gym-6`'s step 4, where the
+pending card reads it on mount:
+
+```tsx
+onClick={() => (paymentUrl ? goToPayment(paymentUrl) : payNow())}
+```
+
+`paymentUrl` is `link?.paymentUrl ?? rememberedUrl`, and on a reopened page `link` is null. So the
+button took the branch that never asks the server.
+
+Two ways for the leftover to still be there. `forgetPaymentAttempt()` runs in a `StepDeposit` effect
+on `status === "paid"` — but on the live path a confirmed deposit advances the wizard to step 5, so
+step 4 usually never renders in the paid state and the cleanup usually never runs. And a *failed*
+payment gets no `callback_url` redirect at all, so that tab comes back by hand and nothing in the
+journey clears anything.
+
+The URL is now stored with the onboarding path it was minted for, and handed back only to that path:
+
+```ts
+write(PAYMENT_KEY, JSON.stringify({ scope: attempt.returnTo, url: attempt.paymentUrl }));
+```
+
+`readPaymentUrl(scope)` takes the current path and answers null on a mismatch, which drops the
+button into `payNow()` — the server, which answers per gym and returns that gym's existing live link
+rather than minting a second one (§26). The return path and the scope are the same string written
+twice on purpose: `takeReturnTo()` consumes the first, and the scope has to outlive it.
+
+Both directions of the old failure are closed by that. A *spent* foreign link stranded a gym on
+Razorpay's "Payment Completed" with no way to pay, which is what happened here. A *live* one would
+have taken ₹50,000 against the wrong gym's deposit, which is the more expensive half.
+
+### Not done
+
+**A link the gym paid but our record has not caught up on.** Same gym, so the scope matches, and
+"Pay deposit now" reopens a link Razorpay considers finished. That state means the webhook is lost
+or late, and it is unreachable from the client: the only page that knows a link is spent is
+Razorpay's. The screen's answer is the one it already gives after half a minute of asking — "we
+couldn't confirm your payment", help offered before a second attempt (§26) — and the fix belongs in
+the webhook path, not here.
+
+**The em dash in the payment description.** `depositCreate.ts` builds `Muscle Box Pro security
+deposit — ${tradeName}`, and that string is rendered to the gym on Razorpay's page. It is copy in
+`mbp-backend`, so it is a deploy rather than an edit.
+
+### Verified
+
+`npx tsc --noEmit` clean. `npx vitest run`: **56 files, 1,050 tests passing** — two new in
+`depositReturn.test.ts`: one gym's link is not handed to another gym's wizard, and a stash that is
+not a record this module wrote offers nothing. The `javascript:alert(1)` test now writes the record
+shape, so the scheme check is still covered.
+
+## 36. Step 6 is this frontend's step, and nothing said so (2026-08-25)
+
+> on setting password, we are not going to installation step
+
+Straight after §35 was fixed. The password was accepted — the record proves it — and the screen
+stayed on step 5 with the form still on it. The rail showed 1 to 5 ticked and Installation grey.
+
+Two independent faults, and either one alone would have held the gym there.
+
+### 1. The server has no step 6
+
+Read off the sandbox for `test-gym-5` after the password was set:
+
+```
+completedSteps: [1,2,3,4,5]   currentStep: 5
+status: "deposit_paid"        accountCreatedAt: set
+```
+
+`deriveCurrentStep` in the backend's `domain/onboardingStatus.ts` returns 5 when all five are
+complete and says why in a comment: *"All five complete → 5, not 6. `OnboardingStep` has no 6."*
+It is right about its own type. Step 6 was added on this side when installation tracking moved out
+of step 5 (§7), and the backend was never told. So the rule this flow is built on — **the step is
+whatever the server last said it was** — pointed at a step the gym had just finished.
+
+`useOnboarding` now derives the sixth step, and it is the only place that adds to the server's
+answer:
+
+```ts
+const serverStep = state?.currentStep ?? 1;
+const currentStep: OnboardingStep =
+  serverStep === 5 && state?.timestamps.accountCreatedAt ? 6 : serverStep;
+```
+
+Deriving a step client-side is exactly the thing §4 says not to do, so what makes it safe here is
+worth stating: **nothing is submitted on step 6.** There is no action, no commit, no field. It
+renders the machine record and the deposit state out of the same response, both of which the server
+already sent. There is no step there to skip, so a client that reaches it early cannot skip
+anything — which is not true of any other step in the flow, and this must not become a pattern.
+Written to be idempotent: a response that ever says 6 stays 6.
+
+The backend change that would retire it: `OnboardingStep` gains 6, `ONBOARDING_STEPS` gains 6,
+`deriveCurrentStep` returns 6 once 1 to 5 are complete, `statusForStepCommit(6)` returns null.
+Then the line above is dead code and can go.
+
+### 2. Both "your dashboard is ready" cards were gated on activation
+
+`StepDone` and `StepInstallation` each read `state.status === "active"`. Nothing in the wizard can
+write that status: `statusForStepCommit(4)` and `(5)` both return null, `deposit_paid` comes from
+the Razorpay webhook, and `active` comes from `POST /admin/gyms/{id}/activate` — a human at our end,
+minutes or days later. So for every gym that had just created its password the gate read false,
+`StepDone` put the password form back on screen, and pressing it again is a 409, because
+`createGymUser` is conditional on `attribute_not_exists`.
+
+Both now read `state.timestamps.accountCreatedAt`, which is the honest test of what the card
+claims. `POST /gym/account` mints the `mbp_gym` session cookie itself and `gymLogin` gates on the
+user row rather than on the onboarding status, so the dashboard is reachable the moment that
+timestamp exists. Activation is about the machine, not the login.
+
+This is why fault 1 was invisible in review: fixing the step alone would have landed the gym on
+step 6 with a card saying nothing, and fixing the gate alone would have left them on step 5.
+
+### The mock, again
+
+Same class of lie as §35, in two places, and both are why the suite was green while the flow was
+stuck.
+
+`createAccount` set `status = "active"`. The real route cannot. Removed, and the two assertions
+that expected it now assert `signed` plus `currentStep: 5` — the state the deployed API actually
+returns.
+
+`recomputeStep` walked `ONBOARDING_STEPS`, which has a 6 in it, so it answered 6 as soon as 1 to 5
+were done. It now stops at 5, the way `deriveCurrentStep` does. The four step 6 tests and the
+whole-flow walkthrough still pass, and they now pass **through the derivation** rather than around
+it, which is the only version of those tests worth having.
+
+### Verified
+
+`npx tsc --noEmit` clean. `npx vitest run`: **56 files, 1,050 tests passing**, including
+`OnboardingFlow.test.tsx`'s "walks sign, pay the deposit, and set a password" and the four step 6
+tests, none of which reach step 6 by fiat any more.
+
+Confirmed against the sandbox record rather than reasoned about: `currentStep: 5` with
+`accountCreatedAt` set and `status: "deposit_paid"` is what the deployed API returns for a gym that
+has finished the flow, and that combination is now what puts step 6 on screen.

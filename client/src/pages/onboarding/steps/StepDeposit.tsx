@@ -127,7 +127,9 @@ export default function StepDeposit({
     const returned = takeReturnedFromGateway();
     setCameBack(returned);
     setPhase(returned ? "confirm" : "watch");
-    setRememberedUrl(readPaymentUrl());
+    // Scoped to this page: a tab that has been through another gym's step 4 still holds that
+    // gym's link, and offering it here would send this gym to somebody else's ₹50,000.
+    setRememberedUrl(readPaymentUrl(window.location.pathname));
   }, []);
 
   useEffect(() => {

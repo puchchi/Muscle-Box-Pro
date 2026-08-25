@@ -66,7 +66,7 @@ describe("GymSetPassword", () => {
       render(<GymSetPassword handle={HANDLE} />);
       await submit("short");
 
-      expect(await screen.findByTestId("password-error")).toHaveTextContent(/at least 8/i);
+      expect(await screen.findByTestId("password-error")).toHaveTextContent(/at least 12/i);
       expect(mockSetPassword).not.toHaveBeenCalled();
     });
   });

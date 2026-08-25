@@ -143,7 +143,9 @@ export default function StepInstallation({ token, state, goToStep }: StepViewPro
         </section>
       )}
 
-      {state.status === "active" && (
+      {/* The account, not the activation. See the note in `StepDone`: `status` reaches `active`
+          only through the admin route, and this card is about a login that already works. */}
+      {!!state.timestamps.accountCreatedAt && (
         <section
           className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
           data-testid="installation-dashboard"

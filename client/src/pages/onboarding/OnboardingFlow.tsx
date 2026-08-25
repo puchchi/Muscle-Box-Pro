@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { scrollIntoViewGently } from "@/lib/motion";
 import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
 import { STEP_META, stepMeta } from "@shared/onboarding/steps";
-import type { OnboardingError } from "@shared/onboarding/types";
+import type { GymDetails, OnboardingError } from "@shared/onboarding/types";
 import OnboardingIntro from "./OnboardingIntro";
 import ProgressRail from "./ProgressRail";
 import { useOnboarding } from "./useOnboarding";
@@ -46,7 +46,7 @@ const STEP_COMPONENTS: Record<number, ComponentType<StepViewProps>> = {
 };
 
 /**
- * The steps that render their own list of what is wrong, with a way to each field.
+ * Does the step on screen put this field's error on the field itself?
  *
  * Step 1 is eleven fields, so it carries an error summary — which meant a rejected submit
  * printed two red boxes twenty pixels apart: the server's own sentence ("Please check the
@@ -55,11 +55,21 @@ const STEP_COMPONENTS: Record<number, ComponentType<StepViewProps>> = {
  * with it, and focuses it on click; the sentence above it was an instruction to read the
  * next box.
  *
- * A set rather than a `viewStep === 1`, so that giving step 3 a summary is one entry here
- * rather than a condition to rediscover. Steps that are *not* in it keep the banner — for
- * them it is the only place a `fieldErrors` payload appears at all.
+ * Step 5 has one field, and the rejection it gets is a password the server refuses for a
+ * rule `portalPasswordSchema` cannot mirror — a denylist, a distinct-character count. That
+ * belongs under the input, so the banner would be the second box there too.
+ *
+ * A function rather than a `viewStep === 1`, so that giving step 3 the same treatment is
+ * one line here rather than a condition to rediscover. Anything not named keeps the banner:
+ * for a field the step cannot mark, that banner is the only mention of it on the page, and
+ * a server that starts validating something a step does not collect should degrade to it
+ * rather than to silence.
  */
-const STEPS_WITH_FIELD_ERROR_SUMMARY: ReadonlySet<number> = new Set([1]);
+function stepMarksField(step: number, field: string, details: GymDetails): boolean {
+  if (step === 1) return field in details;
+  if (step === 5) return field === "password";
+  return false;
+}
 
 /**
  * One measure for the header, the rail and the body.
@@ -106,6 +116,7 @@ export default function OnboardingFlow({ token }: { token: string }) {
     fieldErrors,
     isLoading,
     isSubmitting,
+    currentStep,
     viewStep,
     canView,
     goToStep,
@@ -124,7 +135,7 @@ export default function OnboardingFlow({ token }: { token: string }) {
 
   const meta = stepMeta(viewStep);
   const StepBody = STEP_COMPONENTS[viewStep];
-  const isBehind = viewStep < state.currentStep;
+  const isBehind = viewStep < currentStep;
   /*
     The introduction, and with it the page header, on the one pass where a gym has not
     seen this flow before. The condition lived in `StepDetails` when the card sat inside
@@ -139,18 +150,13 @@ export default function OnboardingFlow({ token }: { token: string }) {
   const showIntro = viewStep === 1 && !state.completedSteps.includes(1);
   /*
     Is the step below already saying this, field by field? Then it says it better, and the
-    banner is a second red box repeating it.
-
-    Every named field has to be one the step can actually mark. `StepDetails` drops a
-    `fieldErrors` key that is not on `GymDetails` — it has no input to attach it to — so
-    suppressing the banner for a payload like that would remove the only mention of it on
-    the page. A server that starts validating something this form does not collect should
-    degrade to the banner, not to silence.
+    banner is a second red box repeating it. *Every* named field has to be one the step can
+    mark — see `stepMarksField`.
   */
   const stepOwnsFieldErrors =
     fieldErrors !== null &&
-    STEPS_WITH_FIELD_ERROR_SUMMARY.has(viewStep) &&
-    Object.keys(fieldErrors).every((name) => name in state.details);
+    Object.keys(fieldErrors).length > 0 &&
+    Object.keys(fieldErrors).every((name) => stepMarksField(viewStep, name, state.details));
 
   return (
     <div
@@ -183,7 +189,7 @@ export default function OnboardingFlow({ token }: { token: string }) {
       */}
       <div ref={railRef} className="sticky top-0 z-30">
         <ProgressRail
-          currentStep={state.currentStep}
+          currentStep={currentStep}
           viewStep={viewStep}
           completedSteps={state.completedSteps}
           canView={canView}
@@ -243,7 +249,7 @@ export default function OnboardingFlow({ token }: { token: string }) {
           <ReviewingBanner
             isFrozen={state.isSigned && (viewStep === 1 || viewStep === 2)}
             canEdit={!isReadOnly}
-            onReturn={() => goToStep(state.currentStep)}
+            onReturn={() => goToStep(currentStep)}
           />
         )}
 

@@ -15,6 +15,15 @@
  * rather than a dead "waiting" card. Re-issuing would mint a second live link for one
  * obligation.
  *
+ * That URL is stored **with the onboarding path it was minted for**, and handed back only to
+ * that path. One tab can visit more than one gym's wizard — us, testing; an operator running
+ * two sites; anyone who reuses a tab — and these keys outlive a navigation, so an unscoped
+ * URL means gym B's "Pay deposit now" button opens gym A's payment link. Which is not a
+ * cosmetic mix-up: gym A's link may be spent, in which case the button lands on Razorpay's
+ * "Payment Completed" and gym B cannot pay at all, or it may be live, in which case gym B
+ * pays gym A's deposit. A scope mismatch falls back to asking the server for the link, and
+ * the server answers per gym.
+ *
  * **That we have been away**, so the screen can say it is confirming a payment just made
  * instead of announcing it cannot see one nobody has attempted.
  *
@@ -25,7 +34,7 @@
  */
 
 const RETURN_TO_KEY = "mbp.deposit.return-to";
-const PAYMENT_URL_KEY = "mbp.deposit.payment-url";
+const PAYMENT_KEY = "mbp.deposit.payment";
 const RETURNED_KEY = "mbp.deposit.returned";
 
 /** Where a Payment Link's `callback_url` points. Carries no handle, by design. */
@@ -36,7 +45,10 @@ export function rememberPaymentAttempt(attempt: {
   paymentUrl: string;
 }): void {
   write(RETURN_TO_KEY, attempt.returnTo);
-  write(PAYMENT_URL_KEY, attempt.paymentUrl);
+  // The return path doubles as the scope: it is the wizard page that asked for this link, so
+  // it names the gym the link belongs to. One value, two lifetimes — the path is consumed by
+  // the return route, the scope has to outlive it, so they are not the same field.
+  write(PAYMENT_KEY, JSON.stringify({ scope: attempt.returnTo, url: attempt.paymentUrl }));
 }
 
 /**
@@ -52,15 +64,32 @@ export function takeReturnTo(): string | null {
   return path && path.startsWith("/gym/onboarding/") ? path : null;
 }
 
-/** The link the gym was sent to, if this tab is the one that sent it. */
-export function readPaymentUrl(): string | null {
-  const url = read(PAYMENT_URL_KEY);
-  return url && url.startsWith("https://") ? url : null;
+/**
+ * The link the gym was sent to, if this tab is the one that sent it *and* it was sent from
+ * this page. `scope` is the onboarding path, so pass the current one.
+ *
+ * `https://` because this value ends up in a navigation from a page mid-onboarding, where a
+ * `javascript:` scheme is script execution.
+ */
+export function readPaymentUrl(scope: string): string | null {
+  const stored = read(PAYMENT_KEY);
+  if (!stored) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stored);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const { scope: storedScope, url } = parsed as { scope?: unknown; url?: unknown };
+  if (typeof storedScope !== "string" || typeof url !== "string") return null;
+  if (storedScope !== scope) return null;
+  return url.startsWith("https://") ? url : null;
 }
 
 export function forgetPaymentAttempt(): void {
   drop(RETURN_TO_KEY);
-  drop(PAYMENT_URL_KEY);
+  drop(PAYMENT_KEY);
   drop(RETURNED_KEY);
 }
 

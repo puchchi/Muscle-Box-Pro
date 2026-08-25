@@ -19,7 +19,13 @@
 
 import { PARTNERSHIP } from "../partnership/summary";
 import { fingerprintIssuedAgreement, issuanceDateInIndia } from "./issuedAgreement";
-import { gymDetailsSchema, portalPasswordSchema, signatureSchema, toFieldErrors } from "./schema";
+import {
+  gymDetailsSchema,
+  portalEmailSchema,
+  portalPasswordSchema,
+  signatureSchema,
+  toFieldErrors,
+} from "./schema";
 import { ONBOARDING_STEPS, SIGNING_REQUIRES_OTP } from "./types";
 import type {
   DepositChoice,
@@ -210,12 +216,19 @@ function fail(code: OnboardingError["code"], message: string, extra: Partial<Onb
  * `currentStep + 1` would knock them backwards.
  */
 function recomputeStep(completed: OnboardingStep[]): OnboardingStep {
+  /*
+    Five, not six, and the cap is the point. This walked `ONBOARDING_STEPS` — which has a 6 —
+    so it answered 6 the moment steps 1 to 5 were done, and the wizard reached the installation
+    step in preview and stopped dead at step 5 against the deployed API. `deriveCurrentStep` in
+    the backend's `domain/onboardingStatus.ts` returns 5 there and says so: *"All five complete
+    → 5, not 6. `OnboardingStep` has no 6."* Step 6 belongs to this frontend, and
+    `useOnboarding` is the one place that derives it.
+  */
   for (const step of ONBOARDING_STEPS) {
+    if (step === 6) break;
     if (!completed.includes(step)) return step;
   }
-  // Every step done: stay on the last one. It is the installation record, and it reads
-  // as a record once it is complete rather than turning into a sixth blank screen.
-  return ONBOARDING_STEPS[ONBOARDING_STEPS.length - 1];
+  return 5;
 }
 
 function complete(state: OnboardingState, step: OnboardingStep): void {
@@ -623,7 +636,7 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
       return ok(state);
     },
 
-    async createAccount(token, password) {
+    async createAccount(token, password, email) {
       await delay();
       const loaded = load(token);
       if (!loaded.ok) return loaded;
@@ -636,6 +649,14 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
           currentStep: state.currentStep,
         });
       }
+      // Checked here because the route checks it: `POST /gym/account` refuses a missing or
+      // malformed `email` with `fieldErrors.email`, which step 5 has no input for. The mock
+      // stayed silent about it, so the frontend sent no address at all for a month.
+      if (!portalEmailSchema.safeParse(email).success) {
+        return fail("validation", "Please check the highlighted fields.", {
+          fieldErrors: { email: "That does not look like an email address." },
+        });
+      }
       const parsed = portalPasswordSchema.safeParse(password);
       if (!parsed.success) {
         // A bare string schema puts its issues at the root path, so there is no key
@@ -645,8 +666,11 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
         });
       }
 
+      // The timestamp only. This also wrote `status = "active"`, which the real route cannot:
+      // `statusForStepCommit(5)` returns null server-side and `active` comes from
+      // `POST /admin/gyms/{id}/activate`. Two screens read `status` here and passed, then
+      // showed a real gym the password form again for an account that already existed.
       state.timestamps.accountCreatedAt = now();
-      state.status = "active";
       complete(state, 5);
       return ok(state);
     },

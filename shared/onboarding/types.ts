@@ -406,6 +406,13 @@ export interface OnboardingApi {
   /** Polls our own record, never a client callback — the webhook is the source of truth (§5). */
   refreshDepositStatus(token: string): Promise<StateResult>;
 
-  /** Creates the portal account. Lands after signing, before the deposit clears (§3, step 5). */
-  createAccount(token: string, password: string): Promise<StateResult>;
+  /**
+   * Creates the portal account. Lands after signing, before the deposit clears (§3, step 5).
+   *
+   * `email` is required because `POST /gym/account` requires it, and it is the gym's
+   * `details.noticesEmail` from the state the server itself returned — not a field anyone
+   * types here. A caller with no address to pass has no business creating an account, which
+   * is why this is a parameter rather than an optional.
+   */
+  createAccount(token: string, password: string, email: string): Promise<StateResult>;
 }

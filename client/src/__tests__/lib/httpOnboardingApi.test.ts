@@ -110,15 +110,23 @@ describe("route mapping", () => {
     expect(requests()[0].url).toBe("https://api.muscleboxpro.com/onboarding");
   });
 
-  it("sends only the password when creating the account", async () => {
-    // The address is the gym's §41 notices email, already on the profile the handle is
-    // scoped to. A client-supplied email would let a browser choose which address can later
-    // reset the password on the account — an authorisation decision, made in the wrong
-    // place.
+  it("sends the email as well as the password when creating the account", async () => {
+    /*
+      This sent only the password, on the argument that the address is the gym's §41 notices
+      email and the route should read it from the profile the handle is scoped to. The
+      deployed route does not: it answers a missing `email` with a 400 and
+      `fieldErrors.email`, and step 5 has no email input to highlight — so what a gym saw was
+      "Please check the highlighted fields." with nothing highlighted, and no way to finish.
+
+      Reported on 2026-08-25. Both callers of `POST /gym/account` were affected; see
+      `setPortalPassword`, which has no address to send and is still broken.
+    */
     queue(state({ status: "active" }));
-    await api.createAccount(HANDLE, "correct-horse-battery");
-    expect(requests()[0].body).toEqual({ password: "correct-horse-battery" });
-    expect(requests()[0].body).not.toHaveProperty("email");
+    await api.createAccount(HANDLE, "correct-horse-battery", "notices@irontemple.in");
+    expect(requests()[0].body).toEqual({
+      email: "notices@irontemple.in",
+      password: "correct-horse-battery",
+    });
   });
 
   it("sends no otpCode while signing ships without one", async () => {

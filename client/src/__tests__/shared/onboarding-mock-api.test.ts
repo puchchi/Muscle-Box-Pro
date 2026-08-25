@@ -648,22 +648,21 @@ describe("step 4 — deposit", () => {
     expect(state.depositReceipt?.paidAt).toBe(state.timestamps.depositPaidAt);
   });
 
-  it("lets a deferred deposit still be paid, without regressing an active gym", async () => {
+  it("lets a deferred deposit still be paid after the account exists", async () => {
     await signedState();
     await api.chooseDeposit(DEMO_TOKEN, "pay_later");
-    await api.createAccount(DEMO_TOKEN, "a-long-enough-password");
+    await api.createAccount(DEMO_TOKEN, "a-long-enough-password", VALID_DETAILS.noticesEmail);
 
-    // The whole point of "pay later": the gym is live, and the deposit is a
-    // receivable it can settle whenever its accounts team gets to it.
+    // The whole point of "pay later": the gym is using its dashboard, and the deposit is
+    // a receivable it can settle whenever its accounts team gets to it.
     const link = await api.chooseDeposit(DEMO_TOKEN, "pay_now");
     expect(link.ok).toBe(true);
     await api.refreshDepositStatus(DEMO_TOKEN);
     const state = await expectState(api.refreshDepositStatus(DEMO_TOKEN));
 
     expect(state.depositStatus).toBe("paid");
-    // `deposit_paid` sits behind `active` on the lifecycle; writing it here would
-    // demote a gym that is already trading.
-    expect(state.status).toBe("active");
+    expect(state.status).toBe("deposit_paid");
+    expect(state.timestamps.accountCreatedAt).toBeTruthy();
     expect(state.completedSteps).toContain(5);
   });
 
@@ -680,9 +679,11 @@ describe("step 4 — deposit", () => {
 });
 
 describe("step 5 — account", () => {
+  const EMAIL = VALID_DETAILS.noticesEmail;
+
   it("needs a signature first", async () => {
     await api.getState(DEMO_TOKEN);
-    const result = await api.createAccount(DEMO_TOKEN, "a-long-enough-password");
+    const result = await api.createAccount(DEMO_TOKEN, "a-long-enough-password", EMAIL);
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("wrong_step");
@@ -690,21 +691,45 @@ describe("step 5 — account", () => {
 
   it("rejects a short password on a named field", async () => {
     await signedState();
-    const result = await api.createAccount(DEMO_TOKEN, "short");
+    const result = await api.createAccount(DEMO_TOKEN, "short", EMAIL);
 
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.fieldErrors?.password).toMatch(/8 characters/);
+    if (!result.ok) expect(result.error.fieldErrors?.password).toMatch(/12 characters/);
   });
 
-  it("activates the gym with the deposit still deferred", async () => {
+  /**
+   * The address the account is created under has to be sent, and the mock has to say so.
+   *
+   * `POST /gym/account` requires `email` and answers a missing one with a 400 carrying
+   * `fieldErrors.email`. The mock ignored the field, so the live client sending
+   * `{ password }` alone passed every test here and failed against the deployed route — a
+   * banner reading "Please check the highlighted fields." on a screen with no email input,
+   * and no way for any gym to finish step 5.
+   */
+  it("refuses to create an account with no address to create it under", async () => {
+    await signedState();
+    const result = await api.createAccount(DEMO_TOKEN, "a-long-enough-password", "");
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.fieldErrors?.email).toMatch(/email address/);
+  });
+
+  it("creates the account with the deposit still deferred", async () => {
     await signedState();
     await api.chooseDeposit(DEMO_TOKEN, "pay_later");
-    const state = await expectState(api.createAccount(DEMO_TOKEN, "a-long-enough-password"));
+    const state = await expectState(api.createAccount(DEMO_TOKEN, "a-long-enough-password", EMAIL));
 
-    expect(state.status).toBe("active");
     expect(state.depositStatus).toBe("deferred");
     expect(state.completedSteps).toEqual([1, 2, 3, 4, 5]);
     expect(state.timestamps.accountCreatedAt).toBe("2026-08-22T10:00:00.000Z");
+    /*
+      Still `signed`, and this is the assertion the old one got wrong. `active` is written by
+      `POST /admin/gyms/{id}/activate` alone — `statusForStepCommit(5)` returns null — and
+      `currentStep` stays 5 because the backend's `OnboardingStep` has no 6. Step 6 is
+      `useOnboarding`'s derivation from `accountCreatedAt`, not the server's answer.
+    */
+    expect(state.status).toBe("signed");
+    expect(state.currentStep).toBe(5);
   });
 });
 

@@ -130,10 +130,29 @@ export const signatureSchema = z.object({
     .optional(),
 });
 
+/**
+ * Both bounds are the server's, not ours: `MIN_PASSWORD_LENGTH` and `MAX_PASSWORD_LENGTH` in
+ * `mbp-backend` `services/onboarding/src/domain/password.ts`. This said 8 and 72 while the
+ * server said 12 and 200, so every gym typing an eight-character password passed the form,
+ * lost a round trip, and got "Please check the highlighted fields." on a screen with nothing
+ * highlighted. A number here that is looser than the server's is a form that lies.
+ *
+ * The server also screens a denylist and rejects too few distinct characters. Those are not
+ * mirrored — a corpus check cannot be — so `fieldErrors.password` still has to be rendered.
+ */
 export const portalPasswordSchema = z
   .string()
-  .min(8, "Use at least 8 characters")
-  .max(72, "Passwords are limited to 72 characters");
+  .min(12, "Use at least 12 characters")
+  .max(200, "Passwords are limited to 200 characters");
+
+/**
+ * The address the portal account is created under.
+ *
+ * `POST /gym/account` validates it with `looksLikeEmail` and answers `fieldErrors.email` —
+ * a key no screen in this flow has an input for, so an invalid one reaching the API is a
+ * banner with nothing to correct. Checked before the request instead.
+ */
+export const portalEmailSchema = z.string().trim().email("A valid email is required");
 
 /** Zod issues → the `fieldErrors` shape `OnboardingError` carries. */
 export function toFieldErrors(error: z.ZodError): Record<string, string> {

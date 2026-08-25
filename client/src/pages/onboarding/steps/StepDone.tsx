@@ -42,24 +42,53 @@ import type { StepViewProps } from "../types";
  * they were never shown. The button sets the password and the wizard advances; step 6
  * carries the dashboard link.
  */
-export default function StepDone({ state, readOnly, isSubmitting, actions }: StepViewProps) {
+export default function StepDone({
+  state,
+  readOnly,
+  isSubmitting,
+  fieldErrors,
+  actions,
+}: StepViewProps) {
   const [password, setPassword] = useState("");
   const [revealed, setRevealed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const isActive = state.status === "active";
+  /*
+    The account existing, not the gym being activated. `status` reaches `active` only through
+    `POST /admin/gyms/{id}/activate` — `statusForStepCommit(5)` returns null server-side, and
+    says why — so this read `false` for every gym that had just created its password, and put
+    the form back on screen for an account that already existed. Pressing it again is a 409:
+    `createGymUser` is conditional on `attribute_not_exists`.
+
+    `accountCreatedAt` is also the honest test of what the sentence claims. `POST /gym/account`
+    mints the session cookie itself and `gymLogin` gates on the user row rather than on the
+    onboarding status, so the dashboard is reachable the moment this timestamp exists.
+  */
+  const hasAccount = !!state.timestamps.accountCreatedAt;
   const email = state.details.noticesEmail || "your email";
   const signedAt = state.timestamps.signedAt;
+
+  /*
+    The server's rejection belongs on the field, not in the shell's banner. It screens a
+    denylist and a distinct-character count that `portalPasswordSchema` cannot mirror, so a
+    password this form accepted can still come back refused — and until this read
+    `fieldErrors`, that arrived as "Please check the highlighted fields." above a screen
+    where nothing was highlighted. `OnboardingFlow`'s `stepMarksField` drops the banner for
+    a `password` key on the strength of this line.
+
+    Local first: it is the fresher of the two, since typing does not clear a server error.
+  */
+  const error = localError ?? fieldErrors?.password ?? null;
 
   async function createAccount() {
     // Validated here as well as server-side so a short password costs no round
     // trip. The server check is the real one; this is only courtesy.
     const parsed = portalPasswordSchema.safeParse(password);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Choose a longer password");
+      setLocalError(parsed.error.issues[0]?.message ?? "Choose a longer password");
       return;
     }
-    setError(null);
+    setLocalError(null);
     await actions.createAccount(parsed.data);
   }
 
@@ -147,7 +176,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
       <DepositCard state={state} />
 
       {/* ── The account ────────────────────────────────────────────────────── */}
-      {isActive ? (
+      {hasAccount ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
           <h2 className="text-base font-bold text-foreground">Your dashboard is ready</h2>
           <p className="text-sm text-gray-700 leading-relaxed mt-1">
@@ -195,7 +224,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
                 autoComplete="new-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="At least 8 characters"
+                placeholder="At least 12 characters"
                 /*
                   The hint above is part of the field's description, and the error joins it
                   when there is one — without `aria-describedby` a screen reader got the

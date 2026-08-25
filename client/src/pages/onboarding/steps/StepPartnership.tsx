@@ -366,8 +366,15 @@ export default function StepPartnership({
             reading and tab order is "the thing you probably want, then the way back", while the
             visual order puts Continue on the right where this flow has trained a gym to look for
             it. On a phone they stack, primary on top.
+
+            `sm:justify-between` sends the way back to the left edge rather than parking it
+            against the primary. Two reasons, one of them the rail: it numbers left to right, so
+            backwards is leftwards on this screen too. The other is that a ghost button the same
+            height and radius as "Continue to the agreement", touching it, is a mis-tap that
+            costs a gym the six panels it just read. `justify-content` and not the DOM, so the
+            tab order above is untouched.
           */}
-          <div className="flex flex-col sm:flex-row-reverse items-stretch sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row-reverse sm:justify-between items-stretch sm:items-center gap-3">
             {/*
               "Continue to the agreement", not "These terms look right".
 

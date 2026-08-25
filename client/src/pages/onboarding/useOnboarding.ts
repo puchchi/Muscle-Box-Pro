@@ -84,7 +84,13 @@ export type UseOnboarding = {
   fieldErrors: Record<string, string> | null;
   isLoading: boolean;
   isSubmitting: boolean;
-  /** The step on screen. Equals `state.currentStep` unless the gym went back. */
+  /**
+   * The step the flow is on. `state.currentStep`, except where the server has no answer —
+   * see the note on `currentStep` below. Render this rather than `state.currentStep`, or the
+   * rail and the "you are looking backwards" banner disagree with the body about step 6.
+   */
+  currentStep: OnboardingStep;
+  /** The step on screen. Equals `currentStep` unless the gym went back. */
   viewStep: OnboardingStep;
   /** Steps a gym may look at again: completed ones, and the current one. */
   canView(step: OnboardingStep): boolean;
@@ -205,15 +211,42 @@ export function useOnboarding(token: string): UseOnboarding {
       if (result.ok) setState(result.data);
     },
     async createAccount(password) {
-      return (await run(() => onboardingApi.createAccount(token, password), (s) => s)) !== null;
+      // The address is the server's own `details.noticesEmail`, read off the state this hook
+      // already holds. Step 5 does not ask for it and must not: it is the §41 notices address
+      // the agreement was signed against, and the account is created under it.
+      const email = state?.details.noticesEmail ?? "";
+      return (
+        (await run(() => onboardingApi.createAccount(token, password, email), (s) => s)) !== null
+      );
     },
   };
 
-  const currentStep = state?.currentStep ?? 1;
+  /**
+   * The server's step, except that the server has no step 6.
+   *
+   * `deriveCurrentStep` in the backend's `domain/onboardingStatus.ts` returns 5 when all five
+   * are complete, and says so in a comment: *"All five complete → 5, not 6. `OnboardingStep`
+   * has no 6."* It predates step 6, which this frontend added when installation tracking moved
+   * out of step 5. So a gym that created its password got `currentStep: 5` back and stayed on
+   * the screen it had just finished — with the password form still on it, because the account
+   * existing was not what that screen was reading either.
+   *
+   * This is the one place the client adds to what the server said, and it is bounded by what
+   * makes the invariant worth having: **nothing is submitted on step 6.** It renders the
+   * machine record and the deposit state, both from this same response, so deriving it cannot
+   * let a gym skip a step — there is no step there to skip. `accountCreatedAt` is the server's
+   * own timestamp, not an inference from the click that set it.
+   *
+   * Idempotent if the backend is ever taught the sixth step: a response saying 6 stays 6.
+   */
+  const serverStep = state?.currentStep ?? 1;
+  const currentStep: OnboardingStep =
+    serverStep === 5 && state?.timestamps.accountCreatedAt ? 6 : serverStep;
+
   const canView = useCallback(
     (step: OnboardingStep) =>
-      !!state && (step === state.currentStep || state.completedSteps.includes(step)),
-    [state],
+      !!state && (step === currentStep || state.completedSteps.includes(step)),
+    [state, currentStep],
   );
 
   // Clamped rather than trusted: if `completedSteps` and an override ever
@@ -272,6 +305,7 @@ export function useOnboarding(token: string): UseOnboarding {
     fieldErrors: actionError?.fieldErrors ?? null,
     isLoading,
     isSubmitting,
+    currentStep,
     viewStep,
     canView,
     goToStep,

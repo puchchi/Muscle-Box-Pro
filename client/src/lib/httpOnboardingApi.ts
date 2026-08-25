@@ -23,13 +23,19 @@
  * back to a re-read — see its note on why that fallback is a compatibility shim and not the
  * intended path.
  *
- * **2. `POST /gym/account` derives the email server-side.** The interface is
- * `createAccount(token, password)` and this client sends only the password, even though
- * §2.5 describes the route as taking `{ email, password }`. Partly because the signature
- * has no email to send — but mainly because it should not: the address is the gym's §41
- * notices email, already on the profile the handle is scoped to, and letting a browser
- * name it means a browser choosing which address can later reset the password on the
- * account. That is an authorisation decision, and it does not belong on this side.
+ * **2. `POST /gym/account` takes the email from the caller.** §2.5 describes the route as
+ * taking `{ email, password }`, and the deployed handler means it: a request without one is
+ * a 400 carrying `fieldErrors.email`, on a screen that has no email input to highlight. This
+ * client used to send only the password on the argument that the address is the gym's §41
+ * notices email, already on the profile the handle is scoped to, so the server should read it
+ * there — which is the better design and is not what is deployed. Sending nothing made step 5
+ * impossible to finish rather than making the point.
+ *
+ * The value comes from `state.details.noticesEmail` — the state the server itself returned,
+ * threaded through `useOnboarding`, not a field anyone types at this end. That is worth
+ * keeping if the route is ever changed to derive it: the reason the browser should not name
+ * the address is that a browser choosing it is a browser choosing which address can later
+ * reset the password on the account, and that is an authorisation decision.
  */
 
 import { apiRequest } from "./apiClient";
@@ -240,8 +246,8 @@ export function createHttpOnboardingApi(): OnboardingApi {
      * again. That is why `credentials: "include"` matters on a call that appears to be
      * sending rather than receiving a credential.
      */
-    createAccount(token: string, password: string) {
-      return commit(token, "POST", "/gym/account", { password });
+    createAccount(token: string, password: string, email: string) {
+      return commit(token, "POST", "/gym/account", { email, password });
     },
   };
 }

@@ -24,6 +24,7 @@ import {
 } from "@shared/onboarding/mockApi";
 import { STEP_META } from "@shared/onboarding/steps";
 import { markReturnedFromGateway, rememberPaymentAttempt } from "@/lib/depositReturn";
+import { onboardingApi } from "@/lib/onboardingApi";
 import OnboardingFlow from "@/pages/onboarding/OnboardingFlow";
 
 /**
@@ -1007,9 +1008,12 @@ describe("OnboardingFlow — the whole flow", () => {
     expect(next).toHaveTextContent("On installation day");
 
     // A short password is caught in the browser: no round trip, and the step does not move.
+    // Twelve, which is `MIN_PASSWORD_LENGTH` in the backend's `domain/password.ts`. This form
+    // said 8 while the server said 12, so a short password reached the API and came back as
+    // "Please check the highlighted fields." with nothing on the screen highlighted.
     await user.type(screen.getByTestId("input-portal-password"), "short");
     await user.click(screen.getByTestId("button-continue"));
-    expect(screen.getByTestId("error-portal-password")).toHaveTextContent("at least 8 characters");
+    expect(screen.getByTestId("error-portal-password")).toHaveTextContent("at least 12 characters");
     expect(screen.getByTestId("input-portal-password")).toBeInTheDocument();
 
     // Typed once, with no confirm box and no self-service reset behind it, so it has to be
@@ -1037,6 +1041,44 @@ describe("OnboardingFlow — the whole flow", () => {
   });
 
   /**
+   * A password this form accepted and the server did not.
+   *
+   * Reachable with no client bug at all: the server screens a denylist and a
+   * distinct-character count that `portalPasswordSchema` cannot mirror. It used to arrive as
+   * "Please check the highlighted fields." across the top of a screen where nothing was
+   * highlighted, because `StepDone` read neither `fieldErrors` nor anything else the server
+   * said. The message belongs under the input it is about.
+   */
+  it("puts a password the server refuses under the field, not in a banner over the step", async () => {
+    const user = await open();
+    await signTheAgreement(user);
+    await user.click(screen.getByTestId("button-continue"));
+    await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
+
+    const refused = vi.spyOn(onboardingApi, "createAccount").mockResolvedValue({
+      ok: false,
+      error: {
+        code: "validation",
+        message: "Please check the highlighted fields.",
+        fieldErrors: { password: "That password is too easy to guess. Choose something else." },
+      },
+    });
+    try {
+      await user.type(screen.getByTestId("input-portal-password"), "passwordpassword");
+      await user.click(screen.getByTestId("button-continue"));
+
+      await waitFor(() =>
+        expect(screen.getByTestId("error-portal-password")).toHaveTextContent("too easy to guess"),
+      );
+      expect(screen.queryByTestId("action-error")).not.toBeInTheDocument();
+      // One announcement, not the field's and the shell's racing each other.
+      expect(screen.getAllByRole("alert")).toHaveLength(1);
+    } finally {
+      refused.mockRestore();
+    }
+  });
+
+  /**
    * A deposit that is outstanding on a signed record.
    *
    * Since 2026-08-25 the wizard cannot produce this: step 4 has no defer button, so a
@@ -1055,7 +1097,9 @@ describe("OnboardingFlow — the whole flow", () => {
     await waitFor(() => expect(screen.getByTestId("deposit-outcome")).toBeInTheDocument());
     expect(screen.getByTestId("deposit-outcome")).toHaveTextContent("Deposit still to pay");
 
-    await api.createAccount(DEMO_TOKEN, "a-long-enough-password");
+    // The seeded record's notices address, which is what the wizard itself sends: the account
+    // is created under the §41 address on the state, not one anybody types on step 5.
+    await api.createAccount(DEMO_TOKEN, "a-long-enough-password", "owner@irontemple.example");
     cleanup();
     const reopened = await open();
     await waitFor(() => expect(screen.getByTestId("installation-status")).toBeInTheDocument());
