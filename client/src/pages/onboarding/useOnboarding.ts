@@ -65,11 +65,11 @@ export type OnboardingActions = {
   requestSigningOtp(): Promise<string | null>;
   signAgreement(input: SignatureInput): Promise<boolean>;
   chooseDeposit(choice: DepositChoice): Promise<DepositLink | null>;
-  refreshDepositStatus(): Promise<boolean>;
   /**
-   * The same read, without the UI side effects. Used by step 4's background poll —
-   * a timer must not put the whole wizard into its submitting state or wipe an
-   * error the gym is still reading.
+   * Reads the deposit record with no UI side effects at all. It is the *only* way step 4
+   * learns that money arrived, and there is deliberately no spinner-wrapped variant: a
+   * timer must not put the whole wizard into its submitting state or wipe an error the
+   * gym is still reading, and since §26 there is no button for a gym to press either.
    */
   pollDepositStatus(): Promise<void>;
   createAccount(password: string): Promise<boolean>;
@@ -196,9 +196,6 @@ export function useOnboarding(token: string): UseOnboarding {
         (d) => d.state,
       );
       return data?.link ?? null;
-    },
-    async refreshDepositStatus() {
-      return (await run(() => onboardingApi.refreshDepositStatus(token), (s) => s)) !== null;
     },
     async pollDepositStatus() {
       // Deliberately not through `run`: no spinner, no error banner, and no clearing

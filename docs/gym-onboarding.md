@@ -402,7 +402,9 @@ split of scope:
 a checkout is that the signatory usually cannot release ₹50,000 — so the screen says "you don't have
 to be the one who pays" and explains that a forwarded link works from someone else's inbox. A feature
 nobody is told about is a feature nobody uses, and this one is the difference between a deposit paid
-today and a deposit paid next Friday.
+today and a deposit paid next Friday. **The card that held the link went on 2026-08-25 (§25): paying
+navigates this tab, the line about forwarding moved to the pending card, and it points at the emailed
+copy of the link rather than at an anchor on screen.**
 
 **Nothing client-side can mark a deposit paid.** The screen polls our own record every five seconds
 while a payment is settling, stops after ~5 minutes, and never inspects a redirect or a gateway
@@ -415,7 +417,7 @@ step 3 back to step 4.
 
 **The waiting state is designed rather than defaulted.** After about fifteen seconds the copy stops
 saying "checking" and starts explaining, the gym is told in as many words that it can close the tab,
-and the manual "I've paid — check now" button reports its own result — a check that visibly changes
+and the manual "Check again" button reports its own result — a check that visibly changes
 nothing reads as a broken button and gets clicked six more times. The mock now models this:
 `refreshDepositStatus` reports the money as not yet seen on the first poll and confirmed on the
 second, because a mock that confirms instantly hides the state the UI most needs.
@@ -615,6 +617,15 @@ instead and needs **no CSP change at all** — the return trip is a plain redire
 `/onboarding/<token>`, which `form-action 'self'` does not restrict. Status polling goes to our own
 Supabase function, already in `connect-src`.
 
+**"Site-wide" was overstated — see §25.** A Razorpay-scoped CSP can be scoped to `/gym/onboarding/`
+by a rule placed after the global one. Reason 2 is a cost, not the blocker it reads as here; reason 1
+is the blocker.
+
+**How the link is presented changed on 2026-08-25 (§25).** Paying navigates *this* tab rather than
+opening a new one, and the link's `callback_url` returns the gym to the wizard through
+`/gym/deposit-return`. The mechanism above is unchanged, including that nothing on the return trip is
+trusted as evidence of payment.
+
 **3. One mechanism serves both paths.** The "pay later" email and the in-flow button are the same
 link. No second integration for the deferred case.
 
@@ -759,6 +770,7 @@ numbers arrive.
 | `/gym/dashboard` | `gym/GymDashboard.tsx` | `noindex` |
 | `/gym/agreement` | `gym/GymAgreement.tsx` | their signed copy, always available |
 | `/gym/deposit` | `gym/GymDeposit.tsx` | `noindex` — the "pay later" landing spot |
+| `/gym/deposit-return` | `gym/DepositReturn.tsx` | `noindex, nofollow` — the `callback_url` on every deposit Payment Link. Carries **no** handle: the URL is registered with Razorpay, so the tab remembers where to go back to instead (§25) |
 
 Removed, with permanent redirects in [next.config.mjs](../next.config.mjs). Next emits **308**,
 not 301, for `permanent: true`:
@@ -1467,6 +1479,10 @@ like a compile step.
 - [ ] A screen that paraphrases a clause instead of citing it keeps a way to the document itself
       reachable from that screen — step 4 discloses §5 by offering the agreement, and nothing else
       (§24)
+- [ ] A URL we hand to a payment provider carries no credential and no gym identifier, and the page it
+      returns to treats what arrives in the query string as a navigation rather than a result (§25)
+- [ ] No control on a money screen asks the gym to assert, or to check, a fact only our record holds.
+      One button pays; the screen states the outcome on its own, and a poll that gives up says so (§26)
 - [ ] Agreement content changes bump the version; never edit a version that has signatures
 - [ ] A new agreement version pins its own golden length and hash, and does not share a fixture with
       an older one — a shared fixture lets one version's edit move another version's hash
@@ -2202,6 +2218,219 @@ rule with **Read the agreement** and **Pay ₹50,000 now**. Below it, unchanged 
 the link panel with its forwardable-link line, the waiting panel with its live region and manual
 check, and the receipt.
 
+**The link panel was folded into the waiting panel later the same day (§25)**, when paying started
+navigating this tab and there was no anchor left for a card of its own to hold.
+
 ### Verified
 
 `npx tsc --noEmit` clean. **54 test files, 1,034 tests passing.**
+
+## 25. The payment page in this tab, and the trip back (2026-08-25)
+
+> "what's this workflow? rather giving url to other page, either we should open it in iframe or maybe
+> in same page. and once payment is done, we should come back to original page with payment status"
+
+Three requests, and they land in three different places: one is impossible, one was reconsidered and
+still rejected, and one was already true but did not look it.
+
+### An iframe is not available
+
+Razorpay's hosted payment page refuses to render framed, and the bank's 3-D Secure step is a third
+origin that refuses too. Our own `frame-src 'none'` in [next.config.mjs](../next.config.mjs) would
+also have to go. Both halves have to agree for a frame to work and the gateway's half never will, so
+this is not a configuration we are choosing — payment pages are not frameable, deliberately.
+
+### An in-page checkout, reconsidered
+
+Reason 1 in §5 stands and still decides it: the signatory usually cannot release ₹50,000, and a modal
+lives in the signatory's browser session. A checkout would convert "forward this to whoever pays" into
+"abandon this and pay from the email", which is the flow we already have with an extra dependency.
+
+Reason 2 as written in §5 is weaker than it claimed, and worth correcting rather than leaning on.
+Razorpay's Checkout would not need the CSP widened site-wide: Next applies every matching `headers()`
+rule and the last one wins, so a Razorpay-scoped `script-src`/`frame-src` could be scoped to
+`/gym/onboarding/` by a rule placed after the global block — the same ordering the `no-referrer` rules
+already depend on. It is a cost, not a blocker. What remains a real cost is an Orders API `order_id`
+per attempt and `razorpay_order_id|razorpay_payment_id` signature verification, which is a new
+endpoint pair in `mbp-backend` — Supabase is frozen, so it cannot land where the webhook lives.
+
+### The link stopped being a URL handed over
+
+The mechanism did not change. Its presentation did:
+
+- **Paying navigates this tab.** `window.location.assign(paymentUrl)` rather than an `_blank` anchor.
+  A new tab left the page that owns the truth sitting behind the page taking the money, and the gym
+  then had two of them and no way to know which one would report the result. The "Your payment link is
+  ready" card that existed only to hold that anchor is gone with it.
+- **The link's `callback_url` brings them back**, to `/gym/deposit-return`, which replaces itself with
+  the wizard.
+- **That route carries no handle, and this is the whole reason it is a separate route.**
+  `callback_url` is registered with Razorpay at link creation, so anything in it is stored by a third
+  party — and the onboarding path contains a 30-day credential. It is the leak
+  `Referrer-Policy: no-referrer` on `/gym/onboarding/` exists to close, and a return URL with the
+  handle in it would reopen it on purpose. So the tab remembers where to go back to, in
+  `sessionStorage`, via [depositReturn.ts](../client/src/lib/depositReturn.ts): the onboarding path
+  (read once, and only honoured if it is an onboarding path — it is a redirect target read off a
+  third-party callback), the payment URL (kept, so a gym that comes back without paying has a way back
+  to the payment page instead of re-issuing and minting a second live link for one obligation), and a
+  one-shot flag saying a gateway sent us back.
+- **The return route reads none of the query string.** Razorpay appends a payment id and a
+  `razorpay_payment_link_status`; a page that believed either would be a way to mark a deposit paid by
+  typing a URL. What arrives there is a person, not a result.
+- **A browser that never held the path is a supported ending, not an error.** The accountant who paid
+  from the forwarded link gets a card saying the payment is being confirmed from our own records and
+  that the onboarding link is in the gym's email. It cannot be handed the wizard, because identifying
+  the gym from there is exactly the thing the route is shaped to avoid.
+
+### "Come back with the payment status" was already the behaviour
+
+The wizard has always polled its own record and advanced by itself when the webhook landed, which is
+strictly better than a redirect: it covers the closed tab and the forwarded link too. What was missing
+was not a mechanism but a sentence — the gym left in a second tab and nothing in the first one
+acknowledged the journey. So the pending card now splits on whether a payment is genuinely in flight:
+**"Checking your payment"** when the gateway returned us or the gym pressed the button, and
+**"Waiting for the payment"** otherwise, with the forwardable-link line attached only to the second
+(after somebody has paid, advice to forward the link buys a second ₹50,000 and a refund conversation).
+
+That split fixed a real defect. "We still can't see it" was driven by the poll counter alone, so it
+appeared about fifteen seconds after the link was issued — telling a gym waiting on its accountant
+that its ₹50,000 was missing before anyone had attempted to pay it. The redirect returns the person;
+the webhook returns the truth; and now the copy only claims to be chasing something when something is
+being chased.
+
+Step 4 is two cards, down from three: the amount with its two actions, and the pending card holding
+the payment button and whichever sentence applies. **The manual check went the same day (§26), and
+"Checking your payment" became "Confirming your payment" — with a fourth state for the case where
+confirming does not succeed.**
+
+### For `mbp-backend`
+
+One field, and a rule about where it comes from:
+
+- `POST /gym/deposit` sets `callback_url` to `<configured site origin>/gym/deposit-return` and
+  `callback_method=get` on the Payment Link.
+- **Built from server configuration, never from anything in the request body.** A browser-supplied
+  redirect target on a payment link is an open redirect wearing our brand, on the one page a gym is
+  most primed to trust.
+- It carries no handle, no gym id and no query string of ours. The frontend needs nothing back from
+  it, which is what makes that possible.
+- Nothing about the webhook changes. A callback is not a confirmation, and the client cannot mark a
+  deposit paid whatever it is handed.
+
+Until it ships, the same-tab navigation still works and browser Back returns to the wizard, which
+resumes polling — the pre-§25 behaviour minus the orphaned second tab.
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,045 tests passing.**
+
+---
+
+## 26. Pay, then an outcome — no button in between (2026-08-25)
+
+> "it should be either passed or failed. Not i have paid"
+
+The pending card's own button read **"I've paid, check now"**. That is a question put to the one
+party who cannot answer it. A gym knows it pressed buttons on a bank page; it does not know whether
+₹50,000 reached us, and it certainly does not know whether the webhook has written the record. So the
+button asked for an assertion, we would have had to ignore the assertion, and the screen had nowhere
+to put the disagreement that followed — a gym whose card was declined pressed "I've paid" and got
+"we still can't see it", which reads as an argument rather than a status.
+
+The first fix relabelled it **"Check again"** and gave the card a verdict to print. That answered who
+was speaking and left the wrong thing standing:
+
+> "i am still seeing check again. So i want a simple workflow. user see a pay now button and after
+> successfull payment we mark payment complete. or we mark it failure if payment failed, but we do
+> that right away. Lets remove this check now related workflow"
+
+Correct, and worth saying plainly: a button that asks us is better than one that speaks for the gym,
+but the *asking* was never the gym's job either. The page already polls. A control that does by hand
+what a timer does anyway is a control whose only real function is to make the wait feel like the
+gym's problem.
+
+### The flow
+
+One press, then an outcome. **Pay the deposit** → Razorpay → back here → the tab confirms on its own
+and step 5 opens. Nothing to press in between, and — while it is confirming — nothing pressable at
+all, not even the way back to the gateway: offering that ten seconds after a payment is how one
+₹50,000 becomes two.
+
+`refreshDepositStatus` came off `OnboardingActions` with the button. `pollDepositStatus` is now the
+only way step 4 learns that money arrived, which is what it always should have been.
+
+### Four states, one of them a revisit
+
+| | Heading | Says |
+|---|---|---|
+| Just back from the gateway | Confirming your payment | that we confirm from our own record, not from this page |
+| Confirmed | *(step 5)* | the receipt number and the amount |
+| Half a minute of asking, nothing | **We couldn't confirm your payment** | that nothing has reached us yet, how to tell us, and how to retry |
+| Link issued, nobody back yet | Waiting for the payment | the amount, the methods, that the tab can be closed, that anyone can pay it |
+
+**"Waiting for the payment" is a revisit, not a post-click state.** After the pay button this tab has
+navigated away, so nobody sees that card by pressing anything. It is what a gym sees on reopening its
+onboarding link while an accountant pays from the forwarded copy — which is also why the
+forward-the-link advice hangs on this state alone.
+
+### Why the failure side does not say "failed"
+
+The user asked for failure marked right away. This tab cannot honestly produce it. **A Payment Link
+only redirects to `callback_url` after a payment Razorpay considers successful** — a declined card
+leaves the customer on Razorpay's own page to retry, so the tab that comes back here has, as far as
+anyone outside our record knows, paid. The readings of "back, and our record is still empty" are a
+late webhook, a payment still clearing, and a browser Back button. A decline is not among the likely
+ones.
+
+So the state is **"We couldn't confirm your payment"**, and the help button — *Tell us about this
+payment* — comes before the retry. Saying "failed" here would invite a second ₹50,000 for one
+obligation, which is the single mistake on this screen that costs real money to undo.
+
+### Two cadences, and the slow one is the safety net
+
+| | Interval | For | Ends |
+|---|---|---|---|
+| `CONFIRM` | 1.5s × 20 (~30s) | somebody is watching this screen right now | downgrades to `WATCH` |
+| `WATCH` | 5s × 60 (~5min) | a link in flight, nobody necessarily here | stops, out loud |
+
+The first poll of either fires immediately rather than one interval in. CONFIRM exhausting
+**downgrades** rather than stopping, so a webhook that lands at ninety seconds still advances the
+wizard with nobody touching it — the unconfirmed card is a statement about the last thirty seconds,
+not a dead end.
+
+When `WATCH` does run out the card says so: nothing has reached us, this page has stopped checking,
+reload it to see where it stands. `MAX_POLLS` used to end the timer silently next to copy promising
+*"this page keeps checking"*, so a gym could read a promise the page had stopped keeping half an hour
+earlier.
+
+### The reopened tab needs the link back
+
+`sessionStorage` dies with the tab that left for Razorpay, so a gym returning to a pending deposit
+from its email has no stashed payment URL. The button falls back to `payNow()`, which means
+**`POST /gym/deposit` must return the *existing* open Payment Link for a deposit already `pending`,
+not issue a second one.** Two live links against one obligation is a duplicate-payment bug with a
+refund at the end of it. Until that is confirmed idempotent, the fallback is the risk on this screen
+worth watching.
+
+### Not covered by tests
+
+The unconfirmed and stopped states need twenty consecutive polls, and the mock reports the deposit
+paid on its second — so they are unreachable in the suite without fake timers, which this suite uses
+nowhere, or a mock contorted into a shape the real API never takes. What is pinned instead: paying
+reaches the receipt with no button in between, the returning tab confirms on what
+`/gym/deposit-return` left in storage rather than on the query string, and the reopened tab still
+gets a forwardable link.
+
+### Would a real "failed" be better? Yes, and it is backend work
+
+Razorpay knows. `payment.failed` fires on a declined attempt, and a Payment Link carries its own
+`cancelled` / `expired` status. Neither reaches the client, because `GET /onboarding` returns exactly
+four deposit states: `not_started`, `pending`, `paid`, `deferred`. Surfacing a fifth — a failed or
+expired link, with the reason — is what would let step 4 say "your card was declined" in two seconds,
+which is the request as asked. **Supabase is frozen, so that state would come from `mbp-backend`**,
+alongside the `callback_url` owed from §25 and the idempotent re-issue above.
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,044 tests passing** — one fewer than §25, because the
+four step-4 tests around the manual check became three around the outcome.

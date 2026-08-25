@@ -2,16 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  AlertCircle,
   ArrowUpRight,
   CheckCircle2,
   Clock,
   Forward,
+  Loader2,
   Receipt,
-  ShieldCheck,
-  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
+import {
+  forgetPaymentAttempt,
+  readPaymentUrl,
+  rememberPaymentAttempt,
+  takeReturnedFromGateway,
+} from "@/lib/depositReturn";
 import { formatInr } from "@shared/partnership/summary";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
 import type { DepositLink, DepositReceipt } from "@shared/onboarding/types";
@@ -33,14 +39,28 @@ import type { StepViewProps } from "../types";
  * That is the whole reason for Razorpay Payment Links (§5), so the screen *says* the
  * link can be forwarded — a feature nobody uses is a feature nobody was told about.
  *
+ * **The link is a journey, not a URL to hand over.** Since 2026-08-25 paying navigates
+ * this tab to the payment page and the link's `callback_url` brings the gym back to the
+ * wizard (§25). The card that used to sit here offering an `_blank` anchor was a third
+ * card on the screen and a dead end for anyone who took it. Coming back is what
+ * `lib/depositReturn.ts` is for; the return trip carries no handle.
+ *
  * **This screen never decides that money arrived.** It asks our own server, which
  * reads the record the webhook wrote. Nothing here trusts the redirect back from the
- * gateway, and there is no client callback that could mark a deposit paid.
+ * gateway — coming back only changes what the screen *says* it is doing — and there is
+ * no client callback that could mark a deposit paid.
  *
- * **The waiting state is real and is designed for.** Settlement is usually seconds
- * behind the payment and occasionally minutes. So: a background poll, an explicit "we
- * haven't seen it yet" line rather than a silent spinner, and permission to close the
- * tab — because a gym that closes it and comes back must be fine, and is.
+ * **Pay, then an outcome. Nothing to press in between.** There is no "check now" button
+ * and no state that asks the gym to assert anything (§26). Coming back from Razorpay puts
+ * the screen into a short, fast confirmation — a second or two in practice, because the
+ * webhook is already in flight — and it ends either on the receipt or on "we couldn't
+ * confirm it", which offers help before it offers a second attempt. Paying twice is the
+ * expensive mistake here, not waiting a moment longer.
+ *
+ * **The slow wait is a revisit, not a dead end.** After the pay button this tab is *gone*,
+ * so "waiting for the payment" is what a gym sees when it reopens the link while somebody
+ * else pays from the forwarded copy. It watches quietly at a walking pace and advances by
+ * itself; there is nothing to press because there is nothing this gym can do.
  *
  * §5.3–5.8 used to be restated here clause by clause, and then cited by number. Neither
  * is on the screen now: the clauses are one step back in the agreement the gym has just
@@ -50,16 +70,22 @@ import type { StepViewProps } from "../types";
  * See docs/gym-onboarding.md §3 step 4 and §5.
  */
 
-/** Background poll cadence while a payment is settling. */
-const POLL_INTERVAL_MS = 5000;
 /**
- * Roughly five minutes, then the poll stops and the manual button carries it. An
- * abandoned tab must not sit on our function forever, and a payment that has not
- * landed in five minutes has a problem a spinner will not solve.
+ * Two cadences, because the two waits are different waits.
+ *
+ * Straight back from the gateway, somebody is watching the screen and the webhook is
+ * seconds away: check hard, and reach an answer inside half a minute. An open tab nobody
+ * is reading while an accountant pays: walk, and stop after five minutes rather than hold
+ * our own function open all afternoon.
+ *
+ * Running out of `CONFIRM` moves to `WATCH` rather than stopping. The screen says it
+ * couldn't confirm the payment, and keeps watching anyway — a webhook that arrives at
+ * ninety seconds still advances the wizard by itself, with nobody having pressed anything.
  */
-const MAX_POLLS = 60;
-/** After this many silent polls, the copy stops promising and starts explaining. */
-const SLOW_AFTER_POLLS = 3;
+const CONFIRM = { intervalMs: 1500, maxPolls: 20 };
+const WATCH = { intervalMs: 5000, maxPolls: 60 };
+
+type PollPhase = "confirm" | "watch" | "stopped";
 
 export default function StepDeposit({
   state,
@@ -69,7 +95,14 @@ export default function StepDeposit({
   actions,
 }: StepViewProps) {
   const [link, setLink] = useState<DepositLink | null>(null);
-  const [checkedAndNotFound, setCheckedAndNotFound] = useState(false);
+  const [rememberedUrl, setRememberedUrl] = useState<string | null>(null);
+  const [cameBack, setCameBack] = useState(false);
+  /**
+   * Null until the mount effect has read whether a gateway sent this tab back, because the
+   * answer picks the cadence — and no read is worth making at the wrong one. Starting at
+   * `"watch"` polled once on the way past it, so every return burned two reads on arrival.
+   */
+  const [phase, setPhase] = useState<PollPhase | null>(null);
 
   const amount = formatInr(state.terms.securityDepositInr);
   const status = state.depositStatus;
@@ -82,20 +115,64 @@ export default function StepDeposit({
    */
   const canAct = !readOnly || status === "deferred";
 
-  useBackgroundPoll(isPending, actions.pollDepositStatus, () => setCheckedAndNotFound(true));
+  /** Just back from the gateway, and our record has not caught up yet. */
+  const confirming = cameBack && phase === "confirm";
+  /**
+   * Back from the gateway, and half a minute of asking has not produced the money.
+   *
+   * Deliberately not called "failed". Razorpay only redirects here after a payment it
+   * considers successful, so the likely readings of this state are a late webhook and a
+   * payment still clearing — not a decline. Saying "failed" would invite a second ₹50,000
+   * for one obligation, which is the one mistake on this screen that costs real money to
+   * undo. A real decline would have to come from our record, not from this timer (§26).
+   */
+  const unconfirmed = cameBack && phase !== "confirm";
+  const paymentUrl = link?.paymentUrl ?? rememberedUrl;
+
+  useEffect(() => {
+    const returned = takeReturnedFromGateway();
+    setCameBack(returned);
+    setPhase(returned ? "confirm" : "watch");
+    setRememberedUrl(readPaymentUrl());
+  }, []);
+
+  useEffect(() => {
+    // Nothing left to come back to, and a stale payment URL in storage would offer a
+    // settled obligation a second way to be paid.
+    if (status === "paid") forgetPaymentAttempt();
+  }, [status]);
+
+  const polling = isPending && (phase === "confirm" || phase === "watch");
+
+  useBackgroundPoll(polling, actions.pollDepositStatus, {
+    ...(phase === "confirm" ? CONFIRM : WATCH),
+    onExhausted: () => setPhase((p) => (p === "confirm" ? "watch" : "stopped")),
+  });
 
   async function payNow() {
-    setCheckedAndNotFound(false);
     const issued = await actions.chooseDeposit("pay_now");
-    if (issued) setLink(issued);
+    if (!issued) return;
+    setLink(issued);
+    goToPayment(issued.paymentUrl);
   }
 
-  async function checkNow() {
-    // The button reports honestly on its own result: a "check" that silently changes
-    // nothing reads as a broken button, and the gym clicks it six more times.
-    const before = state.depositStatus;
-    await actions.refreshDepositStatus();
-    if (before === "pending") setCheckedAndNotFound(true);
+  /**
+   * Leaves for the payment page in this tab, having stashed the way back.
+   *
+   * Same tab rather than `_blank`: a new tab leaves the page that owns the truth sitting
+   * behind the one taking the money, and the gym ends up with two of them and no idea
+   * which reports the result. The way back is the link's `callback_url` (§25).
+   */
+  function goToPayment(url: string) {
+    rememberPaymentAttempt({ returnTo: window.location.pathname, paymentUrl: url });
+    if (IS_MOCK_ONBOARDING) {
+      // No gateway to leave for, so the round trip happens here: preview lands directly in
+      // the state the tab really comes back in, which is the state worth previewing.
+      setCameBack(true);
+      setPhase("confirm");
+      return;
+    }
+    window.location.assign(url);
   }
 
   if (status === "paid") {
@@ -171,9 +248,6 @@ export default function StepDeposit({
         )}
       </section>
 
-      {/* ── The link, once issued ─────────────────────────────────────────── */}
-      {link && isPending && <LinkPanel link={link} amount={amount} />}
-
       {/* ── Waiting on the webhook ────────────────────────────────────────── */}
       {isPending && (
         <section
@@ -181,34 +255,106 @@ export default function StepDeposit({
           data-testid="deposit-waiting"
         >
           <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
-            Waiting for the payment to clear
+            {confirming ? (
+              <Loader2 className="w-4 h-4 text-primary flex-shrink-0 animate-spin" aria-hidden="true" />
+            ) : unconfirmed ? (
+              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" aria-hidden="true" />
+            ) : (
+              <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+            )}
+            {confirming
+              ? "Confirming your payment"
+              : unconfirmed
+                ? "We couldn't confirm your payment"
+                : "Waiting for the payment"}
           </h2>
           {/*
-            A live region, because this sentence rewrites itself about fifteen seconds in
-            and the step advances on its own when the webhook lands. Someone not watching
-            the screen otherwise gets no indication that either happened.
+            A live region: the step advances on its own when the webhook lands, and this
+            sentence is rewritten when it does not. Someone not watching the screen
+            otherwise gets no indication that either happened.
           */}
           <p className="text-sm text-gray-700 leading-relaxed mt-1" role="status" aria-live="polite">
-            {checkedAndNotFound
-              ? "We still can't see it. UPI and transfers usually land in seconds, sometimes minutes. This page keeps checking and you can close the tab. If it hasn't cleared in an hour, reply to our email and we'll trace it."
-              : "This page checks by itself every few seconds. You can close the tab: we confirm the payment from our own records, not from this browser."}
+            {confirming
+              ? "Back from Razorpay. We confirm from our own records rather than from this page, so this takes a moment."
+              : unconfirmed
+                ? `Razorpay sent you back, but the ${amount} has not reached our record. If your bank shows it as gone, don't pay again — tell us and we'll trace it and send your receipt. ${
+                    phase === "stopped"
+                      ? "This page has stopped watching; reload it to see where it stands."
+                      : "We're still watching, and this page moves on by itself if it lands."
+                  }`
+                : `${amount} on Razorpay: UPI, netbanking, card or NEFT. We'll spot it whenever it lands, including from the copy in your email${
+                    phase === "stopped"
+                      ? ". Reload this page to see where it stands."
+                      : ", and this page moves on by itself. You can close the tab."
+                  }`}
           </p>
-          {canAct && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={checkNow}
-              disabled={isSubmitting}
-              className="min-h-11 rounded-xl text-sm font-semibold mt-3 w-full sm:w-auto cursor-pointer"
-              data-testid="button-refresh-deposit"
-            >
-              {isSubmitting ? "Checking..." : "I've paid, check now"}
-            </Button>
+
+          {canAct && !confirming && (
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              {/*
+                Help before a second attempt, and in that order on purpose. This state is
+                far more often a late webhook than a decline, so the button most likely to
+                be right is the one that does not move ₹50,000.
+              */}
+              {unconfirmed && (
+                <Button
+                  asChild
+                  className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
+                  data-testid="button-deposit-help"
+                >
+                  <a href="mailto:contact@muscleboxpro.com?subject=Deposit%20payment">
+                    Tell us about this payment
+                  </a>
+                </Button>
+              )}
+              {/*
+                A tab that has been reopened has no payment URL — `sessionStorage` died with
+                the tab that left — so this asks for the link again rather than rendering
+                nothing. `POST /gym/deposit` must hand back the *existing* open link for a
+                pending deposit; a second link for one ₹50,000 is a second ₹50,000 (§26).
+              */}
+              <Button
+                type="button"
+                variant={unconfirmed ? "outline" : "default"}
+                onClick={() => (paymentUrl ? goToPayment(paymentUrl) : payNow())}
+                disabled={isSubmitting}
+                className={
+                  unconfirmed
+                    ? "min-h-11 rounded-xl text-sm font-semibold w-full sm:w-auto cursor-pointer"
+                    : "h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
+                }
+                data-testid="button-open-payment"
+              >
+                {unconfirmed ? "Try the payment again" : "Open the payment page"}
+                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+              </Button>
+            </div>
+          )}
+
+          {/*
+            The reason this is a link rather than a checkout, said where the link is. Only
+            while nobody has paid yet: after the gateway has sent someone back, telling them
+            to forward it invites a second payment.
+          */}
+          {!cameBack && (
+            <p className="text-sm text-gray-700 leading-relaxed mt-4 flex items-start gap-2">
+              <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <span>
+                <strong className="text-foreground">You don't have to be the one who pays.</strong>{" "}
+                Forward the emailed link to whoever releases payments. It works from their inbox,
+                and we match it to your gym either way.
+              </span>
+            </p>
+          )}
+
+          {IS_MOCK_ONBOARDING && (
+            <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-3">
+              Preview mode: there is no gateway, so paying lands straight in the state the tab
+              comes back in and the mock confirms on its second read.
+            </p>
           )}
         </section>
       )}
-
     </div>
   );
 }
@@ -221,60 +367,6 @@ const STATUS_LABEL: Record<string, string> = {
   paid: "Received",
   deferred: "Still to pay",
 };
-
-/**
- * The payment link, with the two things about it a gym needs told.
- *
- * That it can be forwarded — the reason we use links rather than a checkout — and
- * that leaving this page is expected rather than a mistake. An unexplained jump to a
- * `rzp.io` domain while paying ₹50,000 is exactly when people abandon.
- */
-function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
-  return (
-    <section className="rounded-2xl border-2 border-primary/30 bg-white p-4 sm:p-5" data-testid="deposit-link-panel">
-      <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-        <Wallet className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
-        Your payment link is ready
-      </h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1">
-        {amount} to MuscleBoxPro on Razorpay: UPI, netbanking, card or NEFT. We've emailed the same
-        link, so this is not your only chance at it.
-      </p>
-
-      <a
-        href={link.paymentUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        // `bg-primary-fill`, matching `Button`: white on `--primary` is 3.25:1, and this
-        // is a 14px bold label. The token is the same hue dark enough to carry it.
-        className="mt-4 inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-primary-fill text-primary-foreground font-bold text-sm w-full sm:w-auto hover:bg-primary-fill/90 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        data-testid="link-payment"
-      >
-        Open the payment page
-        <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-        {/* It leaves the site for a payment gateway; that is worth saying rather than
-            leaving as a surprise to anyone who cannot see the new tab open. */}
-        <span className="sr-only">(opens in a new tab)</span>
-      </a>
-
-      <p className="text-sm text-gray-700 leading-relaxed mt-3 flex items-start gap-2">
-        <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-        <span>
-          <strong className="text-foreground">You don't have to be the one who pays.</strong> Forward
-          this link to whoever releases payments. It works from their inbox, and we match it to your
-          gym either way.
-        </span>
-      </p>
-
-      {IS_MOCK_ONBOARDING && (
-        <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-3">
-          Preview mode: this link is a placeholder and takes no money. Use "check now" twice to walk
-          the settled path.
-        </p>
-      )}
-    </section>
-  );
-}
 
 /**
  * The receipt.
@@ -366,33 +458,46 @@ function Fact({ label, value, mono }: { label: string; value: string; mono?: boo
  * covers every one of those paths with one mechanism, which is also why the return
  * trip from Razorpay needs no special handling here.
  *
- * It stops on its own (`MAX_POLLS`) and on unmount, and it never touches the wizard's
- * submitting state — see `pollDepositStatus` in `useOnboarding`.
+ * It stops on its own (`maxPolls`) and on unmount, and it never touches the wizard's
+ * submitting state — see `pollDepositStatus` in `useOnboarding`. Running out calls back,
+ * so the screen can say so: a poll that expires quietly leaves a gym reading "this page
+ * moves on by itself" next to a page that has not checked for an hour.
+ *
+ * The first read happens immediately rather than one interval in. On the way back from
+ * the gateway the webhook has usually already landed, so the answer is often there before
+ * the spinner has turned once — and waiting a beat to ask for it is a beat of nothing.
  */
-function useBackgroundPoll(active: boolean, poll: () => Promise<void>, onSlow: () => void) {
+function useBackgroundPoll(
+  active: boolean,
+  poll: () => Promise<void>,
+  {
+    intervalMs,
+    maxPolls,
+    onExhausted,
+  }: { intervalMs: number; maxPolls: number; onExhausted: () => void },
+) {
   const pollRef = useRef(poll);
-  const slowRef = useRef(onSlow);
+  const exhaustedRef = useRef(onExhausted);
   pollRef.current = poll;
-  slowRef.current = onSlow;
+  exhaustedRef.current = onExhausted;
 
   useEffect(() => {
     if (!active) return;
-    let polls = 0;
+    let polls = 1;
+    // Not awaited and its result not inspected: the answer arrives as new state
+    // through the hook, which is the only place the truth lives.
+    void pollRef.current();
 
     const timer = setInterval(() => {
       polls += 1;
-      if (polls > MAX_POLLS) {
+      if (polls > maxPolls) {
         clearInterval(timer);
+        exhaustedRef.current();
         return;
       }
-      // Not awaited and its result not inspected: the answer arrives as new state
-      // through the hook, which is the only place the truth lives.
       void pollRef.current();
-      // Around fifteen seconds in, stop saying "checking" and say what is actually
-      // happening. A spinner that has been spinning for a while is a lie of omission.
-      if (polls === SLOW_AFTER_POLLS) slowRef.current();
-    }, POLL_INTERVAL_MS);
+    }, intervalMs);
 
     return () => clearInterval(timer);
-  }, [active]);
+  }, [active, intervalMs, maxPolls]);
 }

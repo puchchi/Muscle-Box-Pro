@@ -64,5 +64,9 @@ Object.defineProperty(window, "localStorage", { value: localStorageMock });
 // ─── Reset mocks between tests ───────────────────────────────────────────────
 beforeEach(() => {
   localStorageMock.clear();
+  // happy-dom's own, not the mock above. Step 4's payment round trip keeps its way back in
+  // here, and a leftover from one test is a step 4 that opens believing it has just come
+  // back from a payment gateway.
+  window.sessionStorage.clear();
   vi.clearAllMocks();
 });

@@ -23,6 +23,7 @@ import {
   resetMockOnboarding,
 } from "@shared/onboarding/mockApi";
 import { STEP_META } from "@shared/onboarding/steps";
+import { markReturnedFromGateway, rememberPaymentAttempt } from "@/lib/depositReturn";
 import OnboardingFlow from "@/pages/onboarding/OnboardingFlow";
 
 /**
@@ -779,6 +780,16 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
  * page never decides that a payment arrived, the link is presented as forwardable
  * (which is the entire reason for using Payment Links), and paying is the only way
  * off the step since the defer button went on 2026-08-25.
+ *
+ * Since §25 the pay button also *leaves* — this tab goes to the payment page and the
+ * gateway sends it back. Preview has no gateway, so pressing Pay lands directly in the
+ * state the tab really returns in, which is what makes these assertions possible; the
+ * route itself is covered by [DepositReturn.test.tsx](./DepositReturn.test.tsx).
+ *
+ * And since §26 the gym presses one button and gets an outcome. There is no "check now"
+ * and nothing that asks it to declare a payment, so what these tests pin is that the
+ * confirmation happens on its own — and that the slow wait, which is a *revisit* rather
+ * than anything the pay button leads to, still says what it is waiting for.
  */
 describe("OnboardingFlow — step 4 takes the deposit", () => {
   it("states the amount and offers the agreement rather than clause numbers", async () => {
@@ -807,46 +818,94 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
     expect(screen.getByTestId("deposit-amount")).not.toHaveTextContent(/pay (this|it) later/i);
   });
 
-  it("issues a forwardable link and does not mark anything paid on its own", async () => {
+  it("pays and reaches the receipt with nothing to press in between", async () => {
     const user = await open();
     await signTheAgreement(user);
 
     await user.click(screen.getByTestId("button-continue"));
-    await waitFor(() => expect(screen.getByTestId("deposit-link-panel")).toBeInTheDocument());
 
-    // Opens off-site, in a new tab, and is safe to hand to someone else — the reason
-    // this is a Payment Link rather than an in-page checkout.
-    const link = screen.getByTestId("link-payment");
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link.getAttribute("href")).toMatch(/^https:\/\//);
-    expect(screen.getByTestId("deposit-link-panel")).toHaveTextContent(
-      /don't have to be the one who pays/,
-    );
+    // Asserted inside the `waitFor`, because confirming is a state this tab passes
+    // *through* on its way to the receipt — a second query would race the poll.
+    await waitFor(() => {
+      const panel = screen.getByTestId("deposit-waiting");
+      // One press, then an outcome. The manual check went on 2026-08-25: a gym cannot know
+      // whether the money reached us, so a button that asks it to say so is asking for a
+      // claim we would have to ignore (§26).
+      expect(panel).toHaveTextContent("Confirming your payment");
+      expect(panel).not.toHaveTextContent(/I've paid/i);
+      expect(screen.queryByTestId("button-refresh-deposit")).not.toBeInTheDocument();
+      // Nothing to press *at all* while it confirms, including the way back to the gateway:
+      // pressing that ten seconds after paying is how one ₹50,000 becomes two.
+      expect(screen.queryByTestId("button-open-payment")).not.toBeInTheDocument();
+      // A redirect is not a payment. Until our own record moves, this is still unpaid.
+      expect(screen.getByTestId("deposit-status")).toHaveTextContent("Awaiting payment");
+      // One card, not three: the separate "your payment link is ready" panel went on
+      // 2026-08-25 when paying started navigating this tab (§25).
+      expect(screen.queryByTestId("deposit-link-panel")).not.toBeInTheDocument();
+    });
 
-    // Still on step 4 and still unpaid: issuing a link is not a payment.
-    expect(screen.getByTestId("deposit-status")).toHaveTextContent("Awaiting payment");
-    expect(screen.getByTestId("deposit-waiting")).toHaveTextContent(/close the tab/);
-  });
-
-  it("says so when it checks and the money has not landed yet", async () => {
-    const user = await open();
-    await signTheAgreement(user);
-    await user.click(screen.getByTestId("button-continue"));
-    await waitFor(() => expect(screen.getByTestId("button-refresh-deposit")).toBeInTheDocument());
-
-    // First check: settlement has not reached our record. A "check" that changes
-    // nothing visible reads as a broken button.
-    await user.click(screen.getByTestId("button-refresh-deposit"));
-    await waitFor(() =>
-      expect(screen.getByTestId("deposit-waiting")).toHaveTextContent(/still can't see it/),
-    );
-    expect(screen.getByTestId("deposit-amount")).toBeInTheDocument();
-
-    // Second check: the webhook has landed, so the wizard moves on by itself.
-    await user.click(screen.getByTestId("button-refresh-deposit"));
+    // And then it finishes by itself, on the record rather than on the redirect.
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
     expect(screen.getByTestId("deposit-outcome")).toHaveTextContent("Deposit received");
     expect(screen.getByTestId("deposit-receipt-no")).toHaveTextContent("MBP-DEP-");
+  });
+
+  it("keeps the forwardable link in front of a gym that reopened the page", async () => {
+    const user = await open();
+    await signTheAgreement(user);
+
+    // The slow wait is a *revisit*: after the pay button this tab has left for Razorpay, so
+    // "waiting for the payment" is what a gym sees when it reopens its link while somebody
+    // else pays from the forwarded copy. Driven through the API for that reason — a click
+    // here would be the returning tab, which is the other test.
+    const api = createMockOnboardingApi();
+    await api.chooseDeposit(DEMO_TOKEN, "pay_now");
+    cleanup();
+    await open();
+
+    await waitFor(() => expect(screen.getByTestId("deposit-waiting")).toBeInTheDocument());
+    const panel = screen.getByTestId("deposit-waiting");
+    expect(panel).toHaveTextContent("Waiting for the payment");
+    expect(panel).toHaveTextContent(/close the tab/);
+    // Safe to hand to someone else — the reason this is a Payment Link rather than an
+    // in-page checkout.
+    expect(panel).toHaveTextContent(/don't have to be the one who pays/);
+    expect(screen.getByTestId("deposit-status")).toHaveTextContent("Awaiting payment");
+    expect(screen.queryByTestId("button-refresh-deposit")).not.toBeInTheDocument();
+    // `sessionStorage` died with the tab that left, so there is no stashed payment URL — and
+    // this button asks for the link again rather than being absent and stranding the gym.
+    expect(screen.getByTestId("button-open-payment")).toHaveTextContent("Open the payment page");
+  });
+
+  it("confirms on what the return route hands it, not on the query string", async () => {
+    const user = await open();
+    await signTheAgreement(user);
+
+    const api = createMockOnboardingApi();
+    await api.chooseDeposit(DEMO_TOKEN, "pay_now");
+
+    // What `/gym/deposit-return` leaves for this tab on the way back in: where it was, the
+    // link it was sent to, and the fact that a gateway returned it. None of that can travel
+    // in the URL, because the URL is one we hand to Razorpay (§25).
+    rememberPaymentAttempt({
+      returnTo: "/gym/onboarding/iron-temple-fitness/demo",
+      paymentUrl: "https://rzp.io/i/demo",
+    });
+    markReturnedFromGateway();
+    cleanup();
+    await open();
+
+    await waitFor(() => {
+      const panel = screen.getByTestId("deposit-waiting");
+      expect(panel).toHaveTextContent("Confirming your payment");
+      expect(panel).toHaveTextContent(/back from Razorpay/i);
+      // No advice to forward it now. Somebody has just paid; a forwarded link at this point
+      // buys a second ₹50,000 and a refund conversation.
+      expect(panel).not.toHaveTextContent(/don't have to be the one who pays/);
+    });
+
+    await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
+    expect(screen.getByTestId("deposit-outcome")).toHaveTextContent("Deposit received");
   });
 });
 
@@ -864,14 +923,8 @@ describe("OnboardingFlow — the whole flow", () => {
     expect(screen.getByTestId("deposit-status")).toHaveTextContent("Not paid yet");
 
     await user.click(screen.getByTestId("button-continue"));
-    await waitFor(() => expect(screen.getByTestId("button-refresh-deposit")).toBeInTheDocument());
-    // Twice, because the mock's first poll reports the money as not yet seen — which is
-    // the common case in reality.
-    await user.click(screen.getByTestId("button-refresh-deposit"));
-    await waitFor(() =>
-      expect(screen.getByTestId("deposit-waiting")).toHaveTextContent(/still can't see it/),
-    );
-    await user.click(screen.getByTestId("button-refresh-deposit"));
+    // One press and the deposit clears itself: the mock's first read reports the money as
+    // not yet seen — the common case in reality — and the second finds it.
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
 
     // Steps 1 and 2 are viewable but locked once signed.
@@ -961,13 +1014,7 @@ describe("OnboardingFlow — step 6 tracks the installation", () => {
     const user = await open();
     await signTheAgreement(user);
     await user.click(screen.getByTestId("button-continue"));
-    await waitFor(() => expect(screen.getByTestId("button-refresh-deposit")).toBeInTheDocument());
-    // Two polls before the mock's webhook lands.
-    await user.click(screen.getByTestId("button-refresh-deposit"));
-    await waitFor(() =>
-      expect(screen.getByTestId("deposit-waiting")).toHaveTextContent(/still can't see it/),
-    );
-    await user.click(screen.getByTestId("button-refresh-deposit"));
+    // Two reads before the mock's webhook lands, both on the step's own timer.
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
     await user.type(screen.getByTestId("input-portal-password"), "a-long-enough-password");
     await user.click(screen.getByTestId("button-continue"));
