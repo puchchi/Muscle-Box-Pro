@@ -374,21 +374,24 @@ exists.
 
 ₹50,000 refundable, per §5.1 and Schedule B. See §5 for the gateway design.
 
-**This step comes after signing, and it is skippable.** Both matter:
+**This step comes after signing, and it was skippable.** Both mattered:
 
 *After signing*, because the deposit is an obligation that arises **under** the agreement (§5.1).
 Collecting ₹50,000 before there is an executed contract creates a refund liability with no
 agreement governing it, and it is the wrong order commercially — you are asking for money before
-the gym has committed to anything.
+the gym has committed to anything. This has not changed.
 
 *Skippable*, because a failed or delayed ₹50,000 payment must never orphan a gym that has already
 signed. The signed agreement is the milestone; the deposit is a receivable. "Pay later — we'll
-email you the payment link" moves them straight to step 5 with the account created and a persistent
-`Deposit pending` banner on the dashboard.
+email you the payment link" moved them straight to step 5 with the account created and a persistent
+`Deposit pending` banner on the dashboard. **The button went on 2026-08-25 (§24): paying is now how
+step 4 is completed.** Everything downstream of `deferred` stayed, because we still put records in
+that state for a gym that asks — the reasoning above is why it is a state at all.
 
-The screen shows the amount, that it is refundable, what it can be adjusted against (§5.4–5.7 in
-plain language — this is the clause most likely to cause a later argument, so state it here too),
-and one primary button.
+The screen shows the amount, that it is refundable, and one primary button. It used to restate
+§5.4–5.7 in plain language beside them, on the argument that the clause most likely to cause a later
+argument should be stated where the money changes hands; that came off on 2026-08-25 in favour of a
+button back to the signed document (§24).
 
 **As built (2026-08-22).**
 [StepDeposit.tsx](../client/src/pages/onboarding/steps/StepDeposit.tsx) plus
@@ -420,7 +423,9 @@ second, because a mock that confirms instantly hides the state the UI most needs
 **§5.6–5.7 is on the money screen.** Five rows off `DEPOSIT_FACTS`, including the two that are not in
 the gym's favour: deliberate or reckless damage can forfeit the whole deposit, and cost beyond it is
 still owed. Stated at the moment money changes hands, with the clause numbers, so a gym that later
-hits §5.6 recognises it rather than discovering it.
+hits §5.6 recognises it rather than discovering it. **`DEPOSIT_FACTS` was deleted on 2026-08-25
+(§24).** The clauses are two screens away in the document the gym signed, and the screen now offers
+that document instead of paraphrasing it.
 
 **Paying stays possible after deferring.** Step 4 is read-only when revisited, with one exception:
 a `deferred` deposit keeps its pay button, because that outstanding ₹50,000 is the only reason to come
@@ -1459,6 +1464,9 @@ like a compile step.
 - [ ] Every representation the signature record stores is stated in what the gym ticked, or in the
       document they ticked it against — `authorisedToBind` is derived from one checkbox and relies on
       §32 being in the signed text (§23)
+- [ ] A screen that paraphrases a clause instead of citing it keeps a way to the document itself
+      reachable from that screen — step 4 discloses §5 by offering the agreement, and nothing else
+      (§24)
 - [ ] Agreement content changes bump the version; never edit a version that has signatures
 - [ ] A new agreement version pins its own golden length and hash, and does not share a fixture with
       an older one — a shared fixture lets one version's edit move another version's hash
@@ -2136,3 +2144,64 @@ authority to bind — a test against the copy drifting back apart from the field
 ### Verified
 
 `npx tsc --noEmit` clean. **54 test files, 1,032 tests passing.**
+
+## 24. The deposit screen: one action, and the document instead of the clauses (2026-08-25)
+
+> improve UI of Deposit page. Reduce text and consize it. also remove all bullets points, as we have
+> shown them already. Also remove i will pay this later button.
+
+> in this page, we can add a button to go back to check agreement. also lets remove mention like "§5"
+
+### Paying is how the step is finished
+
+The "I'll pay this later" button and the footnote under it are gone, and step 4's blurb no longer says
+"you can pay it later". This is a policy change rather than a tidy-up, and it was confirmed as one
+before it was made: step 5 unlocks when the server marks the deposit **paid or deferred**, so with no
+defer button a signed gym reaches its portal password only once the ₹50,000 has cleared. The argument
+recorded in §3 step 4 for making it skippable — a delayed transfer must not orphan a gym that has
+already signed — has not stopped being true; it is now answered by us deferring a deposit for a gym
+that asks rather than by a button every gym sees.
+
+So `deferred` survives everywhere except the wizard: `DepositStatus` and `DepositChoice`, the mock's
+`pay_later` branch, the outstanding-deposit card on step 5, the amber note on step 6, the dashboard
+banner and the admin labels. Two pieces of copy changed with the button, because nobody chooses this
+any more — the status pill reads "Still to pay" rather than "You chose to pay later", and step 4's
+amber panel states what is outstanding instead of reminding the gym of a decision it was never
+offered.
+
+One consequence worth naming for whoever next edits the tests: the deferred rendering is no longer
+reachable by clicking. The end-to-end walk pays instead (two polls, because the mock's first poll
+reports the money as not yet seen), and the deferred state is driven through
+`createMockOnboardingApi().chooseDeposit(token, "pay_later")` with the link reopened — the same route
+support would take. Without that, the copy for a state we still put records into would have gone
+untested.
+
+### The clauses came off, and then the clause numbers
+
+`DEPOSIT_FACTS` — five rows restating §5.3–5.8 in plain language — is deleted. The gym reads §5 in the
+agreement one step earlier and signs it there, so the rows were a paraphrase of a document already
+read, sitting between the amount and the button.
+
+They were replaced first by a pointer ("§5 of your agreement covers what it can be adjusted
+against"), and that came off too. A clause number is only useful to someone holding the document, and
+from this screen nobody was: the reference named where the answer was without giving any way to get
+there. What is there instead is the document — a **Read the agreement** button beside the pay button,
+back to step 3, which renders the signed copy read-only.
+
+The honest cost: §5.6–5.7, the harshest term in the agreement, is no longer stated at the moment money
+changes hands. It is one click away, inside the hashed text this gym has signed, which is a better
+place for it to be authoritative and a worse place for it to be noticed. That trade is the reason for
+the new §17 item — the disclosure now depends entirely on step 3 staying reachable from step 4, so a
+change that makes the reader unreachable, or the agreement not viewable once signed, silently removes
+the only statement of §5 the payer ever sees.
+
+### What the screen is
+
+One card: the amount, the status pill, two lines (what the deposit is, and the refund), then a footer
+rule with **Read the agreement** and **Pay ₹50,000 now**. Below it, unchanged apart from tighter copy,
+the link panel with its forwardable-link line, the waiting panel with its live region and manual
+check, and the receipt.
+
+### Verified
+
+`npx tsc --noEmit` clean. **54 test files, 1,034 tests passing.**

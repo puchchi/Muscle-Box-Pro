@@ -20,13 +20,13 @@ import type { StepViewProps } from "../types";
 /**
  * Step 4 — Security deposit.
  *
- * Deliberately after signing (§5.1 makes the deposit an obligation *of* the agreement,
- * so asking for money before there is one is both bad law and bad manners) and
- * deliberately skippable. "Pay later" is a first-class outcome, not a hidden escape
- * hatch: a gym that has signed is onboarded, and blocking its portal on a ₹50,000
- * transfer that its accountant does on Fridays would strand it.
+ * After signing, because §5.1 makes the deposit an obligation *of* the agreement, so
+ * asking for money before there is one is both bad law and bad manners.
  *
- * Four decisions this screen encodes:
+ * **Paying is how this step is finished.** It had a "I'll pay this later" button until
+ * 2026-08-25 and no longer does (docs/gym-onboarding.md §24). `deferred` is still a
+ * state the record can be in — we defer or waive one for a gym that asks — so the
+ * panels for it stay; nothing in the wizard puts a record there.
  *
  * **A forwardable link, not an in-page checkout.** The person authorised to sign a
  * placement agreement frequently has no access to the account that releases ₹50,000.
@@ -42,9 +42,10 @@ import type { StepViewProps } from "../types";
  * haven't seen it yet" line rather than a silent spinner, and permission to close the
  * tab — because a gym that closes it and comes back must be fine, and is.
  *
- * **§5.4–5.7 are on the screen.** What the deposit can be adjusted against is the
- * clause most likely to cause an argument in month nine. It is stated at the moment
- * money changes hands, in plain words, with the clause numbers.
+ * §5.3–5.8 used to be restated here clause by clause, and then cited by number. Neither
+ * is on the screen now: the clauses are one step back in the agreement the gym has just
+ * read and signed, so this screen offers that document rather than a précis of it or a
+ * reference nobody can follow from here (§24).
  *
  * See docs/gym-onboarding.md §3 step 4 and §5.
  */
@@ -60,7 +61,13 @@ const MAX_POLLS = 60;
 /** After this many silent polls, the copy stops promising and starts explaining. */
 const SLOW_AFTER_POLLS = 3;
 
-export default function StepDeposit({ state, readOnly, isSubmitting, actions }: StepViewProps) {
+export default function StepDeposit({
+  state,
+  readOnly,
+  isSubmitting,
+  goToStep,
+  actions,
+}: StepViewProps) {
   const [link, setLink] = useState<DepositLink | null>(null);
   const [checkedAndNotFound, setCheckedAndNotFound] = useState(false);
 
@@ -97,17 +104,28 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5" data-testid="deposit-amount">
+      {/* Only we can put a record here, so this says what is outstanding rather than
+          reminding the gym of a choice it was never offered. */}
+      {status === "deferred" && !isPending && (
+        <section
+          className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5"
+          data-testid="deposit-deferred"
+        >
+          <h2 className="text-base font-bold text-amber-900">Still outstanding</h2>
+          <p className="text-sm text-amber-900 leading-relaxed mt-1">
+            Your agreement stands and the site survey can go ahead. Installation is what waits for
+            the {amount}.
+          </p>
+        </section>
+      )}
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6" data-testid="deposit-amount">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Refundable security deposit
             </h2>
             <p className="text-3xl font-black text-foreground mt-1 tracking-tight">{amount}</p>
-            <p className="text-sm text-gray-700 mt-1">
-              One payment, held for the whole term. Not a fee, not rent, and not part-payment for the
-              machine.
-            </p>
           </div>
           <span
             className="text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1 flex-shrink-0"
@@ -118,16 +136,39 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           </span>
         </div>
 
-        <dl className="mt-4 pt-4 border-t border-gray-200 space-y-3">
-          {DEPOSIT_FACTS.map((fact) => (
-            <div key={fact.clause} className="flex items-start gap-3">
-              <dt className="text-xs font-bold text-primary-ink bg-primary/10 rounded px-2 py-0.5 flex-shrink-0 tabular-nums">
-                §{fact.clause}
-              </dt>
-              <dd className="text-sm text-gray-700 leading-relaxed">{fact.text}</dd>
-            </div>
-          ))}
-        </dl>
+        <p className="text-sm text-gray-700 leading-relaxed mt-3">
+          One payment, held for the whole term. Not a fee or rent, and not part-payment for the
+          machine.
+        </p>
+        <p className="text-sm text-gray-700 leading-relaxed mt-1">
+          Refunded within 30 days of the machine being collected, less anything owing under the
+          agreement.
+        </p>
+
+        {canAct && !isPending && (
+          <div className="mt-5 pt-4 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* The clauses on what the deposit can be adjusted against were restated on this
+                screen until 2026-08-25. This is the document itself instead. */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => goToStep(3)}
+              className="min-h-11 rounded-xl text-sm font-semibold w-full sm:w-auto cursor-pointer"
+              data-testid="button-read-agreement"
+            >
+              Read the agreement
+            </Button>
+            <Button
+              type="button"
+              onClick={payNow}
+              disabled={isSubmitting}
+              className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
+              data-testid="button-continue"
+            >
+              {isSubmitting ? "Creating your link..." : `Pay ${amount} now`}
+            </Button>
+          </div>
+        )}
       </section>
 
       {/* ── The link, once issued ─────────────────────────────────────────── */}
@@ -150,8 +191,8 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
           */}
           <p className="text-sm text-gray-700 leading-relaxed mt-1" role="status" aria-live="polite">
             {checkedAndNotFound
-              ? "We still can't see it. Bank transfers and UPI usually land in seconds but can take a few minutes. This page updates itself, and you can close the tab. If it hasn't cleared in an hour, reply to our email and we'll trace it."
-              : "This page checks by itself every few seconds. You can safely close the tab, because we confirm the payment from our own records, not from this browser, so nothing depends on you staying here."}
+              ? "We still can't see it. UPI and transfers usually land in seconds, sometimes minutes. This page keeps checking and you can close the tab. If it hasn't cleared in an hour, reply to our email and we'll trace it."
+              : "This page checks by itself every few seconds. You can close the tab: we confirm the payment from our own records, not from this browser."}
           </p>
           {canAct && (
             <Button
@@ -168,98 +209,17 @@ export default function StepDeposit({ state, readOnly, isSubmitting, actions }: 
         </section>
       )}
 
-      {/* ── Deferred, revisited ───────────────────────────────────────────── */}
-      {status === "deferred" && !isPending && (
-        <section
-          className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5"
-          data-testid="deposit-deferred"
-        >
-          <h2 className="text-base font-bold text-amber-900">Still outstanding</h2>
-          <p className="text-sm text-amber-900 leading-relaxed mt-1">
-            You chose to pay this later, which is fine: your agreement stands and the site survey can
-            go ahead. Installation is what waits for the {amount}. The link below is the same one in
-            your email.
-          </p>
-        </section>
-      )}
-
-      {/* ── Actions ───────────────────────────────────────────────────────── */}
-      {canAct && !isPending && (
-        <div className="flex flex-col sm:flex-row-reverse items-stretch sm:items-center gap-3">
-          <Button
-            type="button"
-            onClick={payNow}
-            disabled={isSubmitting}
-            className="h-11 px-6 rounded-xl font-bold text-sm cursor-pointer"
-            data-testid="button-continue"
-          >
-            {isSubmitting ? "Creating your link..." : `Pay ${amount} now`}
-          </Button>
-          {status === "not_started" && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => actions.chooseDeposit("pay_later")}
-              disabled={isSubmitting}
-              className="h-11 px-4 rounded-xl text-sm font-semibold text-gray-700 cursor-pointer"
-              data-testid="button-pay-later"
-            >
-              I'll pay this later
-            </Button>
-          )}
-        </div>
-      )}
-
-      {status === "not_started" && canAct && (
-        <p className="text-xs text-gray-700 leading-relaxed">
-          Paying later does not hold anything up except installation, and it does not change your
-          agreement. We'll email the same link and it stays in your dashboard under Deposit.
-        </p>
-      )}
     </div>
   );
 }
 
 // ── Local pieces ────────────────────────────────────────────────────────────
 
-/**
- * §5 in five lines.
- *
- * Written as what happens rather than as what we may do, and it includes the parts
- * that are not in the gym's favour — §5.6's forfeiture and §5.7's liability beyond the
- * deposit. A gym that reads only this screen and later hits §5.6 should recognise it.
- */
-const DEPOSIT_FACTS = [
-  {
-    clause: "5.3",
-    text: "It secures your obligations under the agreement. While nothing is owing, it just sits there.",
-  },
-  {
-    clause: "5.4",
-    text: "It can be adjusted against damage, missing parts or accessories, unauthorised modification, moving the machine without approval, misuse, repair and recovery costs, and anything else unpaid.",
-  },
-  {
-    clause: "5.5",
-    text: "For ordinary accidental damage we deduct the actual reasonable repair cost, not a fixed penalty.",
-  },
-  {
-    clause: "5.6–5.7",
-    // The two clauses this used to cite by number are the ones about not opening the machine and
-    // not moving it. Named in words instead: the number was only useful to someone already holding
-    // the agreement, and the label beside this line is where a clause number belongs.
-    text: "Deliberate, reckless or severe damage can forfeit the whole deposit, and anything the damage costs beyond it is still owed. This is the harshest clause in the agreement, and the reason to read what you may and may not do with the machine before you sign.",
-  },
-  {
-    clause: "5.8",
-    text: "When the term ends and the machine is collected, we settle what is owing and refund the rest within 30 days.",
-  },
-] as const;
-
 const STATUS_LABEL: Record<string, string> = {
   not_started: "Not paid yet",
   pending: "Awaiting payment",
   paid: "Received",
-  deferred: "You chose to pay later",
+  deferred: "Still to pay",
 };
 
 /**
@@ -277,8 +237,8 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         Your payment link is ready
       </h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
-        {amount} to MuscleBoxPro, on Razorpay. UPI, netbanking, card or NEFT, whatever your
-        accounts team prefers. We've emailed the same link, so this is not your only chance at it.
+        {amount} to MuscleBoxPro on Razorpay: UPI, netbanking, card or NEFT. We've emailed the same
+        link, so this is not your only chance at it.
       </p>
 
       <a
@@ -301,8 +261,8 @@ function LinkPanel({ link, amount }: { link: DepositLink; amount: string }) {
         <Forward className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           <strong className="text-foreground">You don't have to be the one who pays.</strong> Forward
-          this link to whoever releases payments. It works from their inbox, on their device, and we
-          match it to your gym either way.
+          this link to whoever releases payments. It works from their inbox, and we match it to your
+          gym either way.
         </span>
       </p>
 
@@ -349,9 +309,9 @@ function PaidPanel({
         Deposit received: {amount}
       </h2>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
-        Thank you. A receipt is on its way to <strong className="text-foreground">{email}</strong>, and
-        it stays in your dashboard under Deposit. It is refundable within 30 days of the machine being
-        collected, less anything owing.
+        A receipt is on its way to <strong className="text-foreground">{email}</strong> and stays in
+        your dashboard under Deposit. Refundable within 30 days of the machine being collected, less
+        anything owing.
       </p>
 
       {receipt && (
@@ -367,7 +327,7 @@ function PaidPanel({
         <Receipt className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           Keep the reference. It is what we both quote when the deposit is refunded at the end of the
-          term, which may be two years and a change of front-desk staff from now.
+          term, two years and a change of front-desk staff from now.
         </span>
       </p>
     </section>

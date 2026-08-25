@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -16,7 +16,12 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import { DEMO_TOKEN, MOCK_TOKENS, resetMockOnboarding } from "@shared/onboarding/mockApi";
+import {
+  createMockOnboardingApi,
+  DEMO_TOKEN,
+  MOCK_TOKENS,
+  resetMockOnboarding,
+} from "@shared/onboarding/mockApi";
 import { STEP_META } from "@shared/onboarding/steps";
 import OnboardingFlow from "@/pages/onboarding/OnboardingFlow";
 
@@ -65,6 +70,20 @@ async function completeDetails(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByTestId("input-signatoryName"), VALID.signatoryName);
   await user.type(screen.getByTestId("input-signatoryDesignation"), VALID.signatoryDesignation);
   await user.click(screen.getByTestId("button-continue"));
+}
+
+/** Steps 1 to 3, ending on step 4 with the agreement signed. */
+async function signTheAgreement(user: ReturnType<typeof userEvent.setup>) {
+  await completeDetails(user);
+  await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+  await user.click(screen.getByTestId("button-continue"));
+  await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
+  // Awaited rather than asserted: the panel is locked until the reading gate reports the
+  // document scrolled, which happens an effect after `agreement-body` first paints.
+  await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
+  await user.click(screen.getByTestId("checkbox-agreed"));
+  await user.click(screen.getByTestId("button-sign"));
+  await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
 }
 
 describe("OnboardingFlow — opening a link", () => {
@@ -758,39 +777,39 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
  *
  * The money screen, so the assertions are about the properties that protect it: this
  * page never decides that a payment arrived, the link is presented as forwardable
- * (which is the entire reason for using Payment Links), and the harsh half of §5 is on
- * screen at the moment money changes hands rather than only in the contract.
+ * (which is the entire reason for using Payment Links), and paying is the only way
+ * off the step since the defer button went on 2026-08-25.
  */
 describe("OnboardingFlow — step 4 takes the deposit", () => {
-  async function reachStepFour(user: ReturnType<typeof userEvent.setup>) {
-    await completeDetails(user);
-    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
-    await user.click(screen.getByTestId("button-continue"));
-    await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
-    // Awaited rather than asserted: the panel is locked until the reading gate reports the
-    // document scrolled, which happens an effect after `agreement-body` first paints.
-    await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
-    await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("button-sign"));
-    await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
-  }
-
-  it("states what the deposit can be taken for, including the parts against the gym", async () => {
+  it("states the amount and offers the agreement rather than clause numbers", async () => {
     const user = await open();
-    await reachStepFour(user);
+    await signTheAgreement(user);
 
     const panel = screen.getByTestId("deposit-amount");
-    // §5.6–5.7 is the harshest clause in the agreement. If it is ever only in the
-    // contract and not on this screen, a forfeited deposit becomes a surprise.
-    expect(panel).toHaveTextContent("§5.6–5.7");
-    expect(panel).toHaveTextContent(/forfeit the whole deposit/);
-    expect(panel).toHaveTextContent("§5.8");
+    expect(panel).toHaveTextContent("₹50,000");
     expect(screen.getByTestId("deposit-status")).toHaveTextContent("Not paid yet");
+    // The five clause lines came off this screen on 2026-08-25, and the clause numbers with
+    // them: a "§5.6" a gym cannot open from here is not a disclosure. What replaces them is
+    // one click back to the document it has just signed.
+    expect(panel).not.toHaveTextContent(/§\s*5/);
+    await user.click(screen.getByTestId("button-read-agreement"));
+    await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
+  });
+
+  it("offers paying as the only way off the step", async () => {
+    const user = await open();
+    await signTheAgreement(user);
+
+    // Paying is now what completes step 4. A defer button here would put a signed gym on
+    // step 5 with the ₹50,000 outstanding, which is the state this removal ended.
+    expect(screen.queryByTestId("button-pay-later")).not.toBeInTheDocument();
+    expect(screen.getByTestId("button-continue")).toHaveTextContent("Pay ₹50,000 now");
+    expect(screen.getByTestId("deposit-amount")).not.toHaveTextContent(/pay (this|it) later/i);
   });
 
   it("issues a forwardable link and does not mark anything paid on its own", async () => {
     const user = await open();
-    await reachStepFour(user);
+    await signTheAgreement(user);
 
     await user.click(screen.getByTestId("button-continue"));
     await waitFor(() => expect(screen.getByTestId("deposit-link-panel")).toBeInTheDocument());
@@ -811,7 +830,7 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
 
   it("says so when it checks and the money has not landed yet", async () => {
     const user = await open();
-    await reachStepFour(user);
+    await signTheAgreement(user);
     await user.click(screen.getByTestId("button-continue"));
     await waitFor(() => expect(screen.getByTestId("button-refresh-deposit")).toBeInTheDocument());
 
@@ -834,29 +853,25 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
 /**
  * The rest of the flow, end to end.
  *
- * What the walk is really for is the joins: that a signature carries a hash, that
- * deferring the deposit does not orphan a signed gym, and that the last step hands over
- * to the dashboard.
+ * What the walk is really for is the joins: that a signature carries a hash, that the
+ * deposit clearing carries the gym to its password, and that the last step hands over to
+ * the dashboard.
  */
 describe("OnboardingFlow — the whole flow", () => {
-  it("walks sign, defer the deposit, and set a password", async () => {
+  it("walks sign, pay the deposit, and set a password", async () => {
     const user = await open();
-    await completeDetails(user);
-    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
-
-    await user.click(screen.getByTestId("button-continue"));
-    await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
-
-    // Enabled only once the browser has re-rendered the document and confirmed it hashes
-    // to the value the server pinned at issuance.
-    await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
-    await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("button-sign"));
-
-    await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
+    await signTheAgreement(user);
     expect(screen.getByTestId("deposit-status")).toHaveTextContent("Not paid yet");
 
-    await user.click(screen.getByTestId("button-pay-later"));
+    await user.click(screen.getByTestId("button-continue"));
+    await waitFor(() => expect(screen.getByTestId("button-refresh-deposit")).toBeInTheDocument());
+    // Twice, because the mock's first poll reports the money as not yet seen — which is
+    // the common case in reality.
+    await user.click(screen.getByTestId("button-refresh-deposit"));
+    await waitFor(() =>
+      expect(screen.getByTestId("deposit-waiting")).toHaveTextContent(/still can't see it/),
+    );
+    await user.click(screen.getByTestId("button-refresh-deposit"));
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
 
     // Steps 1 and 2 are viewable but locked once signed.
@@ -868,9 +883,7 @@ describe("OnboardingFlow — the whole flow", () => {
       "title",
       expect.stringMatching(/^[0-9a-f]{64}$/),
     );
-    // A deferred deposit is still owed, and step 5 says so rather than reading like
-    // the gym is done paying.
-    expect(screen.getByTestId("deposit-outcome")).toHaveTextContent("Deposit still to pay");
+    expect(screen.getByTestId("deposit-outcome")).toHaveTextContent("Deposit received");
     // The second signature at installation (§6) is disclosed before anyone leaves.
     expect(screen.getByTestId("what-happens-next")).toHaveTextContent("Schedule A is signed on site");
 
@@ -897,6 +910,40 @@ describe("OnboardingFlow — the whole flow", () => {
       "/gym/dashboard",
     );
   });
+
+  /**
+   * A deposit that is outstanding on a signed record.
+   *
+   * Since 2026-08-25 the wizard cannot produce this: step 4 has no defer button, so a
+   * record only reaches step 5 unpaid when we defer or waive it for a gym that asked. The
+   * copy that says so is still on steps 5 and 6, and it is still what such a gym sees, so
+   * it is driven through the API the way support would and the link is reopened.
+   */
+  it("still says a deferred deposit is owed on steps 5 and 6", async () => {
+    const user = await open();
+    await signTheAgreement(user);
+
+    const api = createMockOnboardingApi();
+    await api.chooseDeposit(DEMO_TOKEN, "pay_later");
+    cleanup();
+    await open();
+    await waitFor(() => expect(screen.getByTestId("deposit-outcome")).toBeInTheDocument());
+    expect(screen.getByTestId("deposit-outcome")).toHaveTextContent("Deposit still to pay");
+
+    await api.createAccount(DEMO_TOKEN, "a-long-enough-password");
+    cleanup();
+    const reopened = await open();
+    await waitFor(() => expect(screen.getByTestId("installation-status")).toBeInTheDocument());
+    expect(screen.getByTestId("installation-deposit-note")).toHaveTextContent(
+      "Installation waits for the deposit",
+    );
+
+    // And it is one click back to paying it, rather than an instruction to find step 4.
+    await reopened.click(screen.getByTestId("button-go-to-deposit"));
+    expect(screen.getByTestId("deposit-amount")).toBeInTheDocument();
+    expect(screen.getByTestId("deposit-deferred")).toHaveTextContent("Still outstanding");
+    expect(screen.getByTestId("button-continue")).toHaveTextContent("Pay ₹50,000 now");
+  });
 });
 
 /**
@@ -909,18 +956,18 @@ describe("OnboardingFlow — the whole flow", () => {
  * common wrong assumption available at this point in the flow.
  */
 describe("OnboardingFlow — step 6 tracks the installation", () => {
-  /** Signs, defers the deposit, sets a password: the shortest walk to step 6. */
+  /** Signs, pays the deposit, sets a password: the shortest walk to step 6. */
   async function reachStepSix() {
     const user = await open();
-    await completeDetails(user);
-    await waitFor(() => expect(screen.getByTestId("terms-list")).toBeInTheDocument());
+    await signTheAgreement(user);
     await user.click(screen.getByTestId("button-continue"));
-    await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByTestId("button-sign")).toBeEnabled());
-    await user.click(screen.getByTestId("checkbox-agreed"));
-    await user.click(screen.getByTestId("button-sign"));
-    await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
-    await user.click(screen.getByTestId("button-pay-later"));
+    await waitFor(() => expect(screen.getByTestId("button-refresh-deposit")).toBeInTheDocument());
+    // Two polls before the mock's webhook lands.
+    await user.click(screen.getByTestId("button-refresh-deposit"));
+    await waitFor(() =>
+      expect(screen.getByTestId("deposit-waiting")).toHaveTextContent(/still can't see it/),
+    );
+    await user.click(screen.getByTestId("button-refresh-deposit"));
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
     await user.type(screen.getByTestId("input-portal-password"), "a-long-enough-password");
     await user.click(screen.getByTestId("button-continue"));
@@ -940,13 +987,11 @@ describe("OnboardingFlow — step 6 tracks the installation", () => {
     );
   });
 
-  it("says installation waits for a deposit that was deferred", async () => {
-    const user = await reachStepSix();
-    const note = screen.getByTestId("installation-deposit-note");
-    expect(note).toHaveTextContent("Installation waits for the deposit");
-    // And it is one click back to paying it, rather than an instruction to find step 4.
-    await user.click(screen.getByTestId("button-go-to-deposit"));
-    expect(screen.getByTestId("deposit-amount")).toBeInTheDocument();
+  it("does not chase a deposit that has been paid", async () => {
+    // The walk to step 6 pays it now, so the amber note has nothing to say. It is what a
+    // deferred record still sees — asserted in "the whole flow".
+    await reachStepSix();
+    expect(screen.queryByTestId("installation-deposit-note")).not.toBeInTheDocument();
   });
 
   /**

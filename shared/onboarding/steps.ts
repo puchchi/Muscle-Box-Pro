@@ -52,7 +52,7 @@ export const STEP_META: readonly StepMeta[] = [
     step: 4,
     title: "Security deposit",
     shortTitle: "Deposit",
-    blurb: "Refundable, and you can pay it later.",
+    blurb: "Refundable, and held for the whole term.",
     estimate: "2 minutes",
   },
   {

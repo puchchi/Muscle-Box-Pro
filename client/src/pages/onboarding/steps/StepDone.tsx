@@ -260,7 +260,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
 /**
  * The deposit, in whichever of its three end-states this gym is in.
  *
- * `deferred` gets the most words on purpose: a gym that chose to pay later has an
+ * `deferred` gets the most words on purpose: a gym whose deposit we deferred has an
  * open obligation, and the point of this card is that nobody can honestly say they
  * did not know it was outstanding.
  */

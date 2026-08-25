@@ -107,15 +107,15 @@ export const DEPOSIT_STATUS_LABEL: Record<DepositStatus, string> = {
   not_started: "Not started",
   pending: "Awaiting payment",
   paid: "Paid",
-  // The wizard's "pay later". A real answer, not the absence of one — which is why activation
-  // needs an explicit waiver rather than treating this as a blank.
+  // A real answer, not the absence of one — which is why activation needs an explicit waiver
+  // rather than treating this as a blank. Since 2026-08-25 we are the ones who set it: step 4
+  // has no defer button (docs/gym-onboarding.md §24).
   deferred: "Deferred",
 };
 
-/** The wizard's own words for the choice, so the screen matches what the gym was asked. */
 export const DEPOSIT_CHOICE_LABEL: Record<DepositChoice, string> = {
-  pay_now: "Chose to pay now",
-  pay_later: "Chose to pay later",
+  pay_now: "Paying now",
+  pay_later: "Deferred to later",
 };
 
 /**
