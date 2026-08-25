@@ -2,14 +2,14 @@
  * Bridge from onboarding state to agreement template fields.
  *
  * This is the only place the two contracts meet. Keeping it in one function means
- * `findUnresolvedTokens(AGREEMENT_V2_2, toAgreementFields(state))` is a single
+ * `findUnresolvedTokens(ISSUED_AGREEMENT, toAgreementFields(state))` is a single
  * assertion a test can make — so a clause added in a future version with a token
  * nobody wired up fails in CI rather than in front of a gym.
  *
- * The same assertion runs against v2.1 as well, which is why fields it references stay
- * on the type after a later version stops using them (`mbpNotices.phone` is the live
- * example). A frozen version has to keep rendering from current state, or a signature
- * stored against it stops being reproducible and therefore stops being evidence.
+ * A field stays on the type after the document stops using it (`mbpNotices.phone` is the
+ * live example), because the text a signature attests to has to keep rendering from
+ * current state, or the stored fingerprint stops being reproducible and therefore stops
+ * being evidence.
  *
  * Everything here comes from the server's onboarding state, which is read from
  * `gyms` / `gym_terms` / `machines`. Never from the session token, and never from

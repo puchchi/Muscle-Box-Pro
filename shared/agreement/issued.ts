@@ -1,26 +1,21 @@
 /**
- * The agreement version this flow currently issues.
+ * The agreement version this flow issues.
  *
  * One module decides, and everything else asks. Before this existed the decision was
- * spread across three files that each answered independently, and they disagreed:
- * `StepReviewSign` rendered and hashed v2.2 while the record written at signing said
- * `version: "2.1"`. That combination is worse than either being wrong on its own,
- * because verifying a signature means re-rendering *the recorded version* with the
- * recorded fields and comparing hashes — so a record naming the wrong version cannot be
- * verified at all, and the hash stops being evidence. The whole point of storing it is
- * to survive that question years later.
+ * spread across three files that each answered independently, and they disagreed: the
+ * reader rendered and hashed one version while the record written at signing named
+ * another, so the stored version string described a document nobody had rendered.
  *
  * The document and its plain-language panel are exported together deliberately. Their
- * pairing is the thing most likely to half-change: rendering v2.2 above a summary
- * written for v2.1 puts a panel on screen describing clauses the reader below does not
+ * pairing is the thing most likely to half-change: rendering one version above a summary
+ * written for another puts a panel on screen describing clauses the reader below does not
  * contain, which is precisely the failure the panel exists to prevent.
  *
- * Issuing a new version is a change to the three lines below and nothing else.
- *
- * Note what this is *not*: a way to re-point old records. A version file is frozen once
- * anything has been signed against it (`v2_1.ts` is frozen for that reason), and a
- * stored agreement always renders from the version *it* names — never from this
- * constant. See docs/gym-onboarding.md §12.
+ * **There is one version, and it is this one.** The flow used to carry a registry of every
+ * version it had ever issued so a record could be re-rendered from the version it named;
+ * that was removed with the browser-side hash check that needed it (§22). A new version
+ * means changing the two constants below — and, before that, deciding what happens to
+ * records pinned to the old one, because nothing here answers that question any more.
  */
 
 import { AGREEMENT_V2_3 } from "./v2_3";
@@ -35,20 +30,19 @@ export const ISSUED_AGREEMENT: Agreement = AGREEMENT_V2_3;
  * display preference.
  *
  * `placeholder` rather than `throw`, because a reader that throws leaves a gym on a blank
- * screen over a missing serial number. v2.3 removed the tokens that made that routine —
- * the machine identifiers and the installation date are no longer in the document at all,
- * so an issued 2.3 should resolve completely — but 2.1 and 2.2 still contain them and
- * still have to render from current state for verification. The signing path is protected
- * either way: `canIssue()` refuses any agreement with unresolved tokens, so a placeholder
- * can be *read* but never *signed* around.
+ * screen over one missing value. v2.3 removed the tokens that made that routine — the
+ * machine identifiers and the installation date are no longer in the document at all — so
+ * an issued 2.3 should resolve completely, and the signing path is protected either way:
+ * `canIssue()` refuses any agreement with unresolved tokens, so a placeholder can be *read*
+ * but never *signed* around.
  *
  * It lives here, next to the version it applies to, because the reader, the PDF and
  * whoever computes the hash must all pass the same object. It used to be exported from
  * `AgreementReader.tsx`, which was fine while the browser was the only thing that
- * hashed: now that the server computes the hash and the client only checks it, a
- * constant inside a `"use client"` React component is not something the server can
- * import. A second copy with a different placeholder string would produce two
- * hashes for one document and no way to tell which one a signature attested to.
+ * hashed: the server computes the hash now, and a constant inside a `"use client"` React
+ * component is not something the server can import. A second copy with a different
+ * placeholder string would produce two hashes for one document and no way to tell which one
+ * a signature attested to.
  */
 export const ISSUED_RENDER_OPTIONS: RenderOptions = {
   onMissing: "placeholder",

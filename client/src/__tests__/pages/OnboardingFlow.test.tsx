@@ -671,16 +671,11 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
     expect(screen.getByTestId("section-47")).toBeInTheDocument();
     expect(screen.getByTestId("section-Schedule H")).toBeInTheDocument();
     // Handed down by the server at issuance, so it is on screen from the first paint —
-    // there is no "computing..." state left to wait through.
+    // there is no "computing..." or "checking..." state left to wait through.
     expect(screen.getByTestId("content-hash").textContent).toMatch(/^[0-9a-f]{64}$/);
-    // And then vouched for: this browser rendered the same text and got the same hash.
-    // Without this line the test would pass against a page displaying a fingerprint of
-    // some document other than the one it is showing.
-    await waitFor(() => expect(screen.getByTestId("hash-verified")).toBeInTheDocument());
-    // v2.2 resolved all eight of v2.1's blocking markers, so the internal "can't be
-    // issued yet" panel must be absent. It is not dead code: it renders again the moment
-    // a future version carries a blocks-send marker, which is what agreement-v2-2.test.ts
-    // asserts is currently not the case.
+    // v2.3 carries no blocks-send marker, so the internal "can't be issued yet" panel must
+    // be absent. It is not dead code: it renders again the moment a version does carry one,
+    // which is what agreement-v2-3.test.ts asserts is currently not the case.
     expect(screen.queryByTestId("agreement-not-issuable")).not.toBeInTheDocument();
   });
 

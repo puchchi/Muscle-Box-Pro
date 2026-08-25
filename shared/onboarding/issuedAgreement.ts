@@ -1,13 +1,17 @@
 /**
  * The one function that turns onboarding state into the exact text that gets hashed.
  *
- * There is exactly one caller shape on each side of the wire and they call the same
- * function: the server calls it to *compute* `contentHash` when it issues the document
- * (`POST /onboarding/agreement/view`), and the browser calls it to *check* that the
- * text it is about to put on screen still hashes to the value the server pinned. Two
- * implementations of "render the issued agreement" is the one thing this module exists
- * to make impossible — see docs/gym-onboarding.md §12 and, in `mbp-backend`,
+ * The server calls it to compute `contentHash` when it issues the document
+ * (`POST /onboarding/agreement/view`), and that fingerprint is what goes on the record, on
+ * screen and on the gym's emailed copy — §47.2 of the agreement promises them both it and
+ * the timestamp. Two implementations of "render the issued agreement" is the one thing this
+ * module exists to make impossible — see docs/gym-onboarding.md §12 and, in `mbp-backend`,
  * `docs/gym-onboarding-api-design.md` §2.9.
+ *
+ * **The browser does not verify the fingerprint.** It used to: it re-rendered the document,
+ * hashed it, compared, and refused to open the sign panel on any disagreement. That check
+ * cost more than it caught — see §22 — and it is gone. The fingerprint is still computed and
+ * stored by one side, from one code path, which is what makes it evidence.
  *
  * ## What has to be copied for the server to reproduce a hash
  *
@@ -20,13 +24,14 @@
  *      `MBP_NOTICES`, `formatAgreementDate`, `formatInr` and `rupeesInWords`
  *
  * (3) is easy to miss, and missing it is silent: a server that renders `₹50,000` where
- * the browser rendered `₹ 50,000`, or `01 September 2026` where the browser rendered
- * `1 Sep 2026`, produces a perfectly well-formed hash that matches nothing. The golden
- * vector in `shared/agreement/goldenVector.ts` catches drift in (1) and (2). It cannot
- * catch drift in (3), because it pins `AgreementFields` directly rather than the state
- * they were built from — so the equality check the browser performs at step 3 is the
- * only thing that catches a drifted bridge, which is why it blocks signing rather than
- * warning.
+ * another renders `₹ 50,000`, or `01 September 2026` where another renders `1 Sep 2026`,
+ * produces a perfectly well-formed hash of a different document. The golden vector in
+ * `shared/agreement/goldenVector.ts` catches drift in (1) and (2). It cannot catch drift in
+ * (3), because it pins `AgreementFields` directly rather than the state they were built
+ * from — so nothing catches a drifted bridge automatically now that the browser no longer
+ * compares. What it would produce is a stored fingerprint that does not describe the text
+ * the gym read, so a change to this file or to `agreementFields.ts` is a change to the
+ * document's identity, whatever it looks like.
  */
 
 import { ISSUED_AGREEMENT, ISSUED_AGREEMENT_VERSION, ISSUED_RENDER_OPTIONS } from "../agreement/issued";
@@ -59,9 +64,9 @@ export function issuanceDateInIndia(nowIso: string): string {
 /**
  * The plain-text rendering that gets hashed, for a given record and effective date.
  *
- * The date is a parameter rather than read off `state.agreement`, because the server
- * has to render this *before* there is a `state.agreement` to read it from — that call
- * is what creates one.
+ * The date is a parameter rather than read off `state.agreement`, because the server has to
+ * render this *before* there is a `state.agreement` to read it from — that call is what
+ * creates one.
  */
 export function renderIssuedAgreementText(
   state: OnboardingState,
@@ -92,11 +97,11 @@ export function issuedAgreementFields(
 /**
  * Version, date, hash and length — the whole record the server pins at issuance.
  *
- * `length` is carried alongside the hash for the same reason `verifyGoldenVector`
- * reports it: on a mismatch it says *how* the two renderings differ. Equal lengths with
- * different hashes is a substituted value — a stale field, a different gym's address.
- * Different lengths is a structural difference — a clause, a placeholder, a whitespace
- * policy. Without it, every drift looks identical and reads as "the hash is wrong".
+ * `length` is carried alongside the hash for the same reason `verifyGoldenVector` reports
+ * it: if two renderings of one record ever have to be compared, equal lengths with
+ * different hashes is a substituted value — a stale field, a different gym's address —
+ * while different lengths is a structural difference. Without it, every difference looks
+ * identical and reads as "the hash is wrong".
  */
 export async function fingerprintIssuedAgreement(
   state: OnboardingState,
@@ -109,62 +114,4 @@ export async function fingerprintIssuedAgreement(
     contentHash: await sha256Hex(text),
     length: text.length,
   };
-}
-
-export type IssuedAgreementCheck =
-  | {
-      ok: true;
-      /**
-       * What this client rendered — equal to the pinned hash, since that is what `ok`
-       * means, but carried out rather than discarded so callers can submit the value
-       * they computed instead of echoing back the one they were given. Reading it off
-       * `state.agreement` at submit time would make `SignatureInput.contentHash` a copy
-       * of the server's own field and the comparison a comparison with itself.
-       */
-      contentHash: string;
-      length: number;
-    }
-  | {
-      ok: false;
-      /** Which figures differ, and by how much. Safe to log; never shown to a gym. */
-      problems: string[];
-      computed: { contentHash: string; length: number };
-    };
-
-/**
- * Does the text this client is about to display still hash to what the server pinned?
- *
- * The browser's half of the inversion. It no longer supplies the hash as truth — the
- * server computed one at issuance and will compute it again at signing — but it keeps
- * computing its own and refuses to sign unless the two agree. That converts a drifted
- * renderer, a drifted field bridge or a mid-flow change to the gym's own details into a
- * disabled button in development, instead of a rejected signature in front of a gym
- * who has already read forty-seven sections.
- *
- * A mismatch is never the gym's fault and is never actionable by them, so callers show
- * a neutral "not ready" state and put the detail in `problems` where we can see it.
- */
-export async function checkIssuedAgreement(
-  state: OnboardingState,
-  pinned: IssuedAgreement,
-): Promise<IssuedAgreementCheck> {
-  const text = renderIssuedAgreementText(state, pinned.effectiveDate);
-  const contentHash = await sha256Hex(text);
-  const problems: string[] = [];
-
-  if (ISSUED_AGREEMENT_VERSION !== pinned.version) {
-    problems.push(
-      `this client issues ${ISSUED_AGREEMENT_VERSION}, the record was issued as ${pinned.version}`,
-    );
-  }
-  if (text.length !== pinned.length) {
-    problems.push(`rendered ${text.length} characters, the record pins ${pinned.length}`);
-  }
-  if (contentHash !== pinned.contentHash) {
-    problems.push(`rendered hash ${contentHash}, the record pins ${pinned.contentHash}`);
-  }
-
-  return problems.length === 0
-    ? { ok: true, contentHash, length: text.length }
-    : { ok: false, problems, computed: { contentHash, length: text.length } };
 }

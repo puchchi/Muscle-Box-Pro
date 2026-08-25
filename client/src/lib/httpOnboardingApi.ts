@@ -126,10 +126,9 @@ export function createHttpOnboardingApi(): OnboardingApi {
      *
      * The response the wizard needs is the state with `agreement` populated: version,
      * server-resolved `effectiveDate`, `contentHash` and `length`. §2.5 has the route
-     * returning those four plus `fields`. `fields` is not wanted here — this client
-     * derives the agreement's fields from the state and renders them itself, and
-     * `checkIssuedAgreement` compares the hash of *its own* rendering against the server's.
-     * A hash checked against fields the same response supplied would check nothing.
+     * returning those four plus `fields`. `fields` is not wanted here — the reader derives
+     * them from the state it already has, and a second copy arriving on this response is a
+     * second answer to "what does the document say" with nothing deciding between them.
      */
     markAgreementViewed(token: string) {
       return commit(token, "POST", "/onboarding/agreement/view");

@@ -64,15 +64,12 @@ export default function SignPanel({
   /** From step 1, and what §47 prints. Shown here, never re-collected. */
   signatoryName: string;
   signatoryDesignation: string;
-  /**
-   * Null until this client has rendered the agreement and confirmed it hashes to the
-   * value the server pinned. Not "still computing" — "not yet vouched for".
-   */
-  contentHash: string | null;
+  /** The fingerprint on the record, as issued. Step 3 renders nothing without one. */
+  contentHash: string;
   hasReadToEnd: boolean;
   /** How far through the document the reader has scrolled, so the gate can say. */
   readPercent?: number;
-  /** Set when the agreement may not be issued or cannot be verified. Overrides all below. */
+  /** Set when the agreement may not be issued as it stands. Overrides all below. */
   blockedReason: string | null;
   /** Preview builds show the fixed code, so the flow can be walked without an inbox. */
   previewOtp?: string | null;
@@ -124,7 +121,7 @@ export default function SignPanel({
       designation: signatoryDesignation,
       agreedToAgreement: agreed,
       authorisedToBind: authorised,
-      contentHash: contentHash ?? "",
+      contentHash,
     });
     setErrors(result.success ? {} : toFieldErrors(result.error));
     return result.success;
@@ -146,7 +143,7 @@ export default function SignPanel({
       designation: signatoryDesignation,
       agreedToAgreement: agreed,
       authorisedToBind: authorised,
-      contentHash: contentHash ?? "",
+      contentHash,
       ...(SIGNING_REQUIRES_OTP ? { otpCode } : {}),
     });
     if (!result.success) {
@@ -154,8 +151,8 @@ export default function SignPanel({
       return;
     }
     setErrors({});
-    // The panel passes back only what it was given. The hash it was handed was verified
-    // against the server's by the caller, so this component never computes one.
+    // The panel passes back only what it was given. The hash belongs to the record the
+    // caller is holding, so this component never computes one.
     const submitted = await onSign({
       fullName: signatoryName,
       designation: signatoryDesignation,
@@ -207,7 +204,8 @@ export default function SignPanel({
 
         {errors.contentHash && (
           <p className="text-xs font-medium text-red-700" role="alert" data-testid="error-contentHash">
-            {errors.contentHash}. Wait a moment for the document to finish loading, then try again.
+            {errors.contentHash}. Reload this page to fetch a fresh copy, then try again. Nothing
+            you've entered is lost, and nothing has been signed.
           </p>
         )}
 
@@ -230,7 +228,7 @@ export default function SignPanel({
             <Button
               type="button"
               onClick={sign}
-              disabled={isSubmitting || !contentHash}
+              disabled={isSubmitting}
               className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
               data-testid="button-sign"
             >
@@ -324,7 +322,7 @@ export default function SignPanel({
             <Button
               type="button"
               onClick={requestCode}
-              disabled={isSubmitting || !contentHash}
+              disabled={isSubmitting}
               className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
               data-testid="button-request-otp"
             >

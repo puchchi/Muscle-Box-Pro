@@ -230,8 +230,14 @@ export type IssuedAgreement = {
   /**
    * Character count of the same rendering. Not decoration: it is what tells a mismatch
    * apart from a substitution when the client's own rendering disagrees.
+   *
+   * Optional because it is a diagnostic and not evidence, and because a live record can
+   * arrive without it — `apiClient` casts response bodies rather than validating them, so
+   * anything the backend omits is `undefined` at runtime whatever this type says. The hash
+   * is what decides whether two renderings are the same document; treating an absent length
+   * as a mismatch blocked signing on a document that matched (§21).
    */
-  length: number;
+  length?: number;
 };
 
 // ── Inputs ──────────────────────────────────────────────────────────────────
@@ -244,14 +250,14 @@ export type SignatureInput = {
   /** "I am authorised to bind <legal entity>" — §32, deliberately separate. */
   authorisedToBind: boolean;
   /**
-   * SHA-256 of the exact text that was on screen, computed independently by this client.
+   * SHA-256 naming the document being signed — `state.agreement.contentHash`, echoed.
    *
-   * Still sent, and still required, but its job changed with the inversion: it is no
-   * longer what gets stored. The server stores the hash *it* computed at issuance and
-   * compares this one against it, answering `content_mismatch` if they differ. Echoing
-   * `state.agreement.contentHash` back would satisfy the type and check nothing, so
-   * clients compute it — the value of the field is precisely that it came from somewhere
-   * else. See `checkIssuedAgreement` in `issuedAgreement.ts`.
+   * Still sent, and still required, but it is not what gets stored and it is not an
+   * independent witness. The server stores the hash *it* computed at issuance and
+   * compares this one against it, answering `content_mismatch` if they differ, so what
+   * this field catches is a payload assembled against a different record. The client
+   * used to render the document and hash it for itself so the value came from somewhere
+   * else; that check was removed (§22), and the field is now deliberately a round trip.
    */
   contentHash: string;
   /**

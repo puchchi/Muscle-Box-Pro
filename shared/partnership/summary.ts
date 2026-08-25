@@ -121,10 +121,10 @@ export const PARTNERSHIP = {
  * 600 cups/month is ~20 a day, and lands the gym's share (₹6,600) inside the
  * ₹3,000–₹12,000 range published on BlogGymRetention.
  *
- * Schedule C of agreement v2.2 carries its own worked example at 400 cups and ₹55
- * a cup. **That divergence is deliberate and must not be "fixed" in v2_2.ts.** The
+ * Schedule C of the agreement carries its own worked example at 400 cups and ₹55
+ * a cup. **That divergence is deliberate and must not be "fixed" in `v2_3.ts`.** The
  * agreement text is hashed and frozen once a gym signs against it, so editing it
- * means minting v2_3.ts; and its example exists to show the clause 7 arithmetic,
+ * means minting a new version; and its example exists to show the clause 7 arithmetic,
  * not to publish a volume. This constant is the marketing-side illustration and is
  * free to move as the real partner data does.
  */

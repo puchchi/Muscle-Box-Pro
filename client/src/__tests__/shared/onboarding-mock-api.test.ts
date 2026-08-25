@@ -1,19 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { findUnresolvedTokens, sha256Hex, renderPlainText } from "@shared/agreement/render";
-import { AGREEMENT_V2_1 } from "@shared/agreement/v2_1";
-import { AGREEMENT_V2_2 } from "@shared/agreement/v2_2";
 import { ISSUED_AGREEMENT, ISSUED_AGREEMENT_VERSION } from "@shared/agreement/issued";
 import { rupeesInWords } from "@shared/agreement/amountInWords";
 import { formatInr } from "@shared/partnership/summary";
 import { toAgreementFields } from "@shared/onboarding/agreementFields";
-// The same entry point the browser uses. A test that renders through its own copy of
-// the options and the field bridge proves nothing about the hash a real client computes.
-import {
-  checkIssuedAgreement,
-  issuanceDateInIndia,
-  renderIssuedAgreementText,
-} from "@shared/onboarding/issuedAgreement";
+// The same entry point the server issues through. A test that renders through its own copy
+// of the options and the field bridge proves nothing about the hash that gets stored.
+import { issuanceDateInIndia, renderIssuedAgreementText } from "@shared/onboarding/issuedAgreement";
 import {
   DEMO_TOKEN,
   MOCK_TOKENS,
@@ -73,11 +67,13 @@ async function expectState(
 }
 
 /**
- * The hash a real client would send for a record: rendered from state through the shared
- * entry point, not read off `state.agreement`.
+ * The hash an independent verifier arrives at for a record: rendered from state through
+ * the shared entry point, not read off `state.agreement`.
  *
- * Reading it off the record would make every signing test a comparison of the server's
- * value with itself and would pass even if the renderer were broken on both sides.
+ * A real client echoes `state.agreement.contentHash` back — it stopped rendering the
+ * document for itself (§22). These tests deliberately do not, because reading the value
+ * off the record would compare the server's answer with itself and pass even if the
+ * renderer were broken.
  */
 async function clientHashFor(state: OnboardingState): Promise<string> {
   const issued = state.agreement;
@@ -277,17 +273,14 @@ describe("the issued document", () => {
     expect(state.agreement?.length).toBeGreaterThan(10_000);
   });
 
-  it("pins a hash a client independently reproduces from the record", async () => {
+  it("pins a hash that a second rendering of the record reproduces", async () => {
     await api.getState(DEMO_TOKEN);
     await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
     const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
 
-    // Exactly what StepReviewSign does before it will open the sign panel.
-    const check = await checkIssuedAgreement(issued, issued.agreement!);
-    expect(check.ok ? [] : check.problems).toEqual([]);
-    if (!check.ok) throw new Error("unreachable");
-    expect(check.contentHash).toBe(issued.agreement?.contentHash);
-    expect(check.length).toBe(issued.agreement?.length);
+    const text = renderIssuedAgreementText(issued, issued.agreement!.effectiveDate);
+    expect(await sha256Hex(text)).toBe(issued.agreement?.contentHash);
+    expect(text.length).toBe(issued.agreement?.length);
   });
 
   it("records the version that was actually rendered and hashed", async () => {
@@ -355,6 +348,120 @@ describe("the issued document", () => {
 
     expect(verifierHash).toBe(record.contentHash);
     expect(verifierHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+/**
+ * A pin that no longer describes the document.
+ *
+ * The defect these pin was reachable in one click: read step 3, go back to correct the
+ * signatory name — which §47 prints and the sign panel invites — and the record went on
+ * pinning a fingerprint of the old text. §47.2 promises the gym that fingerprint as
+ * evidence of what it read, so a pin that describes something else is the one thing the
+ * record must not be allowed to hold. Shipping an agreement version does the same thing to
+ * every record in flight, which is the deployment half of it.
+ */
+describe("re-issuing a pin that has drifted", () => {
+  it("re-pins after a correction at step 1, so the fingerprint describes what is on screen", async () => {
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
+
+    // The signatory is rendered into §47 and therefore into the hash.
+    const corrected = await expectState(
+      api.submitDetails(DEMO_TOKEN, { ...VALID_DETAILS, signatoryName: "Priya Menon" }),
+    );
+
+    expect(corrected.agreement?.contentHash).not.toBe(issued.agreement?.contentHash);
+    expect(await clientHashFor(corrected)).toBe(corrected.agreement?.contentHash);
+  });
+
+  it("accepts the signature on the re-issued document and refuses the one first read", async () => {
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
+    const hashAsFirstRead = await clientHashFor(issued);
+
+    const corrected = await expectState(
+      api.submitDetails(DEMO_TOKEN, { ...VALID_DETAILS, signatoryName: "Priya Menon" }),
+    );
+
+    const stale = await api.signAgreement(DEMO_TOKEN, {
+      fullName: "Priya Menon",
+      designation: "Director",
+      agreedToAgreement: true,
+      authorisedToBind: true,
+      contentHash: hashAsFirstRead,
+    });
+    expect(stale.ok).toBe(false);
+    if (!stale.ok) expect(stale.error.code).toBe("content_mismatch");
+
+    const signed = await expectState(
+      api.signAgreement(DEMO_TOKEN, {
+        fullName: "Priya Menon",
+        designation: "Director",
+        agreedToAgreement: true,
+        authorisedToBind: true,
+        contentHash: await clientHashFor(corrected),
+      }) as Promise<{ ok: true; data: OnboardingState } | { ok: false; error: unknown }>,
+    );
+    expect(signed.isSigned).toBe(true);
+    expect(signed.agreement).toEqual(corrected.agreement);
+  });
+
+  it("does not re-date a document that has not moved, however late it is viewed", async () => {
+    // Drift is asked at the pinned effective date, not today's. Asking it at today's would
+    // make every view after midnight IST look like a drift and walk the Effective Date —
+    // and the start of a 24-month term — forward a day at a time.
+    let clock = "2026-08-22T10:00:00.000Z";
+    api = createMockOnboardingApi({ latencyMs: 0, now: () => clock });
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    const issued = await expectState(api.ackPartnership(DEMO_TOKEN));
+
+    clock = "2026-09-04T10:00:00.000Z";
+    const later = await expectState(api.markAgreementViewed(DEMO_TOKEN));
+
+    expect(later.agreement).toEqual(issued.agreement);
+    expect(later.agreement?.effectiveDate).toBe("2026-08-22");
+  });
+
+  it("dates a re-issued document today, not when the first one was issued", async () => {
+    // A re-issued document is issued now. Keeping the old date would date a document to
+    // before the details printed in it existed.
+    let clock = "2026-08-22T10:00:00.000Z";
+    api = createMockOnboardingApi({ latencyMs: 0, now: () => clock });
+    await api.getState(DEMO_TOKEN);
+    await api.submitDetails(DEMO_TOKEN, VALID_DETAILS);
+    await api.ackPartnership(DEMO_TOKEN);
+
+    clock = "2026-09-04T10:00:00.000Z";
+    const corrected = await expectState(
+      api.submitDetails(DEMO_TOKEN, { ...VALID_DETAILS, signatoryName: "Priya Menon" }),
+    );
+
+    expect(corrected.agreement?.effectiveDate).toBe("2026-09-04");
+    expect(await clientHashFor(corrected)).toBe(corrected.agreement?.contentHash);
+  });
+
+  it("issues nothing at step 1, where there is no document to re-issue", async () => {
+    // Submitting details must not create a contract. It only refreshes one that exists.
+    await api.getState(DEMO_TOKEN);
+    const state = await expectState(api.submitDetails(DEMO_TOKEN, VALID_DETAILS));
+    expect(state.agreement).toBeNull();
+  });
+
+  it("leaves a signed record's pin untouched when it is opened again later", async () => {
+    // Once signed the pin is the description of what was attested to. Re-describing it
+    // would leave a signature attached to a document that no longer exists.
+    let clock = "2026-08-22T10:00:00.000Z";
+    api = createMockOnboardingApi({ latencyMs: 0, now: () => clock });
+    const signed = await signedState();
+
+    clock = "2026-09-04T10:00:00.000Z";
+    const revisited = await expectState(api.markAgreementViewed(DEMO_TOKEN));
+
+    expect(revisited.agreement).toEqual(signed.agreement);
   });
 });
 
@@ -602,33 +709,21 @@ describe("step 5 — account", () => {
 });
 
 describe("the agreement rendered from onboarding state", () => {
-  /**
-   * Both versions, deliberately.
-   *
-   * v2.2 is what the flow issues, so a missing token there is a blank in a live
-   * contract. v2.1 is frozen and has signatures against it in principle, so it has to
-   * keep rendering from current state too — a field removed for 2.2's benefit would
-   * make an already-signed 2.1 record unreproducible, and the hash is only evidence
-   * while the text can be re-rendered.
-   */
-  it.each([
-    ["2.1", AGREEMENT_V2_1],
-    ["2.2", AGREEMENT_V2_2],
-  ])("leaves no token unresolved in v%s once step 1 is submitted", async (_version, agreement) => {
+  it("leaves no token unresolved once step 1 is submitted", async () => {
     await api.getState(DEMO_TOKEN);
     const state = await expectState(api.submitDetails(DEMO_TOKEN, VALID_DETAILS));
     const fields = toAgreementFields(state, "2026-08-22T10:00:00.000Z");
 
     // The whole point of `agreementFields.ts`: every `{{token}}` in 47 sections and
     // 8 schedules has a value, so no gym ever sees a raw placeholder in its contract.
-    expect(findUnresolvedTokens(agreement, fields)).toEqual([]);
+    expect(findUnresolvedTokens(ISSUED_AGREEMENT, fields)).toEqual([]);
   });
 
   it("puts that gym's own details into the rendered text", async () => {
     await api.getState(DEMO_TOKEN);
     const state = await expectState(api.submitDetails(DEMO_TOKEN, VALID_DETAILS));
     const text = renderPlainText(
-      AGREEMENT_V2_2,
+      ISSUED_AGREEMENT,
       toAgreementFields(state, "2026-08-22T10:00:00.000Z"),
     );
 
@@ -646,7 +741,7 @@ describe("the agreement rendered from onboarding state", () => {
 
     expect(fields.securityDeposit).toBe(formatInr(state.terms.securityDepositInr));
     expect(fields.securityDepositInWords).toBe(rupeesInWords(state.terms.securityDepositInr));
-    expect(renderPlainText(AGREEMENT_V2_2, fields)).toContain(
+    expect(renderPlainText(ISSUED_AGREEMENT, fields)).toContain(
       `${fields.securityDeposit} - ${fields.securityDepositInWords}`,
     );
   });
@@ -656,7 +751,7 @@ describe("the agreement rendered from onboarding state", () => {
     const state = await expectState(api.submitDetails(DEMO_TOKEN, VALID_DETAILS));
     const iso = "2026-08-22T10:00:00.000Z";
 
-    const render = (s: OnboardingState) => renderPlainText(AGREEMENT_V2_2, toAgreementFields(s, iso));
+    const render = (s: OnboardingState) => renderPlainText(ISSUED_AGREEMENT, toAgreementFields(s, iso));
     const first = await sha256Hex(render(state));
     const again = await sha256Hex(render(state));
     const renamed = await sha256Hex(

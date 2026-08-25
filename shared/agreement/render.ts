@@ -91,8 +91,8 @@ export function collectTokens(agreement: Agreement): string[] {
 /**
  * Tokens the document uses that `fields` cannot satisfy.
  *
- * Call this before issuing, not after. It is the check that catches a clause
- * added in v2_2 whose token nobody wired into `AgreementFields`.
+ * Call this before issuing, not after. It is the check that catches a newly added clause
+ * whose token nobody wired into `AgreementFields`.
  */
 export function findUnresolvedTokens(
   agreement: Agreement,
@@ -240,7 +240,7 @@ function blockToLines(block: Block, fields: Partial<AgreementFields>, opts: Rend
       return block.items.map((b) => `${r(b.label)}: ____________`);
     case "signatures":
       // A party with no `lines` emits exactly what it did before they existed, which is
-      // what keeps v2.1's and v2.2's pinned hashes where they are.
+      // what keeps an already-pinned hash where it is.
       return block.parties.flatMap((p) => [
         r(p.heading),
         ...(p.lines ?? []).map(r),

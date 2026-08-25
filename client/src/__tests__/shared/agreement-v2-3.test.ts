@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { AGREEMENT_V2_2 } from "@shared/agreement/v2_2";
 import { AGREEMENT_V2_3, AGREEMENT_V2_3_CHANGES } from "@shared/agreement/v2_3";
 import {
   canIssue,
@@ -17,17 +16,18 @@ import { PARTNERSHIP, formatInr } from "@shared/partnership/summary";
 import { rupeesInWords } from "@shared/agreement/amountInWords";
 
 /**
- * Agreement v2.3 — the version the onboarding flow issues.
+ * Agreement v2.3 — the only version in the repository, and the one the flow issues.
  *
- * v2.1's suite asks "is this a faithful transcription, and does it correctly refuse to be
- * sent?". v2.2's asks "is it internally consistent, and is it now safe to send?". This one
- * asks the question 2.3 exists to answer: **does the document still ask the reader to fill
- * anything in, and did removing the places where it did change any term?**
+ * It asks three things: is the document internally consistent, is it safe to send, and
+ * **does it still ask the reader to fill anything in?** The last is what 2.3 was written to
+ * answer, and it is the property to check rather than the document's size — see
+ * `v2.3 prints no blank form`.
  *
- * Both halves matter equally. A blank rule that survives is the defect 2.3 was written to
- * remove; a clause that moved while nobody was looking is a worse one, because 2.3's whole
- * claim is that it changes no term a gym is bound by, and that claim is what makes shipping
- * it a formatting decision rather than a renegotiation.
+ * 2.1 and 2.2 were deleted along with the machinery for rendering a record from a version
+ * other than this one (§22), so the assertions that compared 2.3's bytes to 2.2's went with
+ * them. What they proved — that a formatting change moved no term — is recorded in
+ * `AGREEMENT_V2_3_CHANGES` and in docs §20, and the golden vector is what freezes the
+ * result.
  */
 
 const FIXTURE = GOLDEN_V2_3.fields;
@@ -60,13 +60,12 @@ function clausesIn(number: string): string[] {
 }
 
 describe("agreement v2.3 structure", () => {
-  it("is a new version rather than an edit of 2.2", () => {
+  it("says 2.3 everywhere the version is printed", () => {
     // The version string is hashed, so this is not cosmetic: a 2.3 labelled 2.2 makes
-    // every stored 2.2 fingerprint ambiguous.
+    // every stored fingerprint ambiguous about which text it describes.
     expect(AGREEMENT_V2_3.version).toBe("2.3");
     expect(AGREEMENT_V2_3.runningFooter).toContain("Version 2.3");
-    expect(AGREEMENT_V2_2.version).toBe("2.2");
-    expect(TEXT).not.toBe(renderPlainText(AGREEMENT_V2_2, FIXTURE));
+    expect(TEXT).toContain("Version 2.3");
   });
 
   it("is the version the flow issues, with its own summary panel", () => {
@@ -131,9 +130,9 @@ describe("agreement v2.3 structure", () => {
  */
 describe("v2.3 prints no blank form", () => {
   it("has no blanks or checklist blocks anywhere in the document", () => {
-    // Both kinds still exist on `Block` because 2.1 and 2.2 use them and still have to
-    // render for verification. 2.3 uses neither, and a reintroduced one is the whole
-    // defect returning rather than a stylistic slip.
+    // Both kinds still exist on `Block`, and the renderer still handles them, because a
+    // printed form is a legitimate thing for some future document to contain. 2.3 uses
+    // neither, and a reintroduced one is the whole defect returning rather than a slip.
     const offenders = allBlocks()
       .filter(({ block }) => block.kind === "blanks" || block.kind === "checklist")
       .map(({ location, block }) => `${location}: ${block.kind}`);
@@ -152,9 +151,28 @@ describe("v2.3 prints no blank form", () => {
 
   it("still checks itself against a document that does print them", () => {
     // Proves the assertions above can fail. If `renderPlainText` ever stopped emitting
-    // blanks at all, every check in this describe would pass vacuously.
-    const v22 = renderPlainText(AGREEMENT_V2_2, FIXTURE);
-    expect(v22).toMatch(/_{3,}/);
+    // blanks at all — which is how 2.2's printed Schedule A rendered — every check in this
+    // describe would pass vacuously.
+    const printsBlanks = renderPlainText(
+      {
+        ...AGREEMENT_V2_3,
+        sections: [
+          {
+            number: "1",
+            heading: "EXECUTION",
+            blocks: [
+              { kind: "blanks", items: [{ label: "Signature" }, { label: "Date" }] },
+              { kind: "paragraph", text: "[to be completed at installation]" },
+            ],
+          },
+        ],
+        schedules: [],
+      },
+      FIXTURE,
+    );
+
+    expect(printsBlanks).toMatch(/_{3,}/);
+    expect(printsBlanks).toMatch(/\[\s*to be completed/i);
   });
 });
 
@@ -347,22 +365,12 @@ describe("the schedules describe their certificates instead of printing them", (
 /**
  * The claim that makes 2.3 shippable: it changes no term.
  *
- * `AGREEMENT_V2_3_CHANGES` says every difference in the hashed text between 2.2 and 2.3 is
- * one of four locations. This is that sentence as a test — and it is the most valuable one
- * in the file, because a term edited in passing during a formatting change is exactly the
- * kind of thing no reviewer would find by reading the diff.
+ * `AGREEMENT_V2_3_CHANGES` names the four locations that moved between 2.2 and 2.3. The
+ * byte-for-byte comparison against 2.2 that used to prove it went when 2.2 was deleted
+ * (§22); what is left is that the record of the change stays complete and legible, and that
+ * the golden vector freezes the result either way.
  */
 describe("2.3 changes only the four places it says it does", () => {
-  it("carries the identical text of every other section and schedule", () => {
-    const before = new Map(allSections(AGREEMENT_V2_2).map((s) => [s.number, s]));
-    const moved: string[] = [];
-    for (const s of allSections()) {
-      const previous = before.get(s.number);
-      if (!previous || JSON.stringify(previous) !== JSON.stringify(s)) moved.push(s.number);
-    }
-    expect(moved).toEqual(["2", "47", "Schedule A", "Schedule H"]);
-  });
-
   it("records each of those four locations, and nothing it did not change", () => {
     expect(Object.keys(AGREEMENT_V2_3_CHANGES).sort()).toEqual([
       "s2-machine-identifiers",
@@ -373,12 +381,6 @@ describe("2.3 changes only the four places it says it does", () => {
     for (const [key, note] of Object.entries(AGREEMENT_V2_3_CHANGES)) {
       expect(note.length, key).toBeGreaterThan(80);
     }
-  });
-
-  it("changes the cover only by re-stamping the counsel marker with its version", () => {
-    const withoutTodos = (blocks: readonly Block[]) =>
-      JSON.stringify(blocks.filter((b) => b.kind !== "todo"));
-    expect(withoutTodos(AGREEMENT_V2_3.cover)).toBe(withoutTodos(AGREEMENT_V2_2.cover));
   });
 
   it("carries every marker 2.2 left open", () => {
@@ -514,13 +516,52 @@ describe("tokens and rendering", () => {
     expect(verdict.problems.join(" ")).toContain(`length is ${GOLDEN_V2_3.length}`);
     expect(verdict.actual.contentHash).toBe(GOLDEN_V2_3.contentHash);
   });
+});
 
-  it("is longer than 2.2, which is why length is not the measure of this change", () => {
-    // Recorded because the instinct is the opposite: removing twenty-six blank rules
-    // *added* about 2,000 characters, since a described certificate is prose and a
-    // printed one is mostly empty cells. Anyone tempted to check 2.3's work by comparing
-    // sizes should read `v2.3 prints no blank form` instead — that is the actual property.
-    expect(GOLDEN_V2_3.length).toBeGreaterThan(renderPlainText(AGREEMENT_V2_2, FIXTURE).length);
+/**
+ * Transcription fidelity, carried forward from 2.1's suite.
+ *
+ * 2.3 inherits every one of these clauses unchanged, and they are the ones a gym would
+ * call unexpected if it found them after signing — which is exactly why they have to be in
+ * the document rather than only in the summary panel and on /gym-partnership.
+ */
+describe("the clauses a gym would be surprised by are in the text", () => {
+  it("keeps the obligations the public page summarises", () => {
+    expect(TEXT).toContain("does not constitute a sale of the Machine to the Gym");
+    expect(TEXT).toContain("not add its own protein powder");
+    expect(TEXT).toContain("shall not relocate the Machine without prior written approval");
+    expect(TEXT).toContain("commercially underperforming");
+    expect(TEXT).toContain("does not guarantee any minimum advertising revenue");
+  });
+
+  it("does not describe the advertising split as changing at the milestone", () => {
+    expect(TEXT).toContain("shall remain 80:20 even after");
+  });
+
+  it("keeps the §10.3 reimbursement table consistent with the §10.4 block rule", () => {
+    const table = section("10").blocks.find((b) => b.kind === "table");
+    if (table?.kind !== "table") throw new Error("§10 has no table");
+    // 0-999 pays the floor, 1,000-1,999 is one completed block and also pays the floor
+    // amount, and each further completed block adds ₹1,000. The last row is 2.2's work:
+    // the transcribed table stopped at 4,999 and stated no rule beyond it.
+    expect(table.rows).toEqual([
+      ["0-999", "₹1,000"],
+      ["1,000-1,999", "₹1,000"],
+      ["2,000-2,999", "₹2,000"],
+      ["3,000-3,999", "₹3,000"],
+      ["4,000-4,999", "₹4,000"],
+      ["5,000 and above", "₹1,000 for each completed block of 1,000 paid cups"],
+    ]);
+  });
+
+  it("templates the deposit everywhere it appears, including the damage clauses", () => {
+    // §5.7 and §20.5 hardcoded ₹50,000 in the source PDF. Transcribed as literals, a gym
+    // with a negotiated deposit would get a self-contradicting contract, so both figures
+    // must come from the token.
+    const rendered = renderPlainText(AGREEMENT_V2_3, { ...FIXTURE, securityDeposit: "₹75,000" });
+    expect(rendered).toContain("If the cost of damage exceeds ₹75,000");
+    expect(rendered).toContain("Where the damage exceeds ₹75,000");
+    expect(rendered).not.toContain("₹50,000");
   });
 });
 

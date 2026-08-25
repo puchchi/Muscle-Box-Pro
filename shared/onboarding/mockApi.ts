@@ -245,17 +245,44 @@ function complete(state: OnboardingState, step: OnboardingStep): void {
  * into the hash. It is the Indian calendar date, not the UTC one: see
  * `issuanceDateInIndia`.
  *
- * Idempotent, and deliberately so: it is called both when step 2 completes and when
- * step 3 is first viewed, because a record that resumes straight into step 3 must find
- * a document waiting rather than mint a second one with a later date. Re-issuing would
- * move the date and the hash underneath a gym mid-read, so an existing row is never
- * touched — not even after the terms change. Reissuing on a terms change is a real
- * decision the real backend has to make; the honest failure mode meanwhile is
- * `content_mismatch` at signing, which tells the gym to reload rather than silently
- * swapping the document it read.
+ * ## Re-issued while nothing is signed, never after
+ *
+ * This used to return early whenever a document existed, on the reasoning that re-issuing
+ * moves the date and the hash underneath a gym mid-read. The consequence was worse: **a pin
+ * can go stale, and nothing cleared it.** A gym that corrected its signatory at step 1 after
+ * reading step 3 — which the sign panel invites, and which §47 of v2.3 made hash-relevant —
+ * left the record pinning a fingerprint of the *old* text. The document on screen and the
+ * fingerprint printed under it then described different documents, and the fingerprint is the
+ * thing §47.2 promises the gym as evidence of what they signed.
+ *
+ * So: while the record is unsigned, an existing pin is *checked* and refreshed if it no
+ * longer describes what we would render now. Nothing is signed, so nothing is being moved
+ * underneath anybody.
+ *
+ * Once `isSigned` is set the pin is immutable, full stop. It is the description of what a
+ * signature attests to, and a signature against a document we then re-described is not
+ * evidence of anything.
+ *
+ * The effective date moves with the re-issue, because a re-issued document is issued now.
+ * Keeping the old date would date a document to before the details it contains existed.
+ * Whether the pin has drifted is asked at the *pinned* date, though, not today's: otherwise
+ * every view after midnight IST would look like a drift and re-date the document daily.
  */
 async function issueAgreement(state: OnboardingState, nowIso: string): Promise<void> {
-  if (state.agreement) return;
+  const pinned = state.agreement;
+  if (!pinned) {
+    state.agreement = await fingerprintIssuedAgreement(state, issuanceDateInIndia(nowIso));
+    return;
+  }
+  if (state.isSigned) return;
+
+  const current = await fingerprintIssuedAgreement(state, pinned.effectiveDate);
+  // Version and hash only. Equal hashes are equal text, so a length comparison here can
+  // only produce a spurious re-issue on a record whose `length` field is missing or wrong.
+  const drifted =
+    current.version !== pinned.version || current.contentHash !== pinned.contentHash;
+  if (!drifted) return;
+
   state.agreement = await fingerprintIssuedAgreement(state, issuanceDateInIndia(nowIso));
 }
 
@@ -392,6 +419,14 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
       // submitted rather than whatever was mid-edit when they last typed.
       delete state.drafts.details;
       complete(state, 1);
+      // These values are rendered into the agreement, so a correction made after the
+      // document was issued has just invalidated its hash. Re-pinned here rather than
+      // left for the next view, so the state this returns is already consistent and
+      // step 3 never paints its "can't confirm this" panel over a stale pin.
+      //
+      // Only when a document already exists: issuing one here would hand the gym a
+      // contract at step 1, before step 2 has shown it the terms.
+      if (state.agreement) await issueAgreement(state, now());
       return ok(state);
     },
 
@@ -497,13 +532,12 @@ export function createMockOnboardingApi(options: MockOnboardingOptions = {}): On
         return fail("otp_invalid", "That code isn't right. Request a new one and try again.");
       }
 
-      // The comparison the whole inversion exists for. The server re-renders the
-      // document it pinned and checks the client's independently computed hash against
-      // its own — so what gets stored is never what the client asserted, and a client
-      // rendering different text cannot get a signature recorded against a document it
-      // did not display.
-      const recomputed = await fingerprintIssuedAgreement(state, state.agreement.effectiveDate);
-      if (parsed.data.contentHash !== recomputed.contentHash) {
+      // The signature must name the document on the record. The client sends the pinned
+      // hash back, so this catches a payload assembled from something else rather than a
+      // drifted renderer — the browser stopped rendering and hashing the document for
+      // itself (§22), and the server's own `contentHash` is the one on the record either
+      // way. Nothing the client sends is ever stored.
+      if (parsed.data.contentHash !== state.agreement.contentHash) {
         return fail(
           "content_mismatch",
           "Your copy of the agreement is out of date. Reload this page to read the current version. Nothing has been signed.",

@@ -13,10 +13,10 @@ Two things change at once:
 
 The agreement started from
 `docs/MuscleBoxPro_Machine_Placement_Profit_Sharing_Agreement_v2_1.pdf` (Execution Draft v2.0 in its
-own header). That PDF is transcribed as `v2_1.ts` and frozen. **2.2** resolved every unfinished clause
-in it — see §12 for the defect-by-defect mapping and the thirteen commercial decisions behind it. The
-version the flow actually issues is **2.3**, which takes the blanks nobody could fill at signing out
-of the signed document; see §20.
+own header). It was transcribed clause by clause as 2.1, **2.2** resolved every unfinished clause in it
+— see §12 for the defect-by-defect mapping and the thirteen commercial decisions behind it — and **2.3**
+took the blanks nobody could fill at signing out of the signed document (§20). 2.3 is what the flow
+issues and, since 2026-08-25, the only version in the repository: see §22.
 
 ---
 
@@ -325,14 +325,14 @@ and [StepReviewSign.tsx](../client/src/pages/onboarding/steps/StepReviewSign.tsx
 them and owns the hash. Five decisions worth not undoing:
 
 **The summary quotes the document rather than improving it.** Each list is named for the version it
-describes — `PLAIN_LANGUAGE_V2_1`, `PLAIN_LANGUAGE_V2_2` — and its figures are literals rather than
+describes — `PLAIN_LANGUAGE_V2_3` is the only one left (§22) — and its figures are literals rather than
 interpolations from `PARTNERSHIP`, because the agreement text transcribes "15,000" and "₹5,00,000" as
 content and changing our standard commercials must not silently rewrite what this panel claims a
-*signed* document says. A version's list is frozen with its version for the same reason the text is.
+*signed* document says. A version's list belongs to its version for the same reason the text does.
 
 Where the agreement was weak, the v2.1 line said so: §36.1 was written as the *request* it was, naming
-§36.2's blank Schedule B charge, and §6 named its own contradiction with Schedules B and C. v2.2 has
-no such lines because it has no such gaps, and the tests now assert the panel contains no
+§36.2's blank Schedule B charge, and §6 named its own contradiction with Schedules B and C. 2.2 and 2.3
+have no such lines because they have no such gaps, and the tests now assert the panel contains no
 "still blank" or "read it as a request" hedging — a line that says a clause is unfinished must
 disappear when the clause is finished, or the panel starts lying in the reassuring direction.
 
@@ -501,15 +501,15 @@ does goes through `OnboardingApi`, so that is the only thing item 9 changes.
 | [onboarding/OnboardingFlow.tsx](../client/src/pages/onboarding/OnboardingFlow.tsx) | the shell — chrome, rail, token-problem screens, step dispatch |
 | [onboarding/OnboardingIntro.tsx](../client/src/pages/onboarding/OnboardingIntro.tsx) | the step 1 cold open; shown on the first pass only |
 | [shared/machine/spec.ts](../shared/machine/spec.ts) | the hardware, once — `/specs`, step 2 and later Schedule A read from it |
-| [agreement/plainLanguage.ts](../shared/agreement/plainLanguage.ts) | the "In short" summary as data, one list per agreement version. No UI reads it since 2026-08-24 — see §3 step 3 |
+| [agreement/plainLanguage.ts](../shared/agreement/plainLanguage.ts) | the "In short" summary as data, one list per agreement version — 2.3's is the only one. No UI reads it since 2026-08-24 — see §3 step 3 |
 | [onboarding/AgreementReader.tsx](../client/src/pages/onboarding/AgreementReader.tsx) | the document on screen, plus the reading gate and `AGREEMENT_RENDER_OPTIONS` |
 | [onboarding/SignPanel.tsx](../client/src/pages/onboarding/SignPanel.tsx) | assent, then the emailed code; never recomputes the hash it is handed |
 | [onboarding-mock-api.test.ts](../client/src/__tests__/shared/onboarding-mock-api.test.ts) | 31 tests — really the spec for item 9 |
 | [onboarding/steps/StepDeposit.tsx](../client/src/pages/onboarding/steps/StepDeposit.tsx) | step 4 — the forwardable link, the background poll, the receipt |
 | [_shared/razorpay.ts](../supabase/functions/_shared/razorpay.ts) | webhook signature, event parsing and the settlement check — pure, no DB |
 | [OnboardingFlow.test.tsx](../client/src/__tests__/pages/OnboardingFlow.test.tsx) | 27 tests, including a full walk from step 1 to the dashboard hand-off |
-| [agreement.test.ts](../client/src/__tests__/shared/agreement.test.ts) | 37 tests — the renderer, the issue gate, and the plain-language panel against v2.1 |
-| [agreement-v2-2.test.ts](../client/src/__tests__/shared/agreement-v2-2.test.ts) | 47 tests — the issued version: consistency, resolutions, pinned hash |
+| [agreement-render.test.ts](../client/src/__tests__/shared/agreement-render.test.ts) | the renderer and the issue gate, on synthetic documents |
+| [agreement-v2-3.test.ts](../client/src/__tests__/shared/agreement-v2-3.test.ts) | the issued version: consistency, the surprising clauses, pinned hash |
 | [settlement/compute.ts](../shared/settlement/compute.ts) | §§6–10 as one pure module — net profit, the milestone split, advertising, electricity |
 | [gym/portal.ts](../shared/gym/portal.ts) | the reporting endpoint's response shape, written before the endpoint (§15) |
 | [gym/fixtures.ts](../shared/gym/fixtures.ts) | raw inputs for the dashboard — cups and rupees, not one derived figure |
@@ -843,19 +843,24 @@ than the clause carrying "Rupees Fifty Thousand Only" as fixed prose. Defaults c
 
 ## 12. The agreement content model — and what used to block it
 
-**As built (2026-08-22).**
+**As built (2026-08-22), with the file list brought up to date on 2026-08-25 (§20, §22).**
 
 | File | What it is |
 |---|---|
 | [types.ts](../shared/agreement/types.ts) | the document model — `Block` union, `Section`, `Agreement`, `AgreementFields`, `Blocker` |
-| [v2_1.ts](../shared/agreement/v2_1.ts) | the source PDF transcribed: 47 sections and Schedules A–H as data, plus a `todo` block at every unresolved spot. **Frozen** |
-| [v2_2.ts](../shared/agreement/v2_2.ts) | the version the flow issues — every one of v2.1's eight `blocks-send` items resolved, plus `AGREEMENT_V2_2_RESOLUTIONS` recording how |
+| [v2_3.ts](../shared/agreement/v2_3.ts) | the version the flow issues, and the only one in the repository: 47 sections and Schedules A–H as data, plus `AGREEMENT_V2_3_CHANGES` |
+| [issued.ts](../shared/agreement/issued.ts) | the one place that decides which version is issued, and pairs it with its summary panel and the missing-token policy |
 | [render.ts](../shared/agreement/render.ts) | `renderText` / `renderPlainText` / `collectBlockers` / `canIssue` / `sha256Hex` / `fingerprint` |
-| [plainLanguage.ts](../shared/agreement/plainLanguage.ts) | `PLAIN_LANGUAGE_V2_1` (8 items) and `PLAIN_LANGUAGE_V2_2` (11) — the "In short" summary, one list per version. Still tested, no longer rendered |
+| [goldenVector.ts](../shared/agreement/goldenVector.ts) | `GOLDEN_V2_3` — pinned fields, length and hash, copied verbatim by `mbp-backend` |
+| [plainLanguage.ts](../shared/agreement/plainLanguage.ts) | `PLAIN_LANGUAGE_V2_3` (12 items) — the "In short" summary |
 | [amountInWords.ts](../shared/agreement/amountInWords.ts) | `rupeesInWords()`, Indian numbering, so §5.1's figure and its words come from one integer |
-| [agreement.test.ts](../client/src/__tests__/shared/agreement.test.ts) | 37 tests, including the pinned v2.1 hash |
-| [agreement-v2-2.test.ts](../client/src/__tests__/shared/agreement-v2-2.test.ts) | 47 tests: internal consistency, no marker deleted without its clause fixed, pinned v2.2 hash |
+| [agreement-v2-3.test.ts](../client/src/__tests__/shared/agreement-v2-3.test.ts) | the document: internal consistency, no blank form, the surprising clauses, the pinned hash |
+| [agreement-render.test.ts](../client/src/__tests__/shared/agreement-render.test.ts) | the renderer on its own terms: substitution, the missing-token policies, determinism, marker ordering |
 | [amount-in-words.test.ts](../client/src/__tests__/shared/amount-in-words.test.ts) | 40 tests, weighted to the teens and the empty-group cases where Indian grouping goes wrong |
+
+`v2_1.ts`, `v2_2.ts` and their suites were deleted on 2026-08-25 (§22). Nothing has ever been signed
+against either, and the machinery for rendering a record from a version other than the issued one went
+with them. The transcription history below is kept because it is why the current text says what it says.
 
 `collectBlockers()` **derives** the blocker list by walking the tree for `kind: "todo"` — there is no
 hand-maintained checklist to go stale. `canIssue(agreement, fields)` returns `ok: false` while any
@@ -879,28 +884,26 @@ signatoryName, signatoryDesignation
 One module feeds three consumers: the React reader, the PDF builder, and a plain-text renderer
 used for hashing. They must never diverge, which is why it is data and not markup.
 
-A field stays on `AgreementFields` for as long as **any** version references it, even after the
-current version stops doing so. `mbpNotices.phone` is the live example: v2.2's §41 drops the phone
-channel, but v2.1's §41 table still renders it, and a frozen version has to keep rendering from
-current state or a signature stored against it stops being reproducible.
+A field stays on `AgreementFields` after the document stops using it. `mbpNotices.phone` is the live
+example: §41 dropped the phone channel at 2.2 and the field stayed, because the type is the contract
+between the state and the renderer, and removing a token's field the moment one clause stops printing
+it turns a future re-add into a schema change.
 
-Each version's hash is pinned by a test against a fixed fixture, and the two fixtures are separate
-copies on purpose — one shared fixture means an edit made for a future version silently moves an
-older version's hash, and the obvious fix at that point is to update the expected value, which is
-the one thing neither test may do.
+The issued version's hash is pinned by a test against a fixed fixture in
+[goldenVector.ts](../shared/agreement/goldenVector.ts), and that file says in terms that a failing
+pin is never fixed by editing the expected value.
 
 ### Unfinished content in the source PDF — all resolved in v2.2
 
-The PDF could not be transcribed as-is and could not be sent. Every row below had a marker in
-`v2_1.ts`; the **Resolved in v2.2** column says what closed it. The decisions behind those
+The PDF could not be transcribed as-is and could not be sent. Every row below had a marker in the 2.1
+transcription; the **Resolved in v2.2** column says what closed it. The decisions behind those
 resolutions were taken on 2026-08-22 and are recorded in full further down this section.
 
-v2.1 keeps every one of these markers. It is the transcription, not the contract we issue, and
-editing it would break the pinned hash that makes a v2.1 signature verifiable. `AGREEMENT_V2_2_RESOLUTIONS`
-at the bottom of `v2_2.ts` carries the same mapping in code, and
-[agreement-v2-2.test.ts](../client/src/__tests__/shared/agreement-v2-2.test.ts) asserts in both
-directions — no v2.1 marker may vanish without an entry, and no entry may name a marker that was
-never raised. That is what stops the next person clearing a `blocks-send` flag instead of the defect.
+The table is the reason the current text reads as it does, and it is the surviving record of that
+work: 2.1 and 2.2 were themselves deleted on 2026-08-25 (§22), so nothing in code now maps a marker
+id to its fix. Read a row as history — the clause it names is settled in 2.3, and
+[agreement-v2-3.test.ts](../client/src/__tests__/shared/agreement-v2-3.test.ts) asserts the
+settlement (one milestone trigger, a named forum, a Nil exit charge) rather than the marker's absence.
 
 | Location | `id` | Severity | Problem in v2.1 | Resolved in v2.2 |
 |---|---|---|---|---|
@@ -951,11 +954,11 @@ deposit gets ₹75,000 in both clauses and no stray ₹50,000 anywhere in the do
 **Our own notices block.** `MBP_NOTICES` in
 [agreementFields.ts](../shared/onboarding/agreementFields.ts) now reads "BlendBox Innovations LLP,
 Sector 75, Noida, Uttar Pradesh 201301, India", and `phone` is deliberately `""`. Decision 8: we do
-not publish a number for notices, so v2.2's §41 offers address and email only and says in terms that
+not publish a number for notices, so §41 offers address and email only and says in terms that
 telephone is not a channel for formal notice. A channel a gym cannot actually use is worse than one
 the clause never offers, because a notice attempted down it and missed is still arguably served. The
 gym's number stays in the clause labelled as an operational contact. `phone` stays on
-`AgreementFields` because v2.1's §41 table still renders it.
+`AgreementFields` for the reason given above.
 
 What remains is the missing building/street line, carried as `s41-mbp-address-incomplete`
 (needs-review, not blocking): post to the sector and PIN will plausibly arrive and email is the
@@ -966,8 +969,8 @@ rather than the installation address — a notice served at a gym floor is not a
 entity.
 
 `todo` markers still show a visible warning banner in dev and still **block sending in production**
-on `blocks-send`. v2.2 has none, so that path is dormant rather than dead: it is what stops a future
-v2_3 being issued half-drafted.
+on `blocks-send`. 2.3 has none, so that path is dormant rather than dead: it is what stops the next
+version being issued half-drafted.
 
 ### The thirteen decisions (2026-08-22)
 
@@ -1210,7 +1213,7 @@ AWS credentials configured, nothing deployed) and the edge function, which needs
 |---|---|---|
 | 1 | Remove consumer auth (§10) — **done 2026-08-22** | ½ d |
 | 2 | `shared/partnership/summary.ts` + `/gym-partnership` page (§2) — **done 2026-08-22** | 1½ d |
-| 3 | `shared/agreement/{types,v2_1,render}.ts` (§12) — **done 2026-08-22**; `v2_2.ts` issued 2026-08-22, unblocked | 1½ d |
+| 3 | `shared/agreement/{types,render}.ts` + the document (§12) — **done 2026-08-22**; 2.2 issued 2026-08-22, unblocked; 2.3 on 2026-08-24, sole version from 2026-08-25 (§22) | 1½ d |
 | 4 | Wizard shell — token route, server-driven step, draft autosave, resume, mobile (§4) — **done 2026-08-22** | 2½ d |
 | 5 | Steps 1, 2, 5 UI — **done 2026-08-22** | 2 d |
 | 6 | Step 3 — reader, plain-language panel, scroll gate, sign panel — **done 2026-08-22** | 2 d |
@@ -1236,9 +1239,8 @@ hardcoding ₹50,000.
 
 Item 3 shipped as structure with the gaps marked rather than waiting on legal, which was the right
 trade: items 4–6 could be built and demoed against the real document tree, and `canIssue()` guaranteed
-nothing reached a gym until the eight `blocks-send` items cleared. All eight are now cleared in
-`v2_2.ts`, and the marker machinery is what made that a mechanical exercise rather than a re-read —
-see §12.
+nothing reached a gym until the eight `blocks-send` items cleared. All eight were cleared at 2.2, and
+the marker machinery is what made that a mechanical exercise rather than a re-read — see §12.
 
 Item 4 went slightly past a shell in one place and stopped well short in three. Step 1 is a **working
 form** — all eleven fields, shared-schema validation, autosave, live agreement preview — because a
@@ -1276,7 +1278,8 @@ included. The measured-percentage approach with an explicit zero-height branch i
 better experience, since it can show a "% read" figure a boolean cannot.
 
 **The effective date is hashed client-side.** Recorded above under step 3 as a build-item-9 blocker;
-it is a real correctness bug the moment the server starts producing the PDF, not a nitpick.
+it is a real correctness bug the moment the server starts producing the PDF, not a nitpick. (Fixed
+2026-08-24: the record pins its own effective date and the server hashes at that date — §21, §22.)
 
 The test count went 20 → 24 on the flow (four step-3 cases: the eight linked clauses, the whole
 document rendering with a live hash, that one checkbox is not assent, and that a wrong code fails
@@ -1386,7 +1389,7 @@ teaches people to re-run it instead of reading it, which costs more than the fla
 Not a build item. Every open question in §§12 and 14 was a commercial choice, and answering them
 produced work in three places at once: the settlement maths (decision 1 changed the milestone's
 second test from gross to Net Profit, which is a `gym_terms` field rename, a new opening counter and
-the ratchet), the document (`v2_2.ts`, 47 sections, all eight `blocks-send` markers resolved), and the
+the ratchet), the document (2.2, 47 sections, all eight `blocks-send` markers resolved), and the
 copy on four surfaces that quote the milestone.
 
 The order mattered. The maths went first, because §6.3's wording had to describe behaviour that
@@ -1396,19 +1399,21 @@ written against the clause tend to disagree in exactly the month a gym is watchi
 document's fixture read from, and a test asserts §6.1's rendered text, §21.5's, Schedule B's,
 Schedule C's and `PARTNERSHIP.milestone` all state the same two numbers.
 
-Two things worth naming about how v2.2 was built:
+Two things worth naming about how v2.2 was built. **Neither survives** — 2.1 and 2.2 were deleted on
+2026-08-25 because nothing had ever been signed against either (§22). They are recorded because both
+become true again the first time a version is issued that a gym has actually signed.
 
-**It is a new file, not an edit.** `v2_1.ts` stays byte-frozen with its pinned hash, because the
+**It is a new file, not an edit.** `v2_1.ts` stayed byte-frozen with its pinned hash, because the
 version string is part of what gets hashed and a signature is only evidence while the text can be
-re-rendered. Both versions are asserted to render with zero unresolved tokens from current onboarding
-state, which is why `mbpNotices.phone` survives on `AgreementFields` after v2.2 stopped offering the
+re-rendered. Both versions were asserted to render with zero unresolved tokens from current onboarding
+state, which is why `mbpNotices.phone` survives on `AgreementFields` after §41 stopped offering the
 channel.
 
-**Resolutions are data, checked in both directions.** `AGREEMENT_V2_2_RESOLUTIONS` maps each v2.1
-marker id to what v2.2 did about it, and the test suite asserts that no v2.1 marker may disappear
+**Resolutions are data, checked in both directions.** `AGREEMENT_V2_2_RESOLUTIONS` mapped each v2.1
+marker id to what v2.2 did about it, and the test suite asserted that no v2.1 marker may disappear
 without an entry *and* that no entry may name a marker that was never raised. Without that, the
 cheapest way to make `canIssue()` return true is to delete the marker, and it looks identical in a
-diff to fixing the defect.
+diff to fixing the defect. The mapping now lives only in §12's table.
 
 Test counts after v2.2: 47 on the new agreement suite, 40 on `rupeesInWords`, and the flow, fixture
 and mock-API suites updated — **39 files, 664 tests, all passing, `npx tsc --noEmit` clean**. One
@@ -1450,8 +1455,18 @@ like a compile step.
 - [ ] Agreement content changes bump the version; never edit a version that has signatures
 - [ ] A new agreement version pins its own golden length and hash, and does not share a fixture with
       an older one — a shared fixture lets one version's edit move another version's hash
-- [ ] Every version renders with zero unresolved tokens from current onboarding state, frozen versions
-      included; a field stays on `AgreementFields` while any version references it
+- [ ] The issued document renders with zero unresolved tokens from current onboarding state; a field
+      stays on `AgreementFields` while the document references it
+- [ ] **There is one agreement version in the repository.** Shipping a new one means deciding what
+      happens to records pinned to the old one *before* it ships — nothing in the code answers that
+      question any more, and a record whose fingerprint describes text we can no longer render is a
+      signature we cannot stand behind (§22)
+- [ ] An unsigned record whose pin no longer describes what we would render is re-issued; a signed one
+      never is (§21)
+- [ ] The content hash is computed once, by the server, at issuance. The browser displays it and echoes
+      it back; it does not re-render the document to check it (§22)
+- [ ] A field read off an API response is `undefined` until `apiClient` validates bodies, whatever its
+      type says — so nothing user-facing may be gated on one being present (§21)
 - [ ] Clearing a `todo` marker means fixing the defect and recording the resolution, never deleting
       the marker
 - [ ] A signed document never prints a blank for something nobody can know at signing; it names where
@@ -1869,3 +1884,210 @@ of them are the ones worth having:
 
 `OnboardingFlow.test.tsx` gained four step-6 tests and its whole-flow walk now ends on step 6,
 asserting that no redirect fired and that the dashboard link is there.
+
+## 21. The pin that went stale, and the deploy that would have staled every one (2026-08-25)
+
+> **Half of this was reverted the same day — see §22.** The re-issue below stands and is still the
+> behaviour. The version registry and the browser-side hash check described in parts two and three were
+> deleted as over-built: there is one agreement version now, and the browser does not verify the
+> fingerprint. The diagnosis is kept because the failures it describes are real and a future version
+> will meet them again.
+
+Step 3 showed the fingerprint and, underneath it, "This agreement isn't ready to sign — we can't
+confirm this is the current version of your agreement. Reload this page to fetch a fresh copy."
+Reloading did nothing, because there was nothing wrong with the page. Two separate defects produced
+that screen, and both had the same shape: **the document a record names and the document we render
+were allowed to drift apart, with no way back.**
+
+### One: a pin nothing ever refreshed
+
+`issueAgreement` returned early whenever `state.agreement` existed. Its reasoning was sound as far as
+it went — re-issuing moves the effective date and the hash under a gym mid-read — and its own docstring
+deferred "reissuing on a terms change" to the real backend. What it missed is that the pin can go stale
+from the gym's side, in one click:
+
+1. Step 2 issues the document and pins version, date, hash and length.
+2. The gym reads step 3, notices the signatory is wrong, and follows the sign panel's own invitation
+   back to step 1 — an invitation v2.3 added, because §47 now prints the signatory *into the hashed
+   text*.
+3. Step 1 accepts the correction. The pin is not touched.
+4. Step 3 renders the corrected document, hashes it, and it no longer matches. Forever.
+
+`['rendered 38385 characters, the record pins 38384', 'rendered hash de4be438…, the record pins
+bef7456b…']` — an off-by-one from "Rohit" to "Priya". No error anywhere on our side, no way out on
+theirs, and the copy told them to do the one thing that could not help.
+
+So while nothing is signed, an existing pin is now *checked* and re-issued if it no longer describes
+what we would render. Nothing is signed, so nothing moves underneath anybody: the cost is a reload,
+which the mismatch copy already asks for and which now works. **Once `isSigned` is set the pin is
+immutable, full stop** — it is the description of what a signature attests to.
+
+Two details in that, both load-bearing:
+
+- Whether the pin has drifted is asked at the **pinned** effective date, not today's. Asking at
+  today's would make every view after midnight IST look like drift and walk the Effective Date — and
+  the start of a 24-month term — forward a day at a time.
+- A re-issue *does* take today's date, because a re-issued document is issued now. Keeping the old one
+  would date a document to before the details printed inside it existed.
+- `submitDetails` re-issues only `if (state.agreement)`. Step 1 must not bring a contract into
+  existence; there is no agreement to pin until step 2 acknowledges the terms.
+
+### Two: every record in flight, the moment a version ships
+
+The deeper defect, and the one the user's report was actually about. `renderIssuedAgreementText`
+reached for `ISSUED_AGREEMENT` unconditionally — the version we issue *now*. But §12 and `issued.ts`
+both already stated the rule: **a stored agreement always renders from the version it names.** There
+was no way to obey it. Nothing looked up a version string.
+
+Which means the v2.3 deploy would have done to every unsigned record in flight exactly what the
+signatory edit did to one: pinned to 2.2, re-rendered as 2.3, mismatch, reload, mismatch. And for a
+signed 2.2 record, verification would have been impossible from the moment 2.3 shipped — the failure
+that matters years later, in front of someone who wants to know what was signed.
+
+The fix at the time was `shared/agreement/versions.ts` — a registry of every version ever issued, plus
+`agreementForVersion(version)` returning **null rather than falling back**, because a fallback puts the
+wrong document on screen under the right hash and calls it verified. Step 3 rendered the version the
+record named, and a version this build did not carry produced a "this page is out of date" screen with a
+reload button rather than a document.
+
+**All of that is gone** (§22). It was the right shape for a problem we do not have: there has never been
+a signed 2.1 or 2.2 record, and the whole apparatus existed to serve a browser-side check that has also
+been removed. What survives is the rule, which now has to be honoured by hand: **a stored agreement can
+only be verified while we can still render the version it names**, so shipping a new version means
+deciding what happens to the records pinned to the old one before shipping it.
+
+### Three: a diagnostic that was being treated as evidence
+
+The live flow still locked, with a different report: `rendered 36341 characters, the record pins
+undefined`. **No hash problem in that line** — the client's rendering and the server's agreed exactly.
+The only thing wrong was that `agreement.length` was missing from the response, and the check failed on
+it.
+
+`IssuedAgreement.length` is typed `number`, and the type is a claim rather than a guarantee:
+`apiClient` casts response bodies and validates nothing (its own docstring says so, and an
+`OnboardingState` schema is still unwritten). So anything the API omits is `undefined` at runtime, and
+here that turned a *verified* document into a locked panel for every live record.
+
+So: **the hash decides, the length only explains.** Equal hashes are equal text; a length that
+disagrees with a matching hash says the record's `length` field is wrong, not that the document is.
+`length` is optional on the type from here on, and nothing user-facing is gated on it. The lesson
+outlived the check that taught it — see the §17 item about fields read off an API response — and it is
+the reason the mock's own drift check compares version and hash only: comparing length there could only
+produce a spurious re-issue on a record whose length field was absent.
+
+### For `mbp-backend`
+
+1. **Re-issue an unsigned record whose pin has drifted**, at the pinned effective date for the check
+   and today's for the new pin, and never re-issue a signed one. The mock's `issueAgreement` is the
+   specification, and `onboarding-mock-api.test.ts`'s "re-issuing a pin that has drifted" is the set of
+   assertions.
+2. **Return `length` on `agreement`**, from `GET /onboarding` and `POST /onboarding/agreement/view`
+   both — §2.5 already specifies it. Nothing on the frontend needs it, and it is what turns "the hashes
+   disagree" into "a value was substituted" or "the structure moved" when one day they do.
+
+(A third item here said to copy `versions.ts` and every `v2_*.ts`. There is one version module to copy
+now — see §22.)
+
+### Verified
+
+`npx tsc --noEmit` clean. **57 test files, 1,119 tests passing** at the time of writing; §22 removed
+some of them the same day.
+
+- [onboarding-mock-api.test.ts](../client/src/__tests__/shared/onboarding-mock-api.test.ts) gained the
+  reported bug as a regression test — correct the signatory after issuance, and the record re-pins to
+  the corrected text — plus: the re-issued document is the one that can be signed and the hash first
+  read is refused; a document that has not moved is not re-dated however late it is viewed; step 1
+  issues nothing; and a signed record's pin survives being reopened.
+
+## 22. One version, and the browser stops checking the hash (2026-08-25)
+
+Called the same day §21 shipped: *"lets revert this multiple version document check. we should not
+complicate it. lets just have one version, that is current one 2.3 and remove check of SHA of
+document."* Two deletions, decided separately because they are separate things.
+
+### One agreement version
+
+2.1 and 2.2 are gone, with `versions.ts` and `agreementForVersion()`. 2.3 is the only `Agreement` in
+the repository and `ISSUED_AGREEMENT` names it directly.
+
+The registry was built for a real failure — a record pinned to a version this build cannot render is
+a signature nobody can verify — but it was solving that failure for records that do not exist. Nothing
+has ever been signed against 2.1 or 2.2, and there are no gyms in production. Two frozen transcriptions
+kept alive on the chance of a signature that never happened cost a second golden vector, a second
+plain-language list, two suites, a lookup that could return null, and a screen for when it did.
+
+What was actually load-bearing about 2.1 and 2.2 has been kept, in the two places it belongs:
+
+- **The renderer's own behaviour** moved to
+  [agreement-render.test.ts](../client/src/__tests__/shared/agreement-render.test.ts) — substitution
+  and dotted paths, throw-vs-placeholder, `collectTokens` / `findUnresolvedTokens`, byte-identical
+  renders, `fingerprint` refusing a half-substituted document, todo markers staying out of the hash,
+  `canIssue` refusing a `blocks-send` marker, blocker ordering. It uses three-line synthetic documents,
+  because the cases worth testing are ones the issued document deliberately does not contain: 2.3 has
+  no `blocks-send` marker and no printed blank, so testing that path against 2.3 tests nothing.
+- **The transcription history** stayed in §12's table, which is now its only record — the marker → fix
+  mapping no longer exists in code. Read it as the reason the current clauses say what they say.
+
+The rule the registry enforced still holds and now has to be held by hand, which is why it is a §17
+checklist item: **shipping a new version means deciding what happens to the records pinned to the old
+one before shipping it.** Nothing in the code will ask.
+
+### The browser no longer verifies the fingerprint
+
+Step 3 used to re-render the whole agreement, hash it, compare against `state.agreement.contentHash`,
+and refuse to open the sign panel on any disagreement. `checkIssuedAgreement`, `IssuedAgreementCheck`,
+`recomputeRecordedAgreement`, the "isn't ready to sign" lock and `StalePageNotice` are all deleted.
+
+What step 3 does now: renders 2.3 from the record's own effective date, prints
+`issued.contentHash` under the document, and passes that same string to `SignPanel`, which puts it in
+the signature payload. **The hash is computed once, by the server, at issuance.** The client displays
+it and echoes it back.
+
+The echo is deliberate rather than vestigial. It is not the browser's independent word for the text —
+it cannot be, the browser no longer renders one — it names *which record* this payload was assembled
+against, so a payload built from a stale page is refused with `content_mismatch` instead of signing
+whatever the record says today. The API contract is unchanged.
+
+**§47.2 is still honoured.** It promises the gym the SHA-256 fingerprint of what they signed, and the
+server still renders, hashes, pins and emails it. Removing the browser's *duplicate* of that
+computation is not a change to the document, which is why this needed no new version.
+
+**What the check was worth, and why it still went.** It was the only automatic catch for one specific
+failure: drift in the state → fields bridge (`issuedAgreement.ts`, `agreementFields.ts`) between our
+copy and `mbp-backend`'s. `goldenVector.ts` pins `AgreementFields` directly, so it catches a drifted
+renderer or a drifted document but not a drifted bridge — a backend formatting `₹ 50,000` where we
+format `₹50,000` pins a well-formed hash of text no gym ever read, and nothing now notices. Against
+that: in two days the check produced two false locks in front of a live user and zero true ones, both
+from its own machinery rather than the document — a stale pin nothing cleared (§21), then a `length`
+field the API omits (§21 part three). A guard that fires on its own bookkeeping and stops a gym signing
+is worse than the drift it watches for, because the drift is caught by whoever compares the two
+repositories and the false lock is caught by the gym.
+
+So the bridge is now covered by review and by tests instead: `issuedAgreement.ts` says in its own
+docstring that a change to it is a change to the document's identity, and
+`onboarding-mock-api.test.ts` renders each issued record a second time and asserts the pinned hash
+reproduces. That is a test rendering independently, which is still worth doing — it is the only thing
+proving a stored fingerprint is reproducible at all — and it is precisely not what a browser in front
+of a gym should be doing.
+
+### Deleted
+
+`shared/agreement/v2_1.ts`, `shared/agreement/v2_2.ts`, `shared/agreement/versions.ts`,
+`PLAIN_LANGUAGE_V2_1` and `PLAIN_LANGUAGE_V2_2`, `checkIssuedAgreement`, `IssuedAgreementCheck`,
+`recomputeRecordedAgreement`, `StalePageNotice`, and four test files — `agreement.test.ts`,
+`agreement-v2-2.test.ts`, `agreement-versions.test.ts`, `StepReviewSign.test.tsx`. `IssuedAgreement.length`
+stays, optional, server-side only.
+
+### For `mbp-backend`
+
+1. **Copy one version module**, not a registry: `shared/agreement/` plus `issuedAgreement.ts` and
+   `agreementFields.ts`. All three, or the hash is of a different document.
+2. **Verify the golden vector in CI.** It is the only automatic check left on the renderer, and the
+   bridge it cannot cover is now review-only.
+3. Everything in §21's list still stands — re-issue an unsigned drifted pin, never a signed one, and
+   return `length` on `agreement`.
+
+### Verified
+
+`npx tsc --noEmit` clean. **54 test files, 1,031 tests passing** — three files and 88 tests fewer than
+before, for coverage that is narrower only where it was covering a version nobody signed.

@@ -1,9 +1,9 @@
 /**
  * MuscleBoxPro Machine Placement & Profit Sharing Agreement, version 2.3.
  *
- * This is the version that gets issued. v2.1 and v2.2 stay in the repository unedited —
- * the version string is part of the hash stored with a signature, so a changed clause
- * means a new version file, not a correction to an old one.
+ * This is the version that gets issued, and the only one in the repository. The version
+ * string is part of the record stored with a signature, so a changed clause means a new
+ * version file, not a correction to this one.
  *
  * ── What 2.3 is ──────────────────────────────────────────────────────────────
  * 2.3 changes no commercial term and resolves no marker. It is one change, made in four
@@ -1722,12 +1722,11 @@ export const AGREEMENT_V2_3: Agreement = {
 /**
  * What changed from 2.2, keyed by where.
  *
- * Deliberately not shaped like `AGREEMENT_V2_2_RESOLUTIONS`, which is keyed by the
- * `todo` marker id each entry closes. 2.3 closes no marker: 2.2 did not think its blank
- * forms were a defect, so there was nothing in the tree flagging them. The keys are
- * therefore locations, and the list is exhaustive — every difference in the hashed text
- * between 2.2 and 2.3 is one of these four entries. Every resolution 2.2 recorded still
- * holds and is not repeated here; it is in v2_2.ts, against the version it belongs to.
+ * Keyed by location rather than by `todo` marker id, because 2.3 closes no marker: 2.2 did
+ * not think its blank forms were a defect, so there was nothing in the tree flagging them.
+ * The list was exhaustive when it was written — every difference in the hashed text between
+ * 2.2 and 2.3 is one of these four entries — and it stays as the record of why this document
+ * reads the way it does, now that 2.2 itself is no longer in the repository (§22).
  */
 export const AGREEMENT_V2_3_CHANGES: Readonly<Record<string, string>> = {
   "s2-machine-identifiers":

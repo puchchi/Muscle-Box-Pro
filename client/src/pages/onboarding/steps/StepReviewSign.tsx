@@ -6,55 +6,33 @@ import { IS_MOCK_ONBOARDING, PREVIEW_OTP } from "@/lib/onboardingApi";
 import { ISSUED_AGREEMENT } from "@shared/agreement/issued";
 import { canIssue, collectBlockers } from "@shared/agreement/render";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
-import {
-  checkIssuedAgreement,
-  issuedAgreementFields,
-  type IssuedAgreementCheck,
-} from "@shared/onboarding/issuedAgreement";
+import { issuedAgreementFields } from "@shared/onboarding/issuedAgreement";
 import type { Blocker } from "@shared/agreement/types";
 import AgreementReader, { sectionAnchor } from "../AgreementReader";
 import SignPanel from "../SignPanel";
 import type { StepViewProps } from "../types";
 
 /**
- * The version this flow issues, from `@shared/agreement/issued`, which is the one place
- * that decides.
- *
- * This file used to name `AGREEMENT_V2_2` directly, and the record written at signing
- * named "2.1" independently. Reading it from one module is what makes that particular
- * disagreement unrepresentable.
- *
- * `ISSUED_PLAIN_LANGUAGE` is the sibling export and no longer read here — the "In short"
- * panel is gone. The data and its tests stay, for re-siting.
- */
-const AGREEMENT = ISSUED_AGREEMENT;
-
-/**
  * Step 3 — Review & sign.
  *
- * The step that carries the legal weight, and the one deliberately over-engineered.
- * It composes three things and owns none of their internals:
+ * The step that carries the legal weight. It composes two things and owns neither's
+ * internals: `AgreementReader`, which also reports the scroll gate, and `SignPanel`,
+ * which collects the two assertions.
  *
- *   - the reader     — `AgreementReader`, which also reports the scroll gate
- *   - the hash check — this client's own rendering, compared to the server's
- *   - the sign panel — `SignPanel`, two assertions
- *
- * **The hash comes from the server now, and this component checks it.** It used to be
+ * **The hash comes from the server, and this component only displays it.** It used to be
  * computed here and sent up as truth, which made the signature evidence only that some
- * browser had done some arithmetic — the server could not verify a signature against a
- * number it never computed, and a tab running yesterday's JavaScript would have signed a
- * different document from the one on the record. The server renders and hashes at
- * issuance; this component renders the same text, compares, and refuses to open the sign
- * panel if the two disagree. A mismatch in development is a disabled button; a mismatch
- * in production means the record moved under a gym mid-read and it is told to reload. See
- * docs/gym-onboarding.md §12 and `@shared/onboarding/issuedAgreement`.
+ * browser had done some arithmetic. Then it was computed here *as well* and compared, and
+ * that was worse than either — see docs/gym-onboarding.md §22. The server renders and
+ * hashes once, at issuance; the record it writes is what §47.2 promises the gym. Keeping
+ * the document the gym reads in step with that fingerprint is the server's job, on the
+ * write side, where the re-issue lives.
  *
  * **Signing is refused in production while the document has unresolved clauses.**
  * `canIssue()` decides, and that is not a warning to click past: an agreement with a
  * hole in it is worse than no agreement. Preview builds override the refusal —
- * otherwise the flow could not be walked at all — and say so on screen. v2.2 clears
- * all of v2.1's blocking markers, so this path is currently dormant rather than dead:
- * it is what stops a future v2_3 being issued half-drafted.
+ * otherwise the flow could not be walked at all — and say so on screen. v2.3 has no
+ * blocking markers, so this path is dormant rather than dead: it is what stops the next
+ * version being issued half-drafted.
  */
 export default function StepReviewSign({
   state,
@@ -63,8 +41,6 @@ export default function StepReviewSign({
   goToStep,
   actions,
 }: StepViewProps) {
-  /** Null until this client has rendered the text and hashed it for itself. */
-  const [check, setCheck] = useState<IssuedAgreementCheck | null>(null);
   const [hasReadToEnd, setHasReadToEnd] = useState(false);
   /** Whole percent of the document scrolled, so the locked sign panel can say how far. */
   const [readPercent, setReadPercent] = useState(0);
@@ -94,8 +70,8 @@ export default function StepReviewSign({
 
   // `{}` while the document is still being issued: `canIssue` takes partial fields, and
   // an un-issued agreement is not issuable, which is the right answer anyway.
-  const issuable = canIssue(AGREEMENT, fields ?? {});
-  const blockers = collectBlockers(AGREEMENT).filter((b) => b.severity === "blocks-send");
+  const issuable = canIssue(ISSUED_AGREEMENT, fields ?? {}).ok;
+  const blockers = collectBlockers(ISSUED_AGREEMENT).filter((b) => b.severity === "blocks-send");
 
   useEffect(() => {
     // Fire-and-forget audit write; it must never gate the reader from rendering.
@@ -104,27 +80,6 @@ export default function StepReviewSign({
     // rebuilt on every render, so depending on it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!issued) return;
-    let cancelled = false;
-    // Renders the document with the same version module, options and field bridge the
-    // server used, and compares. This is the only check that catches a drifted *field
-    // bridge* — the golden vector pins `AgreementFields` directly, so it cannot see a
-    // `formatInr` or a notices-address change that moves the text built from state.
-    void checkIssuedAgreement(state, issued).then((result) => {
-      if (cancelled) return;
-      setCheck(result);
-      if (!result.ok) {
-        // Logged, never rendered: the detail is about our code, and a gym reading
-        // "rendered hash abc…, the record pins def…" learns nothing it can act on.
-        console.error("[onboarding] issued agreement mismatch:", result.problems.join("; "));
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [state, issued]);
 
   const onReachedEnd = useCallback(() => setHasReadToEnd(true), []);
   // Stable, because the reader calls it from an effect keyed on its own progress.
@@ -137,22 +92,21 @@ export default function StepReviewSign({
   // issues it.
   if (!fields || !issued) return <PreparingNotice />;
 
-  async function handleSign(input: {
+  // The record's own hash, echoed back. It names the document being signed; the server
+  // compares it to what it pinned, so a payload assembled against a different record is
+  // refused. It is not this browser's independent word for the text.
+  const contentHash = issued.contentHash;
+  const handleSign = (input: {
     fullName: string;
     designation: string;
     otpCode?: string;
-  }): Promise<boolean> {
-    // Unreachable from the UI — the panel is not rendered until the check passes — and
-    // checked anyway, because "the button was disabled" is not a guarantee about what
-    // gets submitted.
-    if (!check?.ok) return false;
-    return actions.signAgreement({
+  }): Promise<boolean> =>
+    actions.signAgreement({
       ...input,
       agreedToAgreement: true,
       authorisedToBind: true,
-      contentHash: check.contentHash,
+      contentHash,
     });
-  }
 
   return (
     <div className="space-y-6">
@@ -162,17 +116,17 @@ export default function StepReviewSign({
         detail going to an internal alert — a gym must never read our drafting notes
         about its own contract.
       */}
-      {IS_MOCK_ONBOARDING && !issuable.ok && <NotReadyNotice blockers={blockers} />}
+      {IS_MOCK_ONBOARDING && !issuable && <NotReadyNotice blockers={blockers} />}
 
       <AgreementReader
-        agreement={AGREEMENT}
+        agreement={ISSUED_AGREEMENT}
         fields={fields}
         showInternalMarkers={IS_MOCK_ONBOARDING}
         onReachedEnd={onReachedEnd}
         onProgress={onProgress}
       />
 
-      <HashLine contentHash={issued.contentHash} verified={check?.ok ?? null} />
+      <HashLine contentHash={contentHash} />
 
       {readOnly ? (
         <SignedSummary
@@ -185,21 +139,13 @@ export default function StepReviewSign({
           legalEntityName={state.details.legalEntityName}
           signatoryName={state.details.signatoryName}
           signatoryDesignation={state.details.signatoryDesignation}
-          contentHash={check?.ok ? check.contentHash : null}
+          contentHash={contentHash}
           hasReadToEnd={hasReadToEnd}
           readPercent={readPercent}
-          /*
-            Two reasons the panel can be shut, and the mismatch outranks the drafting
-            one — a document whose bytes we cannot account for is not something to let a
-            preview build click past, which is exactly what `IS_MOCK_ONBOARDING`
-            deliberately does for unresolved clauses.
-          */
           blockedReason={
-            check && !check.ok
-              ? "We can't confirm this is the current version of your agreement. Reload this page to fetch a fresh copy. Nothing you've entered is lost, and nothing has been signed."
-              : issuable.ok || IS_MOCK_ONBOARDING
-                ? null
-                : "There are unresolved items in the document we need to close before you sign it. We're on it, and we'll email you as soon as your copy is ready, and nothing you've entered is lost."
+            issuable || IS_MOCK_ONBOARDING
+              ? null
+              : "There are unresolved items in the document we need to close before you sign it. We're on it, and we'll email you as soon as your copy is ready, and nothing you've entered is lost."
           }
           previewOtp={IS_MOCK_ONBOARDING ? PREVIEW_OTP : null}
           isSubmitting={isSubmitting}
@@ -240,24 +186,14 @@ function PreparingNotice() {
 /**
  * The fingerprint, on screen.
  *
- * Shown rather than kept internal because it is the gym's evidence too: the same value
- * appears in the emailed PDF, so a document that has been altered afterwards can be
+ * Shown rather than kept internal because it is the gym's evidence too: §47.2 promises it,
+ * and the same value appears in the emailed PDF, so a document altered afterwards can be
  * detected by anyone who kept the email.
  *
- * The value rendered is the server's — it exists from the first paint, so there is no
- * "computing..." state any more. What is still pending is the *check*, and that gets its
- * own line rather than being folded into the hash: a fingerprint shown with no indication
- * that this browser reproduced it is the fingerprint of a document nobody verified, which
- * is worse than not showing one, because it looks like a verification.
+ * The value is the server's, and it exists from the first paint, so there is no pending
+ * state to render around it.
  */
-function HashLine({
-  contentHash,
-  verified,
-}: {
-  contentHash: string;
-  /** Null while this client is still rendering and hashing the document itself. */
-  verified: boolean | null;
-}) {
+function HashLine({ contentHash }: { contentHash: string }) {
   return (
     <p className="text-xs text-gray-700 leading-relaxed flex items-start gap-2">
       <FileSignature className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -266,12 +202,6 @@ function HashLine({
         <code className="break-all font-mono text-foreground" data-testid="content-hash">
           {contentHash}
         </code>
-        {verified === true && (
-          <span className="text-foreground" data-testid="hash-verified">
-            . This page matches it.
-          </span>
-        )}
-        {verified === null && <span data-testid="hash-checking">, checking this page…</span>}
       </span>
     </p>
   );
