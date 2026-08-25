@@ -2320,6 +2320,12 @@ One field, and a rule about where it comes from:
 Until it ships, the same-tab navigation still works and browser Back returns to the wizard, which
 resumes polling — the pre-§25 behaviour minus the orphaned second tab.
 
+> **Shipped in `mbp-backend` on 2026-08-25** (its `onboarding-build-progress.md` §40), after a sandbox
+> run stalled on Razorpay's "Payment Completed" card with the deposit already settled. Note that
+> Razorpay fixes `callback_url` at link creation and cannot add it to a live link, so **links minted
+> before that change never return** — seeing the redirect needs a new `depositId`, because a spent
+> `reference_id` cannot be reissued.
+
 ### Verified
 
 `npx tsc --noEmit` clean. **56 test files, 1,045 tests passing.**
@@ -2428,9 +2434,72 @@ Razorpay knows. `payment.failed` fires on a declined attempt, and a Payment Link
 four deposit states: `not_started`, `pending`, `paid`, `deferred`. Surfacing a fifth — a failed or
 expired link, with the reason — is what would let step 4 say "your card was declined" in two seconds,
 which is the request as asked. **Supabase is frozen, so that state would come from `mbp-backend`**,
-alongside the `callback_url` owed from §25 and the idempotent re-issue above.
+alongside the idempotent re-issue above. (The `callback_url` owed from §25 has since shipped there —
+see the note in that section — so the fifth state and the re-issue are what remain.)
 
 ### Verified
 
 `npx tsc --noEmit` clean. **56 test files, 1,044 tests passing** — one fewer than §25, because the
 four step-4 tests around the manual check became three around the outcome.
+
+---
+
+## 27. The receipt a gym comes back for, and the paid screen that had no way off it (2026-08-25)
+
+> review and improve content and design of this [screenshot: step 4, deposit received]
+
+### The reference is the reason to be on this screen, so it is built like one
+
+Everything about the paid panel said the reference was incidental. It was one of four equal cells in
+a 2×2 `dl` — an 11px label over a truncated value — level in weight with the word `card`, and on a
+phone that cell is about 150px, so the one value on the screen that has to be legible in full was
+the one being cut off. The recovery was a `title` attribute, which a touch screen has no way to open.
+
+It is now a white surface inside the panel: the label, the whole reference in mono with `break-all`,
+a **Copy** button beside it, and one line saying what the reference is for. The button is labelled
+rather than `size="icon"`, because that variant is 36px and this is pressed on a phone by somebody
+pasting a reference into an email to their accountant.
+
+The other three cells became one sentence — *"₹50,000 paid by card on 25 August 2026"* — which also
+removed the amount being stated twice, 300px apart, in a heading and a cell.
+
+`method` reaches us as Razorpay named it, so *"paid by netbanking"* was a machine value dropped into
+a sentence. `formatPaymentMethod` in `shared/onboarding/receipt.ts` is the mapping, shared rather than
+local because step 4 and step 5 both print the receipt and must not disagree about what a method is
+called.
+
+Two smaller repeats went with it. *"A receipt is on its way"* is the wrong tense on the only path that
+reaches this panel — a revisit, days later — so it says the receipt has been emailed. And the closing
+*"keep the reference… two years and a change of front-desk staff from now"* hardcoded a term length
+that comes from `state.terms`; the line under the reference says the same thing in one clause.
+
+On the unpaid card, the eyebrow read "Refundable security deposit" directly under a page heading
+saying "Security deposit" and a blurb saying "Refundable, and held for the whole term". It reads
+"Amount to pay", and the sentence below no longer repeats "held for the whole term" either.
+
+### Paid, and stuck
+
+The screenshot that prompted this was a dead end: deposit `paid`, step 4 still the server's
+`currentStep`, so no rail target for step 5, no reviewing banner (that needs `viewStep <
+currentStep`), and nothing on the panel to press. A gym that has paid ₹50,000 and cannot move is the
+worst version of this screen, and it is reachable — it is the same stall as the pre-`callback_url`
+links in §25, seen from the wizard's side.
+
+`settling` names it: `paid` **and** `currentStep === 4`. It keeps the `WATCH` poll running, so the
+wizard advances by itself when the record catches up, and it says so in a live region — *"we're
+opening your next step, nothing more is needed from you"* — rather than rendering a finished receipt
+with no exit. When the poll runs out the line changes to what is true then: nothing has opened, the
+payment is safe, reload. Same shape as the pending card's two states, for the same reason.
+
+`watching` is derived from `phase !== "stopped"` rather than from `polling`, because `phase` is null
+for the first render and a live region that opens on the pessimistic reading announces it before
+correcting itself a tick later.
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,045 tests passing** — one more than §26. The new one
+walks the payment, returns to step 4 from the rail, and pins what the panel exists for: the whole
+reference on screen, the copy button handing over exactly that string, the humanised method, and the
+amount stated once. `settling` itself is not covered, for the reason §26 gives about the other
+server-state combinations: the mock completes step 4 in the same call that marks the money paid, so
+the state cannot be reached without contorting it into a shape the real API never takes.

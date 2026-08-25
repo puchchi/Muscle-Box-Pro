@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, FileText, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { portalPasswordSchema } from "@shared/onboarding/schema";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
+import { formatPaymentMethod } from "@shared/onboarding/receipt";
 import { formatInr } from "@shared/partnership/summary";
 import type { StepViewProps } from "../types";
 
@@ -275,7 +276,8 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
         data-testid="deposit-outcome"
       >
         <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
+          {/* Green here too, so money received is not one colour on step 4 and another here. */}
+          <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" aria-hidden="true" />
           Deposit received: {amount}
         </h2>
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
@@ -291,7 +293,9 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
         {state.depositReceipt && (
           <p className="text-xs text-gray-700 mt-2" data-testid="deposit-receipt-no">
             Receipt <span className="font-mono text-foreground">{state.depositReceipt.receiptNo}</span>
-            {state.depositReceipt.method ? ` · paid by ${state.depositReceipt.method}` : ""}
+            {state.depositReceipt.method
+              ? ` · paid by ${formatPaymentMethod(state.depositReceipt.method)}`
+              : ""}
           </p>
         )}
       </div>

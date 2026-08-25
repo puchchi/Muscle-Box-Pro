@@ -850,6 +850,30 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
     expect(screen.getByTestId("deposit-receipt-no")).toHaveTextContent("MBP-DEP-");
   });
 
+  it("hands back the reference in full when a gym comes back for it", async () => {
+    const user = await open();
+    await signTheAgreement(user);
+    await user.click(screen.getByTestId("button-continue"));
+    await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
+
+    // Back to step 4, which is the only reason to return to it: the reference is what the
+    // gym quotes at refund time, two years from now.
+    await user.click(screen.getByTestId("rail-step-4"));
+    const receipt = await waitFor(() => screen.getByTestId("deposit-receipt"));
+
+    // Whole, not truncated behind a `title` no touch screen can open — and what the copy
+    // button hands over is the same string that is on the screen.
+    const reference = within(receipt).getByText(/^MBP-DEP-/);
+    await user.click(screen.getByTestId("button-copy-receipt-no"));
+    expect(await navigator.clipboard.readText()).toBe(reference.textContent);
+    expect(screen.getByTestId("button-copy-receipt-no")).toHaveTextContent("Copied");
+
+    // The gateway's own word for the method, put into English.
+    expect(screen.getByTestId("deposit-paid-summary")).toHaveTextContent("paid by UPI");
+    // The amount is stated once. It used to be in the heading and again in a cell below it.
+    expect(screen.getByTestId("deposit-paid")).not.toHaveTextContent("Deposit received: ₹");
+  });
+
   it("keeps the forwardable link in front of a gym that reopened the page", async () => {
     const user = await open();
     await signTheAgreement(user);

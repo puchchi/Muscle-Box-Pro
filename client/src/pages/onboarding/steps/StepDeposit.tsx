@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowUpRight,
+  Check,
   CheckCircle2,
   Clock,
+  Copy,
   Forward,
   Loader2,
-  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
@@ -20,6 +21,7 @@ import {
 } from "@/lib/depositReturn";
 import { formatInr } from "@shared/partnership/summary";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
+import { formatPaymentMethod } from "@shared/onboarding/receipt";
 import type { DepositLink, DepositReceipt } from "@shared/onboarding/types";
 import type { StepViewProps } from "../types";
 
@@ -142,7 +144,19 @@ export default function StepDeposit({
     if (status === "paid") forgetPaymentAttempt();
   }, [status]);
 
-  const polling = isPending && (phase === "confirm" || phase === "watch");
+  /**
+   * The money is ours and step 4 is still open, so the server has not finished with the
+   * payment yet — the receipt is real, the step it completes has not landed.
+   *
+   * Rendered as a wait rather than an end state, and *polled*, because otherwise this is
+   * the one paid screen with no way off it: the wizard advances when `currentStep` moves,
+   * the rail cannot select a step the server has not opened, and there is no button here
+   * that could help. Left unpolled it was a dead end on a screen where the gym has
+   * already paid.
+   */
+  const settling = status === "paid" && state.currentStep === 4;
+
+  const polling = (isPending || settling) && (phase === "confirm" || phase === "watch");
 
   useBackgroundPoll(polling, actions.pollDepositStatus, {
     ...(phase === "confirm" ? CONFIRM : WATCH),
@@ -176,7 +190,19 @@ export default function StepDeposit({
   }
 
   if (status === "paid") {
-    return <PaidPanel receipt={state.depositReceipt} amount={amount} email={state.details.noticesEmail} />;
+    return (
+      <PaidPanel
+        receipt={state.depositReceipt}
+        amount={amount}
+        email={state.details.noticesEmail}
+        paidAt={state.timestamps.depositPaidAt}
+        settling={settling}
+        // `phase` rather than `polling`: it is null for the first render, and a live region
+        // that opens on "it hasn't opened yet" and corrects itself a tick later announces
+        // the pessimistic reading first.
+        watching={phase !== "stopped"}
+      />
+    );
   }
 
   return (
@@ -199,8 +225,10 @@ export default function StepDeposit({
       <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6" data-testid="deposit-amount">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
+            {/* "Security deposit" and "refundable" are both already in the page heading
+                and its blurb, a few centimetres above this. */}
             <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Refundable security deposit
+              Amount to pay
             </h2>
             <p className="text-3xl font-black text-foreground mt-1 tracking-tight">{amount}</p>
           </div>
@@ -214,8 +242,7 @@ export default function StepDeposit({
         </div>
 
         <p className="text-sm text-gray-700 leading-relaxed mt-3">
-          One payment, held for the whole term. Not a fee or rent, and not part-payment for the
-          machine.
+          One payment. Not a fee or rent, and not part-payment for the machine.
         </p>
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
           Refunded within 30 days of the machine being collected, less anything owing under the
@@ -371,10 +398,18 @@ const STATUS_LABEL: Record<string, string> = {
 /**
  * The receipt.
  *
- * Reached by revisiting a completed step 4 — on the live path, confirmation advances
- * the wizard straight to step 5, which says the same thing at the top. Kept because a
- * gym looking for its deposit reference will look here, and the record is the only
- * reason to come back to this step at all.
+ * Two ways here. Mostly a gym revisiting a completed step 4 — on the live path,
+ * confirmation advances the wizard straight to step 5, which says the same thing at the
+ * top. Kept because a gym looking for its deposit reference will look here, and the
+ * record is the only reason to come back to this step at all. The other is `settling`:
+ * paid, step 4 still open, waiting for the server to finish (see above).
+ *
+ * **The reference is the point of the screen, so it is built like it.** It used to be one
+ * of four equal cells in a 2×2 grid — an 11px label and a truncated value, tied for
+ * prominence with the word "card" — which put the one value a gym will come back for two
+ * years from now in the least prominent shape available, and put it there twice over on a
+ * phone by cutting it off. It is now a surface of its own with a copy button, and the
+ * amount, method and date are one sentence instead of three cells.
  *
  * It says a receipt is emailed and stops there. That word is now the settled position
  * rather than a hedge: a refundable deposit is not consideration for a supply under
@@ -386,64 +421,149 @@ function PaidPanel({
   receipt,
   amount,
   email,
+  paidAt,
+  settling,
+  watching,
 }: {
   receipt: DepositReceipt | null;
   amount: string;
   email: string;
+  paidAt: string | null;
+  settling: boolean;
+  /** Still polling. False once the poll has run out, which changes what we can promise. */
+  watching: boolean;
 }) {
+  const when = receipt?.paidAt ?? paidAt;
+  const paidLine = [
+    receipt ? formatInr(receipt.amountPaise / 100) : amount,
+    receipt?.method ? `paid by ${formatPaymentMethod(receipt.method)}` : "paid",
+    when ? `on ${formatAgreementDate(when)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
+    /*
+      A white card like every other card in the wizard, with the green confined to the tick.
+      A tinted panel was tried both ways and neither works at this size: the brand tint is
+      the same orange as every unpaid state on the screen, and a green field is a second hue
+      competing with an orange rail and an orange logo directly above it. One green glyph is
+      enough to say "received" — the heading says it in words anyway.
+    */
     <section
-      className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5"
+      className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
       data-testid="deposit-paid"
     >
-      <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-        <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" aria-hidden="true" />
-        Deposit received: {amount}
-      </h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1">
-        A receipt is on its way to <strong className="text-foreground">{email}</strong> and stays in
-        your dashboard under Deposit. Refundable within 30 days of the machine being collected, less
-        anything owing.
-      </p>
+      <div className="flex items-start gap-2.5">
+        <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="min-w-0">
+          <h2 className="text-base font-bold text-foreground">Deposit received</h2>
+          <p
+            className="text-lg sm:text-xl font-black text-foreground tracking-tight mt-0.5"
+            data-testid="deposit-paid-summary"
+          >
+            {paidLine}
+          </p>
+        </div>
+      </div>
 
       {receipt && (
-        <dl className="mt-4 pt-3 border-t border-primary/25 grid grid-cols-2 gap-3" data-testid="deposit-receipt">
-          <Fact label="Receipt" value={receipt.receiptNo} mono />
-          <Fact label="Paid" value={formatAgreementDate(receipt.paidAt)} />
-          <Fact label="Amount" value={formatInr(receipt.amountPaise / 100)} />
-          <Fact label="Method" value={receipt.method} />
-        </dl>
+        <div
+          className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3 sm:p-4"
+          data-testid="deposit-receipt"
+        >
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            Receipt reference
+          </p>
+          <div className="flex items-start gap-2 mt-1">
+            {/*
+              `break-all`, not `truncate`. A reference is 18 characters of mono in about
+              150px of phone, and the old cell cut it off behind a `title` attribute that a
+              touch screen has no way to open — on the one value that has to be readable in
+              full, because it is what the gym quotes back to us at refund time. `pt-3`
+              centres one line against the 44px button, and survives a wrap.
+            */}
+            <code className="flex-1 min-w-0 text-sm font-mono text-foreground break-all pt-3">
+              {receipt.receiptNo}
+            </code>
+            <CopyButton value={receipt.receiptNo} />
+          </div>
+          <p className="text-xs text-gray-700 leading-relaxed mt-2">
+            Quote this when you ask us about the payment, and when the deposit is refunded at the
+            end of the term.
+          </p>
+        </div>
       )}
 
-      <p className="text-xs text-gray-700 leading-relaxed mt-3 flex items-start gap-2">
-        <Receipt className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-        <span>
-          Keep the reference. It is what we both quote when the deposit is refunded at the end of the
-          term, two years and a change of front-desk staff from now.
-        </span>
+      <p className="text-sm text-gray-700 leading-relaxed mt-4">
+        We've emailed the receipt to <strong className="text-foreground">{email}</strong>, and it
+        stays in your dashboard under Deposit. Refundable within 30 days of the machine being
+        collected, less anything owing under the agreement.
       </p>
+
+      {settling && (
+        <p
+          className="text-sm text-gray-700 leading-relaxed mt-4 pt-4 border-t border-gray-200 flex items-start gap-2"
+          role="status"
+          aria-live="polite"
+          data-testid="deposit-settling"
+        >
+          {watching ? (
+            /* Brand, not green: this one is progress, and the tick above is the outcome. */
+            <Loader2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <Clock className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          )}
+          <span>
+            {watching
+              ? "We're opening your next step. Nothing more is needed from you, and this page moves on by itself."
+              : "Your next step hasn't opened yet. Your payment is safe — reload this page to pick up from here."}
+          </span>
+        </p>
+      )}
     </section>
   );
 }
 
-function Fact({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+/**
+ * A labelled button rather than `size="icon"`: that variant is 36px, and this one is
+ * pressed on a phone by somebody copying a reference into an email to their accountant.
+ */
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+    } catch {
+      // No clipboard permission or no secure context. The reference is selectable text on
+      // screen, so this button is a convenience rather than the only way to get it out.
+    }
+  }
+
   return (
-    <div className="min-w-0">
-      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">{label}</dt>
-      {/*
-        `title` alongside the `truncate`. Two columns of this at 375px is about 150px a
-        cell, and a receipt number is the one value on the screen that has to be readable
-        in full — it is what the gym quotes back to us when the deposit is refunded two
-        years from now. Truncation with no way to recover the rest is a dead end on
-        exactly that value, and the same fix step 5 already gives the fingerprint.
-      */}
-      <dd
-        title={value}
-        className={`text-sm text-foreground mt-0.5 truncate ${mono ? "font-mono" : "font-semibold"}`}
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={copy}
+        className="min-h-11 px-3 rounded-xl text-xs font-bold flex-shrink-0 cursor-pointer"
+        data-testid="button-copy-receipt-no"
       >
-        {value}
-      </dd>
-    </div>
+        {copied ? (
+          <Check className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+        ) : (
+          <Copy className="w-4 h-4" aria-hidden="true" />
+        )}
+        {copied ? "Copied" : "Copy"}
+      </Button>
+      {/* The label change is not announced on its own, and a copy that says nothing reads
+          as a button that did nothing. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? "Receipt reference copied" : ""}
+      </span>
+    </>
   );
 }
 
