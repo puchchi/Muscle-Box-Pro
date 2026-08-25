@@ -515,8 +515,8 @@ function PaidPanel({
             <CopyButton value={receipt.receiptNo} />
           </div>
           <p className="text-xs text-gray-700 leading-relaxed mt-2">
-            Quote this when you ask us about the payment, and when the deposit is refunded at the
-            end of the term.
+            Quote this when you ask us about the payment, and when the deposit is refunded after the
+            machine is collected.
           </p>
         </div>
       )}

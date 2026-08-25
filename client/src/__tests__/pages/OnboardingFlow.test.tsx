@@ -165,6 +165,23 @@ describe("OnboardingFlow — the rail", () => {
       transform: `scaleX(${2 / STEP_META.length})`,
     });
   });
+
+  /**
+   * The rail says where the gym is, not what it may still edit.
+   *
+   * A padlock sat beside steps 1 and 2 once the agreement was signed: a fourth mark on two
+   * of six columns, for a fact those columns cannot act on and that `ReviewingBanner`
+   * states in a sentence on arrival at the step. Asserted after signing, which is the only
+   * state that ever drew it.
+   */
+  it("marks a signed step as completed and nothing more", async () => {
+    const user = await open();
+    await signTheAgreement(user);
+
+    const first = screen.getByTestId("rail-step-1");
+    expect(first).toHaveTextContent(/completed/);
+    expect(first).not.toHaveTextContent(/lock/i);
+  });
 });
 
 describe("OnboardingFlow — step 1 to step 2", () => {
@@ -964,14 +981,42 @@ describe("OnboardingFlow — the whole flow", () => {
       expect.stringMatching(/^[0-9a-f]{64}$/),
     );
     expect(screen.getByTestId("deposit-outcome")).toHaveTextContent("Deposit received");
-    // The second signature at installation (§6) is disclosed before anyone leaves.
-    expect(screen.getByTestId("what-happens-next")).toHaveTextContent("Schedule A is signed on site");
+    /*
+      One account of where the signed copy goes, in the card about the document. There were
+      two until 2026-08-25 and they disagreed: "a copy is on its way" here, and "emailed once
+      we counter-sign" in a paragraph below it.
+    */
+    expect(screen.getByTestId("signed-confirmation")).toHaveTextContent(/We'll email the/);
+    expect(screen.getByTestId("signed-confirmation")).toHaveTextContent(/same working day/);
+    expect(screen.getByTestId("signed-confirmation")).not.toHaveTextContent(/on its way/);
+    // "We'll", not "we have": no PDF is generated and `sign.ts` sends no mail.
+    expect(screen.getByTestId("signed-confirmation")).not.toHaveTextContent(/we('ve| have) (sent|emailed)/i);
+    // §5.8's timing, the same words step 4 uses. This card said "at the end of the term",
+    // which omits the condition the refund actually turns on.
+    expect(screen.getByTestId("deposit-outcome")).toHaveTextContent(
+      /within 30 days of the machine being collected/,
+    );
+    // The second signature at installation (§6) is disclosed before anyone leaves, and with
+    // it the fact that decides when the 24 months start.
+    const next = screen.getByTestId("what-happens-next");
+    expect(next).toHaveTextContent("You sign Schedule A on site");
+    expect(next).toHaveTextContent(/term runs from that day, not from today/);
+    // Each milestone leads with its timing. This was inside the sentences, where a reader
+    // asking only "when do I hear from you" could not find it.
+    expect(next).toHaveTextContent("Within 2 working days");
+    expect(next).toHaveTextContent("On installation day");
 
     // A short password is caught in the browser: no round trip, and the step does not move.
     await user.type(screen.getByTestId("input-portal-password"), "short");
     await user.click(screen.getByTestId("button-continue"));
     expect(screen.getByTestId("error-portal-password")).toHaveTextContent("at least 8 characters");
     expect(screen.getByTestId("input-portal-password")).toBeInTheDocument();
+
+    // Typed once, with no confirm box and no self-service reset behind it, so it has to be
+    // possible to check: a typo means a person at our end minting a set-password link.
+    expect(screen.getByTestId("input-portal-password")).toHaveAttribute("type", "password");
+    await user.click(screen.getByTestId("button-reveal-password"));
+    expect(screen.getByTestId("input-portal-password")).toHaveAttribute("type", "text");
 
     await user.clear(screen.getByTestId("input-portal-password"));
     await user.type(screen.getByTestId("input-portal-password"), "a-long-enough-password");

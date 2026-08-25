@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Lock } from "lucide-react";
+import { Check } from "lucide-react";
 import { STEP_META } from "@shared/onboarding/steps";
 import type { OnboardingStep } from "@shared/onboarding/types";
 
@@ -25,14 +25,20 @@ import type { OnboardingStep } from "@shared/onboarding/types";
  *
  * A completed step is a button; a future step is not. Nothing here can move the
  * gym forward — the rail reflects server state, it does not drive it.
+ *
+ * **Three states, and no fourth.** Done, on screen, not open yet. A padlock used to sit
+ * beside steps 1 and 2 once the agreement was signed, which put a fourth mark on two of
+ * six columns for a fact the rail cannot act on: those steps are still viewable, the lock
+ * is about editing, and a gym reading the rail is asking where it is rather than what it
+ * may type. It also made two columns taller than the other four. `ReviewingBanner` says
+ * "Locked after signing" in a sentence, with what to do about it, on arrival at the step
+ * it applies to — which is where the answer is worth having.
  */
 
 type Props = {
   currentStep: OnboardingStep;
   viewStep: OnboardingStep;
   completedSteps: OnboardingStep[];
-  /** Signed: steps 1 and 2 are viewable but locked. */
-  isSigned: boolean;
   canView(step: OnboardingStep): boolean;
   onSelect(step: OnboardingStep): void;
 };
@@ -45,7 +51,6 @@ export default function ProgressRail({
   currentStep,
   viewStep,
   completedSteps,
-  isSigned,
   canView,
   onSelect,
 }: Props) {
@@ -122,7 +127,6 @@ export default function ProgressRail({
           {STEP_META.map((meta) => {
             const isDone = completedSteps.includes(meta.step);
             const isViewing = meta.step === viewStep;
-            const locked = isSigned && (meta.step === 1 || meta.step === 2);
             const selectable = canView(meta.step) && !isViewing;
 
             return (
@@ -151,7 +155,6 @@ export default function ProgressRail({
                   </span>
                   <span className="sr-only">
                     {meta.shortTitle}, {stateLabel(meta.step)}
-                    {locked ? ", locked after signing" : ""}
                   </span>
                 </button>
               </li>
@@ -177,7 +180,6 @@ export default function ProgressRail({
         {STEP_META.map((meta) => {
           const isDone = completedSteps.includes(meta.step);
           const isViewing = meta.step === viewStep;
-          const locked = isSigned && (meta.step === 1 || meta.step === 2);
           const selectable = canView(meta.step) && !isViewing;
 
           return (
@@ -194,31 +196,34 @@ export default function ProgressRail({
                   selectable ? "cursor-pointer" : "cursor-default",
                 ].join(" ")}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className={[
-                      "w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-colors",
-                      isDone
-                        ? "bg-primary text-white"
-                        : isViewing
-                          ? "bg-primary/10 text-primary-ink ring-2 ring-primary"
-                          : // gray-400 on gray-100 is 2.2:1 — a number nobody with
-                            // average eyesight in average light can read.
-                            "bg-gray-100 text-gray-500",
-                    ].join(" ")}
-                  >
-                    {isDone ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : meta.step}
-                  </span>
-                  {locked && <Lock className="w-3 h-3 text-gray-600 flex-shrink-0" aria-hidden="true" />}
-                </div>
+                <span
+                  className={[
+                    "w-6 h-6 mb-2 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-colors",
+                    isDone
+                      ? "bg-primary text-white"
+                      : isViewing
+                        ? "bg-primary/10 text-primary-ink ring-2 ring-primary"
+                        : // gray-400 on gray-100 is 2.2:1 — a number nobody with
+                          // average eyesight in average light can read.
+                          "bg-gray-100 text-gray-500",
+                  ].join(" ")}
+                >
+                  {isDone ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : meta.step}
+                </span>
+                {/*
+                  Three weights for three states. Done was `text-muted-foreground`, which
+                  this theme resolves to 44% grey against `gray-500`'s 46% — the same colour
+                  as a step that cannot be opened, so the label tier said nothing and the
+                  circle carried the whole rail on its own.
+                */}
                 <p
                   className={[
-                    "text-xs font-semibold truncate",
+                    "text-xs truncate",
                     isViewing
-                      ? "text-foreground"
+                      ? "text-foreground font-bold"
                       : isDone
-                        ? "text-muted-foreground group-hover:text-foreground transition-colors"
-                        : "text-gray-500",
+                        ? "text-gray-700 font-semibold group-hover:text-foreground transition-colors"
+                        : "text-gray-500 font-medium",
                   ].join(" ")}
                 >
                   {meta.shortTitle}
@@ -226,7 +231,6 @@ export default function ProgressRail({
                 <span className="sr-only">
                   {", "}
                   {stateLabel(meta.step)}
-                  {locked ? ", locked after signing" : ""}
                 </span>
               </button>
             </li>

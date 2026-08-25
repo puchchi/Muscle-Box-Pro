@@ -2689,3 +2689,212 @@ content on a screen that has deliberately been cut twice (§28, §29).
 
 `npx tsc --noEmit` clean. **56 test files, 1,045 tests passing** — the same count as §29; the rail
 test moved rather than multiplied.
+
+## 31. The last screen, and two places it disagreed with itself (2026-08-25)
+
+> review and improve content and design of this
+
+Step 5 with the deposit paid: the signed card, the receipt, the password field, and what happens
+next. Four cards and a floating paragraph, and the review found two content faults rather than
+layout ones. Both were the same shape: a sentence that had drifted out of step with another
+sentence a screen away, because they live in different files.
+
+### When the deposit comes back
+
+The wizard said it three ways.
+
+| Where | What it said |
+| --- | --- |
+| Step 4, unpaid card | Refunded within 30 days of the machine being collected |
+| Step 4, receipt panel | Refunded at the end of the term |
+| Step 5, deposit card | Refundable at the end of the term |
+
+Clause 5.8 is the first one: *"After termination and return of the Machine, MuscleBoxPro shall
+settle all outstanding amounts and refund the remaining security deposit, if any, within 30
+days."* The refund turns on the machine coming back, not on a date in the calendar — a gym whose
+term ended last month and whose machine is still bolted to its floor has not started the clock.
+"At the end of the term" reads as a promise we would then have to walk back, on the one figure a
+gym is most likely to remember. Both instances now say what 5.8 says.
+
+This is not §28 being reversed. §28 removed a restatement of what the deposit can be *adjusted
+against* — clause numbers a gym cannot check from a wizard. When the money comes back is a
+different fact and it stays.
+
+### One account of the signed copy
+
+The signed card said *"A copy is on its way to <email>."* A paragraph immediately below it, outside
+any card, said *"Your countersigned PDF is generated and emailed once we counter-sign, usually the
+same working day."* Read in order, the second sentence takes the first one back: the copy is not on
+its way, it is waiting on us to sign it. The two were written for different jobs — one to name the
+notices address, one to be honest that build items 8 and 9 do not exist yet — and neither knew
+about the other.
+
+Merged into the card and then cut to two sentences: when the PDF arrives, and where it also lives.
+The first merge kept a third sentence naming the notices address, which went the same day for being
+a third thing to read on a screen whose only job is to get a password typed. Still no download
+button, for the reason the old paragraph gave: a "Download" that 404s is worse than a sentence
+saying "emailed".
+
+**The tense is load-bearing.** "We have sent the agreement PDF" was asked for and is not true:
+`grep` finds no PDF generation anywhere in the backend, and `sign.ts` is the one handler in that
+service that imports no mailer, so signing sends nothing. SES itself is live — the invite, the
+set-password link and the deposit receipt are all real mail, which is why the receipt card beside
+this one may claim the past tense and this one may not. A test asserts the card never says "we've
+sent" or "we have emailed"; when build items 8 and 9 land, that assertion is the thing to delete.
+
+The design half of that change is that the page loses its only unboxed element. Everything else on
+step 5 is a bordered card, so a bare icon and paragraph between two of them read as a stray note
+rather than as part of the record.
+
+### Version and fingerprint, next to each other
+
+`grid grid-cols-2` inside a `max-w-3xl` card put `2.3` at the left edge and the fingerprint's label
+at the halfway mark, with about 400px of nothing between a three-character value and its neighbour
+— the same orphaning §29 fixed in the deposit header, from the same cause. Now `flex flex-wrap
+gap-x-10`, so the two pairs sit together and wrap on a phone instead of holding a column open.
+`truncate` came off the fingerprint at the same time: it is deliberately sliced to twelve
+characters, so it never had anything to truncate, and the full hash stays in the `title` for a
+mouse and in the PDF for everyone.
+
+### The password can be looked at
+
+One field, no confirmation box, and `type="password"`. What is behind a typo in it is not a reset
+email: there is no transactional sender wired up, so
+[GymForgotPassword](../client/src/pages/gym/GymForgotPassword.tsx) is prose explaining that a
+person checks who you are and mints a set-password link by hand. The recovery screen asks for the
+password twice; the screen that sets it in the first place asked once and showed nothing.
+
+So a reveal toggle, 44px square and sitting on the field's own height, `aria-pressed` rather than a
+changing label. A confirm box was the alternative and is worse here: it doubles the only input on
+the screen to catch a class of error that seeing the characters catches outright.
+
+### Not done, and why
+
+The order of the blocks. The password is the only action on the screen and it is the fourth thing
+on it, which at desktop height puts it under the fold. Reordering would mean putting the deposit
+card below the action, and that card is not always a receipt — for a deferred gym it is an
+outstanding obligation, which has to be read before somebody stops reading. A conditional block
+order is a worse thing to own than a scroll. The two cuts above lift the field by a block and two
+lines instead.
+
+The design-system tool was run again and its recommendation ignored again, for the reason §29 gives:
+navy, Plus Jakarta Sans and a blue CTA are advice for a greenfield B2B dashboard, not for the sixth
+screen of a live orange flow. Its checklist is the half worth keeping, and the 44px toggle came
+from it.
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,046 tests passing.** The new assertions went into the
+existing end-to-end walk rather than into tests of their own: that the signed card names the PDF
+timing once, no longer says "on its way", and never claims to have sent anything; that the receipt
+card carries 5.8's wording; and that the password field starts masked and unmasks when the toggle is
+pressed.
+
+## 32. The rail says where you are, not what you may edit (2026-08-25)
+
+> these steps looks confusing, some has lock, while some only numbers, lets improve it
+
+Screenshotted on step 5, where the rail read: four orange ticks, two of them with a padlock
+alongside, a ringed "5", a grey "6". Four different marks across six columns for what is really
+three states.
+
+**The padlock is gone.** It appeared beside steps 1 and 2 once the agreement was signed, and it was
+answering a question the rail is not asked. A gym reads the rail to find out where it is and what it
+can go back to; the lock is about *editing*, and those two steps are still perfectly viewable, so the
+glyph marked two columns as different in a rail whose whole job is to say which one is different.
+It also made those two columns taller than the other four, which is why the row looked misaligned.
+
+Nothing is lost. `ReviewingBanner` already says "Locked after signing" in a full sentence, with what
+to do about it and a way back, on arrival at the step it applies to (§20) — the point at which the
+fact is worth having. The sr-only ", locked after signing" came off with the glyph rather than
+leaving screen reader users the only audience told in the rail. `isSigned` is no longer passed to
+`ProgressRail` at all, which is the real measure of the change: the component now depends on three
+facts instead of four.
+
+**Three states, three label weights.** The labels claimed a distinction they were not drawing.
+A completed step was `text-muted-foreground`, which this theme resolves to 44% grey, against
+`text-gray-500`'s 46% for a step that cannot be opened yet: the same colour to any eye. So the
+circle was carrying the entire rail and the labels were decoration. Now:
+
+| State | Circle | Label |
+| --- | --- | --- |
+| Done | Orange, white tick | `gray-700 font-semibold`, darkens on hover (it is a button) |
+| On screen | Orange ring, orange numeral | `foreground font-bold` |
+| Not open yet | Grey, grey numeral | `gray-500 font-medium` |
+
+### Still confusing, and not mine to rename
+
+Step 5's rail label is "Done", and step 6 comes after it. That reads as the flow ending a step early.
+It is defensible — the gym's work does end at step 5, and step 6 is us installing a machine, which
+the intro says outright — but "Done" in the middle of a rail is a strange thing to look at. The fix
+is a word in `shared/onboarding/steps.ts`, which also feeds the page heading and the invitation
+email, so it is a copy decision rather than a UI one. Worth doing; not done here.
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,046 tests passing** — one more than §30. The new one
+asserts a signed step 1 announces "completed" and nothing about a lock, because the failure mode is
+somebody restoring the padlock as a helpful hint.
+
+## 33. "What happens next" is a schedule, so it says when (2026-08-25)
+
+> lets improve what happend next
+
+The last card on step 5. Four milestones, each a numbered orange circle beside a bold title and
+two or three lines of body copy, screenshotted directly under the password form.
+
+**The numerals were the least useful thing in the card.** Order is already carried by vertical
+position and by the `ol`; a counter beside each item adds a second numbered sequence in brand
+orange a few hundred pixels below a rail of numbered circles in brand orange. `StepPartnership`
+had already recorded this exact problem when it deleted a "See step 5." pointer — "a panel of its
+own numbered 1 to 5 and a rail numbered 1 to 5, three competing sequences for one reader" — and
+step 5 was making it again in the same colour.
+
+**What a gym wants from this card is the timing, and the timing was hidden.** "We call you within
+two working days" put it in a title; "usually within two weeks of the survey" buried it mid-body;
+Schedule A had none at all. So the dot column now leads each item with it, in one prepositional
+shape four times over so it reads down the page:
+
+| when | title |
+| --- | --- |
+| Within 2 working days | We call to book the site survey |
+| Within 2 weeks of the survey | We confirm your installation date |
+| On installation day | You sign Schedule A on site |
+| In your first month | Your first shake, and your first statement |
+
+`text-primary-ink` at 11px bold uppercase, which `index.css` documents as the brand colour for
+*text* on a light surface and measures at 5.11:1 on white. The same quantity of orange as the four
+counters it replaces, spent on words rather than on numbers nobody needed.
+
+The circles became a dot and a connecting rule: `w-2 h-2` on `bg-primary`, then a `w-px` line with
+`flex-1` inside a column that stretches to the row, so it reaches the next dot whether the item
+above it runs to one line or three. Four separate badges became one continuous thing, which is
+what a run of dated events is.
+
+**Three copy fixes, of which one was a rule.** Item 2 contained an em dash ("show up on the next
+step — come back to this same link"), against the standing instruction. It has also lost the
+second half of that sentence entirely: "come back to this link any time" is a fact about *this
+page*, not about the allocation of a unit, and it now sits once under all four items above a hairline
+rule. Item 3 became active ("You sign Schedule A on site", not "Schedule A is signed on site") —
+it is the one item on the list that needs the reader to do something, and the passive voice was
+hiding who. Item 4 stopped saying "the first month-end", which wrapped as `month-` / `end` at the
+measure this card renders at, and now quotes `terms.settlementDaysAfterMonthEnd` — the same number
+step 2's timeline promises, from the same field, so the two screens cannot drift.
+
+Net effect: the card lost roughly a quarter of its words and gained the four facts it was missing.
+
+### Not done
+
+The design-system tool was not consulted for this one. Its recommendation has been ignored twice
+now for the reason §29 records, and nothing about a four-item schedule turns on a palette.
+
+Step 5's rail label is still "Done", sitting immediately before step 6 "Installation", which still
+reads as the flow ending a step early. Unchanged for the reason §32 gives: one word in
+`shared/onboarding/steps.ts` that also feeds the page heading and the invitation email.
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,046 tests passing** — the same count as §32. The
+whole-flow test's single assertion on this card grew to four: the Schedule A title in its new
+active voice, the sentence that decides when the 24 months start, and two of the four timings,
+because the timings are the part of this card a future trim would think was decoration.

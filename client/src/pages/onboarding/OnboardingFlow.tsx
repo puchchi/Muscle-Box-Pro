@@ -186,7 +186,6 @@ export default function OnboardingFlow({ token }: { token: string }) {
           currentStep={state.currentStep}
           viewStep={viewStep}
           completedSteps={state.completedSteps}
-          isSigned={state.isSigned}
           canView={canView}
           onSelect={goToStep}
         />

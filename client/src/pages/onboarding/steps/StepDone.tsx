@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, FileText, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { portalPasswordSchema } from "@shared/onboarding/schema";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
 import { formatPaymentMethod } from "@shared/onboarding/receipt";
 import { formatInr } from "@shared/partnership/summary";
+import type { OnboardingTerms } from "@shared/onboarding/types";
 import type { StepViewProps } from "../types";
 
 /**
@@ -25,6 +26,15 @@ import type { StepViewProps } from "../types";
  * signature at installation (Schedule A, §6). Saying so here costs one paragraph;
  * not saying it costs a support call per gym.
  *
+ * **That list is a schedule, so it says when.** It was four numbered circles in brand
+ * orange, sitting a few hundred pixels under a rail of numbered circles in brand orange,
+ * repeating an order that vertical position and the `ol` already carry. The numerals are
+ * now the one thing a gym reading this actually wants: the timing, which used to be
+ * buried mid-sentence ("usually within two weeks of the survey") or missing. Same amount
+ * of orange on the screen, spent on words instead of counters. `StepPartnership` keeps
+ * its numbers: that panel previews a sequence of things the gym has not done yet, this
+ * one is a calendar of things about to happen to them.
+ *
  * **Creating the password no longer redirects to the dashboard.** It used to push
  * `/gym/dashboard`, which was the end of the flow when step 5 was the last step. Step 6
  * is now where installation is tracked, and a redirect fired the moment the account
@@ -34,6 +44,7 @@ import type { StepViewProps } from "../types";
  */
 export default function StepDone({ state, readOnly, isSubmitting, actions }: StepViewProps) {
   const [password, setPassword] = useState("");
+  const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isActive = state.status === "active";
@@ -71,21 +82,15 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
               {state.details.signatoryDesignation ? `, ${state.details.signatoryDesignation}` : ""}.
             </p>
             {/*
-              One account of where the copy goes, in the card about the thing being copied. It
-              was two until 2026-08-25: this card said "a copy is on its way" and a separate
-              paragraph below said the PDF is emailed once we counter-sign, which took the first
-              one back a line later.
-
-              Still no download button, for the reason the old paragraph gave: the signature and
-              its hash are real and stored, while the countersigned PDF and its permanent home
-              are build items 9 and 8. A "Download" that 404s would be worse than this sentence.
+              "We'll", not "we have". Nothing has been sent: no PDF is generated anywhere in the
+              backend and `sign.ts` sends no mail — the countersigned copy and its permanent home
+              are build items 9 and 8. The same reason there is no download button here, and the
+              same mistake `GymForgotPassword` was rewritten to stop making.
             */}
             <p className="text-sm text-gray-700 leading-relaxed mt-2" data-testid="agreement-copy-note">
-              We counter-sign and email the PDF to{" "}
+              We'll email the countersigned PDF to{" "}
               <strong className="text-foreground">{email}</strong>, usually the same working day. It
-              will also live permanently in your dashboard under Agreement, so you never have to
-              search your inbox for it. That address is where the agreement has us serve formal
-              notices, so keep it current.
+              also stays in your dashboard under Agreement.
             </p>
           </div>
         </div>
@@ -102,8 +107,8 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
           is worse than no row.
         */}
         {state.agreement && (
-          {/* Flowed, not a two-column grid: in a `max-w-3xl` card that put "2.3" some 400px
-              from the label of the value beside it, with nothing in between. */}
+          /* Flowed, not a two-column grid: in a `max-w-3xl` card that put "2.3" some 400px
+             from the label of the value beside it, with nothing in between. */
           <dl
             className="mt-4 pt-3 border-t border-primary/25 flex flex-wrap gap-x-10 gap-y-3"
             data-testid="agreement-record"
@@ -127,7 +132,7 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
                 to verify the whole thing.
               */}
               <dd
-                className="text-sm text-foreground font-mono mt-0.5 truncate"
+                className="text-sm text-foreground font-mono mt-0.5"
                 data-testid="agreement-hash-short"
                 title={state.agreement.contentHash}
               >
@@ -137,23 +142,6 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
           </dl>
         )}
       </div>
-
-      {/*
-        Honest about what does not exist yet. The signature and its hash are real and
-        stored; the countersigned PDF and its permanent home are build items 9 and 8.
-        A "Download" button that 404s would be worse than this sentence.
-      */}
-      <p
-        className="text-sm text-gray-700 leading-relaxed flex items-start gap-2"
-        data-testid="agreement-copy-note"
-      >
-        <FileText className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-        <span>
-          Your countersigned PDF is generated and emailed once we counter-sign, usually the same
-          working day. It will also live permanently in your dashboard under Agreement, so you never
-          have to search your inbox for it.
-        </span>
-      </p>
 
       {/* ── The deposit ────────────────────────────────────────────────────── */}
       <DepositCard state={state} />
@@ -192,29 +180,57 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
                 with <strong className="text-foreground">{email}</strong>.
               </p>
             </div>
-            <input
-              id="portal-password"
-              type="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 8 characters"
-              /*
-                The hint above is part of the field's description, and the error joins it
-                when there is one — without `aria-describedby` a screen reader got the
-                label and nothing else, on the field that decides whether this gym can
-                ever log in. `role="alert"` because the message appears in response to
-                pressing the button.
-              */
-              aria-invalid={error ? true : undefined}
-              aria-describedby={
-                error ? "portal-password-hint error-portal-password" : "portal-password-hint"
-              }
-              className={`w-full h-11 rounded-xl border bg-gray-50 px-3 text-base sm:text-sm text-foreground focus:border-primary focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors ${
-                error ? "border-red-400 bg-red-50" : "border-gray-200"
-              }`}
-              data-testid="input-portal-password"
-            />
+            {/*
+              Revealable, and this field more than most. It is typed once with no confirm box,
+              and there is no self-service reset behind it: a mistyped password means a person
+              at our end mints a set-password link and someone relays it by hand, which
+              [GymForgotPassword](../../gym/GymForgotPassword.tsx) exists to explain. The
+              recovery screen has two password boxes; this one has one, so seeing it is the
+              only check available.
+            */}
+            <div className="relative">
+              <input
+                id="portal-password"
+                type={revealed ? "text" : "password"}
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="At least 8 characters"
+                /*
+                  The hint above is part of the field's description, and the error joins it
+                  when there is one — without `aria-describedby` a screen reader got the
+                  label and nothing else, on the field that decides whether this gym can
+                  ever log in. `role="alert"` because the message appears in response to
+                  pressing the button.
+                */
+                aria-invalid={error ? true : undefined}
+                aria-describedby={
+                  error ? "portal-password-hint error-portal-password" : "portal-password-hint"
+                }
+                className={`w-full h-11 rounded-xl border bg-gray-50 pl-3 pr-12 text-base sm:text-sm text-foreground focus:border-primary focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors ${
+                  error ? "border-red-400 bg-red-50" : "border-gray-200"
+                }`}
+                data-testid="input-portal-password"
+              />
+              {/* 44px square, which is the input's own height — the icon is 16px but the
+                  thing being pressed is the whole end of the field. */}
+              <button
+                type="button"
+                onClick={() => setRevealed((shown) => !shown)}
+                aria-pressed={revealed}
+                className="absolute right-0 top-0 h-11 w-11 flex items-center justify-center rounded-r-xl text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
+                data-testid="button-reveal-password"
+              >
+                <span className="sr-only">
+                  {revealed ? "Hide password" : "Show password"}
+                </span>
+                {revealed ? (
+                  <EyeOff className="w-4 h-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="w-4 h-4" aria-hidden="true" />
+                )}
+              </button>
+            </div>
             {error && (
               <p
                 id="error-portal-password"
@@ -244,30 +260,40 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
         data-testid="what-happens-next"
       >
         {/* The level every other card title on this step reads at, for the same reason as
-            step 2's panels: this one heads the list a gym reads before it closes the tab.
-            `mb-4` so the heading clears the list by more than the list's own `space-y-3`. */}
+            step 2's panels: this one heads the list a gym reads before it closes the tab. */}
         <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
           <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
           What happens next
         </h2>
-        <ol role="list" className="space-y-3">
-          {nextSteps(state.details.installationAddress, state.terms.termMonths).map(
-            (item, index) => (
-              <li key={item.title} className="flex items-start gap-3">
-                <span
-                  aria-hidden="true"
-                  className="w-6 h-6 rounded-full bg-primary/10 text-primary-ink text-xs font-bold flex items-center justify-center flex-shrink-0 tabular-nums"
-                >
-                  {index + 1}
-                </span>
-                <div className="min-w-0">
+        <ol role="list">
+          {nextSteps(state.details.installationAddress, state.terms).map((item, index, all) => {
+            const isLast = index === all.length - 1;
+            return (
+              <li key={item.title} className="flex gap-3">
+                {/* A dot and a rule, not a numeral: see the note at the top of the file
+                    before putting the counting back. The line is `flex-1` inside a column
+                    that stretches to the row, so it reaches the next dot whether the item
+                    below it runs to one line or three. */}
+                <div className="flex flex-col items-center pt-1" aria-hidden="true">
+                  <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                  {!isLast && <span className="w-px flex-1 bg-gray-200 my-1" />}
+                </div>
+                <div className={`min-w-0 ${isLast ? "" : "pb-4"}`}>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-primary-ink">
+                    {item.when}
+                  </p>
                   <p className="text-sm font-semibold text-foreground">{item.title}</p>
                   <p className="text-sm text-gray-700 leading-relaxed">{item.body}</p>
                 </div>
               </li>
-            ),
-          )}
+            );
+          })}
         </ol>
+        {/* Said once, under all four, rather than inside the second one where it was a
+            fact about this page dressed as a milestone. */}
+        <p className="text-xs text-gray-600 mt-4 pt-3 border-t border-gray-100">
+          This link stays live. Come back to it any time to see where things stand.
+        </p>
       </section>
     </div>
   );
@@ -299,8 +325,8 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
         </h2>
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
           {paidAt ? `Paid on ${formatAgreementDate(paidAt)}. ` : ""}
-          Your receipt is in your email and in your dashboard. It is refundable at the end of the
-          term, less anything owing under the agreement.
+          Receipt in your email and your dashboard. Refunded within 30 days of the machine being
+          collected, less anything owing under the agreement.
         </p>
         {/*
           The reference, here as well as on step 4, because paying advances the wizard
@@ -337,25 +363,35 @@ function DepositCard({ state }: { state: StepViewProps["state"] }) {
   );
 }
 
-/** Survey → installation → Schedule A → first shake, the middle of it tracked on step 6. */
-function nextSteps(installationAddress: string, termMonths: number) {
+/**
+ * Survey → installation → Schedule A → first shake, the middle of it tracked on step 6.
+ *
+ * `when` is the timing, in the same prepositional shape four times over so the column
+ * reads down. It used to be inside the titles and bodies, which is where a reader
+ * looking only for "when do I hear from you" could not find it.
+ */
+function nextSteps(installationAddress: string, terms: OnboardingTerms) {
   const where = installationAddress.trim() ? " at your installation address" : "";
   return [
     {
-      title: "We call you within two working days",
-      body: `To book the site survey${where}: where the machine stands, the power point, and water access.`,
+      when: "Within 2 working days",
+      title: "We call to book the site survey",
+      body: `A short visit${where} to check where the machine stands, the power point and the water access.`,
     },
     {
-      title: "We confirm an installation date",
-      body: "Usually within two weeks of the survey, once a unit is allocated to you. Which unit, and when it goes in, show up on the next step — come back to this same link any time to check.",
+      when: "Within 2 weeks of the survey",
+      title: "We confirm your installation date",
+      body: "Once a unit is allocated to you. Which unit, and the day it goes in, appear on the next step.",
     },
     {
-      title: "Schedule A is signed on site",
-      body: `A short second signature at installation: you and our technician confirm the machine's serial number, its condition and the installation date. Your ${termMonths}-month term runs from that date, not from today.`,
+      when: "On installation day",
+      title: "You sign Schedule A on site",
+      body: `A second, shorter signature: you and our technician confirm the machine's serial number, its condition and the date. Your ${terms.termMonths}-month term runs from that day, not from today.`,
     },
     {
+      when: "In your first month",
       title: "Your first shake, and your first statement",
-      body: "Sales appear in your dashboard the same day they happen. The first payout follows the first month-end.",
+      body: `Sales appear in your dashboard the same day they happen. Your first payout follows within ${terms.settlementDaysAfterMonthEnd} days of that month's end, with the statement showing how your share was worked out.`,
     },
   ];
 }
