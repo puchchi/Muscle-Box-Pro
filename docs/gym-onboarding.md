@@ -2577,3 +2577,115 @@ paying happens.
 the forwarding paragraph now assert the clause that replaced it: present on the waiting card, and
 absent on the confirming one — where anything implying a link somebody else can still pay is how one
 ₹50,000 becomes two.
+
+---
+
+## 29. The card that asks for the ₹50,000 (2026-08-25)
+
+> review and improve UI UX of this
+
+The unpaid state of step 4, screenshotted at desktop width. Three things, one of them worth more
+than the other two.
+
+**Where the button goes, said before it is pressed.** *"Pay ₹50,000 now"* replaces this tab with
+Razorpay's page (§25), and the screen gave no notice of it. Every other departure in the wizard is
+either inside the wizard or an obvious mail link; this one is a full-page navigation away from the
+document a gym has just signed, triggered by the largest number on the screen. A gym that does not
+expect it reads the Razorpay page as having lost the onboarding. One line under the divider now says
+it, and says who takes the money while it is there: *"Razorpay takes the payment. This tab moves to
+their page, and comes back here when it's done."* The `Lock` is the conventional glyph for that
+sentence, and the claim behind it is true rather than decorative — the card details never reach us.
+
+This is the one piece of copy §28 removed and this section adds back in a different shape. The
+difference is the job: the methods list told a gym what it was about to be shown anyway, and the
+forwarding paragraph argued for a feature. Neither said *the tab you are on is about to be replaced*,
+which is not an explanation of the payment but a warning about the button.
+
+**The status pill.** It sat at the far right of a `justify-between` header, which against a
+`max-w-3xl` shell is about 500px from the only words that give it a subject, with the whole width of
+the card empty in between. On a phone the same row put it beside the ₹50,000, competing with it. It
+qualifies "Amount to pay", so it now sits next to "Amount to pay" — one label unit, with the amount
+below both, and `flex-wrap` for the narrowest screens.
+
+**The buttons.** Split to opposite edges of the card they read as two unrelated controls rather than
+a choice; grouped at the end they read as secondary-then-primary, which is what the waiting card
+below already does since §28. And the pay button now spins while the link is being issued: that call
+is a round trip to Razorpay, and changed text alone on a disabled button reads as a button that
+stopped working.
+
+Line length is untouched, deliberately. These paragraphs run to about 95 characters against the card
+edge, past the 65–75 the eye tracks best, and the `PROSE` note in `OnboardingFlow.tsx` is the standing
+answer for why: for copy this short a visible ragged gap costs more than a long line does.
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,045 tests passing** — the same count as §28. No new
+test: the disclosure is an assertion on the step-4 test that already pins what this card says and
+does not say, next to the one about clause numbers, because the failure mode is somebody trimming it
+as duplicate copy.
+
+## 30. One progress bar instead of three (2026-08-25)
+
+> review and improve this design. maybe top progress bar
+
+The rail drew overall progress three times over, which is the answer to "maybe top progress bar":
+there was already one, then a second, then a third.
+
+- On a phone: a bar under the step title.
+- On a desktop: six bars, one under each label, filled or not.
+- At both widths: the circles, which already carry a tick for done, a ring for the step on screen
+  and a grey numeral for a step that is not open yet.
+
+The six were the worst of the three. A progress bar cut into pieces and spaced apart reads as less
+complete than the same fraction drawn continuously, and it sat directly under the row of circles
+that had just said the same thing. They also fixed the rail's information at "four of six segments",
+which is a coarser statement than the bar it was imitating.
+
+**Now: one bar, above both renderings.** Full bleed and unrounded, because it is an edge of the
+chrome rather than an object sitting inside it, and the rail is `sticky top-0` — so the moment the
+page scrolls, the bar is at the top of the viewport, where a browser puts one. `aria-hidden`: the
+list below it carries every state it draws, and a third announcement next to "Step 4 of 6" and six
+labelled steps is noise.
+
+The fill rule did not change. Still "done or on screen", so a gym looking back at step 1 sees the
+bar retreat to match the circles rather than sit ahead of them, and still not `completedSteps.length`,
+for the reason the note in `ProgressRail.tsx` records: that measurement disagreed with the circles
+beside it at every step. The test that pins the rule moved with the `data-testid`, from
+`mobile-progress-bar` to `onboarding-progress-bar`, and now asserts against the circles rather than
+against a row of bars that no longer exists.
+
+The phone loses about 14px of sticky chrome, on the layout with the least of it to spare. "Step 4 of
+6" and "N done" stay: they are the numeric statement, and the bar is the glanceable one. The desktop
+rail loses 12px and a row of decoration.
+
+The loading skeleton follows the rail, as it has to or the layout jumps when the token resolves: a
+bar at zero in the same place, and the per-step `h-1` placeholder is now label-shaped, because a
+step no longer has a bar of its own to stand in for.
+
+**Also, on the deposit screen.** The waiting card's row had one right-aligned button and a card's
+width of nothing beside it. It now carries the same payment-handoff line the card above it got in
+§29, which fills the row and makes the disclosure consistent: pressing "Pay deposit now" from the
+waiting state navigates this tab away exactly like pressing "Pay ₹50,000 now" does. The sentence is
+one component used by both rows rather than two copies, so they cannot end up describing the same
+handoff differently. Not shown in the unconfirmed state, where the row already holds two controls
+under a long paragraph.
+
+### Not done, and why
+
+The `ui-ux-pro-max` design-system tool was run and its recommendation ignored: dark mode OLED,
+`#0F172A` backgrounds, IBM Plex and a purple CTA. This is an established light-mode flow in an
+orange brand, six screens deep, and "avoid light backgrounds" is advice for a greenfield fintech
+dashboard. Its pre-delivery checklist is the useful half of that tool here.
+
+The lock glyphs beside steps 1 and 2 make those two rail columns taller than the other four. Left
+alone: they mean something (§20), the alternative is a lock on every column, and the unevenness is
+two 12px icons.
+
+The lower half of the page is empty at desktop height in the pending state, which is what a screen
+with two short cards and a footer pinned to the bottom looks like. Filling it would mean inventing
+content on a screen that has deliberately been cut twice (§28, §29).
+
+### Verified
+
+`npx tsc --noEmit` clean. **56 test files, 1,045 tests passing** — the same count as §29; the rail
+test moved rather than multiplied.

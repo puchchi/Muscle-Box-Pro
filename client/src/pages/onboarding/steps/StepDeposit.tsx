@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, CheckCircle2, Clock, Copy, Loader2 } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, Clock, Copy, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
 import {
@@ -215,54 +215,73 @@ export default function StepDeposit({
       )}
 
       <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6" data-testid="deposit-amount">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            {/* "Security deposit" and "refundable" are both already in the page heading
-                and its blurb, a few centimetres above this. */}
-            <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Amount to pay
-            </h2>
-            <p className="text-3xl font-black text-foreground mt-1 tracking-tight">{amount}</p>
-          </div>
+        {/*
+          The status sits with the label rather than in the far corner. Against a `max-w-3xl`
+          shell a `justify-between` header put a five-word pill 500px from the only words that
+          give it a subject, with the card's whole width of nothing between them — and on a
+          phone it competed with the amount instead. It qualifies "Amount to pay", so it reads
+          as part of it.
+        */}
+        <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+          {/* "Security deposit" and "refundable" are both already in the page heading
+              and its blurb, a few centimetres above this. */}
+          <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            Amount to pay
+          </h2>
           <span
-            className="text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1 flex-shrink-0"
+            className="text-xs font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5"
             data-testid="deposit-status"
           >
             <span className="sr-only">Deposit status: </span>
             {STATUS_LABEL[status]}
           </span>
         </div>
+        <p className="text-3xl font-black text-foreground mt-1 tracking-tight">{amount}</p>
 
         <p className="text-sm text-gray-700 leading-relaxed mt-3">
           One payment. Not a fee or rent, and not part-payment for the machine.
         </p>
-        <p className="text-sm text-gray-700 leading-relaxed mt-1">
+        <p className="text-sm text-gray-700 leading-relaxed mt-2">
           Refunded within 30 days of the machine being collected, less anything owing under the
           agreement.
         </p>
 
         {canAct && !isPending && (
-          <div className="mt-5 pt-4 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
-            {/* The clauses on what the deposit can be adjusted against were restated on this
-                screen until 2026-08-25. This is the document itself instead. */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => goToStep(3)}
-              className="min-h-11 rounded-xl text-sm font-semibold w-full sm:w-auto cursor-pointer"
-              data-testid="button-read-agreement"
-            >
-              Read the agreement
-            </Button>
-            <Button
-              type="button"
-              onClick={payNow}
-              disabled={isSubmitting}
-              className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
-              data-testid="button-continue"
-            >
-              {isSubmitting ? "Creating your link..." : `Pay ${amount} now`}
-            </Button>
+          <div className="mt-5 pt-4 border-t border-gray-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <PaymentHandoffNote />
+            {/* Grouped, and at the end, like the row in the waiting panel below. Split to
+                opposite edges of the card they read as two unrelated controls. */}
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:flex-shrink-0">
+              {/* The clauses on what the deposit can be adjusted against were restated on this
+                  screen until 2026-08-25. This is the document itself instead. */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => goToStep(3)}
+                className="min-h-11 rounded-xl text-sm font-semibold w-full sm:w-auto cursor-pointer"
+                data-testid="button-read-agreement"
+              >
+                Read the agreement
+              </Button>
+              <Button
+                type="button"
+                onClick={payNow}
+                disabled={isSubmitting}
+                className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
+                data-testid="button-continue"
+              >
+                {isSubmitting ? (
+                  <>
+                    {/* Issuing the link is a round trip to Razorpay. Changed text alone on a
+                        disabled button reads as a button that stopped working. */}
+                    <Loader2 className="animate-spin" aria-hidden="true" />
+                    Creating your link...
+                  </>
+                ) : (
+                  `Pay ${amount} now`
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </section>
@@ -296,7 +315,7 @@ export default function StepDeposit({
             {confirming
               ? "Back from Razorpay. We confirm from our own records rather than from this page, so this takes a moment."
               : unconfirmed
-                ? `Razorpay sent you back, but the ${amount} has not reached our record. If your bank shows it as gone, don't pay again — tell us and we'll trace it and send your receipt. ${
+                ? `Razorpay sent you back, but the ${amount} has not reached our record. If your bank shows it as gone, don't pay again. Tell us and we'll trace it and send your receipt. ${
                     phase === "stopped"
                       ? "This page has stopped watching; reload it to see where it stands."
                       : "We're still watching, and this page moves on by itself if it lands."
@@ -309,7 +328,17 @@ export default function StepDeposit({
           </p>
 
           {canAct && !confirming && (
-            <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+            <div
+              className={[
+                "mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4",
+                // Nothing sits opposite the buttons in the unconfirmed state, and
+                // `justify-between` on one child leaves it at the wrong edge.
+                unconfirmed ? "sm:justify-end" : "sm:justify-between",
+              ].join(" ")}
+            >
+              {/* The same handoff this button makes from the card above, said in the same
+                  words. It also stops a lone button floating in an otherwise empty row. */}
+              {!unconfirmed && <PaymentHandoffNote />}
               {/*
                 Help before a second attempt, and in that order on purpose. This state is
                 far more often a late webhook than a decline, so the button most likely to
@@ -362,6 +391,28 @@ export default function StepDeposit({
 }
 
 // ── Local pieces ────────────────────────────────────────────────────────────
+
+/**
+ * Where the button goes, said before it is pressed.
+ *
+ * Paying replaces this tab with Razorpay's page (§25), and a ₹50,000 button that silently
+ * navigates away from the wizard is the one surprise on this screen worth spending a line
+ * on. It is also who takes the money: the card details never come to us.
+ *
+ * One component for both rows that carry a pay button, so the two cannot end up describing
+ * the same handoff differently.
+ */
+function PaymentHandoffNote() {
+  return (
+    <p className="min-w-0 text-xs text-muted-foreground flex items-start gap-1.5">
+      <Lock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+      <span>
+        Razorpay takes the payment. This tab moves to their page, and comes back here when
+        it's done.
+      </span>
+    </p>
+  );
+}
 
 const STATUS_LABEL: Record<string, string> = {
   not_started: "Not paid yet",
@@ -491,7 +542,7 @@ function PaidPanel({
           <span>
             {watching
               ? "We're opening your next step. Nothing more is needed from you, and this page moves on by itself."
-              : "Your next step hasn't opened yet. Your payment is safe — reload this page to pick up from here."}
+              : "Your next step hasn't opened yet. Your payment is safe. Reload this page to pick up from here."}
           </span>
         </p>
       )}

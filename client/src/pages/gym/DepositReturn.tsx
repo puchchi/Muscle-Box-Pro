@@ -67,7 +67,7 @@ export default function DepositReturn() {
               <ShieldCheck className="w-5 h-5 text-primary" aria-hidden="true" />
             </div>
             <h1 className="text-lg font-display font-black text-foreground uppercase tracking-tight mb-2">
-              Thank you — we're confirming it
+              Thank you. We're confirming it
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Payments are confirmed from our own records rather than from this page, which takes a

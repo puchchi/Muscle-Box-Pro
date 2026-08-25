@@ -69,8 +69,23 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
               {signedAt ? `Signed on ${formatAgreementDate(signedAt)} by ` : "Signed by "}
               {state.details.signatoryName || "your signatory"}
               {state.details.signatoryDesignation ? `, ${state.details.signatoryDesignation}` : ""}.
-              A copy is on its way to <strong className="text-foreground">{email}</strong>. Keep it,
-              because that is the address the agreement has us serve formal notices to.
+            </p>
+            {/*
+              One account of where the copy goes, in the card about the thing being copied. It
+              was two until 2026-08-25: this card said "a copy is on its way" and a separate
+              paragraph below said the PDF is emailed once we counter-sign, which took the first
+              one back a line later.
+
+              Still no download button, for the reason the old paragraph gave: the signature and
+              its hash are real and stored, while the countersigned PDF and its permanent home
+              are build items 9 and 8. A "Download" that 404s would be worse than this sentence.
+            */}
+            <p className="text-sm text-gray-700 leading-relaxed mt-2" data-testid="agreement-copy-note">
+              We counter-sign and email the PDF to{" "}
+              <strong className="text-foreground">{email}</strong>, usually the same working day. It
+              will also live permanently in your dashboard under Agreement, so you never have to
+              search your inbox for it. That address is where the agreement has us serve formal
+              notices, so keep it current.
             </p>
           </div>
         </div>
@@ -87,8 +102,10 @@ export default function StepDone({ state, readOnly, isSubmitting, actions }: Ste
           is worse than no row.
         */}
         {state.agreement && (
+          {/* Flowed, not a two-column grid: in a `max-w-3xl` card that put "2.3" some 400px
+              from the label of the value beside it, with nothing in between. */}
           <dl
-            className="mt-4 pt-3 border-t border-primary/25 grid grid-cols-2 gap-3"
+            className="mt-4 pt-3 border-t border-primary/25 flex flex-wrap gap-x-10 gap-y-3"
             data-testid="agreement-record"
           >
             <div>

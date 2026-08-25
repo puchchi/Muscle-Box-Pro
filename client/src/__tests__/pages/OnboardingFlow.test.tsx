@@ -140,20 +140,19 @@ describe("OnboardingFlow — the rail", () => {
   });
 
   /**
-   * The phone's one bar and the desktop's row of them have to be the same measurement.
+   * The bar and the circles beside it have to be the same measurement.
    *
    * The bar was drawn from `completedSteps.length`, so on step 2 with step 1 behind it the
-   * desktop rail filled two while the phone filled one — and the phone is the layout where
-   * the bar is the only sense of progress there is room for. Asserted at step 1 as well as
-   * step 2, because the bug was invisible at the first step (0 done, 1 filled, both one
-   * step apart) and only opened up as the flow ran.
+   * rail marked two steps and the bar drew one. Asserted at step 1 as well as step 2,
+   * because the bug was invisible at the first step (0 done, 1 filled, both one step
+   * apart) and only opened up as the flow ran.
    *
    * The denominator comes from `STEP_META` rather than being written out, so adding a step
    * moves this test's expectation with the rail instead of failing it.
    */
-  it("fills the phone's bar by the same rule the desktop rail's bars use", async () => {
+  it("fills the progress bar by the same rule the rail's circles use", async () => {
     const user = await open();
-    expect(screen.getByTestId("mobile-progress-bar")).toHaveStyle({
+    expect(screen.getByTestId("onboarding-progress-bar")).toHaveStyle({
       transform: `scaleX(${1 / STEP_META.length})`,
     });
 
@@ -162,7 +161,7 @@ describe("OnboardingFlow — the rail", () => {
       expect(screen.getByTestId("rail-step-2")).toHaveAttribute("aria-current", "step"),
     );
     // Step 1 done and step 2 on screen: two, not one.
-    expect(screen.getByTestId("mobile-progress-bar")).toHaveStyle({
+    expect(screen.getByTestId("onboarding-progress-bar")).toHaveStyle({
       transform: `scaleX(${2 / STEP_META.length})`,
     });
   });
@@ -803,6 +802,10 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
     // them: a "§5.6" a gym cannot open from here is not a disclosure. What replaces them is
     // one click back to the document it has just signed.
     expect(panel).not.toHaveTextContent(/§\s*5/);
+    // Where the pay button goes, said before it is pressed: it replaces this tab with
+    // Razorpay's page (§25). A ₹50,000 button that navigates away unannounced is the one
+    // surprise left on this screen.
+    expect(panel).toHaveTextContent(/Razorpay takes the payment/);
     await user.click(screen.getByTestId("button-read-agreement"));
     await waitFor(() => expect(screen.getByTestId("agreement-body")).toBeInTheDocument());
   });

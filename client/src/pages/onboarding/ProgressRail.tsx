@@ -9,8 +9,15 @@ import type { OnboardingStep } from "@shared/onboarding/types";
  *
  * Two renderings rather than one responsive one: six labelled steps do not fit a
  * 390px screen at a readable size, and shrinking them to fit produces a rail
- * nobody can read. Mobile gets "Step 3 of 6" with the title, a bar, and a row of
- * numbered targets — which is the information that actually matters on a phone.
+ * nobody can read. Mobile gets "Step 3 of 6" with the title and a row of numbered
+ * targets — which is the information that actually matters on a phone.
+ *
+ * **One bar, above both of them.** Overall progress used to be drawn three times over:
+ * a bar on the phone, six bars under the desktop labels, and the circles that already
+ * say which steps are done. The six were a progress bar cut into pieces and spaced
+ * apart, which is the one shape that reads as less complete than it is. The bar now
+ * runs edge to edge above the rail, and because the rail is sticky it ends up at the
+ * top of the viewport as soon as the page scrolls.
  *
  * The mobile row is not decoration. Until it existed, going back to check what you
  * typed in step 1 was a desktop-only feature: the phone layout drew a progress bar and
@@ -45,17 +52,15 @@ export default function ProgressRail({
   const active = STEP_META.find((m) => m.step === viewStep);
 
   /**
-   * The mobile bar, filled by the same rule the desktop rail's bars use.
+   * How far the bar is filled.
    *
-   * It was `completedSteps.length / 5`, which is a different measurement from the one
-   * beside it at every width: on step 2 with step 1 done, the desktop rail draws two
-   * filled bars and the phone drew a bar at 20%. Same state, same product,
-   * two answers — and the phone's was the pessimistic one, on the layout where the bar
-   * is the *only* sense of progress there is room for.
+   * "Done or on screen", which is the same predicate as `isDone || isViewing` below, so a
+   * gym looking back at step 1 sees the bar retreat to match the circles rather than stay
+   * ahead of them. The "N done" count on the phone is the other, stricter fact, and stays.
    *
-   * "Done" and "on screen" are the same predicate as `isDone || isViewing` below, so a
-   * gym looking back at step 1 sees the bar retreat to match the rail rather than stay
-   * ahead of it. The "N done" count next to it is the other, stricter fact, and stays.
+   * Not `completedSteps.length`, which is what this was and which is a different
+   * measurement from the circles beside it: on step 2 with step 1 done the rail marks two
+   * steps and the bar drew 20%, the pessimistic answer of the two.
    */
   const filledSteps = STEP_META.filter(
     (meta) => completedSteps.includes(meta.step) || meta.step === viewStep,
@@ -78,6 +83,25 @@ export default function ProgressRail({
 
   return (
     <div className="border-b border-gray-200 bg-white">
+      {/*
+        Full bleed and unrounded: this is an edge of the chrome, not an object sitting in
+        it. `aria-hidden`, because the list below carries every state it draws and a third
+        announcement of "67%" next to "Step 4 of 6" and six labelled steps is noise.
+      */}
+      <div className="h-1 bg-gray-100" aria-hidden="true">
+        {/*
+          `scaleX` on a full-width bar rather than an animated `width`: width is a layout
+          property, so `transition-all` put a relayout in every frame of the animation and
+          ran 200ms past the range a progress tick should take. Transform stays on the
+          compositor.
+        */}
+        <div
+          className="h-full bg-primary origin-left transition-transform duration-300"
+          style={{ transform: `scaleX(${filledSteps / STEP_META.length})` }}
+          data-testid="onboarding-progress-bar"
+        />
+      </div>
+
       {/* ── Mobile ── */}
       <div className="sm:hidden px-4 py-3">
         <div className="flex items-baseline justify-between mb-2">
@@ -86,22 +110,9 @@ export default function ProgressRail({
           </p>
           <p className="text-xs text-gray-600">{completedSteps.length} done</p>
         </div>
-        <p className="text-sm font-semibold text-foreground mb-2" data-testid="mobile-step-title">
+        <p className="text-sm font-semibold text-foreground" data-testid="mobile-step-title">
           {active?.title}
         </p>
-        <div className="h-1.5 w-full rounded-full bg-gray-200 overflow-hidden">
-          {/*
-            `scaleX` on a full-width bar rather than an animated `width`: width is a
-            layout property, so the old `transition-all duration-500` put a relayout in
-            every frame of the animation and ran 200ms past the range a progress tick
-            should take. Transform stays on the compositor.
-          */}
-          <div
-            className="h-full w-full rounded-full bg-primary origin-left transition-transform duration-300"
-            style={{ transform: `scaleX(${filledSteps / STEP_META.length})` }}
-            data-testid="mobile-progress-bar"
-          />
-        </div>
 
         {/*
           The numbered targets. 44px squares with a 24px dot inside them, so the tap
@@ -217,12 +228,6 @@ export default function ProgressRail({
                   {stateLabel(meta.step)}
                   {locked ? ", locked after signing" : ""}
                 </span>
-                <div
-                  className={[
-                    "h-1 rounded-full mt-2 transition-colors",
-                    isDone || isViewing ? "bg-primary" : "bg-gray-200",
-                  ].join(" ")}
-                />
               </button>
             </li>
           );

@@ -417,14 +417,16 @@ function LoadingScreen() {
           <div className="h-8 w-32 rounded-lg bg-gray-100 animate-pulse" />
         </div>
       </div>
-      <div className="bg-white border-b border-gray-200 py-4">
-        <div className={`${SHELL} flex gap-2`} aria-hidden="true">
+      <div className="bg-white border-b border-gray-200">
+        {/* The rail's own bar, at nothing, in the same place. */}
+        <div className="h-1 bg-gray-100" aria-hidden="true" />
+        <div className={`${SHELL} flex gap-2 py-4`} aria-hidden="true">
           {/* One placeholder per step, off the same list the rail draws, so the skeleton
               cannot end up a column short of the thing it is standing in for. */}
           {STEP_META.map((meta) => (
             <div key={meta.step} className="flex-1 space-y-2">
               <div className="h-6 w-6 rounded-full bg-gray-100 animate-pulse" />
-              <div className="h-1 rounded-full bg-gray-100" />
+              <div className="h-3 w-3/4 rounded bg-gray-100 animate-pulse" />
             </div>
           ))}
         </div>
