@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock, Eye, EyeOff, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { portalPasswordSchema } from "@shared/onboarding/schema";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
@@ -178,7 +178,15 @@ export default function StepDone({
       {/* ── The account ────────────────────────────────────────────────────── */}
       {hasAccount ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
-          <h2 className="text-base font-bold text-foreground">Your dashboard is ready</h2>
+          {/* The one card on either this step or step 6 whose title had no glyph beside it,
+              while its five neighbours did. */}
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+            <LayoutDashboard
+              className="w-4 h-4 text-muted-foreground flex-shrink-0"
+              aria-hidden="true"
+            />
+            Your dashboard is ready
+          </h2>
           <p className="text-sm text-gray-700 leading-relaxed mt-1">
             Sign in at <strong className="text-foreground">{email}</strong> with the password you
             chose.

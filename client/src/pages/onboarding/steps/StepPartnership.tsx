@@ -332,7 +332,10 @@ export default function StepPartnership({
           `CalendarClock` is already spoken for by the "Initial term" card further up this
           screen, and one glyph meaning two things on one page is worse than no glyph. */}
       <Panel title="From here to your first payout" icon={Clock} testId="timeline">
-        <ol role="list" className="space-y-3">
+        {/* `space-y-4`, not 3. Each item is a title and a body that usually wraps, so at 12px
+            the gap between two items was barely wider than the gap inside one. Step 5's list
+            has the same shape and already sits at 16px, with a connector rule as well. */}
+        <ol role="list" className="space-y-4">
           {timeline(terms).map((item, index) => (
             <li key={item.title} className="flex items-start gap-3">
               <span

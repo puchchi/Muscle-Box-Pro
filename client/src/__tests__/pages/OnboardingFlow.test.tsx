@@ -1193,22 +1193,23 @@ describe("OnboardingFlow — step 6 tracks the installation", () => {
     expect(checks).toHaveTextContent("We train your staff");
   });
 
-  it("gives a gym whose address has changed somewhere to say so", async () => {
+  it("separates what the gym arranges from what we do on the day", async () => {
     await reachStepSix();
-    // Step 1 is locked once the agreement is signed, so "tell us if this has changed" was an
-    // instruction with no way to follow it.
-    expect(screen.getByTestId("link-address-changed")).toHaveAttribute(
-      "href",
-      expect.stringContaining("mailto:"),
-    );
+    // Both preparations, out of the body copy they were a sentence of: a technician arriving
+    // to find nobody who can sign is a wasted visit, and that was the line a reader skipped.
+    const prep = screen.getByTestId("installation-prep");
+    expect(prep).toHaveTextContent("two hours");
+    expect(prep).toHaveTextContent("sign for the gym");
+    // The numbered list stays a description of our procedure. A preparation numbered among
+    // the things a technician does reads as ours to do.
+    const procedure = screen.getByTestId("installation-checks").querySelector("ol");
+    expect(procedure).not.toHaveTextContent("two hours");
   });
 
-  it("offers a way to read Schedule A rather than paraphrasing it and stopping there", async () => {
-    const user = await reachStepSix();
+  it("calls the certificate by its name rather than paraphrasing it", async () => {
+    await reachStepSix();
     expect(screen.getByTestId("installation-checks")).toHaveTextContent(
       /sign the Installation Certificate/,
     );
-    await user.click(screen.getByTestId("button-open-agreement"));
-    expect(screen.getByTestId("section-Schedule A")).toBeInTheDocument();
   });
 });

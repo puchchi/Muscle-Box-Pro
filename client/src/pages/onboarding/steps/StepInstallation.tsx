@@ -6,9 +6,11 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
-  Mail,
+  Hourglass,
+  LayoutDashboard,
   MapPin,
   PackageSearch,
+  UserCheck,
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -121,23 +123,10 @@ export default function StepInstallation({ token, state, goToStep }: StepViewPro
             From the details you gave us at step 1. Moving the machine anywhere else needs our
             written approval first (§21), so tell us before the survey if this address has changed.
           </p>
-          {/*
-            Step 1 is read-only once the agreement is signed (§32), so this card asked a gym to
-            act and named no way of doing it. The address is on a signed agreement by the time
-            anyone reads this, which makes changing it a conversation rather than a form.
-          */}
-          <a
-            href="mailto:contact@muscleboxpro.com?subject=Installation%20address"
-            className="inline-flex items-center gap-1.5 min-h-11 text-xs font-semibold text-primary-ink hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
-            data-testid="link-address-changed"
-          >
-            <Mail className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-            The address has changed
-          </a>
         </section>
       )}
 
-      <ChecksCard termMonths={state.terms.termMonths} onOpenAgreement={() => goToStep(3)} />
+      <ChecksCard termMonths={state.terms.termMonths} />
 
       {state.depositStatus !== "paid" && (
         <section
@@ -172,7 +161,13 @@ export default function StepInstallation({ token, state, goToStep }: StepViewPro
           className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
           data-testid="installation-dashboard"
         >
-          <h2 className="text-base font-bold text-foreground">Your dashboard is ready</h2>
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+            <LayoutDashboard
+              className="w-4 h-4 text-muted-foreground flex-shrink-0"
+              aria-hidden="true"
+            />
+            Your dashboard is ready
+          </h2>
           <p className="text-sm text-gray-700 leading-relaxed mt-1">
             Sign in with{" "}
             <strong className="text-foreground">{state.details.noticesEmail || "your email"}</strong>{" "}
@@ -295,6 +290,12 @@ function StatusCard({
  * present for: someone has to be there with authority to sign, and a technician arriving
  * to find the duty manager alone is a wasted visit for both of us.
  *
+ * **What the gym has to arrange is not in the numbered list.** The two preparations were one
+ * sentence under the heading, set exactly like the body copy either side of it, which put the
+ * only thing on this step a gym must do in advance in the one position a reader skims — and the
+ * cost of missing it is the wasted visit above. They are now a panel: what you arrange, then
+ * what happens. The list below stays a description of our procedure, which is what it is.
+ *
  * **Every line says whose move it is**, the same correction `StepPartnership`'s timeline
  * already carries and for the same reason. Six sentences of even weight left a gym to work
  * out which of them needed anything from it, and two of the six do: the serial-number check,
@@ -305,13 +306,7 @@ function StatusCard({
  * standing at the machine have some use for "we're at four of six". Step 5's list was a
  * calendar of separate weeks, where the counting said nothing the dates did not.
  */
-function ChecksCard({
-  termMonths,
-  onOpenAgreement,
-}: {
-  termMonths: number;
-  onOpenAgreement(): void;
-}) {
+function ChecksCard({ termMonths }: { termMonths: number }) {
   return (
     <section
       className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
@@ -321,10 +316,28 @@ function ChecksCard({
         <ClipboardCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
         What happens on the day
       </h2>
-      <p className="text-sm text-gray-700 leading-relaxed mt-1">
-        Allow about two hours, and have someone there who can sign for the gym.
-      </p>
-      <ol role="list" className="mt-4 space-y-3">
+      <div
+        className="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5"
+        data-testid="installation-prep"
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Before we arrive
+        </p>
+        <ul role="list" className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <li className="flex items-start gap-2 text-sm text-foreground leading-relaxed">
+            {/* `Hourglass`, not `Clock`: this card's own status heading already uses
+                `CalendarClock` for a date, and a duration two inches below it wants a glyph
+                nobody can read as the same thing. */}
+            <Hourglass className="w-4 h-4 text-primary-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <span>Set aside about two hours</span>
+          </li>
+          <li className="flex items-start gap-2 text-sm text-foreground leading-relaxed">
+            <UserCheck className="w-4 h-4 text-primary-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <span>Have someone on site who can sign for the gym</span>
+          </li>
+        </ul>
+      </div>
+      <ol role="list" className="mt-4 space-y-4">
         {onTheDay(termMonths).map((item, index) => (
           <li key={item.title} className="flex items-start gap-3">
             <span
@@ -340,19 +353,6 @@ function ChecksCard({
           </li>
         ))}
       </ol>
-      <p className="text-xs text-gray-700 leading-relaxed mt-4 pt-3 border-t border-gray-200">
-        That certificate is Schedule A of your agreement. Signing it is a second signature,
-        separate from the one you have already given.{" "}
-        <button
-          type="button"
-          onClick={onOpenAgreement}
-          className="font-semibold text-primary-ink hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
-          data-testid="button-open-agreement"
-        >
-          Read Schedule A
-        </button>
-        .
-      </p>
     </section>
   );
 }

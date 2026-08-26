@@ -3323,3 +3323,84 @@ backwards. Worth revisiting as a pair rather than one at a time.
 (`OnboardingFlow.test.tsx`: the two items that need the gym lead with "You"; a gym whose address has
 changed has somewhere to say so). The Schedule A test's `/sign the Installation Certificate/` still
 holds: the certificate keeps its proper name, in item 6's body rather than its title.
+
+---
+
+## 38. The preparation stopped looking like preamble (2026-08-26)
+
+A second pass over the same card, from "review and improve UI UX of this" against a wide-viewport
+screenshot of §37's result.
+
+### The one thing the gym must arrange was set as body copy
+
+"Allow about two hours, and have someone there who can sign for the gym" sat directly under the
+heading in `text-sm text-gray-700`, identical to the six bodies below it and to every other
+paragraph on the step. Step 6 asks the gym for nothing else. That sentence is the whole of its
+preparation, and `ChecksCard`'s own docstring already says what missing it costs: "a technician
+arriving to find the duty manager alone is a wasted visit for both of us". It was rendered in the
+one position and the one weight a reader skims.
+
+It is now a panel above the list — the flow's existing inset idiom
+(`rounded-xl border-gray-200 bg-gray-50 px-4 py-3.5`, as used by `SignPanel`'s "Signing as" and
+`AgreementReader`'s callouts), with the eyebrow "Before we arrive" and the two preparations as
+separate items: "Set aside about two hours", "Have someone on site who can sign for the gym". The
+split is the point. What you arrange, then what happens. The numbered list stays a description of
+our procedure, which is what it is, and a test now asserts the preparations are not inside it: a
+preparation numbered among the things a technician does reads as ours to do.
+
+`Hourglass` for the duration, not `Clock`. This card's status heading two inches above it is
+`CalendarClock`, and `StepPartnership` already records the rule being followed here — one glyph
+meaning two things on one page is worse than no glyph.
+
+### `space-y-3` was tighter between items than inside one
+
+`ChecksCard` and `StepPartnership`'s timeline share a component shape: numbered circle, semibold
+title, wrapping body. At `space-y-3` the gap between two items is 12px while the line spacing inside
+a body is about 20px, so once §37 gave every item a title and a body that usually wraps, the
+grouping inverted — "are part of it. / We train your staff" read as one block. Both are now
+`space-y-4`. Step 5's list has the same shape, already sits at 16px, and has a connector rule doing
+the grouping as well, which is what settled the value.
+
+### "Your dashboard is ready" had no glyph
+
+The only card on either step 5 or step 6 whose title did not, against five neighbours that did
+(`CalendarClock`, `PackageSearch`, `MapPin`, `ClipboardCheck`, `Wallet`, `CheckCircle2`, `Clock`,
+`ShieldCheck`). `LayoutDashboard` in both files, unused elsewhere in the flow.
+
+### Not done: the line length
+
+The bodies wrap at roughly 95 characters, past the 65–75 the eye tracks best, and this is the second
+review to notice it. It is not an oversight. `OnboardingFlow.tsx` documents `SHELL` as the prose
+measure and records that every paragraph in the flow used to carry `max-w-[56ch]`: against a 768px
+shell it stopped a third short of the visible edge, the bold labels never had the cap so headings ran
+wider than the sentences under them, and five or six of those read as a narrow strip pinned left. The
+uncapped measure is the deliberate trade, on the premise that the copy is short — one to three lines
+under a heading that says what it is.
+
+Worth writing down that §37 pushed against that premise: two-line bodies are now the common case in
+this card where single sentences were. It still holds, and the fix if it stops holding is item
+spacing, not a per-paragraph cap. `AgreementReader`'s `PROSE` at `56ch` remains the only exception,
+because that document is read continuously rather than skimmed in cards.
+
+### Verified
+
+`npx tsc --noEmit` clean. `npx vitest run`: **56 files, 1,053 tests passing** — one new
+(`OnboardingFlow.test.tsx`: the preparations are in their own panel and not among the numbered
+steps).
+
+### Both reverted, same day
+
+Removed at the user's request: the "The address has changed" `mailto` on the address card (§37),
+and the closing note on `ChecksCard` — "That certificate is Schedule A of your agreement. Signing
+it is a second signature, separate from the one you have already given. Read Schedule A." The
+address card keeps the sentence asking the gym to tell us before the survey; `ChecksCard` now ends
+with the sixth numbered item, and `onOpenAgreement` is gone from its props.
+
+Two tests went with them: "gives a gym whose address has changed somewhere to say so", and the
+click-through half of the Schedule A test. What survives of the latter is the assertion that item 6
+calls the document by its name, now as "calls the certificate by its name rather than paraphrasing
+it". **56 files, 1,052 tests passing**, `npx tsc --noEmit` clean.
+
+Worth knowing if either comes back: the `mailto` existed because step 1 is read-only after signing
+(§32), so the sentence above it asks for something the flow gives no way to do. That gap is open
+again by choice.
