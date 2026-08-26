@@ -401,7 +401,11 @@ describe("OnboardingFlow — step 2 states the restrictions", () => {
     expect(screen.getByTestId("machine-model")).toHaveTextContent("MuscleBoxPro MBP-1");
     // Spelled out rather than "76×60×180", because the question is whether it fits.
     expect(screen.getByTestId("machine-panel")).toHaveTextContent("180 cm tall");
-    expect(screen.getByTestId("what-we-need")).toBeInTheDocument();
+    const needed = screen.getByTestId("what-we-need");
+    expect(needed).toHaveTextContent("A standard power point");
+    // The largest of the four, and the one that used to be a hand-written `li` outside the
+    // list it belongs to.
+    expect(needed).toHaveTextContent("refundable deposit of ₹50,000");
     // The survey is on the timeline, and the timeline says whose move each step is — two
     // of the five are the gym's, which is the question a reader brings to this list.
     const timeline = screen.getByTestId("timeline");
@@ -1008,12 +1012,13 @@ describe("OnboardingFlow — the whole flow", () => {
     expect(next).toHaveTextContent("On installation day");
 
     // A short password is caught in the browser: no round trip, and the step does not move.
-    // Twelve, which is `MIN_PASSWORD_LENGTH` in the backend's `domain/password.ts`. This form
-    // said 8 while the server said 12, so a short password reached the API and came back as
-    // "Please check the highlighted fields." with nothing on the screen highlighted.
+    // Eight, which is `MIN_PASSWORD_LENGTH` in the backend's `domain/password.ts`. The number
+    // here has to be that number: when the form said 8 and the server said 12, a short password
+    // reached the API and came back as "Please check the highlighted fields." with nothing on
+    // the screen highlighted.
     await user.type(screen.getByTestId("input-portal-password"), "short");
     await user.click(screen.getByTestId("button-continue"));
-    expect(screen.getByTestId("error-portal-password")).toHaveTextContent("at least 12 characters");
+    expect(screen.getByTestId("error-portal-password")).toHaveTextContent("at least 8 characters");
     expect(screen.getByTestId("input-portal-password")).toBeInTheDocument();
 
     // Typed once, with no confirm box and no self-service reset behind it, so it has to be

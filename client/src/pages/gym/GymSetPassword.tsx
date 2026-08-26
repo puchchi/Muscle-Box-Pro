@@ -186,7 +186,7 @@ export default function GymSetPassword({ handle }: { handle: string }) {
                     id="new-password"
                     type="password"
                     autoComplete="new-password"
-                    placeholder="At least 12 characters"
+                    placeholder="At least 8 characters"
                     className="bg-gray-50 border-gray-200 pl-10 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}

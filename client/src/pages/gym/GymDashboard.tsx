@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -150,24 +150,29 @@ function formatIstDate(isoTimestamp: string): string {
 
 export default function GymDashboard() {
   const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
-  const [isChecking, setIsChecking] = useState(true);
+
+  /**
+   * Who is signed in, through the cache rather than fetched on arrival.
+   *
+   * Signing in already answered this, and `GymLogin` writes the answer here before it
+   * navigates — so coming from the form the portal renders on the first frame and the
+   * figures request starts immediately, instead of a full-page wait for a round trip that
+   * repeats what the login response just said. Two waits, one after the other, for one
+   * click.
+   *
+   * A cold entry — a bookmark, a refresh, a link from an email — has nothing cached, and
+   * then this is the guard it always was.
+   */
+  const { data: session, isPending: isCheckingSession } = useQuery({
+    queryKey: GYM_SESSION_QUERY_KEY,
+    queryFn: fetchGymSession,
+  });
+  const email = session?.email ?? null;
+  const signedOut = !isCheckingSession && !session;
 
   useEffect(() => {
-    let cancelled = false;
-    fetchGymSession().then((session) => {
-      if (cancelled) return;
-      if (!session) {
-        router.replace("/gym/login");
-        return;
-      }
-      setEmail(session.email);
-      setIsChecking(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+    if (signedOut) router.replace("/gym/login");
+  }, [signedOut, router]);
 
   async function handleSignOut() {
     // The call goes first and its result is not checked: only the server can expire an
@@ -193,7 +198,7 @@ export default function GymDashboard() {
     queryFn: fetchGymPortalSnapshot,
     // Not until we know there is a session. Otherwise every unauthenticated visit
     // fires a reporting call on its way to the login redirect.
-    enabled: !isChecking,
+    enabled: session != null,
     // A rejected session is not a transient failure, so retrying it three times only
     // delays the redirect below by a few seconds of backoff while the gym reads
     // "we can't show your figures" about something that is really "sign in again".
@@ -210,10 +215,13 @@ export default function GymDashboard() {
   }, [sessionGone, router]);
 
   // No chrome here on purpose: there is no session yet, so there is no email to show
-  // and no meaningful Sign out. `sessionGone` shares this branch because the redirect it
-  // triggers has not landed yet, and the chrome would otherwise flash a signed-in header
-  // belonging to a session that has already ended.
-  if (isChecking || sessionGone) {
+  // and no meaningful Sign out. `sessionGone` and `signedOut` share this branch because the
+  // redirect they trigger has not landed yet, and the chrome would otherwise flash a
+  // signed-in header belonging to nobody.
+  //
+  // Only a cold entry reaches this. Arriving from the login form, the session is already
+  // in the cache and the first thing on screen is the portal itself.
+  if (isCheckingSession || signedOut || sessionGone) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center text-muted-foreground">
         Loading your portal...

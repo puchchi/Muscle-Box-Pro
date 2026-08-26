@@ -37,8 +37,12 @@ vi.mock("@/lib/gymSession", () => ({
   fetchGymSession: mockFetchSession,
 }));
 
+const { mockSetQueryData } = vi.hoisted(() => ({ mockSetQueryData: vi.fn() }));
 vi.mock("@/lib/queryClient", () => ({
-  queryClient: { invalidateQueries: vi.fn().mockResolvedValue(undefined) },
+  queryClient: {
+    invalidateQueries: vi.fn().mockResolvedValue(undefined),
+    setQueryData: mockSetQueryData,
+  },
 }));
 
 import GymLogin from "@/pages/gym/GymLogin";
@@ -113,6 +117,62 @@ describe("GymLogin", () => {
     });
   });
 
+  /*
+    The login response *is* the session, and the dashboard reads it from this cache. It used
+    to be invalidated instead, which threw away the answer the request had just paid for and
+    left the gym on "Loading your portal..." while the same question was asked again.
+  */
+  it("hands the session it just received to the dashboard", async () => {
+    const session = { email: "owner@yourgym.com", gymId: "gym_1", role: "owner", gymStatus: "trading" };
+    mockSignIn.mockResolvedValue({ ok: true, data: session });
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "supersecret");
+    await user.click(screen.getByTestId("button-login"));
+
+    await waitFor(() => {
+      expect(mockSetQueryData).toHaveBeenCalledWith(["gym-session"], session);
+    });
+  });
+
+  /*
+    The remaining wait after a correct password is the route change, and it belongs to the
+    button that started it. Releasing it here offered a second submit of a form whose page
+    is already leaving.
+  */
+  it("keeps the button busy through the redirect", async () => {
+    mockSignIn.mockResolvedValue({
+      ok: true,
+      data: { email: "owner@yourgym.com", gymId: "gym_1", role: "owner", gymStatus: "trading" },
+    });
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "supersecret");
+    await user.click(screen.getByTestId("button-login"));
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/gym/dashboard"));
+    expect(screen.getByTestId("button-login")).toBeDisabled();
+    expect(screen.getByTestId("button-login")).toHaveTextContent(/signing in/i);
+  });
+
+  it("releases the form when the password was wrong", async () => {
+    // The other half of the rule above: a gym who mistyped must be able to try again.
+    mockSignIn.mockResolvedValue(SIGN_IN_FAILED);
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "wrongpass");
+    await user.click(screen.getByTestId("button-login"));
+
+    await waitFor(() => screen.getByText(/incorrect email or password/i));
+    expect(screen.getByTestId("button-login")).toBeEnabled();
+  });
+
   it("shows an error and does not redirect on bad credentials", async () => {
     mockSignIn.mockResolvedValue(SIGN_IN_FAILED);
     render(<GymLogin />);
@@ -159,17 +219,15 @@ describe("GymLogin", () => {
     arriving here with a live session lands on the dashboard.
   */
   it("forwards an existing session to the dashboard", async () => {
-    mockFetchSession.mockResolvedValue({
-      email: "owner@yourgym.com",
-      gymId: "gym_1",
-      role: "owner",
-      gymStatus: "trading",
-    });
+    const session = { email: "owner@yourgym.com", gymId: "gym_1", role: "owner", gymStatus: "trading" };
+    mockFetchSession.mockResolvedValue(session);
     render(<GymLogin />);
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith("/gym/dashboard");
     });
+    // Carrying the session with it, so the page we forward to does not re-ask.
+    expect(mockSetQueryData).toHaveBeenCalledWith(["gym-session"], session);
   });
 
   it("shows the form rather than waiting on the session check", () => {

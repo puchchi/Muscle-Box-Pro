@@ -104,7 +104,10 @@ export const PARTNERSHIP = {
    * figures. The feet stay because that is what a floor gets measured in here.
    */
   gymProvides: [
-    "Floor space of roughly 90 × 90 cm (3 ft × 3 ft)",
+    // Escapes rather than literal U+00A0, which is invisible in an editor and gets
+    // "tidied" back to a space. In step 2's two-column layout the parenthetical wrapped
+    // after the "×" and left "ft)" alone on a line.
+    "Floor space of roughly 90 × 90 cm (3\u00A0ft\u00A0×\u00A03\u00A0ft)",
     "A standard power point",
     "Reasonable access for restocking and servicing",
   ],

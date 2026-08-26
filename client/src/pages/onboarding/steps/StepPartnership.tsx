@@ -89,7 +89,14 @@ export default function StepPartnership({
                 card.value
               )}
             </p>
-            <p className="text-xs text-muted-foreground leading-tight">{card.label}</p>
+            {/*
+              `gray-700`, the colour every other explanatory sentence in this flow is set in,
+              rather than `muted-foreground`. "₹0" and "20%" mean nothing without these six
+              labels, so the label is the half of each card that carries the fact — and it was
+              the faintest text on the step, under a figure set in `font-black`. The figure is
+              still doing the shouting; there was no need to drain the label as well.
+            */}
+            <p className="text-xs text-gray-700 leading-tight">{card.label}</p>
           </div>
         ))}
       </div>
@@ -215,33 +222,34 @@ export default function StepPartnership({
           {formatInr} deposit as well as floor space, and a ruler labelled the one item
           that happens to be a measurement.
 
-          The ticks are `text-primary`, like the panel beside them. They were
-          `text-accent` — the flow's magenta, and the only magenta in any of the five
-          steps — which made two lists of the same glyph, side by side, look like one of
-          them meant something different. The headings and their icons are what separate
-          "ours" from "yours"; a second brand hue on the same tick reads as an accident.
+          **A bullet, not a tick.** The colour stays `text-primary` for the reason recorded
+          earlier: these were `text-accent`, the flow's magenta and the only magenta in any
+          of the five steps, and a second brand hue on the same glyph as the panel beside it
+          reads as an accident. What changes is the glyph. A filled check circle means "yes,
+          included", which is true of everything in "What we cover" and of nothing here —
+          most plainly on the last item, where a tick beside a ₹50,000 deposit says it has
+          been dealt with. A dot claims nothing. The geometry is the tick's, so the two
+          lists still share a text left edge across the gap between the panels.
         */}
         <Panel title="What we need from you" icon={ClipboardList} testId="what-we-need">
           <ul role="list" className="space-y-2">
-            {PARTNERSHIP.gymProvides.map((item) => (
+            {[
+              ...PARTNERSHIP.gymProvides,
+              // A noun phrase, like the three items above it. It read "…, payable after
+              // signing, and you can defer it" — a clause bolted onto a list of things, and
+              // the only item on the screen that changed grammatical person halfway through.
+              `The refundable deposit of ${formatInr(terms.securityDepositInr)} after signing, which you can defer`,
+            ].map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
-                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <span
+                  aria-hidden="true"
+                  className="w-4 h-4 flex items-center justify-center flex-shrink-0 mt-0.5"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                </span>
                 <span>{item}</span>
               </li>
             ))}
-            <li className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
-              <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
-              {/*
-                A noun phrase, like the three items above it. It read "…, payable after
-                signing, and you can defer it" — a clause bolted onto a list of things,
-                and the only item on the screen that changed grammatical person halfway
-                through.
-              */}
-              <span>
-                The refundable deposit of {formatInr(terms.securityDepositInr)} after signing, which
-                you can defer
-              </span>
-            </li>
           </ul>
         </Panel>
       </div>
@@ -332,24 +340,32 @@ export default function StepPartnership({
           `CalendarClock` is already spoken for by the "Initial term" card further up this
           screen, and one glyph meaning two things on one page is worse than no glyph. */}
       <Panel title="From here to your first payout" icon={Clock} testId="timeline">
-        {/* `space-y-4`, not 3. Each item is a title and a body that usually wraps, so at 12px
-            the gap between two items was barely wider than the gap inside one. Step 5's list
-            has the same shape and already sits at 16px, with a connector rule as well. */}
-        <ol role="list" className="space-y-4">
-          {timeline(terms).map((item, index) => (
-            <li key={item.title} className="flex items-start gap-3">
-              <span
-                aria-hidden="true"
-                className="w-6 h-6 rounded-full bg-primary/10 text-primary-ink text-xs font-bold flex items-center justify-center flex-shrink-0 tabular-nums"
-              >
-                {index + 1}
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                <p className="text-sm text-gray-700 leading-relaxed">{item.body}</p>
-              </div>
-            </li>
-          ))}
+        {/* 16px between items, and the rule is what earns it: steps 5 and 6 both draw one, and
+            without it five even blocks read as five separate errands rather than one path from
+            here to the money. `flex-1` in a column that stretches to the row reaches the next
+            numeral whether the item beside it runs to one line or three. */}
+        <ol role="list">
+          {timeline(terms).map((item, index, all) => {
+            const isLast = index === all.length - 1;
+            return (
+              <li key={item.title} className="flex gap-3">
+                <div className="flex flex-col items-center" aria-hidden="true">
+                  <span
+                    className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 tabular-nums ${
+                      item.yours ? "bg-primary/10 text-primary-ink" : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+                  {!isLast && <span className="w-px flex-1 bg-gray-200 my-1.5" />}
+                </div>
+                <div className={`min-w-0 ${isLast ? "" : "pb-4"}`}>
+                  <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{item.body}</p>
+                </div>
+              </li>
+            );
+          })}
         </ol>
       </Panel>
 
@@ -589,7 +605,9 @@ function machineBlurb(machine: MachineSummary): string {
  * a list like this and the one thing it was not saying. It ran "You sign", "Deposit", "Site
  * survey", "Installation", "First payout" — one sentence followed by four bare nouns, which
  * left a gym owner to work out from each body which of the five were waiting on them. Two of
- * the five are; the titles now say so at a glance.
+ * the five are; the titles say so, and `yours` tints those two numerals to say it a second
+ * time — a distinction carried only by the first word of a title is a distinction a reader
+ * skimming a list of five never sees. Step 6's list marks its own two the same way.
  *
  * Deliberately no durations on the middle three. Survey and installation lead times are not
  * in `PARTNERSHIP` or anywhere else in this repo, and a timeline is exactly the screen where
@@ -603,22 +621,27 @@ function timeline(terms: OnboardingTerms) {
       // step 3 is this list's step 1. "The next screen" is the same fact without
       // asking a reader to reconcile two numbering schemes.
       body: "Online, on the next screen. We countersign the same document and email both copies to you.",
+      yours: true,
     },
     {
       title: "You pay the deposit",
       body: `${formatInr(terms.securityDepositInr)} by card, UPI or bank transfer. If the timing is awkward you can defer it, and we'll email you a payment link instead.`,
+      yours: true,
     },
     {
       title: "We survey the site",
       body: "We visit to check the spot, the power point and the water access before anything ships.",
+      yours: false,
     },
     {
       title: "We install it",
       body: `We deliver, install and commission the machine. You and our technician sign Schedule A on site, and your ${terms.termMonths}-month term runs from that date.`,
+      yours: false,
     },
     {
       title: "We pay you",
       body: `Within ${terms.settlementDaysAfterMonthEnd} days of the first month-end, alongside the statement showing the cups sold and how your share was worked out.`,
+      yours: false,
     },
   ];
 }

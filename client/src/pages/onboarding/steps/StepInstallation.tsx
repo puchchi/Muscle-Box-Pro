@@ -274,8 +274,8 @@ function StatusCard({
           */}
           <p className="text-xs text-gray-700 leading-relaxed mt-2">
             Your {termMonths}-month term runs from the installation date, not from
-            {signedAt ? ` ${formatAgreementDate(signedAt)}` : " the day you signed"} (§4.1). Nothing
-            is counting down while you wait.
+            {signedAt ? ` ${formatAgreementDate(signedAt)}` : " the day you signed"}. Nothing is
+            counting down while you wait.
           </p>
         </div>
       </div>
@@ -299,7 +299,9 @@ function StatusCard({
  * **Every line says whose move it is**, the same correction `StepPartnership`'s timeline
  * already carries and for the same reason. Six sentences of even weight left a gym to work
  * out which of them needed anything from it, and two of the six do: the serial-number check,
- * and the signature that starts the term. Those are now the two titles beginning with "You".
+ * and the signature that starts the term. Those are the two titles beginning with "You", and
+ * `yours` in `onTheDay` now tints their numerals to match — words alone put the distinction
+ * in the one layer a reader skimming a list does not read.
  *
  * The numbers stay, unlike step 5's (§33). This is a sequence inside one visit, told before
  * it happens, which is what `StepPartnership` numbers too — and a technician and a manager
@@ -337,21 +339,32 @@ function ChecksCard({ termMonths }: { termMonths: number }) {
           </li>
         </ul>
       </div>
-      <ol role="list" className="mt-4 space-y-4">
-        {onTheDay(termMonths).map((item, index) => (
-          <li key={item.title} className="flex items-start gap-3">
-            <span
-              aria-hidden="true"
-              className="w-6 h-6 rounded-full bg-primary/10 text-primary-ink text-xs font-bold flex items-center justify-center flex-shrink-0 tabular-nums"
-            >
-              {index + 1}
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">{item.title}</p>
-              <p className="text-sm text-gray-700 leading-relaxed">{item.body}</p>
-            </div>
-          </li>
-        ))}
+      <ol role="list" className="mt-4">
+        {onTheDay(termMonths).map((item, index, all) => {
+          const isLast = index === all.length - 1;
+          return (
+            <li key={item.title} className="flex gap-3">
+              {/* The rule is step 5's, and for the reason its own note gives: `flex-1` inside a
+                  column that stretches to the row reaches the next numeral whether the item
+                  beside it runs to one line or three. Six even blocks read as six errands; this
+                  is one visit. */}
+              <div className="flex flex-col items-center" aria-hidden="true">
+                <span
+                  className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 tabular-nums ${
+                    item.yours ? "bg-primary/10 text-primary-ink" : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {index + 1}
+                </span>
+                {!isLast && <span className="w-px flex-1 bg-gray-200 my-1.5" />}
+              </div>
+              <div className={`min-w-0 ${isLast ? "" : "pb-4"}`}>
+                <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{item.body}</p>
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </section>
   );
@@ -365,32 +378,43 @@ function ChecksCard({ termMonths }: { termMonths: number }) {
  *
  * Item 1 says the gym accepts the placement, because the certificate records that it did
  * and because §21 makes that the last cheap moment to move it.
+ *
+ * `yours` marks the two the gym has to do something for, and it colours the numeral rather
+ * than the row: the titles already begin with "You", so the tint is a second signal on a
+ * 24px dot and not the only one. Brand ink on two of six, grey on the rest, which is less
+ * colour on this card than the six tinted numerals it replaced.
  */
 function onTheDay(termMonths: number) {
   return [
     {
       title: "We place it, you accept the spot",
       body: "Where you agreed at the survey, with power and water connected. Say so on the day if that spot no longer works for you.",
+      yours: false,
     },
     {
       title: "You check the unit",
       body: "The serial number against the one on your record, and the machine's physical condition.",
+      yours: true,
     },
     {
       title: "We test it, with you there",
       body: "Power, the touchscreen, the payment system and dispensing.",
+      yours: false,
     },
     {
       title: "We photograph the handover",
       body: "The certificate is the record of what condition the machine was in on day one, and the photographs are part of it.",
+      yours: false,
     },
     {
       title: "We train your staff",
       body: "How to run the machine, restock it and clean it.",
+      yours: false,
     },
     {
       title: "You both sign the certificate",
       body: `You and our technician sign the Installation Certificate on site. Your ${termMonths}-month term starts from that date.`,
+      yours: true,
     },
   ];
 }

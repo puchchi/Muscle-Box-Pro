@@ -36,6 +36,11 @@ import { useEffect, useState } from "react";
  * this page is not signed in, and making all of them wait on a round trip to see a password
  * field is the wrong trade; the signed-in minority get a brief form and then a redirect.
  *
+ * **The session this page learns is handed to the dashboard through the query cache**, under
+ * `GYM_SESSION_QUERY_KEY`. `GymDashboard` reads that key rather than fetching on mount, so
+ * whoever navigates away from here owes it the session — otherwise the gym waits twice for
+ * one click.
+ *
  * There is no "remember me". It used to sit below the password field promising 30 days and
  * was wired to nothing at all — the value never left the form. The cookie sessions make it
  * worse than decorative: a session is 12 hours and does not refresh, and the server decides
@@ -57,6 +62,14 @@ export default function GymLogin() {
   const router = useRouter();
   const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /**
+   * Set on a successful sign-in and never cleared: this component is on its way out.
+   *
+   * It keeps the button reading "Signing in..." through the route change, which is where
+   * the remaining wait now lives. Separate from `isSubmitting` so that an unexpected
+   * throw still releases the form rather than locking a gym out of its own login page.
+   */
+  const [isLeaving, setIsLeaving] = useState(false);
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -65,7 +78,11 @@ export default function GymLogin() {
   useEffect(() => {
     let cancelled = false;
     fetchGymSession().then((session) => {
-      if (session && !cancelled) router.replace("/gym/dashboard");
+      if (!session || cancelled) return;
+      // Handed on rather than thrown away, for the same reason as in `onSubmit`: the
+      // dashboard we are about to send them to would otherwise ask this again.
+      queryClient.setQueryData(GYM_SESSION_QUERY_KEY, session);
+      router.replace("/gym/dashboard");
     });
     // Guards against a redirect firing after the component is gone — someone who starts
     // typing and navigates away mid-probe should not be yanked to the dashboard.
@@ -87,7 +104,13 @@ export default function GymLogin() {
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: GYM_SESSION_QUERY_KEY });
+      // The login response *is* the session, so it is written into the cache the dashboard
+      // reads rather than invalidated. Invalidating threw away the answer this request had
+      // just paid for, and the dashboard then sat on "Loading your portal..." while it
+      // asked the same question again — a second wait, and on a slow connection a long
+      // one, for one click.
+      queryClient.setQueryData(GYM_SESSION_QUERY_KEY, result.data);
+      setIsLeaving(true);
       router.push("/gym/dashboard");
     } finally {
       setIsSubmitting(false);
@@ -246,11 +269,11 @@ export default function GymLogin() {
 
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLeaving}
                 className="w-full h-11 bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20 mt-2"
                 data-testid="button-login"
               >
-                {isSubmitting ? "Signing in..." : "Sign In"}
+                {isSubmitting || isLeaving ? "Signing in..." : "Sign In"}
               </Button>
             </form>
           </Form>

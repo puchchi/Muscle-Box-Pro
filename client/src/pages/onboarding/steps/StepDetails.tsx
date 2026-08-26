@@ -216,45 +216,56 @@ export default function StepDetails({ token, state, readOnly, isSubmitting, fiel
           />
 
           {/*
-            Most single-site gyms install the machine at the address they are registered at, and
-            re-typing a postal address is where a typo that reaches Schedule A comes from. Hidden
-            on a revisit: there is nothing to tick when both fields are disabled anyway.
+            The tick and the field it governs are one group, not two of the section's siblings.
+            Under `space-y-4` alone it sat 16px from the address above it and 16px from the field
+            below, saying nothing about which of the two it belonged to, and the `-my-2.5` that
+            used to cancel its own padding only made the two gaps unequal by accident. 16px plus
+            its top padding above, 4px plus its bottom padding below.
           */}
-          {!readOnly && (
-            <label
-              htmlFor="same-address"
-              // `py-2.5 -my-2.5` gets the pressable row to 44px without drawing a 44px
-              // checkbox. The box stays 16px; the target around it does not.
-              className="flex items-start gap-2.5 cursor-pointer py-2.5 -my-2.5"
-            >
-              <input
-                id="same-address"
-                type="checkbox"
-                checked={sameAddress}
-                onChange={(event) => setSameAddress(event.target.checked)}
-                className="w-4 h-4 mt-0.5 flex-shrink-0 accent-primary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                data-testid="checkbox-same-address"
-              />
-              <span className="text-sm text-gray-700 leading-relaxed">
-                The machine will stand at the registered address
-              </span>
-            </label>
-          )}
+          <div className="space-y-1">
+            {/*
+              Most single-site gyms install the machine at the address they are registered at, and
+              re-typing a postal address is where a typo that reaches Schedule A comes from. Hidden
+              on a revisit: there is nothing to tick when both fields are disabled anyway.
+            */}
+            {!readOnly && (
+              <label
+                htmlFor="same-address"
+                // `py-2.5` gets the pressable row to 44px without drawing a 44px checkbox. The
+                // box stays 16px; the target around it does not.
+                className="flex items-start gap-2.5 cursor-pointer py-2.5"
+              >
+                <input
+                  id="same-address"
+                  type="checkbox"
+                  checked={sameAddress}
+                  onChange={(event) => setSameAddress(event.target.checked)}
+                  className="w-4 h-4 mt-0.5 flex-shrink-0 accent-primary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  data-testid="checkbox-same-address"
+                />
+                <span className="text-sm text-gray-700 leading-relaxed">
+                  The machine will stand at the registered address
+                </span>
+              </label>
+            )}
 
-          <AreaField
-            form={form}
-            name="installationAddress"
-            label="Installation address"
-            placeholder="Building, street, area, city, state, PIN"
-            description={
-              sameAddress
-                ? "Taken from the registered address. Untick above to enter a different one."
-                : "Where the machine will actually stand."
-            }
-            // Disabled rather than hidden while ticked: the gym still has to be able to read the
-            // address it is agreeing to, and this field is what Schedule A is built from.
-            disabled={readOnly || sameAddress}
-          />
+            <AreaField
+              form={form}
+              name="installationAddress"
+              label="Installation address"
+              placeholder="Building, street, area, city, state, PIN"
+              description={
+                sameAddress
+                  ? "Taken from the registered address. Untick above to enter a different one."
+                  : "Where the machine will actually stand."
+              }
+              // Disabled rather than hidden while ticked: the gym still has to be able to read the
+              // address it is agreeing to, and this field is what Schedule A is built from. Also
+              // still `rows={3}` while disabled, rather than shrunk to the one line it usually
+              // holds: unticking would then grow the box and move everything under it.
+              disabled={readOnly || sameAddress}
+            />
+          </div>
         </Section>
 
         <Section title="Who signs, and where we write">

@@ -1696,9 +1696,11 @@ Three properties hold it in place, and the first is the one that matters:
    bearer necessary *is* "the API is not on our registrable domain", so that is the thing tested.
    There is no environment variable anyone can set to enable this against `api.muscleboxpro.com`.
    Fail-closed: unset means production, and so does an unparseable value.
-2. **In memory for the life of the tab.** Not `localStorage` — the CSP carries `'unsafe-inline'`, so
-   a token any script can read is a token any injected script can exfiltrate, and a reloadable copy
-   of a 12-hour admin session is worth more to an attacker than surviving F5 is worth to us.
+2. **`sessionStorage` for the life of the tab, mirrored in memory.** Not `localStorage`: the CSP
+   carries `'unsafe-inline'`, so a token any script can read is a token any injected script can
+   exfiltrate, and one that outlives the tab sits on a laptop overnight waiting to be found. It was
+   memory-only at first, which signed you out of `/admin` on every reload and made the one
+   environment the hatch exists to serve unusable to build against.
 3. **The header is conditional on the field being present.** Production omits `sessionToken`
    entirely, so nothing is ever stored there and the cookie does the work. A client that *required*
    the token would pass in sandbox and 401 everything in production — the worst available order in
@@ -3404,3 +3406,219 @@ it". **56 files, 1,052 tests passing**, `npx tsc --noEmit` clean.
 Worth knowing if either comes back: the `mailto` existed because step 1 is read-only after signing
 (§32), so the sentence above it asks for something the flow gives no way to do. That gap is open
 again by choice.
+
+---
+
+## 39. The blue box on step 1 was Chrome, and the tick belonged to nothing (2026-08-26)
+
+From "improve UI of this" against a screenshot of step 1's Addresses card.
+
+### The pale blue field was `:-webkit-autofill`
+
+"Registered address" rendered with a `#E8F0FE` fill while "Installation address" directly under it
+was grey. Nothing in this app is blue, and no class on the field is either: `areaClass` is
+`bg-gray-50` going `focus:bg-white`. The tell is which field it was. `registeredAddress` is the one
+carrying `autoComplete="street-address"`, and Chrome paints `:-webkit-autofill` from the UA
+stylesheet, where a `background-color` utility cannot reach it. So one input in a form of eleven
+looked like a different kind of control, for no reason the gym could see.
+
+`client/src/index.css`, `@layer base`: the 1000px inset `-webkit-box-shadow` that is the only
+override for it, plus `-webkit-text-fill-color` and `caret-color`, on `input`, `textarea` and
+`select`. The colour is `--background`, which is the fill this app's inputs use at rest and the one
+the onboarding form's use on focus, rather than a third colour of its own. Whether the browser
+filled a box in is not a fact the gym needs pointed out. Global rather than scoped to this form,
+because every input in the flow has an `autoComplete` and the admin forms do too.
+
+### "The machine will stand at the registered address" sat between two fields, owned by neither
+
+The tick governs the field below it and was a flat sibling in the section's `space-y-4`: 16px from
+the address above, 16px from the label below. Proximity said nothing about which of the two it
+belonged to. Its own `py-2.5 -my-2.5` — the negative margin there to stop the 44px target drawing
+44px of white — then landed on the same `margin-top` the `space-y` utility sets, so which of the two
+gaps got cancelled came down to stylesheet order. The result was ~26px above and ~11px below: right
+by accident, and tight enough that the checkbox text and the next field's label nearly touched.
+
+The tick and the installation field are now one wrapper with `space-y-1`, and the `-my-2.5` is gone.
+16px plus the row's top padding above the group, 4px plus its bottom padding inside it. Same 44px
+target, same DOM order, and the ownership is now structural rather than a spacing coincidence.
+
+### Not done: the 3-row box that holds one line
+
+Both address fields are `rows={3}` and a typical value is one line, so the card is largely empty
+grey. It stays. The editable box is sized for the address the placeholder asks for
+("Building, street, area, city, state, PIN"), and shrinking the mirrored one while the tick is on
+would grow it again on untick and move everything below it. A fixed box is worth more than 30px of
+reclaimed white.
+
+### Verified
+
+`npx tsc --noEmit` clean. `npx vitest run`: **56 files, 1,052 tests passing**, including the four
+that drive this checkbox — the mirror, the untick, and the disabled state all read the same DOM.
+
+---
+
+## 40. A tick beside ₹50,000 you owe (2026-08-26)
+
+From "improve UI of this" against two screenshots of step 2: the six headline figures with "The
+detail", and the amber restrictions block with the "What we cover" / "What we need from you" pair.
+
+### The same glyph for what we provide and what you owe
+
+Both panels rendered every item behind a filled `CheckCircle2`. A check circle means "yes,
+included" — true of all six things in "What we cover" and of nothing in "What we need from you",
+most plainly on its last item, where a tick beside a ₹50,000 refundable deposit says that deposit
+has been dealt with. It is the largest obligation on the screen.
+
+The obligations are now a small `bg-primary` dot inside a 16px box, so both lists still share a text
+left edge across the gap between the two panels. The colour stays `text-primary`: the note already
+on that panel is about the *hue*, recording that these were `text-accent` and that a second brand
+colour on the same glyph as its neighbour read as an accident. That reasoning survives intact. What
+it did not cover is the glyph, and the glyph is what was making a claim.
+
+The deposit item also stopped being a hand-written fifth `<li>` outside the `.map` that renders the
+other three. Two assertions replaced a `toBeInTheDocument()` on that panel, one of them for the
+deposit line, because a loose item folded into an array is exactly the kind of edit that drops one
+silently.
+
+### The label was the fact, and it was the faintest text on the step
+
+"₹0", "20%", "24 months" mean nothing without "For the machine, ever", "Of advertising revenue",
+"Initial term". The figure was `font-display font-black text-lg` in `--foreground`; the label under
+it was `text-xs text-muted-foreground` — 5.13:1, so not a contrast failure, but the lightest ink on
+the screen under the heaviest. Labels are now `text-gray-700`, which is what every other
+explanatory sentence in the flow is set in. The figure still carries the emphasis through weight and
+size; there was no need to drain the label as well.
+
+### "ft)" on a line of its own
+
+`PARTNERSHIP.gymProvides[0]` is "Floor space of roughly 90 × 90 cm (3 ft × 3 ft)", and in the
+two-column layout it wrapped after the "×", orphaning "ft)". The parenthetical now uses ` `
+between its words. Written as escapes rather than literal U+00A0, which is invisible in an editor
+and gets tidied back to a space by the next person to touch the line.
+
+### Verified
+
+`npx tsc --noEmit` clean. `npx vitest run`: **56 files, 1,052 tests passing.**
+
+---
+
+## 40. Eight characters, on both sides at once (2026-08-26)
+
+> lets reduce password length to min 8 character from 12
+
+`portalPasswordSchema` and `MIN_PASSWORD_LENGTH` are now 8. §35 fault 2 is the reason this is two
+commits in two repos and not one: that bug was the form saying 8 while the server said 12, and
+loosening this side first would be the same bug with the numbers swapped. **The backend deploy goes
+first.** Tightening this side is always safe; loosening it never is.
+
+Eight is the floor NIST SP 800-63B sets for a user-chosen secret, and the maximum stays at 200 for
+the reason `password.ts` gives — scrypt hashes whatever it is handed, so length is CPU an
+unauthenticated caller gets to choose.
+
+### The denylist was tuned to the old floor
+
+`123456789012` is on the list because `12345678` could not be reached. Lowering the floor reached it,
+and `12345678` is eight distinct characters, so neither the denylist nor the distinct-character rule
+would have stopped it. The list grew by the 8-to-11-character entries off the top of any breach list
+— `12345678`, `123456789`, `1234567890`, `password1`, `qwerty123`, `qwertyuiop`, `iloveyou`,
+`welcome1`, `letmein1`, `admin123`, `musclebox` — with a test that names them. It is still a
+nine-line array pretending to be nothing more than that.
+
+### What moved
+
+Backend `domain/password.ts` (the constant, its docstring, the denylist); frontend
+`shared/onboarding/schema.ts`, both "At least 12 characters" placeholders in `StepDone` and
+`GymSetPassword`, and the three tests that assert the number.
+
+### Verified
+
+Backend: `npm run check` clean, `npx vitest run` **75 files, 2,297 tests passing.**
+Frontend: `npx tsc --noEmit` clean, `npx vitest run` **56 files, 1,052 tests passing.**
+
+## 41. The gym login worked and signed nobody in (2026-08-26)
+
+> trying to login using gym login/password, but its redirecting back to login page again
+
+`POST /gym/login` answered 200 with a full session body. The next request, `GET /gym/session`, came
+back `{"code":"invalid_token"}` — and it had no `Authorization` header on it at all. So the dashboard
+sent the gym to `/gym/login`, whose own mount probe asked the same route, got the same 401, and left
+them looking at the form they had just filled in.
+
+**`signInToPortal` dropped the `sessionToken`.** `signInAsAdmin` has called
+`rememberBearerSession(result.data?.sessionToken)` since the hatch was built; the gym half of the
+same seam never did, and against the sandbox host that token is not an optimisation — it is the only
+credential the browser has. The cookie the route also sets cannot come back from
+`execute-api.ap-south-1.amazonaws.com`, which is the whole reason the hatch exists (see "The sandbox
+bearer hatch" above).
+
+Why no test caught it: the failure needs a real cross-site origin. `GymLogin.test.tsx` mocks
+`gymSession` wholesale, `apiClient.test.ts` proves the token is *sent once stored*, and nothing
+covered the seam in between. That seam now has `client/src/__tests__/lib/gymSession.test.ts`, written
+against `apiRequest` the way `adminSession.test.ts` is — including the case that keeps this working
+in production, where `sessionToken` is absent and passing `undefined` through must stay a no-op.
+
+`signOutOfPortal` had the mirror-image gap and now calls `forgetBearerSession()` after the route,
+like `signOutAsAdmin`. Without it, "sign out" on a shared gym office computer left the tab's only
+credential live.
+
+### The status field had a different name on each side
+
+Second bug, found while reading the same response. The server sends `status`
+(`"status": "deposit_paid"`); this module read `result.data.gymStatus`, so `GymSession.gymStatus` was
+`null` for every gym. Nothing renders it today, which is why it was invisible — the first thing to
+read it would have shown an empty portal to a gym mid-installation.
+
+The rename now happens at the boundary, in one `asSession()` both routes share, with the reason
+recorded: `session.status` on this side reads as the status *of the session*, live or expired, which
+is the one thing it does not mean.
+
+### Not touched
+
+`POST /gym/account` mints a session too, and neither `setPortalPassword` nor the wizard's step 5
+keeps it. That is deliberate and unchanged: the set-password page says in its own docstring that it
+signs nobody in, and the wizard continues on its handle. It does mean a sandbox gym finishing step 5
+is not signed in where a production one is, which is the divergence to remember rather than the bug
+to fix.
+
+### Verified
+
+`npx tsc --noEmit` clean, `npx vitest run` **57 files, 1,063 tests passing** (the 11 new ones are the
+seam's).
+
+## 42. Two waits for one click (2026-08-27)
+
+With the sandbox login fixed, signing in worked and then sat on a full-page "Loading your
+portal..." for a second or two on a throttled connection:
+
+> why are we showing loading your portal, rather we should only wait on login click event
+
+Right, and the loading screen was the symptom of a wasted round trip rather than a slow one.
+`POST /gym/login` answers with the session — email, gym, role, status. `GymLogin` then called
+`invalidateQueries(GYM_SESSION_QUERY_KEY)`, which throws that answer away, and `GymDashboard`
+fetched `GET /gym/session` from a `useEffect` on mount to learn what the login response had just
+said. Worse, the two were serial: the figures request was gated behind the session check
+(`enabled: !isChecking`), so on a 3G profile the gym waited for one round trip while looking at
+centred grey text, and only then began waiting for the one that had the numbers in it.
+
+Three changes, all of them the same idea — the session travels with the navigation:
+
+1. **`GymLogin` writes it instead of discarding it.** `setQueryData(GYM_SESSION_QUERY_KEY,
+   result.data)` before `router.push`. The mount probe that forwards an already-signed-in visitor
+   does the same, for the same reason.
+2. **`GymDashboard` reads that key through `useQuery`** rather than fetching in an effect. Arriving
+   from the form, `data` is there on the first frame: the header renders with the gym's email and the
+   figures request starts immediately. A cold entry — a bookmark, a refresh — has nothing cached and
+   is the only path that still shows the gate, which is where it belongs: there is no email to put in
+   the header and no meaningful Sign out until we know there is a session at all.
+3. **The button holds "Signing in..." through the route change.** `isSubmitting` was cleared in a
+   `finally` that ran the moment `push` was called, so the last leg of the wait had a live submit
+   button over it. `isLeaving` is separate from `isSubmitting` on purpose: an unexpected throw still
+   releases the form rather than locking a gym out of its own login page.
+
+Using `useQuery` for the session also collapses the duplicate `GET /gym/session` that React's
+development double-mount produced, which is the second pending request in the report's screenshot.
+
+### Verified
+
+`npx tsc --noEmit` clean, `npx vitest run` **57 files, 1,068 tests passing** (five new: two on the
+dashboard for the cached and the cold path, three on the login page for the handoff and the button).

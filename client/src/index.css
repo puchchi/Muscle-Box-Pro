@@ -165,6 +165,29 @@
   }
 
   /*
+   * Chrome paints `:-webkit-autofill` with its own `#E8F0FE` in the UA stylesheet, which
+   * no `background-color` utility can beat. So an autofilled field came out pale blue in
+   * a form whose other inputs are grey — one field looking like a different control, in
+   * an app with no blue anywhere else in it. The 1000px inset shadow is the only thing
+   * that overrides it, and `-webkit-text-fill-color` is needed for the same reason.
+   *
+   * `--background`, so an autofilled field lands on the fill this app's inputs use at
+   * rest and the onboarding form's inputs use on focus. Not a colour of its own: whether
+   * the browser filled a box in is not something the gym needs pointed out.
+   */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset;
+    -webkit-text-fill-color: hsl(var(--foreground));
+    caret-color: hsl(var(--foreground));
+  }
+
+  /*
    * Motion is decoration everywhere in this app — progress bars, chevrons, colour
    * fades — so honouring the OS setting costs nothing and is the one accessibility
    * rule that cannot be fixed per-component after the fact.

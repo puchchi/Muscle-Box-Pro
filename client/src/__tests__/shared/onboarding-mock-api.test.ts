@@ -694,7 +694,7 @@ describe("step 5 — account", () => {
     const result = await api.createAccount(DEMO_TOKEN, "short", EMAIL);
 
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.fieldErrors?.password).toMatch(/12 characters/);
+    if (!result.ok) expect(result.error.fieldErrors?.password).toMatch(/8 characters/);
   });
 
   /**

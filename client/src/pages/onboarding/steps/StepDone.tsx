@@ -232,7 +232,7 @@ export default function StepDone({
                 autoComplete="new-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="At least 12 characters"
+                placeholder="At least 8 characters"
                 /*
                   The hint above is part of the field's description, and the error joins it
                   when there is one — without `aria-describedby` a screen reader got the

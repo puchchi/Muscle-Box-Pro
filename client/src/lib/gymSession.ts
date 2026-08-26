@@ -32,13 +32,20 @@
  * effect on the next request instead of the next login — and it is the same rule that keeps
  * payout figures out of `user_metadata`, which the account holder can write to (TODO A2).
  *
+ * ## The one thing that differs from production, in sandbox only
+ *
+ * On an `execute-api` host a browser can neither read nor return the session cookie, so login
+ * also hands back a `sessionToken` and `rememberBearerSession` keeps it for the life of the
+ * tab. That is conditional on the field being present, which is what makes this same code work
+ * in production where it is absent — see rule 4 in [apiClient.ts](./apiClient.ts).
+ *
  * `gymId` is here to render, never to ask with. `fetchGymPortalSnapshot` takes no gym
  * parameter and must not gain one: the endpoint resolves the gym from the cookie, and a gym
  * identifier travelling from the browser would be an authorisation decision made in the
  * wrong process.
  */
 
-import { apiRequest } from "./apiClient";
+import { apiRequest, forgetBearerSession, rememberBearerSession } from "./apiClient";
 import { supabase } from "./supabase";
 import type { OnboardingResult } from "@shared/onboarding/types";
 
@@ -67,6 +74,26 @@ export type GymSession = {
 export const GYM_SESSION_QUERY_KEY = ["gym-session"] as const;
 
 /**
+ * The wire shape of `POST /gym/login` and `GET /gym/session`, before it is trusted.
+ *
+ * **The server calls the onboarding status `status`, and this module calls it `gymStatus`.**
+ * Not a typo to tidy in either direction: `session.status` on this side reads as the status
+ * *of the session* — live, expired — which is the one thing it does not mean. The rename
+ * happens here, at the boundary, so `GymSession` says which status it is everywhere else.
+ *
+ * `sessionToken` is sandbox-only and typed `unknown` on purpose: `rememberBearerSession` is
+ * the one place that decides whether a value is a usable token, and typing it as
+ * `string | undefined` here would invite a call site to send it without asking.
+ */
+type GymSessionResponse = {
+  email?: unknown;
+  gymId?: unknown;
+  role?: unknown;
+  status?: unknown;
+  sessionToken?: unknown;
+};
+
+/**
  * Is there a session, and whose?
  *
  * `null` for "not signed in" rather than a thrown error, because that is the ordinary case
@@ -85,13 +112,18 @@ export async function fetchGymSession(): Promise<GymSession | null> {
     return { email, gymId: null, role: null, gymStatus: null };
   }
 
-  const result = await apiRequest<Partial<GymSession>>("GET", "/gym/session");
+  const result = await apiRequest<GymSessionResponse>("GET", "/gym/session");
   if (!result.ok || typeof result.data?.email !== "string") return null;
+  return asSession(result.data, result.data.email);
+}
+
+/** The four fields we are willing to take from a session body, with the rename explained above. */
+function asSession(body: GymSessionResponse | undefined, fallbackEmail: string): GymSession {
   return {
-    email: result.data.email,
-    gymId: typeof result.data.gymId === "string" ? result.data.gymId : null,
-    role: typeof result.data.role === "string" ? result.data.role : null,
-    gymStatus: typeof result.data.gymStatus === "string" ? result.data.gymStatus : null,
+    email: typeof body?.email === "string" ? body.email : fallbackEmail,
+    gymId: typeof body?.gymId === "string" ? body.gymId : null,
+    role: typeof body?.role === "string" ? body.role : null,
+    gymStatus: typeof body?.status === "string" ? body.status : null,
   };
 }
 
@@ -120,7 +152,7 @@ export async function signInToPortal(
     };
   }
 
-  const result = await apiRequest<Partial<GymSession>>("POST", "/gym/login", {
+  const result = await apiRequest<GymSessionResponse>("POST", "/gym/login", {
     body: { email, password },
   });
   if (!result.ok) {
@@ -129,15 +161,15 @@ export async function signInToPortal(
     // never arrived — the gym retypes a correct password until it gives up.
     return { ok: false, error: result.error.code === "network" ? result.error : SIGN_IN_FAILED };
   }
-  return {
-    ok: true,
-    data: {
-      email: typeof result.data?.email === "string" ? result.data.email : email,
-      gymId: typeof result.data?.gymId === "string" ? result.data.gymId : null,
-      role: typeof result.data?.role === "string" ? result.data.role : null,
-      gymStatus: typeof result.data?.gymStatus === "string" ? result.data.gymStatus : null,
-    },
-  };
+
+  // Before anything else. In sandbox this is the credential every later request runs on: the
+  // cookie the route also sets cannot come back from an `execute-api` host, so dropping the
+  // token here signs the gym straight back out — a 200 from this route, then a 401 from
+  // `GET /gym/session`, then the dashboard bouncing to the login page that sent them. In
+  // production it is a no-op twice over: the field is absent and the hatch is off.
+  rememberBearerSession(result.data?.sessionToken);
+
+  return { ok: true, data: asSession(result.data, email) };
 }
 
 const SIGN_IN_FAILED = {
@@ -163,6 +195,9 @@ export async function signOutOfPortal(): Promise<void> {
     return;
   }
   await apiRequest("POST", "/gym/logout");
+  // The sandbox half of the same act. The route above expires the cookie; this drops the
+  // bearer copy, which is the only credential a `localhost` tab actually had.
+  forgetBearerSession();
 }
 
 /**

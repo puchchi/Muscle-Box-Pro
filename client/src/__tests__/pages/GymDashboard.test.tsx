@@ -123,10 +123,13 @@ const NO_TRADING_DATA = {
  * can decline to retry a rejected session, and a `useQuery` option beats a default. Hence
  * `retryDelay: 0`: without it the failure tests sit through exponential backoff.
  */
-function renderPortal() {
+function renderPortal({ cachedSession }: { cachedSession?: unknown } = {}) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, retryDelay: 0, gcTime: 0 } },
   });
+  // What `GymLogin` leaves behind when it navigates here, which is the difference between
+  // rendering the portal on the first frame and gating it on a round trip.
+  if (cachedSession !== undefined) client.setQueryData(["gym-session"], cachedSession);
   return render(
     <QueryClientProvider client={client}>
       <GymDashboard />
@@ -179,6 +182,35 @@ describe("GymDashboard", () => {
       expect(screen.getByText("owner@yourgym.com")).toBeInTheDocument();
     });
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Two waits for one click was the bug: the login route answered with the session, the
+   * dashboard threw that answer away and asked again, and the gym read "Loading your
+   * portal..." for the length of a round trip before the figures request had even started.
+   */
+  it("renders the portal at once when signing in already answered who is signed in", async () => {
+    // Never settles, so the only session in play is the one the login page left in the cache.
+    mockFetchSession.mockReturnValue(new Promise(() => {}));
+    renderPortal({ cachedSession: signedIn });
+
+    // Synchronous on purpose: nothing is awaited before these hold.
+    expect(screen.getByText("owner@yourgym.com")).toBeInTheDocument();
+    expect(screen.queryByText(/loading your portal/i)).toBeNull();
+    // And the figures request went out with the first frame rather than after the session.
+    expect(screen.getByTestId("portal-loading")).toBeInTheDocument();
+    await waitFor(() => screen.getByTestId("card-payout"));
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("waits for the session on a cold entry, which is the only place that gate belongs", async () => {
+    // A bookmark or a refresh has nothing cached, and there is no email to put in the header
+    // and no meaningful Sign out until we know there is a session at all.
+    mockFetchSession.mockReturnValue(new Promise(() => {}));
+    renderPortal();
+
+    expect(screen.getByText(/loading your portal/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("button-signout")).toBeNull();
   });
 
   it("renders the six partner metric cards", async () => {

@@ -137,12 +137,16 @@ export const signatureSchema = z.object({
  * lost a round trip, and got "Please check the highlighted fields." on a screen with nothing
  * highlighted. A number here that is looser than the server's is a form that lies.
  *
+ * The server's minimum came down to 8 on 2026-08-26 and this followed it, which is the same rule
+ * read the other way: **this file may not loosen before that deploy lands**, or the bug above is
+ * back with the numbers swapped.
+ *
  * The server also screens a denylist and rejects too few distinct characters. Those are not
  * mirrored — a corpus check cannot be — so `fieldErrors.password` still has to be rendered.
  */
 export const portalPasswordSchema = z
   .string()
-  .min(12, "Use at least 12 characters")
+  .min(8, "Use at least 8 characters")
   .max(200, "Passwords are limited to 200 characters");
 
 /**
