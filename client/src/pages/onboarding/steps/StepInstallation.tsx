@@ -6,6 +6,7 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
+  Mail,
   MapPin,
   PackageSearch,
   Wallet,
@@ -69,19 +70,27 @@ export default function StepInstallation({ token, state, goToStep }: StepViewPro
             <PackageSearch className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
             The unit allocated to you
           </h2>
-          <dl className="mt-4 grid grid-cols-2 gap-3">
+          {/* One column until `sm`. Two cells at 375px is about 150px each, which is not
+              enough for a serial number, and this card's whole purpose is a gym reading one
+              off the screen and comparing it to the plate on the machine. */}
+          <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Fact label="Model" value={machine.model} />
             <Fact label="Machine ID" value={machine.deviceNo ?? "—"} mono />
-            <Fact label="Serial number" value={machine.serialNumber ?? "To be verified on site"} mono />
+            <Fact
+              label="Serial number"
+              value={machine.serialNumber ?? "To be verified on site"}
+              // Mono for a serial number, not for the sentence that stands in for one.
+              mono={machine.serialNumber !== null}
+            />
             <Fact label="Machine value" value={formatInr(machine.valueInr)} />
             {machine.accessories && (
-              <Fact label="Accessories" value={machine.accessories} className="col-span-2" />
+              <Fact label="Accessories" value={machine.accessories} className="sm:col-span-2" />
             )}
             {isInstalled && machine.installationDate && (
               <Fact
                 label="Installed on"
                 value={formatAgreementDate(machine.installationDate)}
-                className="col-span-2"
+                className="sm:col-span-2"
               />
             )}
           </dl>
@@ -92,7 +101,7 @@ export default function StepInstallation({ token, state, goToStep }: StepViewPro
           */}
           <p className="text-xs text-gray-700 leading-relaxed mt-4 pt-3 border-t border-gray-200">
             These are the particulars that go onto your Installation Certificate. Check the serial
-            number against the plate on the machine before you sign it — that is what the check is
+            number against the plate on the machine before you sign it. That is what the check is
             for.
           </p>
         </section>
@@ -110,12 +119,25 @@ export default function StepInstallation({ token, state, goToStep }: StepViewPro
           <p className="text-sm text-gray-700 leading-relaxed mt-1">{address}</p>
           <p className="text-xs text-gray-700 leading-relaxed mt-2">
             From the details you gave us at step 1. Moving the machine anywhere else needs our
-            written approval first (§21), so tell us now if this address has changed.
+            written approval first (§21), so tell us before the survey if this address has changed.
           </p>
+          {/*
+            Step 1 is read-only once the agreement is signed (§32), so this card asked a gym to
+            act and named no way of doing it. The address is on a signed agreement by the time
+            anyone reads this, which makes changing it a conversation rather than a form.
+          */}
+          <a
+            href="mailto:contact@muscleboxpro.com?subject=Installation%20address"
+            className="inline-flex items-center gap-1.5 min-h-11 text-xs font-semibold text-primary-ink hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
+            data-testid="link-address-changed"
+          >
+            <Mail className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+            The address has changed
+          </a>
         </section>
       )}
 
-      <ChecksCard onOpenAgreement={() => goToStep(3)} />
+      <ChecksCard termMonths={state.terms.termMonths} onOpenAgreement={() => goToStep(3)} />
 
       {state.depositStatus !== "paid" && (
         <section
@@ -272,8 +294,24 @@ function StatusCard({
  * Worth its own card because it is the only part of installation the gym has to be
  * present for: someone has to be there with authority to sign, and a technician arriving
  * to find the duty manager alone is a wasted visit for both of us.
+ *
+ * **Every line says whose move it is**, the same correction `StepPartnership`'s timeline
+ * already carries and for the same reason. Six sentences of even weight left a gym to work
+ * out which of them needed anything from it, and two of the six do: the serial-number check,
+ * and the signature that starts the term. Those are now the two titles beginning with "You".
+ *
+ * The numbers stay, unlike step 5's (§33). This is a sequence inside one visit, told before
+ * it happens, which is what `StepPartnership` numbers too — and a technician and a manager
+ * standing at the machine have some use for "we're at four of six". Step 5's list was a
+ * calendar of separate weeks, where the counting said nothing the dates did not.
  */
-function ChecksCard({ onOpenAgreement }: { onOpenAgreement(): void }) {
+function ChecksCard({
+  termMonths,
+  onOpenAgreement,
+}: {
+  termMonths: number;
+  onOpenAgreement(): void;
+}) {
   return (
     <section
       className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
@@ -287,20 +325,23 @@ function ChecksCard({ onOpenAgreement }: { onOpenAgreement(): void }) {
         Allow about two hours, and have someone there who can sign for the gym.
       </p>
       <ol role="list" className="mt-4 space-y-3">
-        {ON_THE_DAY.map((item, index) => (
-          <li key={item} className="flex items-start gap-3">
+        {onTheDay(termMonths).map((item, index) => (
+          <li key={item.title} className="flex items-start gap-3">
             <span
               aria-hidden="true"
               className="w-6 h-6 rounded-full bg-primary/10 text-primary-ink text-xs font-bold flex items-center justify-center flex-shrink-0 tabular-nums"
             >
               {index + 1}
             </span>
-            <p className="text-sm text-gray-700 leading-relaxed">{item}</p>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">{item.title}</p>
+              <p className="text-sm text-gray-700 leading-relaxed">{item.body}</p>
+            </div>
           </li>
         ))}
       </ol>
       <p className="text-xs text-gray-700 leading-relaxed mt-4 pt-3 border-t border-gray-200">
-        That certificate is Schedule A of your agreement, and signing it is a second signature —
+        That certificate is Schedule A of your agreement. Signing it is a second signature,
         separate from the one you have already given.{" "}
         <button
           type="button"
@@ -321,15 +362,38 @@ function ChecksCard({ onOpenAgreement }: { onOpenAgreement(): void }) {
  *
  * Kept in step with Schedule A in `shared/agreement/v2_3.ts` — the agreement is what
  * binds, and these six lines are the same eight items said in the gym's words.
+ *
+ * Item 1 says the gym accepts the placement, because the certificate records that it did
+ * and because §21 makes that the last cheap moment to move it.
  */
-const ON_THE_DAY = [
-  "We place the machine where you agreed at the survey, and connect power and water.",
-  "You check the serial number on the unit against the one on your record, and its physical condition.",
-  "We test power, the touchscreen, the payment system and dispensing, together.",
-  "We photograph the machine as it stands at handover.",
-  "We show your staff how to run it, restock it and clean it.",
-  "You and our technician sign the Installation Certificate. Your term starts from that date.",
-] as const;
+function onTheDay(termMonths: number) {
+  return [
+    {
+      title: "We place it, you accept the spot",
+      body: "Where you agreed at the survey, with power and water connected. Say so on the day if that spot no longer works for you.",
+    },
+    {
+      title: "You check the unit",
+      body: "The serial number against the one on your record, and the machine's physical condition.",
+    },
+    {
+      title: "We test it, with you there",
+      body: "Power, the touchscreen, the payment system and dispensing.",
+    },
+    {
+      title: "We photograph the handover",
+      body: "The certificate is the record of what condition the machine was in on day one, and the photographs are part of it.",
+    },
+    {
+      title: "We train your staff",
+      body: "How to run the machine, restock it and clean it.",
+    },
+    {
+      title: "You both sign the certificate",
+      body: `You and our technician sign the Installation Certificate on site. Your ${termMonths}-month term starts from that date.`,
+    },
+  ];
+}
 
 function Fact({
   label,
@@ -346,13 +410,13 @@ function Fact({
     <div className={`min-w-0 ${className}`}>
       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">{label}</dt>
       {/*
-        `title` with the `truncate`, as on step 4's receipt: two columns at 375px is about
-        150px a cell, and a serial number a gym cannot read in full is the one value here
-        that has to be checkable against the plate on the machine.
+        Wraps rather than truncating, the same correction step 4's receipt reference got: a
+        cut-off value behind a `title` attribute is a value a touch screen has no way to
+        read, and the two values here that matter are the ones a gym checks character by
+        character against the machine in front of it.
       */}
       <dd
-        title={value}
-        className={`text-sm text-foreground mt-0.5 truncate ${mono ? "font-mono" : "font-semibold"}`}
+        className={`text-sm text-foreground mt-0.5 ${mono ? "font-mono break-all" : "font-semibold break-words"}`}
       >
         {value}
       </dd>

@@ -3158,3 +3158,168 @@ tests, none of which reach step 6 by fiat any more.
 Confirmed against the sandbox record rather than reasoned about: `currentStep: 5` with
 `accountCreatedAt` set and `status: "deposit_paid"` is what the deployed API returns for a gym that
 has finished the flow, and that combination is now what puts step 6 on screen.
+
+## 37. The backend answers 6, and names the address itself (2026-08-25)
+
+> Retiring the derivation-> lets make change in backend
+>
+> setPortalPassword / GymSetPassword still cannot succeed-> for this to succed, maybe we should get
+> email from backend.
+
+Both changes are in `/Users/anuragsingh/github/mbp-backend`. Nothing in this repo changed, and that
+is deliberate: the two frontend workarounds §35 and §36 left behind are forward-compatible, so the
+cleanup commit can follow the deploy instead of racing it.
+
+### Step 6 is the server's answer now
+
+`OnboardingStep` and `ONBOARDING_STEPS` gained 6. `deriveCurrentStep` returns 6 once the five the
+gym does are complete, and 6 again when everything is complete — a finished gym lands on the
+Installation record rather than falling off the end of the wizard.
+
+Step 6 gets no route, and two guards say so rather than one comment:
+
+- `statusForStepCommit(6)` returns null, for a stronger reason than 4 and 5 do. Those are null
+  because only the webhook writes `deposit_paid` and only the activate route writes `active`. Six is
+  null because nothing commits it at all.
+- `isStepReachable` returns false for 6 unconditionally. A finished gym has `currentStep: 6`, so
+  `step <= currentStep` alone would have called it reachable — and §36's whole argument for
+  rendering step 6 early is that nothing can be submitted there.
+
+Completion comes from the machine, on read: `withInstallationComplete(completedSteps,
+machine.installationDate)` in `lib/gymState.ts`, in **both** `toOnboardingState` and
+`toAdminGymView`. `installationDate` is the Installation Certificate of agreement §17.2 and lives on
+the `MACHINE#` item, written by `PUT /admin/gyms/{gymId}/machine`. Deriving it means one write stays
+one write and there is no second copy of the fact to go stale. Both builders because an admin
+reading "step 5 of 6" for a gym whose machine went in last week would be reading a different record
+from the gym's own.
+
+### The address comes off our record, not the request
+
+This is what makes `GymSetPassword` able to succeed at all, and §35 had only half of it. That page
+posts `{ password }` and has no address to send — by design, because asking someone who has just
+lost their password which address the account is under is asking them to guess, and answering the
+guess is an enumeration oracle. `POST /gym/account` required `email`, so every relayed link 400'd
+with `fieldErrors.email` and the page rendered "Please check the highlighted fields" over a form
+with no such field.
+
+`email` in the body is now **ignored**, and each branch names the account itself:
+
+- `onboard` → `PROFILE.noticesEmail`, the §41 address given at step 1. That is the address this
+  wizard was already sending.
+- `setpw` → the gym's existing login, read through `gsi3-gymuser`. A reset sets the password on the
+  account that exists.
+
+Ignored rather than made optional or rejected: the deployed wizard still sends the field, and a 400
+on a field we no longer read would break step 5 a second time to make a point.
+
+It is also strictly tighter than what it replaced. An address the browser chooses is a browser
+choosing which inbox can later reset the password — `attribute_not_exists` stops an onboarding
+handle overwriting an existing account, but not a client deciding whose account gets created. And
+`adminSetPasswordLink` already scopes its token to a gym rather than to one address, so naming the
+address in the body granted nothing it did not already have.
+
+Three refusals fall out of it, all 409 with a message and **no** `fieldErrors`: an unusable
+`noticesEmail`, a `setpw` link for a gym with no login, and one for a gym with more than one. Each
+is their data being wrong rather than the gym's, and there is no input on either screen a gym could
+correct to get past it. A key with no field behind it is the §35 bug, and not repeating it is the
+point.
+
+### What this repo does after the deploy
+
+Nothing until then. All three items are dead code rather than wrong code the moment the server
+answers 6, so they come out in one commit afterwards:
+
+1. `useOnboarding.ts` — drop `serverStep === 5 && accountCreatedAt ? 6 : serverStep`. Written to be
+   a no-op once the server says 6, so it short-circuits itself.
+2. `createAccount(token, password, email)` narrows back to two arguments across
+   `shared/onboarding/types.ts`, `client/src/lib/httpOnboardingApi.ts`,
+   `shared/onboarding/mockApi.ts`, `useOnboarding.ts` and the tests that call it.
+3. `mockApi.ts`'s `recomputeStep` cap goes from 5 back to 6. It was lowered in §36 to match the
+   deployed truth; leaving it at 5 after the deploy would make it a lie in the other direction.
+
+The gate fix from §36 stays either way. `accountCreatedAt` is the honest test of what those two
+cards claim, and `status === "active"` never was.
+
+### Verified
+
+Backend: `npm run check` clean, `npx vitest run` **74 files, 2,278 tests passing**. The three tests
+worth naming are the ones that would have caught these: *"names the account from the notices address
+on file, not from the request"* and *"resets the login this gym has, whatever address the request
+names"* both post a different address than the one on file and assert the account still lands on
+ours, and *"moves to 6 once the five the gym does are complete"* asserted 5 until today — that
+assertion was the bug, and the suite was green over a wizard that could not finish.
+
+Frontend untouched, so §36's `npx tsc --noEmit` clean and **56 files, 1,050 tests passing** still
+stand.
+
+## 37. Step 6 says whose move each part of the day is (2026-08-26)
+
+> review and improve it
+
+Step 6 on `test-gym-5`, installed and with an account: "Where it goes", "What happens on the day",
+"Your dashboard is ready".
+
+### The list was six sentences of even weight
+
+`ON_THE_DAY` was six strings, each a numbered circle and a paragraph, and two of the six need the
+gym: checking the serial number against the plate, and signing the certificate that starts the term.
+Nothing distinguished them from the four we do while somebody watches. The card's own docstring says
+what it is for — "the only part of installation the gym has to be present for" — and the list was the
+one thing on it not saying so.
+
+`StepPartnership`'s timeline had already been through this, and the note there is the argument:
+"Every title names **whose move it is**, because that is the one thing a reader wants from a list
+like this and the one thing it was not saying." Step 6 now has the same shape, title and body, and
+the titles read down as We / You / We / We / We / You.
+
+The bodies earn their place rather than restating the titles. Two carry something the old sentences
+did not: item 1 says the gym accepts the placement on the day, which is what Schedule A records
+("that the Gym accepted the location the Machine was placed in") and the last cheap moment to move
+it before §21 needs written approval; item 4 says why the photographs are taken, which is the
+condition record the deposit is later measured against.
+
+**The numbers stay**, which is not the answer §33 gave step 5. Step 5's list was a calendar of
+separate weeks, where counting said nothing the dates did not. This is a sequence inside one visit,
+told before it happens, and it is numbered the same way `StepPartnership` numbers its timeline —
+same `bg-primary/10` circle, same component shape. Two people standing at a machine have some use
+for "we're at four of six".
+
+### "Tell us if this address has changed" named no way to tell us
+
+The card stated an obligation (§21: moving the machine needs written approval) and asked the gym to
+act, on a screen where step 1 is read-only because the agreement is signed (§32). There was no
+channel on the card and no editable field anywhere in the flow. It now carries a `mailto` with the
+subject `Installation address`, styled as the same inline control the card below it uses for
+"Read Schedule A", at a 44px target. Also "tell us now" → "tell us before the survey", which is the
+deadline that actually matters.
+
+### The unit's particulars were truncated behind a `title`
+
+`Fact` cut every value with `truncate` and put the whole of it in a `title` attribute — on a
+two-column grid with no breakpoint, so about 150px a cell at 375px. That is the same mistake step 4's
+receipt reference had, corrected there earlier the same week for the same reason: a touch screen has
+no way to open a `title`, and a serial number a gym cannot read in full is useless on the one screen
+whose purpose is comparing it against the plate on the machine. The grid is now
+`grid-cols-1 sm:grid-cols-2` and values wrap (`break-all` for the mono ones). The serial number's
+placeholder also stopped rendering in monospace — "To be verified on site" is a sentence, and it was
+being cut to "To be verifi…" in a typeface meant for a part number.
+
+### Two em dashes in rendered copy
+
+"signing it is a second signature — separate from the one you have already given" and "before you
+sign it — that is what the check is for", both now two sentences. The `"—"` standing in for an
+absent Machine ID is a glyph, not prose, and stays.
+
+### Not done
+
+**`(§21)` and `(§4.1)` on the screen.** §24 took clause numbers off step 4 as references nobody could
+follow from where they were printed. These two survive because this screen does have a way into the
+agreement, and §4.1 sits against the one commercial fact a gym is most likely to have assumed
+backwards. Worth revisiting as a pair rather than one at a time.
+
+### Verified
+
+`npx tsc --noEmit` clean. `npx vitest run`: **56 files, 1,052 tests passing** — two new
+(`OnboardingFlow.test.tsx`: the two items that need the gym lead with "You"; a gym whose address has
+changed has somewhere to say so). The Schedule A test's `/sign the Installation Certificate/` still
+holds: the certificate keeps its proper name, in item 6's body rather than its title.

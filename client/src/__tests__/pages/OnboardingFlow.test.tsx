@@ -1183,6 +1183,26 @@ describe("OnboardingFlow — step 6 tracks the installation", () => {
     expect(screen.queryByTestId("button-sign")).not.toBeInTheDocument();
   });
 
+  it("says whose move each part of installation day is", async () => {
+    await reachStepSix();
+    const checks = screen.getByTestId("installation-checks");
+    // The two of the six that need the gym, and they lead with "You" rather than being six
+    // sentences of even weight that a reader has to sort.
+    expect(checks).toHaveTextContent("You check the unit");
+    expect(checks).toHaveTextContent("You both sign the certificate");
+    expect(checks).toHaveTextContent("We train your staff");
+  });
+
+  it("gives a gym whose address has changed somewhere to say so", async () => {
+    await reachStepSix();
+    // Step 1 is locked once the agreement is signed, so "tell us if this has changed" was an
+    // instruction with no way to follow it.
+    expect(screen.getByTestId("link-address-changed")).toHaveAttribute(
+      "href",
+      expect.stringContaining("mailto:"),
+    );
+  });
+
   it("offers a way to read Schedule A rather than paraphrasing it and stopping there", async () => {
     const user = await reachStepSix();
     expect(screen.getByTestId("installation-checks")).toHaveTextContent(
