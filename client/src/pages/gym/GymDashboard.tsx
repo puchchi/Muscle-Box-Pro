@@ -8,8 +8,10 @@ import {
   AlertTriangle,
   BarChart3,
   Cpu,
+  Download,
   FileText,
   IndianRupee,
+  Info,
   Megaphone,
   ShieldCheck,
   TrendingUp,
@@ -76,16 +78,26 @@ import {
  * 5. **An absent section says so; it never renders as zero.** `GET /gym/portal` ships
  *    partial — cups, advertising revenue, electricity and settled statements are four
  *    separate feeds and none of them exists yet. Each is a `PortalSection`, and where one
- *    is absent the card keeps its heading and explains itself. ₹0 in those cards is the
- *    one output this file must not produce: a gym reading ₹0 settled concludes it earned
- *    nothing, and will believe that number long before it suspects the page. The card is
- *    kept rather than hidden so a gym also learns the figure is coming.
+ *    is absent the card keeps its heading and says the figure is not there. ₹0 in those
+ *    cards is the one output this file must not produce: a gym reading ₹0 settled concludes
+ *    it earned nothing, and will believe that number long before it suspects the page. The
+ *    card is kept rather than hidden so a gym also learns the figure is coming.
+ *
+ *    The *reassurance* that goes with it — that settled statements are unaffected — is
+ *    stated once, by `ReportingNotice`, rather than in each of the six cards that can be
+ *    absent at the same time. Six copies of the same paragraph is how a working dashboard
+ *    comes to look like a broken one.
  *
  * The data source is still a fixture until the reporting endpoint exists (§15 of
  * docs/gym-onboarding.md), but it is reached asynchronously and validated, so the
  * pending and error paths below are the real ones rather than something written on the
  * day the network arrives. Swapping the source is one function body in
  * `@/lib/gymPortalApi`.
+ *
+ * The whole screen is scoped dark by the `dark` class on `PortalChrome`'s root, so the
+ * tokens in `index.css` resolve to their dark values and every shadcn control inside
+ * follows. Nothing here hardcodes a surface colour, which is what makes that one class
+ * enough.
  */
 
 /**
@@ -123,6 +135,18 @@ const MACHINE_STATUS_LABEL: Record<MachineStatus, string> = {
   servicing: "Being serviced",
   replaced: "Replaced with a newer unit",
   removed: "Removed",
+};
+
+/**
+ * The dot beside that label. Exhaustive for the same reason, and colour is never the only
+ * carrier: the words are right there next to it.
+ */
+const MACHINE_STATUS_TONE: Record<MachineStatus, string> = {
+  allocated: "bg-amber-400",
+  installed: "bg-emerald-400",
+  servicing: "bg-amber-400",
+  replaced: "bg-emerald-400",
+  removed: "bg-rose-400",
 };
 
 /**
@@ -223,7 +247,7 @@ export default function GymDashboard() {
   // in the cache and the first thing on screen is the portal itself.
   if (isCheckingSession || signedOut || sessionGone) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-muted-foreground">
+      <div className="dark flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Loading your portal...
       </div>
     );
@@ -269,71 +293,102 @@ export default function GymDashboard() {
 function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
   const { terms, sales, adRevenue, electricity, statements } = snapshot;
 
+  // One notice for the whole page, so `UnavailableCard` can stay a single short line.
+  const anythingUnbuilt =
+    (!sales.available && sales.reason === "not_implemented") ||
+    (!adRevenue.available && adRevenue.reason === "not_implemented") ||
+    (!electricity.available && electricity.reason === "not_implemented") ||
+    (!statements.available && statements.reason === "not_implemented");
+
   return (
     <>
-      <h1 className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1">
-        {snapshot.gymDisplayName}
-      </h1>
-      <p className="text-muted-foreground text-sm mb-8" data-testid="as-of">
-        {sales.available ? (
-          <>
-            {monthName(sales.data.currentPeriod.period)} so far — provisional, settles by the{" "}
-            {terms.settlementDaysAfterMonthEnd}th. Figures as at{" "}
-            {formatAgreementDate(snapshot.asOf)}.
-          </>
-        ) : (
-          // No period to name, so nothing is claimed about one. The timestamp still
-          // belongs here: it is when the record below was read, and it is true whether or
-          // not the trading feeds answered.
-          <>Your account as at {formatAgreementDate(snapshot.asOf)}.</>
-        )}
-      </p>
+      <div className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-black uppercase tracking-tight text-foreground sm:text-3xl">
+            {snapshot.gymDisplayName}
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="as-of">
+            {sales.available ? (
+              <>
+                {monthName(sales.data.currentPeriod.period)} so far. Provisional, settles by the{" "}
+                {terms.settlementDaysAfterMonthEnd}th. Figures as at{" "}
+                {formatAgreementDate(snapshot.asOf)}.
+              </>
+            ) : (
+              // No period to name, so nothing is claimed about one. The timestamp still
+              // belongs here: it is when the record below was read, and it is true whether or
+              // not the trading feeds answered.
+              <>Your account as at {formatAgreementDate(snapshot.asOf)}.</>
+            )}
+          </p>
+        </div>
+        <MachineStatusPill status={snapshot.machine.status} />
+      </div>
 
       {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sales.available ? (
-          <TradingCards
-            trading={sales.data}
-            terms={terms}
-            adRevenue={adRevenue}
+      <Section
+        title="Your figures"
+        note={sales.available ? <Chip>Provisional</Chip> : null}
+        className="mt-8"
+      >
+        {/* One grid, not a four-up band and a two-up band: advertising and electricity are
+            money the gym is owed on the same terms as the rest, and a card twice the width
+            of its neighbours is a card that is mostly empty. */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {sales.available ? (
+            <TradingCards
+              trading={sales.data}
+              terms={terms}
+              adRevenue={adRevenue}
+              statements={statements}
+            />
+          ) : (
+            <TradingCardsUnavailable reason={sales.reason} />
+          )}
+
+          {adRevenue.available ? (
+            <AdvertisingCard terms={terms} revenueExTaxInr={adRevenue.data.revenueExTaxInr} />
+          ) : (
+            <UnavailableCard
+              icon={Megaphone}
+              label="Advertising share"
+              testId="card-advertising"
+              reason={adRevenue.reason}
+              what="Your share of screen advertising"
+            />
+          )}
+
+          {electricity.available ? (
+            <ElectricityCard reviewPeriod={electricity.data} terms={terms} />
+          ) : (
+            <UnavailableCard
+              icon={Zap}
+              label="Electricity reimbursement"
+              testId="card-electricity"
+              reason={electricity.reason}
+              what="Your electricity reimbursement"
+            />
+          )}
+        </div>
+
+        {anythingUnbuilt && <ReportingNotice />}
+      </Section>
+
+      <Section title="Your account" className="mt-10">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <MachineCard machine={snapshot.machine} />
+          <StatementsCard
             statements={statements}
+            agreement={snapshot.agreement}
+            wide={snapshot.deposit.status !== "paid"}
           />
-        ) : (
-          <TradingCardsUnavailable reason={sales.reason} />
-        )}
-
-        {adRevenue.available ? (
-          <AdvertisingCard terms={terms} revenueExTaxInr={adRevenue.data.revenueExTaxInr} />
-        ) : (
-          <UnavailableCard
-            icon={Megaphone}
-            label="Advertising share"
-            testId="card-advertising"
-            reason={adRevenue.reason}
-            what="Your share of screen advertising"
-          />
-        )}
-
-        {electricity.available ? (
-          <ElectricityCard reviewPeriod={electricity.data} terms={terms} />
-        ) : (
-          <UnavailableCard
-            icon={Zap}
-            label="Electricity reimbursement"
-            testId="card-electricity"
-            reason={electricity.reason}
-            what="Your electricity reimbursement"
-          />
-        )}
-
-        <MachineCard machine={snapshot.machine} />
-        <StatementsCard statements={statements} agreement={snapshot.agreement} />
-        {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
-      </div>
+          {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
+        </div>
+      </Section>
 
       {sales.available && (
-        <p className="text-xs text-muted-foreground mt-8 leading-relaxed max-w-3xl">
+        <p className="mt-10 max-w-3xl text-xs leading-relaxed text-muted-foreground">
           Figures shown here before the 15th of a month are provisional. Your monthly statement is
           the settled amount, issued within {terms.settlementDaysAfterMonthEnd} days of month-end.
           Costs are shown as a single total because your share is calculated on net profit, not on
@@ -448,18 +503,55 @@ function PortalChrome({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <Link href="/">
-            <img src="/assets/logo.png" alt="MuscleBoxPro" className="h-9 w-auto cursor-pointer" />
-          </Link>
-          <div className="flex items-center gap-4 min-w-0">
-            <span className="text-sm text-muted-foreground truncate hidden sm:inline">{email}</span>
+    <div className="dark relative min-h-screen bg-background text-foreground">
+      {/* Deliberately not `overflow-hidden` anywhere above the header: an overflow
+          ancestor makes `position: sticky` stick to a box that never scrolls. The glow is
+          a background on a full-width box for the same reason, rather than a blurred blob
+          that would need clipping. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[360px] bg-[radial-gradient(70%_100%_at_50%_0%,hsl(var(--primary)/0.10),transparent_72%)]"
+      />
+
+      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              href="/"
+              className="flex-shrink-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              {/* The wordmark in `logo.png` is black, so on this surface it needs the same
+                  treatment the login page's dark panel gives it. */}
+              <img
+                src="/assets/logo.png"
+                alt="MuscleBoxPro"
+                className="h-8 w-auto brightness-0 invert"
+              />
+            </Link>
+            <span aria-hidden="true" className="hidden h-5 w-px bg-border sm:block" />
+            <span className="hidden text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground sm:block">
+              Partner portal
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {email && (
+              <span className="hidden items-center gap-2 rounded-full border border-border bg-secondary/50 py-1 pl-1 pr-3 sm:flex">
+                <span
+                  aria-hidden="true"
+                  className="grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-xs font-bold text-white"
+                >
+                  {email.charAt(0).toUpperCase()}
+                </span>
+                <span className="max-w-[180px] truncate text-xs font-medium text-muted-foreground lg:max-w-none">
+                  {email}
+                </span>
+              </span>
+            )}
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={onSignOut}
-              className="h-9 rounded-xl font-semibold text-sm"
+              className="h-9 cursor-pointer rounded-xl border-border bg-secondary/50 px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
               data-testid="button-signout"
             >
               Sign out
@@ -468,8 +560,82 @@ function PortalChrome({
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">{children}</main>
+      <main className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        {children}
+      </main>
     </div>
+  );
+}
+
+/**
+ * A labelled hairline over a band of cards.
+ *
+ * Nine cards in one undifferentiated grid is nine things of equal importance, which is
+ * how the page read before: the figures that change every day sat in the same row as the
+ * agreement hash. The rule is the cheapest way to say "these belong together".
+ */
+function Section({
+  title,
+  note,
+  className,
+  children,
+}: {
+  title: string;
+  note?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={className}>
+      <div className="mb-4 flex items-center gap-4">
+        <h2 className="flex-shrink-0 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          {title}
+        </h2>
+        <span aria-hidden="true" className="h-px flex-1 bg-border" />
+        {note}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex-shrink-0 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+      {children}
+    </span>
+  );
+}
+
+function MachineStatusPill({ status }: { status: MachineStatus }) {
+  return (
+    <span
+      className="inline-flex flex-shrink-0 items-center gap-2 self-start rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold text-foreground"
+      data-testid="machine-status"
+    >
+      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${MACHINE_STATUS_TONE[status]}`} />
+      {MACHINE_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+/**
+ * Said once for the page, not once per card.
+ *
+ * Four feeds can be absent at the same time, and six of the nine cards then carry the
+ * same three-line apology. That is the state a real gym is in today, so it is the state
+ * the layout has to look right in.
+ */
+function ReportingNotice() {
+  return (
+    <p className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+      <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/70" aria-hidden="true" />
+      <span>
+        Some figures above are not reported on this page yet. We are still building them.
+        Nothing you are owed depends on it: your settled statements are issued from our records
+        and emailed to you as usual.
+      </span>
+    </p>
   );
 }
 
@@ -483,19 +649,34 @@ function PortalChrome({
 function PortalLoading() {
   return (
     <div data-testid="portal-loading" aria-busy="true">
-      <div className="h-7 w-64 bg-gray-200 rounded-lg animate-pulse mb-2" />
-      <div className="h-4 w-80 max-w-full bg-gray-100 rounded animate-pulse mb-8" />
+      <div className="border-b border-border pb-6">
+        <div className="h-8 w-64 animate-pulse rounded-lg bg-secondary" />
+        <div className="mt-3 h-4 w-80 max-w-full animate-pulse rounded bg-secondary/60" />
+      </div>
       <p className="sr-only">Loading your figures</p>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }, (_, index) => (
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
           <div
             key={index}
-            className="rounded-2xl border border-gray-200 bg-white p-5 animate-pulse"
+            className="animate-pulse rounded-2xl border border-border bg-card p-5"
             aria-hidden="true"
           >
-            <div className="h-3 w-24 bg-gray-100 rounded mb-4" />
-            <div className="h-7 w-32 bg-gray-200 rounded mb-3" />
-            <div className="h-3 w-full bg-gray-100 rounded" />
+            <div className="mb-6 h-3 w-24 rounded bg-secondary/70" />
+            <div className="mb-3 h-8 w-32 rounded bg-secondary" />
+            <div className="h-3 w-full rounded bg-secondary/60" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        {Array.from({ length: 2 }, (_, index) => (
+          <div
+            key={index}
+            className="animate-pulse rounded-2xl border border-border bg-card p-5"
+            aria-hidden="true"
+          >
+            <div className="mb-6 h-3 w-32 rounded bg-secondary/70" />
+            <div className="mb-3 h-7 w-28 rounded bg-secondary" />
+            <div className="h-3 w-4/5 rounded bg-secondary/60" />
           </div>
         ))}
       </div>
@@ -531,25 +712,25 @@ function PortalError({
 
   return (
     <div
-      className="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6 max-w-2xl"
+      className="max-w-2xl rounded-2xl border border-amber-400/25 bg-amber-400/[0.07] p-5 sm:p-6"
       data-testid="portal-error"
       role="alert"
     >
-      <p className="text-sm font-bold text-foreground flex items-center gap-2">
-        <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+      <p className="flex items-center gap-2.5 text-sm font-bold text-amber-100">
+        <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-400" aria-hidden="true" />
         We can't show your figures right now
       </p>
-      <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-        This is a problem at our end, not with your machine or your account — it is still trading and
-        every cup is still counted. Nothing you are owed is affected: your settled statements are
-        issued from our records, not from this page.
+      <p className="mt-2 text-sm leading-relaxed text-amber-100/70">
+        This is a problem at our end, not with your machine or your account. It is still trading
+        and every cup is still counted. Nothing you are owed depends on it: your settled
+        statements are issued from our records, not from this page.
       </p>
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         onClick={onRetry}
         disabled={isRetrying}
-        className="h-10 rounded-xl font-semibold text-sm mt-4"
+        className="mt-5 h-10 cursor-pointer rounded-xl border-amber-400/30 bg-amber-400/10 px-5 text-sm font-semibold text-amber-100 transition-colors hover:bg-amber-400/20"
         data-testid="button-retry-snapshot"
       >
         {isRetrying ? "Trying again..." : "Try again"}
@@ -564,32 +745,103 @@ type CardProps = {
   icon: typeof Cpu;
   label: string;
   testId: string;
+  className?: string;
   children: React.ReactNode;
 };
 
-function Card({ icon: Icon, label, testId, children }: CardProps) {
+/**
+ * The detail cards: machine, statements, deposit, advertising, electricity.
+ *
+ * Icon and heading on one line, because these are read rather than scanned. The figure
+ * cards do the opposite — see `MetricCard`.
+ */
+function Card({ icon: Icon, label, testId, className, children }: CardProps) {
   return (
     <div
-      className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col gap-3"
+      className={`flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 ${className ?? ""}`}
       data-testid={testId}
     >
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-          <Icon className="w-4 h-4 text-primary" />
-        </div>
-        <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+        <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+        <h3 className="text-sm font-semibold text-foreground">{label}</h3>
       </div>
       {children}
     </div>
   );
 }
 
-/** The headline number on a card. */
+/**
+ * One of the four figures a gym signs in for.
+ *
+ * Label above, icon out to the right, numeral on its own line at display weight. The
+ * point of the different shape is that these four are the reason for the page and the
+ * other five are reference: a grid of nine identical cards gave a gym no idea where to
+ * look first.
+ *
+ * `accent` is for the payout, which is the one figure an owner is actually looking for.
+ */
+function MetricCard({
+  icon: Icon,
+  label,
+  testId,
+  accent = false,
+  children,
+}: CardProps & { accent?: boolean }) {
+  return (
+    <div
+      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-card p-5 ${
+        accent ? "border-primary/25" : "border-border"
+      }`}
+      data-testid={testId}
+    >
+      {accent && (
+        <>
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-accent to-primary"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-primary/20 blur-3xl"
+          />
+        </>
+      )}
+      <div className="relative flex items-start justify-between gap-3">
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          {label}
+        </h3>
+        <span
+          className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg ring-1 ring-inset ${
+            accent
+              ? "bg-primary/10 text-primary ring-primary/25"
+              : "bg-secondary/50 text-muted-foreground ring-border"
+          }`}
+        >
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      </div>
+      <div className="relative mt-4 flex flex-1 flex-col gap-3">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * The headline number on a card.
+ *
+ * White on every card including the payout, which is the one that matters most. The
+ * brand gradient was tried here and reads magenta at this length — a colour this app uses
+ * for nothing else, on the one figure that must not look like a warning. The payout card
+ * is distinguished by its frame instead.
+ */
 function Figure({ value, caption }: { value: string; caption: string }) {
   return (
     <div>
-      <p className="text-2xl font-display font-black text-foreground tracking-tight">{value}</p>
-      <p className="text-xs text-muted-foreground">{caption}</p>
+      <p className="font-display text-[26px] font-black leading-none tracking-tight tabular-nums text-foreground">
+        {value}
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{caption}</p>
     </div>
   );
 }
@@ -601,6 +853,9 @@ function Figure({ value, caption }: { value: string; caption: string }) {
  * and icon intact, because two things have to be true at once: the gym must not read a
  * figure that is not there, and it should still learn that the figure exists and is
  * coming. A missing card teaches nothing; a card reading ₹0 teaches something false.
+ *
+ * One line, not a paragraph. `ReportingNotice` carries the rest for the whole page, which
+ * is what keeps six of these from reading as six separate faults.
  *
  * `what` is the subject of the sentence, capitalised — "Your cup count", not "cups".
  * Passed in rather than derived from `label` because the heading is a noun phrase for a
@@ -620,33 +875,37 @@ function UnavailableCard({
   what: string;
 }) {
   return (
-    <Card icon={icon} label={label} testId={testId}>
+    <MetricCard icon={icon} label={label} testId={testId}>
       <div data-testid={`${testId}-unavailable`}>
         {/* Deliberately not styled as a `Figure`. The headline slot on every other card
             holds a number, and putting words in the same weight and size is how a
             skim-read turns "not available" into a value. */}
-        <p className="text-sm font-semibold text-muted-foreground">Not available yet</p>
-        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+        <p className="inline-flex items-center gap-2 rounded-lg bg-secondary/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+          Not available yet
+        </p>
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
           {reason === "no_data_yet" ? (
             <>{what} appears here once your machine is installed and trading.</>
           ) : (
-            <>
-              {what} is not reported on this page yet — we are still building it. Nothing you are
-              owed depends on it: your settled statements are issued from our records.
-            </>
+            <>{what} is not reported on this page yet.</>
           )}
         </p>
       </div>
-    </Card>
+    </MetricCard>
   );
 }
 
-/** A label/value row for the detail lines under a figure. */
+/** The detail lines under a figure, hairline-separated. */
+function RowGroup({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <dl className={`divide-y divide-border/70 ${className ?? ""}`}>{children}</dl>;
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 text-xs">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-foreground text-right">{value}</span>
+    <div className="flex items-baseline justify-between gap-3 py-2 text-xs first:pt-0 last:pb-0">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-semibold tabular-nums text-foreground">{value}</dd>
     </div>
   );
 }
@@ -661,21 +920,31 @@ function CupsCard({
   const { milestone, shake } = settlement;
 
   return (
-    <Card icon={BarChart3} label="Cups sold" testId="card-cups">
+    <MetricCard icon={BarChart3} label="Cups sold" testId="card-cups">
       <Figure value={count(shake.paidCups)} caption="this month, paid and dispensed" />
-      <Row label="Lifetime" value={count(milestone.closingPaidCups)} />
+      <RowGroup>
+        <Row label="Lifetime" value={count(milestone.closingPaidCups)} />
+      </RowGroup>
 
-      <div className="mt-1">
-        <div className="h-2 rounded-full bg-gray-100 overflow-hidden" data-testid="milestone-bar">
+      <div className="mt-auto pt-1">
+        <div
+          className="h-1.5 overflow-hidden rounded-full bg-secondary"
+          data-testid="milestone-bar"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={milestone.progressPct}
+          aria-label={`Progress to a ${terms.gymSharePctAfterMilestone}% share of net profit`}
+        >
           <div
-            className="h-full bg-primary rounded-full"
+            className="h-full rounded-full bg-gradient-to-r from-accent to-primary"
             style={{ width: `${milestone.progressPct}%` }}
           />
         </div>
-        <p className="text-xs text-muted-foreground mt-2 leading-relaxed" data-testid="milestone-note">
+        <p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-testid="milestone-note">
           {milestone.reachedByPeriodEnd ? (
             <>
-              Milestone reached — your share of net profit is now{" "}
+              Milestone reached. Your share of net profit is now{" "}
               {terms.gymSharePctAfterMilestone}%.
             </>
           ) : (
@@ -696,31 +965,33 @@ function CupsCard({
           // Which of §6.1's two tests is being tracked, and why. A bar tracking the
           // 15,000-cup figure would read 48% here while the real threshold is 94% of the
           // way in — the gym would think the step-up is a year off when it is a month.
-          <p className="text-[11px] text-muted-foreground/80 mt-1 leading-relaxed">
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/80">
             {milestone.binding === "netProfit"
-              ? `Tracking ${formatInr(terms.milestoneNetProfitInr)} of cumulative net profit — at your margin that arrives before ${count(terms.milestoneCups)} cups.`
-              : `Tracking ${count(terms.milestoneCups)} cups — at your margin that arrives before ${formatInr(terms.milestoneNetProfitInr)} of net profit.`}
+              ? `Tracking ${formatInr(terms.milestoneNetProfitInr)} of cumulative net profit. At your margin that arrives before ${count(terms.milestoneCups)} cups.`
+              : `Tracking ${count(terms.milestoneCups)} cups. At your margin that arrives before ${formatInr(terms.milestoneNetProfitInr)} of net profit.`}
           </p>
         )}
       </div>
-    </Card>
+    </MetricCard>
   );
 }
 
 function RevenueCard({ settlement }: { settlement: PeriodSettlement }) {
   return (
-    <Card icon={IndianRupee} label="Revenue collected" testId="card-revenue">
+    <MetricCard icon={IndianRupee} label="Revenue collected" testId="card-revenue">
       <Figure value={formatInr(settlement.shake.grossExTaxInr)} caption="this month, excluding GST" />
-      <Row label="Lifetime" value={formatInr(settlement.milestone.closingGrossExTaxInr)} />
-      <Row
-        label="Average per cup"
-        value={
-          settlement.shake.paidCups > 0
-            ? formatInr(settlement.shake.averageSellingPriceInr)
-            : "—"
-        }
-      />
-    </Card>
+      <RowGroup className="mt-auto">
+        <Row label="Lifetime" value={formatInr(settlement.milestone.closingGrossExTaxInr)} />
+        <Row
+          label="Average per cup"
+          value={
+            settlement.shake.paidCups > 0
+              ? formatInr(settlement.shake.averageSellingPriceInr)
+              : "—"
+          }
+        />
+      </RowGroup>
+    </MetricCard>
   );
 }
 
@@ -728,21 +999,23 @@ function ProfitCard({ settlement }: { settlement: PeriodSettlement }) {
   const { shake } = settlement;
 
   return (
-    <Card icon={TrendingUp} label="Net profit" testId="card-profit">
+    <MetricCard icon={TrendingUp} label="Net profit" testId="card-profit">
       <Figure value={formatInr(shake.netProfitInr)} caption="sales less direct costs, this month" />
       {/* One aggregate, never a per-unit schedule: §40's confidentiality runs both
           ways, and the gym needs this figure to verify net profit, not our cost card. */}
-      <Row label="Direct costs" value={formatInr(shake.directVariableCostsInr)} />
-      <Row label="Your share" value={`${shake.currentGymSharePct}%`} />
+      <RowGroup className={shake.split ? undefined : "mt-auto"}>
+        <Row label="Direct costs" value={formatInr(shake.directVariableCostsInr)} />
+        <Row label="Your share" value={`${shake.currentGymSharePct}%`} />
+      </RowGroup>
       {shake.split && (
-        <p className="text-xs text-muted-foreground leading-relaxed" data-testid="split-note">
+        <p className="mt-auto text-xs leading-relaxed text-muted-foreground" data-testid="split-note">
           Your milestone fell inside this month, so two rates apply:{" "}
           {shake.tranches[0].gymSharePct}% on the first {count(shake.tranches[0].paidCups)} cups and{" "}
-          {shake.tranches[1].gymSharePct}% on the rest — an effective{" "}
+          {shake.tranches[1].gymSharePct}% on the rest, an effective{" "}
           {shake.effectiveGymSharePct}%.
         </p>
       )}
-    </Card>
+    </MetricCard>
   );
 }
 
@@ -758,42 +1031,46 @@ function PayoutCard({
   const lastSettled = statements.available ? statements.data[0] : undefined;
 
   return (
-    <Card icon={Wallet} label="Your payout" testId="card-payout">
+    <MetricCard icon={Wallet} label="Your payout" testId="card-payout" accent>
       <Figure value={formatInr(settlement.gymPayoutInr)} caption="provisional, this month so far" />
-      <Row label="Share of shake profit" value={formatInr(settlement.shake.gymShareInr)} />
-      {advertisingReported && (
-        <Row label="Share of advertising" value={formatInr(settlement.advertising.gymShareInr)} />
-      )}
+      <RowGroup>
+        <Row label="Share of shake profit" value={formatInr(settlement.shake.gymShareInr)} />
+        {advertisingReported && (
+          <Row label="Share of advertising" value={formatInr(settlement.advertising.gymShareInr)} />
+        )}
+      </RowGroup>
       {/* The headline above is `shake + advertising`, and advertising went in as zero
           because it was not reported. Stated rather than left implicit: the whole reason
           the absent sections are absent instead of zeroed is that an unexplained
           understatement is indistinguishable from a bad month. */}
       {!advertisingReported && (
         <p
-          className="text-xs text-muted-foreground leading-relaxed"
+          className="text-xs leading-relaxed text-muted-foreground"
           data-testid="payout-excludes-advertising"
         >
-          This is your shake profit share only. Your advertising share is not reported here yet — it
+          This is your shake profit share only. Your advertising share is not reported here yet. It
           is settled with your monthly statement either way.
         </p>
       )}
-      <div className="border-t border-gray-100 pt-2 mt-1">
+      <div className="mt-auto border-t border-border/70 pt-2">
         {!statements.available ? (
           // Not "your first statement is issued after your first full month": that would
           // be a claim about this gym's history, and we do not have it.
           <p className="text-xs text-muted-foreground">Settled months are not listed here yet.</p>
         ) : lastSettled ? (
-          <Row
-            label={`Settled ${monthName(lastSettled.period)}`}
-            value={formatInr(statementTotalInr(lastSettled))}
-          />
+          <RowGroup>
+            <Row
+              label={`Settled ${monthName(lastSettled.period)}`}
+              value={formatInr(statementTotalInr(lastSettled))}
+            />
+          </RowGroup>
         ) : (
           <p className="text-xs text-muted-foreground">
             Your first statement is issued after your first full month.
           </p>
         )}
       </div>
-    </Card>
+    </MetricCard>
   );
 }
 
@@ -810,17 +1087,19 @@ function ElectricityCard({
   );
 
   return (
-    <Card icon={Zap} label="Electricity reimbursement" testId="card-electricity">
+    <MetricCard icon={Zap} label="Electricity reimbursement" testId="card-electricity">
       <Figure
         value={formatInr(electricity.earnedInr)}
         caption={`earned so far, ${reviewPeriod.label}`}
       />
-      <Row
-        label={`Completed blocks of ${count(terms.electricityCupsPerBlock)}`}
-        value={`${electricity.completedBlocks}`}
-      />
+      <RowGroup>
+        <Row
+          label={`Completed blocks of ${count(terms.electricityCupsPerBlock)}`}
+          value={`${electricity.completedBlocks}`}
+        />
+      </RowGroup>
       {electricity.floorApplied && (
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           That is the {formatInr(terms.electricityInrPerBlock)} minimum for the review period,
           which you are paid whatever the cup count.
         </p>
@@ -828,18 +1107,18 @@ function ElectricityCard({
       {/* Cups to the next *increase*, not to the next block boundary. Under the floor
           the two differ, and "600 more cups earns another ₹1,000" would be false. */}
       {electricity.nextIncreaseAtCups > 0 && (
-        <p className="text-xs text-muted-foreground leading-relaxed" data-testid="electricity-next">
+        <p className="text-xs leading-relaxed text-muted-foreground" data-testid="electricity-next">
           {count(electricity.cupsToNextIncrease)} more cups in this review period takes it to{" "}
           {formatInr(electricity.earnedInr + terms.electricityInrPerBlock)}.
         </p>
       )}
       {electricity.cupsInIncompleteBlock > 0 && (
-        <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+        <p className="text-[11px] leading-relaxed text-muted-foreground/80">
           Part-blocks are not carried into the next review period, which ends{" "}
           {formatAgreementDate(reviewPeriod.endsOn)}.
         </p>
       )}
-    </Card>
+    </MetricCard>
   );
 }
 
@@ -866,17 +1145,19 @@ function AdvertisingCard({
   );
 
   return (
-    <Card icon={Megaphone} label="Advertising share" testId="card-advertising">
+    <MetricCard icon={Megaphone} label="Advertising share" testId="card-advertising">
       <Figure value={formatInr(advertising.gymShareInr)} caption="your share, this month" />
-      <Row label="Screen revenue" value={formatInr(advertising.revenueExTaxInr)} />
-      <Row label="Your share" value={`${advertising.gymSharePct}%`} />
+      <RowGroup>
+        <Row label="Screen revenue" value={formatInr(advertising.revenueExTaxInr)} />
+        <Row label="Your share" value={`${advertising.gymSharePct}%`} />
+      </RowGroup>
       {/* §9.4. Stated on the card rather than in a tooltip, because a gym that has
           just stepped up to 50% on shakes will otherwise read this as an error. */}
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <p className="mt-auto text-xs leading-relaxed text-muted-foreground">
         Advertising is shared {100 - advertising.gymSharePct}:{advertising.gymSharePct} for the
         whole term. It does not move with your shake profit share.
       </p>
-    </Card>
+    </MetricCard>
   );
 }
 
@@ -884,17 +1165,19 @@ function MachineCard({ machine }: { machine: GymPortalSnapshot["machine"] }) {
   return (
     <Card icon={Cpu} label="Your machine" testId="card-machine">
       <p className="text-sm font-semibold text-foreground">{machine.model}</p>
-      <Row label="Status" value={MACHINE_STATUS_LABEL[machine.status]} />
-      <Row label="Serial" value={machine.serialNumber ?? "Not yet allocated"} />
-      <Row
-        label="Installed"
-        value={machine.installationDate ? formatAgreementDate(machine.installationDate) : "Pending"}
-      />
-      <Row
-        label="Last serviced"
-        value={machine.lastServiceAt ? formatIstDate(machine.lastServiceAt) : "—"}
-      />
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <RowGroup>
+        <Row label="Status" value={MACHINE_STATUS_LABEL[machine.status]} />
+        <Row label="Serial" value={machine.serialNumber ?? "Not yet allocated"} />
+        <Row
+          label="Installed"
+          value={machine.installationDate ? formatAgreementDate(machine.installationDate) : "Pending"}
+        />
+        <Row
+          label="Last serviced"
+          value={machine.lastServiceAt ? formatIstDate(machine.lastServiceAt) : "—"}
+        />
+      </RowGroup>
+      <p className="mt-auto text-xs leading-relaxed text-muted-foreground">
         Servicing, restocking and repairs are ours. Anything wrong with the machine is a call to
         us, at no cost to you.
       </p>
@@ -909,51 +1192,64 @@ function MachineCard({ machine }: { machine: GymPortalSnapshot["machine"] }) {
  * statements come from a pipeline that does not exist yet. Keeping them together means a
  * gym with no statements can still see and check its signed agreement, which is the one
  * thing on this screen it may actually need.
+ *
+ * `wide` fills the column the deposit card would have taken. A deferred deposit moves
+ * that card out to a banner, and without this the row below ends in a gap.
  */
 function StatementsCard({
   statements,
   agreement,
+  wide,
 }: {
   statements: GymPortalSnapshot["statements"];
   agreement: GymPortalSnapshot["agreement"];
+  wide: boolean;
 }) {
   return (
-    <Card icon={FileText} label="Statements & agreement" testId="card-statements">
+    <Card
+      icon={FileText}
+      label="Statements & agreement"
+      testId="card-statements"
+      className={wide ? "lg:col-span-2" : undefined}
+    >
       {!statements.available ? (
-        <p className="text-xs text-muted-foreground" data-testid="statements-unavailable">
+        <p className="text-xs leading-relaxed text-muted-foreground" data-testid="statements-unavailable">
           {statements.reason === "no_data_yet"
             ? "Your first statement appears here after your first full month of trading."
-            : "Settled statements are not listed here yet — we are still building this. They are issued from our records and emailed to you as usual."}
+            : "Settled statements are not listed here yet."}
         </p>
       ) : statements.data.length === 0 ? (
         <p className="text-xs text-muted-foreground">No settled months yet.</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="divide-y divide-border/70">
           {statements.data.map((statement) => (
             <div
               key={statement.period}
-              className="flex items-baseline justify-between gap-3 text-xs"
+              className="flex items-baseline justify-between gap-3 py-2.5 text-xs first:pt-0"
               data-testid={`statement-${statement.period}`}
             >
               <span className="text-muted-foreground">
-                {monthName(statement.period)}
-                <span className="block text-[11px] text-muted-foreground/70">
+                <span className="block font-semibold text-foreground">
+                  {monthName(statement.period)}
+                </span>
+                <span className="block text-[11px] text-muted-foreground/80">
                   settled {formatAgreementDate(statement.settledOn)}
                 </span>
               </span>
               <span className="text-right">
-                <span className="font-semibold text-foreground block">
+                <span className="block font-semibold tabular-nums text-foreground">
                   {formatInr(statementTotalInr(statement))}
                 </span>
                 {statement.documentUrl ? (
                   <a
                     href={statement.documentUrl}
-                    className="text-[11px] text-primary font-semibold hover:underline"
+                    className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-primary transition-colors hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                   >
+                    <Download className="h-3 w-3" aria-hidden="true" />
                     Download PDF
                   </a>
                 ) : (
-                  <span className="text-[11px] text-muted-foreground/70">PDF not yet issued</span>
+                  <span className="text-[11px] text-muted-foreground/80">PDF not yet issued</span>
                 )}
               </span>
             </div>
@@ -962,10 +1258,12 @@ function StatementsCard({
       )}
 
       {agreement && (
-        <div className="border-t border-gray-100 pt-2 mt-1" data-testid="agreement-summary">
-          <Row label="Agreement" value={`v${agreement.version}`} />
-          <Row label="Signed" value={formatIstDate(agreement.signedAt)} />
-          <p className="text-[11px] text-muted-foreground/70 mt-1 break-all">
+        <div className="mt-auto border-t border-border/70 pt-3" data-testid="agreement-summary">
+          <RowGroup>
+            <Row label="Agreement" value={`v${agreement.version}`} />
+            <Row label="Signed" value={formatIstDate(agreement.signedAt)} />
+          </RowGroup>
+          <p className="mt-2 break-all font-mono text-[11px] text-muted-foreground/80">
             {/* The hash is here so a gym can check its own copy against ours. It is
                 evidence, and evidence you cannot see is not much use. */}
             Document hash {agreement.contentHash.slice(0, 16)}…
@@ -988,13 +1286,13 @@ function DepositCard({ snapshot }: { snapshot: GymPortalSnapshot }) {
         caption="paid and held, refundable"
       />
       {receipt && (
-        <>
+        <RowGroup>
           <Row label="Receipt" value={receipt.receiptNo} />
           <Row label="Paid by" value={receipt.method} />
           <Row label="Paid on" value={formatAgreementDate(receipt.paidAt)} />
-        </>
+        </RowGroup>
       )}
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <p className="mt-auto text-xs leading-relaxed text-muted-foreground">
         Refundable within 30 days of the machine being returned in working order, less any amounts
         properly due.
       </p>
@@ -1013,22 +1311,25 @@ function DepositCard({ snapshot }: { snapshot: GymPortalSnapshot }) {
 function DepositBanner({ snapshot }: { snapshot: GymPortalSnapshot }) {
   return (
     <div
-      className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
+      className="mt-6 flex flex-col justify-between gap-4 rounded-2xl border border-amber-400/25 bg-amber-400/[0.07] p-5 sm:flex-row sm:items-center"
       data-testid="deposit-banner"
     >
-      <div>
-        <p className="text-sm font-semibold text-amber-900">
-          Security deposit of {formatInr(snapshot.terms.securityDepositInr)} is still outstanding
-        </p>
-        <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-          Your machine is running and your share is accruing. The deposit is refundable and is due
-          under clause 5.1 of your agreement.
-        </p>
+      <div className="flex items-start gap-3">
+        <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-400" aria-hidden="true" />
+        <div>
+          <p className="text-sm font-semibold text-amber-100">
+            Security deposit of {formatInr(snapshot.terms.securityDepositInr)} is still outstanding
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-100/70">
+            Your machine is running and your share is accruing. The deposit is refundable and is due
+            under clause 5.1 of your agreement.
+          </p>
+        </div>
       </div>
       {snapshot.deposit.paymentUrl && (
         <a
           href={snapshot.deposit.paymentUrl}
-          className="inline-flex items-center justify-center h-10 px-5 rounded-xl bg-amber-900 text-white text-sm font-semibold flex-shrink-0"
+          className="inline-flex h-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-xl bg-amber-400 px-5 text-sm font-bold text-amber-950 transition-colors hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           data-testid="link-deposit-payment"
         >
           Pay the deposit
