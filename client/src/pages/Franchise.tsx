@@ -60,6 +60,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -145,8 +146,8 @@ const sections = [
   { id: "network", label: "Who does what" },
   { id: "growth", label: "Territory & growth" },
   { id: "journey", label: "How it works" },
-  { id: "faq", label: "FAQ" },
   { id: "apply", label: "Apply" },
+  { id: "faq", label: "FAQ" },
 ];
 
 const headlines = [
@@ -878,7 +879,7 @@ export default function Franchise() {
         <Section id="network" tone="tinted">
           <SectionHeading
             eyebrow="Who does what"
-            title="We run the ecosystem. You run the ground."
+            title="We supply. You operate."
             blurb="The line between the two sides is your warehouse. We run everything upstream of it."
           />
 
@@ -955,7 +956,7 @@ export default function Franchise() {
         <Section id="growth">
           <SectionHeading
             eyebrow="Territory & growth"
-            title="Exclusivity you keep by earning it"
+            title="Keep your territory by building it"
             blurb="Territorial exclusivity is real, and it is conditional. A franchisee cannot pay for a city, leave most of it undeveloped, and block MuscleBox Pro from expanding into it."
           />
 
@@ -1078,7 +1079,7 @@ export default function Franchise() {
         <Section id="journey" tone="tinted">
           <SectionHeading
             eyebrow="How it works"
-            title="From application to long-term partnership"
+            title="What happens after you apply"
             blurb="Eleven steps in four stages, of which the first is a conversation about whether your market has room for a MuscleBox Pro network at all."
           />
 
@@ -1148,6 +1149,20 @@ export default function Franchise() {
           </ol>
         </Section>
 
+        {/*
+          The form sits before the FAQ, not after it.
+
+          Eleven accordions is a screen and a half of reference material, and a reader who
+          is convinced by "How it works" was scrolling past all of it to reach the one
+          thing they came to do. The FAQ is the tail someone reaches for when a specific
+          term is unclear, so it reads back to the form rather than the other way round.
+        */}
+        <ApplicationSection
+          ref={applyRef}
+          selectedTier={selectedTier}
+          onTierChange={setSelectedTier}
+        />
+
         {/* ── FAQ ──────────────────────────────────────────────────────────── */}
         <Section id="faq">
           {/*
@@ -1158,9 +1173,20 @@ export default function Franchise() {
           <div className="grid lg:grid-cols-[17rem_1fr] gap-8 lg:gap-14">
             <div className="lg:sticky lg:top-32 lg:self-start">
               <SectionHeading eyebrow="Questions" title="Frequently asked" />
+              {/*
+                The page now ends on the FAQ, so this is the last route back to the form
+                for anyone who read down to here instead of using the jump nav.
+              */}
               <p className="text-muted-foreground text-[13px] leading-relaxed mt-4">
                 {FRANCHISE_FAQ.length} answers on the terms people ask about most. Anything
-                else, ask in the application.
+                else,{" "}
+                <a
+                  href="#apply"
+                  className="font-semibold text-primary-ink underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  ask in the application
+                </a>
+                .
               </p>
             </div>
 
@@ -1187,13 +1213,6 @@ export default function Franchise() {
             </Accordion>
           </div>
         </Section>
-
-        {/* ── Apply ────────────────────────────────────────────────────────── */}
-        <ApplicationSection
-          ref={applyRef}
-          selectedTier={selectedTier}
-          onTierChange={setSelectedTier}
-        />
       </main>
 
       <Footer />
@@ -1335,7 +1354,7 @@ function ApplicationSection({
           {/* Left rail: what happens next */}
           <div className="bg-gray-950 p-8 sm:p-10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/20 to-accent/10 blur-[80px] pointer-events-none" />
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col h-full">
               <span className="inline-block text-primary text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
                 Apply
               </span>
@@ -1366,7 +1385,12 @@ function ApplicationSection({
                 ))}
               </ul>
 
-              <p className="text-gray-400 text-[13px] leading-relaxed mt-8">
+              {/*
+                Pushed to the foot of the rail on desktop. The rail is as tall as the form
+                beside it and its content is not, so anchored to the bottom rather than
+                left mid-panel with the rest of the height empty below it.
+              */}
+              <p className="text-gray-400 text-[13px] leading-relaxed mt-8 lg:mt-auto lg:pt-10">
                 Running a gym instead?{" "}
                 <Link
                   href="/gym-partnership"
@@ -1586,49 +1610,60 @@ function ApplicationSection({
                     />
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="company"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Company{" "}
-                          <span className="text-muted-foreground font-normal">(optional)</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            autoComplete="organization"
-                            placeholder="Sharma Ventures LLP"
-                            className="min-h-11"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {/*
+                    A rule above the two optional fields, so the required path has a
+                    visible end. They are also the two largest controls on the form, and
+                    without the break the whole thing read as six fields of equal weight.
+                  */}
+                  <div className="space-y-5 pt-5 border-t border-border">
+                    <FormField
+                      control={form.control}
+                      name="company"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Company{" "}
+                            <span className="text-muted-foreground font-normal">(optional)</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              autoComplete="organization"
+                              placeholder="Sharma Ventures LLP"
+                              className="min-h-11"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="background"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Your background{" "}
-                          <span className="text-muted-foreground font-normal">(optional)</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            rows={4}
-                            placeholder="Businesses you run, gyms or distribution you already work with, warehouse space available, and when you would want to start."
-                            className="resize-none"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="background"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Your background{" "}
+                            <span className="text-muted-foreground font-normal">(optional)</span>
+                          </FormLabel>
+                          {/*
+                            A description rather than a placeholder. It is the prompt that
+                            decides what someone writes here, and a placeholder clears on
+                            the first keystroke, which is exactly when it is needed.
+                          */}
+                          <FormDescription>
+                            Businesses you run, gyms or distribution you already work with,
+                            warehouse space, and when you would want to start.
+                          </FormDescription>
+                          <FormControl>
+                            <Textarea rows={3} className="resize-none" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <Button
                     type="submit"
