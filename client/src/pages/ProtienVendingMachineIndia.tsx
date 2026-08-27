@@ -34,47 +34,46 @@ export default function ProteinVendingMachineIndia({
         {/* Glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[280px] bg-gradient-to-r from-accent/25 to-primary/25 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <motion.span
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6"
-          >
-            {locationLabel}
-          </motion.span>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="font-display font-black text-white uppercase leading-none mb-6"
-            style={{ fontSize: "clamp(2.2rem, 5.5vw, 4.2rem)" }}
-          >
-            Protein Vending Machine<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-              in {locationLabel} for Gyms
+          {/*
+            CSS, not framer-motion, and it moves the block without ever fading it.
+            Driven from JS this was server-rendered with `opacity: 0` inline, so the `h1`
+            below — the LCP element — stayed invisible until the bundle had downloaded,
+            hydrated and run the fade. This file renders the India page and all eleven city
+            pages, so that was twelve routes. See `.hero-rise` in index.css.
+          */}
+          <div className="hero-rise">
+            <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
+              {locationLabel}
             </span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-white/50 text-lg leading-relaxed max-w-2xl mx-auto mb-10"
-          >
-            {isIndiaPage
-              ? "Fresh protein shakes, automatically blended in 60 seconds. Premium whey, real ingredients — no staff required."
-              : `Fresh protein shakes, automatically blended in 60 seconds for gyms across ${locationLabel}. Premium whey, real ingredients — no staff required.`}
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
+            {/*
+              The `{" "}` is load-bearing, not stray whitespace: browsers treat `<br>` as
+              whitespace and the HTML-to-text pass some crawlers and AI scrapers use does
+              not, so without it the heading extracts as "MachineIn Delhi".
+
+              The break is `hidden sm:inline` because a forced break defeats `text-balance`.
+              Below `sm` the whole heading flows and balances as one block.
+            */}
+            <h1
+              className="font-display font-black text-white uppercase leading-none mb-6 text-balance"
+              style={{ fontSize: "clamp(2.2rem, 5.5vw, 4.2rem)" }}
+            >
+              Protein Vending Machine{" "}
+              <br className="hidden sm:inline" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                in {locationLabel} for Gyms
+              </span>
+            </h1>
+            <p className="text-white/50 text-lg leading-relaxed max-w-2xl mx-auto mb-10">
+              {isIndiaPage
+                ? "Fresh protein shakes, automatically blended in 60 seconds. Premium whey, real ingredients. No staff required."
+                : `Fresh protein shakes, automatically blended in 60 seconds for gyms across ${locationLabel}. Premium whey, real ingredients. No staff required.`}
+            </p>
             <Link href="/gym-demo">
               <Button size="lg" className="h-12 px-8 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer shadow-lg shadow-primary/30">
                 Request Machine Demo <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-          </motion.div>
+          </div>
         </div>
       </section>
 

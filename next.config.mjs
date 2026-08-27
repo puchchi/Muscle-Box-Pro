@@ -78,15 +78,28 @@ const CONNECT_SRC = [
 ];
 
 const INDEXNOW_KEY = "a3f7b2e8d4c1f9a6b5e0d7c3f2a8b1e4";
+
+/*
+ * Must stay in step with `PAGE_CHANGED_ON` and `CITY_SLUGS` in shared/seo/pages.ts, which
+ * is what `app/sitemap.ts` publishes. It cannot import them: this is a `.mjs` config, so
+ * a TypeScript module is not loadable from here, and that is why the two lists are
+ * hand-kept. Seven URLs had already drifted out of this one, including /franchise.
+ *
+ * A page missing here still gets crawled. It just does not get the push, so Bing and
+ * Yandex find the change whenever they next come round instead of on deploy.
+ */
 const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/",
   "https://www.muscleboxpro.com/gym-demo",
   "https://www.muscleboxpro.com/gym-partnership",
+  "https://www.muscleboxpro.com/franchise",
+  "https://www.muscleboxpro.com/invest",
   "https://www.muscleboxpro.com/specs",
   "https://www.muscleboxpro.com/advertise",
   "https://www.muscleboxpro.com/menu",
   "https://www.muscleboxpro.com/about",
   "https://www.muscleboxpro.com/contact",
+  "https://www.muscleboxpro.com/help",
   "https://www.muscleboxpro.com/protein-shake-vending-machine",
   "https://www.muscleboxpro.com/gym-protein-shake-machine",
   "https://www.muscleboxpro.com/protein-vending-machine-india",
@@ -105,10 +118,14 @@ const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/blog/best-protein-shake-after-workout",
   "https://www.muscleboxpro.com/blog/protein-for-diabetes",
   "https://www.muscleboxpro.com/blog/gym-member-retention",
+  "https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c",
   "https://www.muscleboxpro.com/blog",
   "https://www.muscleboxpro.com/vs/protein-shake-bar",
   "https://www.muscleboxpro.com/vs/supplement-counter",
   "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
+  "https://www.muscleboxpro.com/terms",
+  "https://www.muscleboxpro.com/privacy",
+  "https://www.muscleboxpro.com/refund-cancellation",
 ];
 
 class IndexNowPlugin {

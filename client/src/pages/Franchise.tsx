@@ -55,6 +55,7 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -128,6 +129,8 @@ import {
   type FranchiseTierId,
 } from "@shared/franchise/program";
 import { FRANCHISE_FAQ } from "@shared/franchise/faq";
+import { COMPANY, addressOneLine } from "@shared/company";
+import { MACHINE_SPEC, dimensionsSpelled } from "@shared/machine/spec";
 import {
   franchiseApplicationSchema,
   type FranchiseApplicationInput,
@@ -292,6 +295,30 @@ export default function Franchise() {
 
           <div className="max-w-5xl mx-auto relative z-10">
             {/*
+              Outside `.hero-rise` on purpose. The animation translates its subtree, and a
+              breadcrumb that slides is the one element on the page a reader may be
+              scanning for before anything else has settled.
+            */}
+            <nav aria-label="Breadcrumb" className="mb-7">
+              <ol className="flex items-center gap-2 text-[13px]">
+                <li>
+                  <Link
+                    href="/"
+                    className="text-gray-400 hover:text-white transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    Home
+                  </Link>
+                </li>
+                <li className="text-gray-600" aria-hidden="true">
+                  /
+                </li>
+                <li className="text-gray-300" aria-current="page">
+                  Franchise
+                </li>
+              </ol>
+            </nav>
+
+            {/*
               CSS, not framer-motion, and it moves the block without ever fading it.
               Driven from JS this was server-rendered with `opacity: 0` inline, so the `h1`
               below — the LCP element — stayed invisible until the bundle had downloaded,
@@ -302,11 +329,19 @@ export default function Franchise() {
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                 Franchise Program
               </span>
-              <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-5xl leading-[0.95] tracking-tight mb-5">
-                Build and operate a
-                <br />
+              {/*
+                The `{" "}` is load-bearing, not stray whitespace: browsers treat `<br>` as
+                whitespace and the HTML-to-text pass some crawlers and AI scrapers use does
+                not, so without it the heading extracts as "aProtein".
+
+                The break is `hidden sm:inline` because a forced break defeats
+                `text-balance`. Below `sm` the whole heading flows and balances as one block.
+              */}
+              <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-5xl leading-[0.95] tracking-tight mb-5 text-balance">
+                Build and operate a{" "}
+                <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-                  MuscleBox Pro network
+                  protein vending machine network
                 </span>
               </h1>
               <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto text-balance">
@@ -397,13 +432,45 @@ export default function Franchise() {
               />
               <span>
                 <strong className="font-semibold text-foreground">
-                  Indicative program terms. Not an offer, and not a guarantee of returns.
+                  Indicative program terms as of {FRANCHISE.asOf}. Not an offer, and not a
+                  guarantee of returns.
                 </strong>{" "}
                 Availability, territory, investment, machine allocation and commercial terms are
                 subject to approval, due diligence and the definitive franchise agreement, which
                 is what governs. Take independent legal, tax and financial advice before
                 committing.
               </span>
+            </p>
+
+            {/*
+              Who is asking for the money, on the page that asks for it. A franchise page
+              that never names its legal entity is the shape of every advance-fee scam, and
+              a reader comparing us against one has nothing here to tell the difference.
+              `pl-6` aligns it under the disclaimer text rather than under its icon.
+            */}
+            <p className="max-w-4xl text-muted-foreground text-[13px] leading-relaxed mt-2 pl-6">
+              Published by {COMPANY.legalName}, {addressOneLine()}.{" "}
+              <Link
+                href="/about"
+                className="font-semibold text-primary-ink underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                About us
+              </Link>
+              ,{" "}
+              <Link
+                href="/terms"
+                className="font-semibold text-primary-ink underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                terms
+              </Link>
+              , or ask us anything at{" "}
+              <a
+                href={`mailto:${COMPANY.email}`}
+                className="font-semibold text-primary-ink underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {COMPANY.email}
+              </a>
+              .
             </p>
           </div>
         </div>
@@ -553,7 +620,14 @@ export default function Franchise() {
             <MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               The exact territory is mutually defined and documented before the franchise
-              becomes operational.
+              becomes operational. For the market itself, see{" "}
+              <Link
+                href="/protein-vending-machine-india"
+                className="text-primary-ink font-semibold underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                protein vending machines in India
+              </Link>
+              .
             </span>
           </p>
         </Section>
@@ -814,11 +888,38 @@ export default function Franchise() {
           />
 
           {/*
+            The only picture on a page about deploying five to ten of these. `sizes` stops
+            a phone pulling the 1536px candidate, and the intrinsic dimensions are the
+            file's own so the space is reserved before it loads.
+          */}
+          <figure className="mt-10">
+            <Image
+              src={MACHINE_SPEC.imageSrc}
+              alt={`The ${MACHINE_SPEC.model} protein shake vending machine, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and ${MACHINE_SPEC.canisters} ingredient canisters`}
+              width={1536}
+              height={1024}
+              sizes="(min-width: 1024px) 1024px, 100vw"
+              className="w-full aspect-[3/2] object-cover rounded-2xl border border-border bg-muted"
+            />
+            <figcaption className="text-muted-foreground text-[13px] leading-relaxed mt-3">
+              The {MACHINE_SPEC.model}, the machine every franchise deploys.{" "}
+              {dimensionsSpelled()}, on a standard power point.{" "}
+              <Link
+                href="/specs"
+                className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Full specifications
+              </Link>
+              .
+            </figcaption>
+          </figure>
+
+          {/*
             One card in two halves rather than two cards. The lists are four and six
             items, so as separate cards the shorter one carried visible dead space, and
             the pairing is the point being made.
           */}
-          <div className="bg-card border border-border rounded-2xl shadow-sm grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border mt-10">
+          <div className="bg-card border border-border rounded-2xl shadow-sm grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border mt-5">
             <div className="p-6 sm:p-7">
               <CardHeading icon={CheckCircle2} className="mb-4">
                 You may
@@ -1104,23 +1205,27 @@ export default function Franchise() {
 
                 <ol className="space-y-3.5">
                   {phase.steps.map((step) => (
-                    <li key={step.title}>
-                      <h4 className="flex items-baseline gap-2 font-bold text-[14px] leading-snug">
-                        {/*
-                          `--muted-foreground` on the numeral, not white on `--primary`:
-                          it is 11px, so 4.5:1 applies and the brand fill is 3.25:1.
-                        */}
-                        <span
-                          className="text-muted-foreground text-[11px] font-display font-black tabular-nums flex-shrink-0"
-                          aria-hidden="true"
-                        >
-                          {String(step.position).padStart(2, "0")}
-                        </span>
-                        {step.title}
-                      </h4>
-                      <p className="text-muted-foreground text-[13px] leading-relaxed mt-1 pl-[1.6rem]">
-                        {step.body}
-                      </p>
+                    <li key={step.title} className="flex items-baseline gap-2">
+                      {/*
+                        The numeral is a sibling of the heading, not a child of it. Inside
+                        the `h4` it extracted as "01Apply" — `aria-hidden` keeps it from a
+                        screen reader but search and AI crawlers index the text anyway.
+
+                        `--muted-foreground` on it, not white on `--primary`: it is 11px,
+                        so 4.5:1 applies and the brand fill is 3.25:1.
+                      */}
+                      <span
+                        className="text-muted-foreground text-[11px] font-display font-black tabular-nums flex-shrink-0"
+                        aria-hidden="true"
+                      >
+                        {String(step.position).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-[14px] leading-snug">{step.title}</h4>
+                        <p className="text-muted-foreground text-[13px] leading-relaxed mt-1">
+                          {step.body}
+                        </p>
+                      </div>
                     </li>
                   ))}
                 </ol>
@@ -1476,6 +1581,12 @@ function ApplicationSection({
               beside it and its content is not, so anchored to the bottom rather than
               left mid-panel with the rest of the height empty below it.
             */}
+            {/*
+              Two ways to reach us that are not this form, because both get sent through it
+              otherwise. /invest is the one worth naming: it sells equity in the company and
+              this page sells a territory, and an enquiry meant for one arriving at the
+              other costs a real conversation.
+            */}
             <p className="text-muted-foreground text-[14px] leading-relaxed mt-8 lg:mt-auto lg:pt-10">
               Running a gym instead?{" "}
               <Link
@@ -1484,7 +1595,15 @@ function ApplicationSection({
               >
                 See the gym partnership
               </Link>
-              , where the machine costs your gym nothing.
+              , where the machine costs your gym nothing. Want to back the company rather
+              than operate a territory?{" "}
+              <Link
+                href="/invest"
+                className="text-primary-ink font-semibold underline underline-offset-2 hover:text-primary-fill rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+              >
+                That is the investor page
+              </Link>
+              .
             </p>
           </div>
         </div>

@@ -181,6 +181,17 @@ export const FRANCHISE = {
 
   /** §11. Examples only. MuscleBox Pro sets the applicable split per location. */
   gymProfitSharingExamples: ["80:20", "50:50"],
+
+  /**
+   * The vintage of every term above, rendered in the /franchise disclaimer and emitted as
+   * `dateModified` in the page's WebPage schema.
+   *
+   * Here rather than typed into that sentence so that revising the program and revising
+   * the quarter it is "as of" are one edit. An undated set of rupee figures is an
+   * open-ended representation about money, and rule 2 at the top of this file is the
+   * reason the page can publish them at all.
+   */
+  asOf: "Q3 2026",
 } as const;
 
 /**

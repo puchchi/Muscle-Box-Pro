@@ -923,6 +923,16 @@ export default function GymPartnership() {
                 Sign in to your dashboard
               </Link>
             </p>
+            <p className="text-white/80 text-[13px] mt-2">
+              Want to run a network of machines rather than host one?{" "}
+              <Link
+                href="/franchise"
+                className="text-white font-semibold underline underline-offset-2 hover:text-white/80 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                See the franchise program
+              </Link>
+              .
+            </p>
           </div>
         </section>
       </main>

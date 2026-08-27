@@ -40,7 +40,7 @@ const revenueStreams = [
     iconBg: "bg-primary/10",
     iconColor: "text-primary",
     title: "Shake Revenue Share",
-    desc: "Each machine sells 20–50 shakes/day at ₹100–₹150. Revenue is split between MuscleBoxPro and the partner gym — creating recurring, predictable income from day one.",
+    desc: "Each machine sells 20–50 shakes/day at ₹100–₹150. Revenue is split between MuscleBoxPro and the partner gym. That creates recurring, predictable income from day one.",
     metrics: ["₹100–₹150 avg. selling price", "₹45–₹70 cost per serve", "45–55% gross margin per shake"],
     highlight: "₹15K–₹70K+ / month per machine",
   },
@@ -150,7 +150,7 @@ export default function Invest() {
             transition={{ delay: 0.3 }}
             className="text-white/60 text-base leading-relaxed max-w-xl mx-auto mb-10"
           >
-            India's first automated gym nutrition network — zero-capex for gym partners, high-margin recurring revenue, and a scalable distribution moat across 75,000+ fitness centres.
+            India's first automated gym nutrition network. Zero-capex for gym partners, high-margin recurring revenue, and a scalable distribution moat across 75,000+ fitness centres.
           </motion.p>
 
           <motion.div
@@ -226,7 +226,7 @@ export default function Invest() {
                 </span>
               </h2>
               <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-                MuscleBoxPro machines are live in gyms across India — generating daily transaction data, refining unit economics, and expanding the partner network.
+                MuscleBoxPro machines are live in gyms across India. They generate daily transaction data, refine unit economics, and expand the partner network.
               </p>
             </div>
             <div className="grid sm:grid-cols-3 gap-5">
@@ -259,7 +259,7 @@ export default function Invest() {
                 Two revenue streams per machine
               </h2>
               <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-                Each installed machine generates recurring income from shake sales and advertising — simultaneously. Zero inventory risk, zero staffing cost.
+                Each installed machine generates recurring income from shake sales and advertising, simultaneously. Zero inventory risk, zero staffing cost.
               </p>
             </div>
             <div className="grid md:grid-cols-2 gap-6">
@@ -491,6 +491,21 @@ export default function Invest() {
               </div>
             </div>
           </div>
+          {/*
+            This page sells equity in the company; /franchise sells a territory to operate.
+            Both answer "invest in a protein vending machine business", so each says which
+            one it is and points at the other.
+          */}
+          <p className="max-w-7xl mx-auto text-gray-500 text-sm text-center mt-12">
+            Looking to own and operate machines in your own territory instead?{" "}
+            <Link
+              href="/franchise"
+              className="text-primary-ink font-semibold underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              See the franchise program
+            </Link>
+            .
+          </p>
         </section>
 
       </main>
