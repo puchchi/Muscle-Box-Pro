@@ -40,11 +40,22 @@ const ACCOUNT_LAST4 = /^[0-9A-Za-z]{4}$/;
 
 export const payoutAccountTypeSchema = z.enum(["savings", "current"]);
 
-/** Dropdown order is the order gyms pick in — most gyms bank on a current account. */
 export const PAYOUT_ACCOUNT_TYPE_LABELS: Record<PayoutAccountType, string> = {
   current: "Current",
   savings: "Savings",
 };
+
+/**
+ * The order the form offers them in, and the first one is what it starts on.
+ *
+ * Deliberately not `payoutAccountTypeSchema.options`: an enum's order is the order its values
+ * happened to be written in, and using it here would make which account type a gym is
+ * offered first an accident of a schema edit. Most gyms sign with us as a firm or a company
+ * and a business banks on a current account, so that is the selection that is right more
+ * often — and a wrong one costs a gym one click, since only the number and the IFSC decide
+ * where the money lands.
+ */
+export const PAYOUT_ACCOUNT_TYPES = ["current", "savings"] as const satisfies readonly PayoutAccountType[];
 
 /**
  * Spaces and hyphens out.

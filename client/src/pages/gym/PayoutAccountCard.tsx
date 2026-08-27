@@ -44,8 +44,8 @@ import {
 } from "@/lib/gymPayoutAccountApi";
 import {
   PAYOUT_ACCOUNT_TYPE_LABELS,
+  PAYOUT_ACCOUNT_TYPES,
   payoutAccountFormSchema,
-  payoutAccountTypeSchema,
   type PayoutAccountFormValues,
 } from "@shared/gym/payoutAccountSchema";
 import type { PayoutAccount } from "@shared/gym/payoutAccount";
@@ -280,7 +280,7 @@ function PayoutAccountForm({
       accountNumber: "",
       confirmAccountNumber: "",
       ifsc: existing?.ifsc ?? "",
-      accountType: existing?.accountType ?? payoutAccountTypeSchema.options[0],
+      accountType: existing?.accountType ?? PAYOUT_ACCOUNT_TYPES[0],
     },
     mode: "onBlur",
   });
@@ -420,7 +420,7 @@ function PayoutAccountForm({
                 <fieldset>
                   <legend className="text-sm font-medium leading-none">Account type</legend>
                   <div className="mt-2 flex gap-2">
-                    {payoutAccountTypeSchema.options.map((option) => (
+                    {PAYOUT_ACCOUNT_TYPES.map((option) => (
                       <label
                         key={option}
                         // 44px tall including the border, so the whole chip is the target
@@ -437,7 +437,10 @@ function PayoutAccountForm({
                           value={option}
                           checked={field.value === option}
                           onChange={() => field.onChange(option)}
-                          className="h-4 w-4 flex-shrink-0 cursor-pointer accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          // `color-scheme: dark` on a native radio, which the rest of the
+                          // portal has no need for: unstyled, an unchecked radio is a white
+                          // disc, and on a dark chip a white disc reads as the selected one.
+                          className="h-4 w-4 flex-shrink-0 cursor-pointer accent-primary [color-scheme:dark] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           data-testid={`radio-account-type-${option}`}
                         />
                         {PAYOUT_ACCOUNT_TYPE_LABELS[option]}

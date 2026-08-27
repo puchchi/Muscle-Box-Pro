@@ -93,14 +93,33 @@ describe("Franchise page", () => {
     expect(screen.getByText(/is not a purchase of the machines/i)).toBeInTheDocument();
   });
 
-  it("says advertising income does not count toward capital recovery", () => {
-    // The term people most often read the other way round, and the one that decides
-    // whether the worked example below adds up.
+  /*
+   * The term people most often read the other way round, and the one that decides whether
+   * the worked example adds up. It used to be stated three times over — a headline tile, a
+   * paragraph and a footnote under the illustration — and is now stated once, in the
+   * caption of the figure that draws the two streams. This asserts the fact, not the
+   * wording around it, so the caption can be reworded but not lost.
+   */
+  it("says advertising income never counts toward capital recovery", () => {
     render(<Franchise />);
-    expect(screen.getByText(/Counts toward capital recovery/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(new RegExp(`does not reduce the ${formatInr(recoveryExample().remainingInr)}`, "i")),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/never counts toward capital recovery/i)).toBeInTheDocument();
+  });
+
+  /*
+   * The advertising share is a permanent term rather than a recovery-period one, so the
+   * figure has to show it on both sides of the threshold. One bar spanning both is how it
+   * does that, and its label is the only thing distinguishing it from the protein rows.
+   */
+  it("shows each profit stream's share to the franchisee as a labelled bar", () => {
+    render(<Franchise />);
+    for (const [label, pct] of [
+      ["Until capital recovery", FRANCHISE.proteinProfitSharePct.duringRecovery],
+      ["After capital recovery", FRANCHISE.proteinProfitSharePct.afterRecovery],
+      ["Before and after, throughout", FRANCHISE.advertising.franchiseeSharePct],
+    ] as const) {
+      const row = screen.getByText(label).closest("div");
+      expect(row).toHaveTextContent(`${pct}%`);
+    }
   });
 
   it("computes the recovery example rather than transcribing it", () => {
@@ -110,6 +129,23 @@ describe("Franchise page", () => {
     expect(table).toHaveTextContent(formatInr(ex.completesRecoveryInr));
     expect(table).toHaveTextContent(formatInr(ex.postRecoveryPoolInr));
     expect(table).toHaveTextContent(formatInr(ex.postRecoveryToFranchiseeInr));
+    expect(table).toHaveTextContent(formatInr(ex.totalToFranchiseeInr));
+  });
+
+  /*
+   * The table is the accessible twin of the segmented bar beside it, and the bar draws
+   * each part as a share of the total. A part that does not belong to the sum would render
+   * a bar whose segments do not fill it, which is the one way this illustration can be
+   * silently wrong.
+   */
+  it("splits the illustrated distribution into parts that sum to it", () => {
+    const ex = recoveryExample("territory");
+    expect(
+      ex.completesRecoveryInr + ex.postRecoveryToFranchiseeInr + ex.postRecoveryToMbpInr,
+    ).toBe(ex.nextDistributionInr);
+    expect(ex.totalToFranchiseeInr).toBe(
+      ex.completesRecoveryInr + ex.postRecoveryToFranchiseeInr,
+    );
   });
 
   it("publishes no projected earnings", () => {

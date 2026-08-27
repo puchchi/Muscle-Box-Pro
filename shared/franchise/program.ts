@@ -383,6 +383,13 @@ export function recoveryExample(tierId: FranchiseTierId = "territory") {
     completesRecoveryInr,
     postRecoveryPoolInr,
     postRecoveryToFranchiseeInr,
+    /**
+     * The remainder of the pool, and the whole distribution's total to the franchisee.
+     * Derived here rather than in the page so the illustration's three parts always sum
+     * to `nextDistributionInr` — subtracting in JSX is where a rounded half goes missing.
+     */
+    postRecoveryToMbpInr: postRecoveryPoolInr - postRecoveryToFranchiseeInr,
+    totalToFranchiseeInr: completesRecoveryInr + postRecoveryToFranchiseeInr,
     /** Fraction recovered so far, for the progress bar. 0–1. */
     progress: alreadyReceivedInr / threshold,
   };

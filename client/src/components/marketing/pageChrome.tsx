@@ -167,7 +167,17 @@ export function SectionHeading({
   const dark = tone === "dark";
   const heading = (
     <div>
-      <span className="inline-block text-primary text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
+      {/*
+        `--primary-ink` on light, `--primary` on dark. The eyebrow is 12px bold, so 4.5:1
+        applies to it, and `--primary` is 3.25:1 on white — the reason index.css keeps a
+        second step of the hue for brand-coloured text. On gray-950 it is 5.9:1 and the
+        darker step is the one that fails.
+      */}
+      <span
+        className={`inline-block text-xs font-bold tracking-[0.2em] uppercase mb-2.5 ${
+          dark ? "text-primary" : "text-primary-ink"
+        }`}
+      >
         {eyebrow}
       </span>
       <h2

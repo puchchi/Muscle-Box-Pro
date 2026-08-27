@@ -19,16 +19,24 @@
  *      than a forecast of what a machine will earn. A revenue calculator here would be a
  *      performance representation, which §55 exists to disclaim.
  *
- * It carries a lot of contract detail, and four presentation decisions keep that from
+ * It carries a lot of contract detail, and five presentation decisions keep that from
  * reading as a wall. They are what to preserve when editing:
  *
  *   - **The page alternates light and dark.** The money section is inverted, which gives
  *     the commercials their own weight and breaks eight same-coloured sections into
  *     acts. Anything inside a dark section sets its own light text colours; the
  *     `--muted-foreground` token is near-invisible there.
- *   - **Repetition is factored out, not printed twice.** Eleven of the tiers' fourteen
- *     inclusions are identical, so the cards carry only what differs and the shared list
- *     is stated once. `tierIncludes()` derives that split, so no line is lost.
+ *   - **A fact is stated in exactly one place.** Every term here also appears in the
+ *     FAQ, in the journey and in the program data, so a fact restated in prose gets
+ *     printed three or four times over. When a section needs a term that another
+ *     section owns, it links or it leaves it out. `tierIncludes()` is the mechanical
+ *     version of the same rule: eleven of the tiers' fourteen inclusions are identical,
+ *     so the cards carry only what differs and the shared list is stated once.
+ *   - **A ratio is drawn, not described.** The three profit splits and the worked
+ *     recovery example are marks, in components/marketing/franchiseViz, and the prose
+ *     around them is cut to what a mark cannot say. Three sentences replaced two cards
+ *     of paragraphs, and the comparison the money section exists to make — protein
+ *     steps down at recovery, advertising does not move — is now visible at a glance.
  *   - **Short enumerations are chips, long ones are checklists.** A tick beside
  *     "Warehousing" implies a benefit; a tick beside "Move machines between approved
  *     locations" is one.
@@ -79,20 +87,23 @@ import {
   CheckCircle2,
   Clock,
   Cpu,
-  CreditCard,
   Factory,
   Gauge,
   LayoutDashboard,
   Lock,
   MapPin,
   Megaphone,
-  Package,
   ShieldCheck,
-  Store,
   Warehouse,
-  Wrench,
   X,
 } from "lucide-react";
+import {
+  DistributionBar,
+  MachineCount,
+  RecoveryMeter,
+  StreamSplitFigure,
+  Swatch,
+} from "@/components/marketing/franchiseViz";
 import {
   DASHBOARD_VISIBILITY,
   FRANCHISE,
@@ -157,34 +168,74 @@ const headlines = [
   },
 ];
 
-/** Facts from the program, phrased for the hero. Never a claim the data does not carry. */
+/**
+ * Facts from the program, phrased for the hero. Never a claim the data does not carry,
+ * and never one the headline strip below it already makes — the machine count and both
+ * profit shares are in that strip, so repeating them here would print the page's four
+ * headline numbers twice inside one screen.
+ */
 const heroProof = [
-  "Machines supplied by MuscleBox Pro",
   `${FRANCHISE.proteinProfitSharePct.duringRecovery}% of protein profit until you recover your investment`,
+  "No separate technical service fee while you recover",
   "Machine-level financial dashboard",
 ];
 
-const whatWeRun = [
+/**
+ * The two profit streams, as the three bars the money section leads with.
+ *
+ * Every share is read from the program, and the two protein rows are ordered so the
+ * recovery threshold falls between them — which is what lets the figure draw it as the
+ * boundary it is rather than as a footnote.
+ */
+const streams = [
   {
-    icon: Factory,
-    title: "Machines and procurement",
-    body: "We place the OEM order, coordinate manufacturing and deliver. You get order, specification, manufacturing and dispatch visibility throughout.",
+    title: "Protein business",
+    icon: Gauge,
+    rows: [
+      {
+        label: "Until capital recovery",
+        yourSharePct: FRANCHISE.proteinProfitSharePct.duringRecovery,
+      },
+      {
+        label: "After capital recovery",
+        yourSharePct: FRANCHISE.proteinProfitSharePct.afterRecovery,
+      },
+    ],
   },
   {
-    icon: Package,
-    title: "Protein supply pipeline",
-    body: "Approved products, specifications and supply coordination, delivered to your warehouse. Only approved formulations run in the machines.",
+    title: "Advertising",
+    icon: Megaphone,
+    rows: [
+      {
+        label: "Before and after, throughout",
+        yourSharePct: FRANCHISE.advertising.franchiseeSharePct,
+      },
+    ],
   },
-  {
-    icon: CreditCard,
-    title: "Payments and accounting",
-    body: "Every customer payment runs through our infrastructure. That is what makes machine-level revenue tracking and automated franchise calculations possible.",
-  },
-  {
-    icon: Wrench,
-    title: "Technology and support",
-    body: "Platform, software and firmware updates, remote diagnostics, OEM and warranty coordination. No separate technical service fee during capital recovery.",
-  },
+];
+
+/**
+ * The worked example's three parts, in the order they come off the distribution. The
+ * `fill` keys tie each one to its row in the table beside the bar, which is what makes
+ * an unlabelled bar readable — see franchiseViz.
+ */
+const distribution = [
+  { key: "recovery", amountInr: example.completesRecoveryInr, fill: "recovery" as const },
+  { key: "yours", amountInr: example.postRecoveryToFranchiseeInr, fill: "share" as const },
+  { key: "mbp", amountInr: example.postRecoveryToMbpInr, fill: "mbp" as const },
+];
+
+/**
+ * Every cost that comes off before the franchise share, with the gym-level ones first.
+ *
+ * The gym list is a subset of the franchise list, and that containment is the comparison
+ * the money section draws. Ordering the subset first lets it read as a group rather than
+ * as two marked chips scattered through ten.
+ */
+const gymLevelCosts = new Set<string>(FRANCHISE.gymLevelCosts);
+const costsBeforeYourShare: string[] = [
+  ...FRANCHISE.gymLevelCosts,
+  ...FRANCHISE.franchiseLevelCosts.filter((cost) => !gymLevelCosts.has(cost)),
 ];
 
 export default function Franchise() {
@@ -271,7 +322,7 @@ export default function Franchise() {
                 <Button
                   asChild
                   size="lg"
-                  className="min-h-12 rounded-full px-7 font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors"
+                  className="min-h-12 rounded-full px-7 font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
                 >
                   <a href="#apply" data-testid="button-hero-apply">
                     Apply for a franchise
@@ -350,7 +401,7 @@ export default function Franchise() {
             split
             eyebrow="The franchises"
             title="Two ways in"
-            blurb="Both give you machines, the technology platform, the protein pipeline, centralised payments and a financial dashboard. They differ in how much market you take responsibility for. Larger regional structures may be introduced later."
+            blurb="They differ in one thing: how much market you take responsibility for. Everything else in the two packages is identical, and it is listed once below rather than printed inside both cards. Larger regional structures may be introduced later."
           />
 
           <div className="grid lg:grid-cols-2 gap-5 mt-10">
@@ -390,6 +441,9 @@ export default function Franchise() {
                       </dt>
                       <dd className="font-bold text-[15px] tabular-nums mt-0.5">
                         {tier.initialMachines} machines
+                        {/* Five against ten is the comparison between the tiers, and it
+                            is countable at a glance as glyphs. */}
+                        <MachineCount count={tier.initialMachines} />
                       </dd>
                     </div>
                     <div className="rounded-xl border border-border bg-muted/40 px-3.5 py-3">
@@ -450,7 +504,7 @@ export default function Franchise() {
                   <Button
                     onClick={() => chooseTier(tier.id)}
                     data-testid={`button-apply-${tier.id}`}
-                    className="min-h-12 w-full rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors"
+                    className="min-h-12 w-full rounded-full font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
                   >
                     Apply for the {tier.shortName}
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -487,12 +541,15 @@ export default function Franchise() {
             </ul>
           </div>
 
+          {/*
+            Ownership used to be stated here too, and again as the whole subject of the
+            very next section. It now lives once, in that section's standfirst.
+          */}
           <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 max-w-3xl flex items-start gap-2">
-            <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span>
-              The franchise investment is not a purchase of the machines. Every machine remains
-              the property of MuscleBox Pro. The exact territory is mutually defined and
-              documented before the franchise becomes operational.
+              The exact territory is mutually defined and documented before the franchise
+              becomes operational.
             </span>
           </p>
         </Section>
@@ -507,96 +564,41 @@ export default function Franchise() {
             blurb="Your franchise earns from two separate streams, and they behave differently. Protein profit funds your capital recovery. Advertising profit never does, and it never stops."
           />
 
-          <div className="grid md:grid-cols-2 gap-5 mt-10">
-            {/* Protein stream */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
-              <div className="flex items-center gap-2.5 mb-5">
-                <span className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-                  <Gauge className="w-4 h-4 text-primary" aria-hidden="true" />
-                </span>
-                <h3 className="font-display font-black uppercase text-lg tracking-tight text-white">
-                  Protein business
-                </h3>
-              </div>
-
-              <dl className="space-y-2.5">
-                <div className="rounded-xl border border-primary/40 bg-primary/[0.12] p-4">
-                  <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-300 mb-1">
-                    Until capital recovery
-                  </dt>
-                  <dd className="font-display font-black text-2xl leading-none tabular-nums text-white">
-                    {FRANCHISE.proteinProfitSharePct.duringRecovery}%{" "}
-                    <span className="text-sm font-bold uppercase tracking-tight">to you</span>
-                  </dd>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                  <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">
-                    After capital recovery
-                  </dt>
-                  <dd className="font-display font-black text-2xl leading-none tabular-nums text-white">
-                    {FRANCHISE.proteinProfitSharePct.afterRecovery}:
-                    {100 - FRANCHISE.proteinProfitSharePct.afterRecovery}{" "}
-                    <span className="text-sm font-bold uppercase tracking-tight">
-                      you : MuscleBox Pro
-                    </span>
-                  </dd>
-                </div>
-              </dl>
-
-              <p className="text-gray-300 text-[13px] leading-relaxed mt-4">
-                {FRANCHISE.proteinProfitSharePct.duringRecovery}% is a capital recovery
-                mechanism, not a margin. It runs until you have received cumulative eligible
-                protein-business profit of {formatInr(example.thresholdInr)} on the{" "}
-                {territory.shortName}. The {city.shortName} threshold is set in its own
-                agreement.
-              </p>
-            </div>
-
-            {/* Advertising stream */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
-              <div className="flex items-center gap-2.5 mb-5">
-                <span className="w-8 h-8 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
-                  <Megaphone className="w-4 h-4 text-accent" aria-hidden="true" />
-                </span>
-                <h3 className="font-display font-black uppercase text-lg tracking-tight text-white">
-                  Advertising
-                </h3>
-              </div>
-
-              <dl className="space-y-2.5">
-                <div className="rounded-xl border border-accent/40 bg-accent/[0.12] p-4">
-                  <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-300 mb-1">
-                    Before and after recovery
-                  </dt>
-                  <dd className="font-display font-black text-2xl leading-none tabular-nums text-white">
-                    {FRANCHISE.advertising.franchiseeSharePct}:
-                    {FRANCHISE.advertising.mbpSharePct}{" "}
-                    <span className="text-sm font-bold uppercase tracking-tight">
-                      you : MuscleBox Pro
-                    </span>
-                  </dd>
-                </div>
-                {/*
-                  The term people most often read the other way round, so it is stated as
-                  a headline rather than left in the paragraph below.
-                */}
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                  <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">
-                    Counts toward capital recovery
-                  </dt>
-                  <dd className="font-display font-black text-2xl leading-none uppercase tracking-tight text-white">
-                    No
-                  </dd>
-                </div>
-              </dl>
-
-              <p className="text-gray-300 text-[13px] leading-relaxed mt-4">
-                Machine displays, digital screens and campaign placements across the network
-                are monetised centrally. Your share is calculated after applicable advertising
-                costs, it does not reduce your remaining recovery amount, and it continues
-                after recovery completes.
-              </p>
-            </div>
+          {/*
+            Two cards of ratio tiles and paragraphs before this, which asked the reader to
+            hold three splits in their head to notice the one thing that matters: protein
+            steps down at recovery and advertising does not move. Drawn, that is the first
+            thing they see, and the caption carries only what a bar cannot — that the
+            {duringRecovery}% is a recovery mechanism rather than a margin, and that
+            advertising sits outside recovery entirely.
+          */}
+          <div className="mt-10">
+            <StreamSplitFigure
+              streams={streams}
+              milestone="Capital recovery complete"
+              note={
+                <>
+                  <p>
+                    The {FRANCHISE.proteinProfitSharePct.duringRecovery}% is a capital
+                    recovery mechanism, not a margin. It runs until you have received
+                    cumulative eligible protein-business profit of{" "}
+                    {formatInr(example.thresholdInr)} on the {territory.shortName}, and the{" "}
+                    {city.shortName} threshold is set in its own agreement.
+                  </p>
+                  {/*
+                    One paragraph, no nested elements around the phrase itself: this is the
+                    single place on the page that says advertising sits outside recovery,
+                    and it is the term people most often read the other way round.
+                  */}
+                  <p className="mt-2">
+                    Advertising across machine displays, digital screens and campaign
+                    placements is monetised centrally, your share is calculated after
+                    applicable advertising costs, and it never counts toward capital
+                    recovery.
+                  </p>
+                </>
+              }
+            />
           </div>
 
           {/*
@@ -618,7 +620,13 @@ export default function Franchise() {
               what a machine earns.
             </p>
 
-            <div className="grid lg:grid-cols-[1fr_1.15fr] gap-8 lg:gap-10 items-start">
+            {/*
+              Stacked rather than two columns: the meter is one strip and the split is a
+              bar plus four rows, so side by side left the shorter half of the card empty
+              for the height of the taller one. Read down, they are also the order the
+              example happens in.
+            */}
+            <div className="space-y-7">
               <div>
                 <div className="flex items-baseline justify-between gap-3 mb-2">
                   <span className="text-[13px] font-semibold tabular-nums">
@@ -629,140 +637,151 @@ export default function Franchise() {
                   </span>
                 </div>
                 {/*
-                  A plain div rather than the Progress component: this is an illustration
-                  of a stated example, not live state, so `aria-valuenow` would claim a
-                  measurement. The figures either side say it in text.
+                  Not the Progress component: this illustrates a stated example rather
+                  than live state, so `aria-valuenow` would claim a measurement. The
+                  figures either side say it in text.
                 */}
-                <div className="h-2.5 rounded-full bg-muted overflow-hidden" role="presentation">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-accent to-primary"
-                    style={{ width: `${Math.round(example.progress * 100)}%` }}
-                  />
-                </div>
+                <RecoveryMeter fraction={example.progress} />
                 <p className="text-muted-foreground text-[13px] mt-2.5">
                   Remaining recovery amount:{" "}
                   <strong className="font-bold text-foreground tabular-nums">
                     {formatInr(example.remainingInr)}
                   </strong>
                 </p>
-
-                <p className="text-muted-foreground text-[13px] leading-relaxed mt-6 flex items-start gap-2">
-                  <Megaphone
-                    className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5"
-                    aria-hidden="true"
-                  />
-                  <span>
-                    Any advertising income received over the same period is paid at{" "}
-                    {FRANCHISE.advertising.franchiseeSharePct}:
-                    {FRANCHISE.advertising.mbpSharePct} and does not reduce the{" "}
-                    {formatInr(example.remainingInr)} above.
-                  </span>
-                </p>
               </div>
 
-              {/*
-                A real table. This is tabular data — a screen reader should read
-                "Completes capital recovery, ₹5,00,000" as a row rather than as two
-                unrelated runs of text.
-              */}
-              <div className="overflow-x-auto -mx-1 px-1">
-                <table className="w-full text-[14px]">
-                  <caption className="sr-only">
-                    What happens to the next {formatInr(example.nextDistributionInr)} of
-                    eligible protein-business profit
-                  </caption>
-                  <thead>
-                    <tr className="border-b-2 border-foreground/10">
-                      <th scope="col" className="text-left font-bold py-2.5 pr-3">
-                        Next {formatInr(example.nextDistributionInr)} of eligible protein
-                        profit
-                      </th>
-                      <th scope="col" className="text-right font-bold py-2.5 pl-3 w-28">
-                        Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-border">
-                      <th scope="row" className="text-left font-normal py-3 pr-3">
-                        Completes capital recovery
-                        <span className="block text-muted-foreground text-[13px]">
-                          paid to you in full, {FRANCHISE.proteinProfitSharePct.duringRecovery}%
-                        </span>
-                      </th>
-                      <td className="text-right py-3 pl-3 tabular-nums font-semibold">
-                        {formatInr(example.completesRecoveryInr)}
-                      </td>
-                    </tr>
-                    <tr className="border-b border-border">
-                      <th scope="row" className="text-left font-normal py-3 pr-3">
-                        Falls into the post-recovery split
-                        <span className="block text-muted-foreground text-[13px]">
-                          shared {FRANCHISE.proteinProfitSharePct.afterRecovery}:
-                          {100 - FRANCHISE.proteinProfitSharePct.afterRecovery}
-                        </span>
-                      </th>
-                      <td className="text-right py-3 pl-3 tabular-nums font-semibold">
-                        {formatInr(example.postRecoveryPoolInr)}
-                      </td>
-                    </tr>
-                    <tr className="bg-primary/[0.06]">
-                      <th scope="row" className="text-left font-bold py-3 pl-3 pr-3 rounded-l-lg">
-                        Your share of that {formatInr(example.postRecoveryPoolInr)}
-                      </th>
-                      <td className="text-right py-3 pl-3 pr-3 tabular-nums font-display font-black text-lg rounded-r-lg">
-                        {formatInr(example.postRecoveryToFranchiseeInr)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="pt-6 border-t border-border">
+                <p className="text-[13px] font-semibold mb-2">
+                  Where the next {formatInr(example.nextDistributionInr)} goes
+                </p>
+                {/*
+                  The point of §20 is that a distribution straddling the threshold is not
+                  paid out whole, and the proportions are the argument: two thirds of this
+                  one completes recovery, and the remainder is halved. The bar carries no
+                  labels of its own — on a phone its narrow segments are under 60px — so
+                  the table below is both the label layer and the accessible twin, tied to
+                  it by the swatches.
+                */}
+                <DistributionBar segments={distribution} />
+
+                <div className="overflow-x-auto -mx-1 px-1 mt-4">
+                  <table className="w-full text-[14px]">
+                    <caption className="sr-only">
+                      What happens to the next {formatInr(example.nextDistributionInr)} of
+                      eligible protein-business profit
+                    </caption>
+                    <thead>
+                      <tr className="border-b-2 border-foreground/10">
+                        <th scope="col" className="text-left font-bold py-2.5 pr-3">
+                          Split of that {formatInr(example.nextDistributionInr)}
+                        </th>
+                        <th scope="col" className="text-right font-bold py-2.5 pl-3 w-28">
+                          Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-border">
+                        <th scope="row" className="text-left font-normal py-3 pr-3">
+                          <Swatch fill="recovery" />
+                          Completes capital recovery, paid to you in full
+                        </th>
+                        <td className="text-right py-3 pl-3 tabular-nums font-semibold">
+                          {formatInr(example.completesRecoveryInr)}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-border">
+                        <th scope="row" className="text-left font-normal py-3 pr-3">
+                          <Swatch fill="share" />
+                          Your share of the {formatInr(example.postRecoveryPoolInr)} past the
+                          threshold
+                        </th>
+                        <td className="text-right py-3 pl-3 tabular-nums font-semibold">
+                          {formatInr(example.postRecoveryToFranchiseeInr)}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-border">
+                        <th scope="row" className="text-left font-normal py-3 pr-3">
+                          <Swatch fill="mbp" />
+                          MuscleBox Pro&rsquo;s share of that{" "}
+                          {formatInr(example.postRecoveryPoolInr)}
+                        </th>
+                        <td className="text-right py-3 pl-3 tabular-nums font-semibold text-muted-foreground">
+                          {formatInr(example.postRecoveryToMbpInr)}
+                        </td>
+                      </tr>
+                      <tr className="bg-primary/[0.06]">
+                        <th
+                          scope="row"
+                          className="text-left font-bold py-3 pl-3 pr-3 rounded-l-lg"
+                        >
+                          To you from this {formatInr(example.nextDistributionInr)}
+                        </th>
+                        <td className="text-right py-3 pl-3 pr-3 tabular-nums font-display font-black text-lg rounded-r-lg">
+                          {formatInr(example.totalToFranchiseeInr)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
 
           {/*
-            Two and ten items, so one divided card rather than two: side by side the
-            two-chip card carried most of a screen of empty space, and the pairing is the
-            comparison being drawn.
+            The two cost lists, as one set with a subset marked, rather than as two lists
+            side by side. Every gym-level cost is also a franchise-level cost, and printing
+            the lists separately hid that containment behind a two-column diff — the reader
+            had to compare ten chips against two to find out that the gym's two are the
+            same two. Marked in place, the relationship and the difference in scope are the
+            same glance.
           */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] grid md:grid-cols-[0.8fr_1.2fr] divide-y md:divide-y-0 md:divide-x divide-white/10 mt-5">
-            <div className="p-6">
-              <h3 className="font-bold text-[15px] text-white mb-1.5">Gym-level profit</h3>
-              <p className="text-gray-400 text-[13px] leading-relaxed mb-4">
-                What a gym&rsquo;s own share is calculated on, under its gym agreement.
-                Arrangements run at splits such as{" "}
-                {FRANCHISE.gymProfitSharingExamples.join(" or ")}, set by MuscleBox Pro per
-                location.
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:p-7 mt-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 mb-4">
+              <h3 className="font-bold text-[15px] text-white">
+                What your share is calculated on
+              </h3>
+              <p className="flex items-center gap-2 text-gray-400 text-[13px]">
+                <span
+                  className="w-2 h-2 rounded-full bg-primary flex-shrink-0"
+                  aria-hidden="true"
+                />
+                also comes off a gym&rsquo;s own share
               </p>
-              <ul className="flex flex-wrap gap-2">
-                {FRANCHISE.gymLevelCosts.map((cost) => (
+            </div>
+            <p className="text-gray-400 text-[13px] leading-relaxed mb-4">
+              Franchise profit is worked out after all of these, which is the difference in
+              scope: a gym&rsquo;s share is calculated on the cup, yours on the actual
+              economics of running a local network.
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {costsBeforeYourShare.map((cost) => {
+                const alsoGymLevel = gymLevelCosts.has(cost);
+                return (
                   <li
                     key={cost}
-                    className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[13px] text-gray-200"
+                    className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] ${
+                      alsoGymLevel
+                        ? "border-primary/40 bg-primary/[0.12] text-white"
+                        : "border-white/15 bg-white/[0.06] text-gray-200"
+                    }`}
                   >
+                    {alsoGymLevel && (
+                      <span
+                        className="w-2 h-2 rounded-full bg-primary flex-shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
                     {cost}
                   </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="p-6">
-              <h3 className="font-bold text-[15px] text-white mb-1.5">Franchise-level profit</h3>
-              <p className="text-gray-400 text-[13px] leading-relaxed mb-4">
-                What your share is calculated on. A longer list on purpose: franchise profit
-                uses the actual economics of running a local network.
-              </p>
-              <ul className="flex flex-wrap gap-2">
-                {FRANCHISE.franchiseLevelCosts.map((cost) => (
-                  <li
-                    key={cost}
-                    className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[13px] text-gray-200"
-                  >
-                    {cost}
-                  </li>
-                ))}
-              </ul>
-            </div>
+                );
+              })}
+            </ul>
+            <p className="text-gray-400 text-[13px] leading-relaxed mt-4">
+              Gym arrangements themselves run at splits such as{" "}
+              {FRANCHISE.gymProfitSharingExamples.join(" or ")}, set by MuscleBox Pro per
+              location.
+            </p>
           </div>
 
           {/* A CTA where conviction forms, rather than only at the top and the bottom. */}
@@ -772,7 +791,7 @@ export default function Franchise() {
             </p>
             <Button
               asChild
-              className="min-h-11 rounded-full px-6 font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors flex-shrink-0"
+              className="min-h-11 rounded-full px-6 font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors flex-shrink-0"
             >
               <a href="#apply">
                 Apply for a franchise
@@ -788,7 +807,7 @@ export default function Franchise() {
             split
             eyebrow="Machines"
             title="You operate them. We own them."
-            blurb="This is the term to be clearest about before anyone pays. The franchise buys the contractual right to operate machines inside the MuscleBox Pro ecosystem and your assigned territory. It does not buy the machines, and on expiry or termination they remain ours."
+            blurb="This is the term to be clearest about before anyone pays. The franchise investment is not a purchase of the machines. It buys the contractual right to operate them inside the MuscleBox Pro ecosystem and your assigned territory, and on expiry or termination they remain ours."
           />
 
           {/*
@@ -845,10 +864,9 @@ export default function Franchise() {
             <div>
               <h3 className="font-bold text-[15px] mb-1.5">Procurement transparency</h3>
               <p className="text-muted-foreground text-[14px] leading-relaxed max-w-3xl">
-                You get visibility into the OEM order, machine specifications, manufacturing
-                status, dispatch status and the relevant procurement documentation for your
-                allocation. Visibility is transparency about where your investment is, not a
-                transfer of ownership.
+                You get visibility into the OEM order, specifications, manufacturing and
+                dispatch status, and the procurement documentation for your allocation.
+                Transparency about where your investment is, not a transfer of ownership.
               </p>
             </div>
           </div>
@@ -860,107 +878,75 @@ export default function Franchise() {
             split
             eyebrow="Who does what"
             title="We run the ecosystem. You run the ground."
-            blurb="MuscleBox Pro does not provide local operations or local logistics on your behalf. Your local operating costs are included in the franchise-level profit calculation, so the work you do locally is accounted for in the split rather than absorbed."
+            blurb="The line between the two sides is your warehouse. We deliver machines and protein to it and run everything upstream; everything past it is local, and it is yours."
           />
 
-          <div className="grid sm:grid-cols-2 gap-4 mt-10">
-            {whatWeRun.map((item) => (
-              <div
-                key={item.title}
-                className="bg-card border border-border rounded-2xl p-5 shadow-sm transition-colors hover:border-primary/30"
-              >
-                <div className="flex items-center gap-2.5 mb-2">
-                  <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-                  </span>
-                  <h3 className="font-bold text-[15px]">{item.title}</h3>
-                </div>
-                <p className="text-muted-foreground text-[13px] leading-relaxed">{item.body}</p>
-              </div>
-            ))}
+          {/*
+            One diagram where there were four prose cards, two lists and a fifth card.
+            The cards were a paragraph-length retelling of the very list beside them —
+            "Machines and procurement" against "Machine procurement, OEM coordination and
+            delivery" — so the section said everything it had to say twice, at four times
+            the length. The lists are the canonical version, and the seam between them is
+            the one thing the lists could not show: where the handover actually happens.
+          */}
+          <div className="bg-card border border-border rounded-2xl shadow-sm grid lg:grid-cols-[1fr_auto_1fr] mt-10 overflow-hidden">
+            <ResponsibilityColumn
+              icon={Cpu}
+              title="MuscleBox Pro provides"
+              items={RESPONSIBILITIES.mbp}
+              tone="primary"
+            />
+
+            {/*
+              The seam. A labelled boundary on desktop, a labelled divider on a phone,
+              where a vertical rail would either rotate text or eat the column.
+            */}
+            <div className="flex lg:flex-col items-center gap-3 px-6 py-4 lg:px-5 lg:py-8 bg-muted/50 border-y lg:border-y-0 lg:border-x border-border">
+              <span className="h-px flex-1 lg:h-auto lg:w-px lg:flex-1 bg-border" />
+              <span className="flex items-center gap-2 lg:flex-col text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground whitespace-nowrap">
+                <Warehouse className="w-4 h-4 text-primary" aria-hidden="true" />
+                <span className="lg:[writing-mode:vertical-rl] lg:rotate-180">Your warehouse</span>
+              </span>
+              <span className="h-px flex-1 lg:h-auto lg:w-px lg:flex-1 bg-border" />
+            </div>
+
+            <ResponsibilityColumn
+              icon={Warehouse}
+              title="You provide"
+              items={RESPONSIBILITIES.franchisee}
+              tone="accent"
+            />
           </div>
 
-          {/* The two obligation lists are the same length, so they belong in one frame. */}
-          <div className="bg-card border border-border rounded-2xl shadow-sm grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border mt-5">
-            <div className="p-6 sm:p-7">
-              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
-                <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Cpu className="w-4 h-4 text-primary" aria-hidden="true" />
-                </span>
-                MuscleBox Pro provides
-              </h3>
-              <ul className="space-y-2.5">
-                {RESPONSIBILITIES.mbp.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-[14px]">
-                    <CheckCircle2
-                      className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
-                      aria-hidden="true"
-                    />
-                    <span className="leading-snug">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 max-w-3xl flex items-start gap-2">
+            <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <span>
+              Consumer pricing, the gym profit-sharing model and dispute resolution stay
+              central to MuscleBox Pro, whoever found the gym.
+            </span>
+          </p>
 
-            <div className="p-6 sm:p-7">
-              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
-                <span className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <Warehouse className="w-4 h-4 text-accent" aria-hidden="true" />
-                </span>
-                You provide
-              </h3>
-              <ul className="space-y-2.5">
-                {RESPONSIBILITIES.franchisee.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-[14px]">
-                    <CheckCircle2
-                      className="w-4 h-4 text-accent flex-shrink-0 mt-0.5"
-                      aria-hidden="true"
-                    />
-                    <span className="leading-snug">{item}</span>
-                  </li>
-                ))}
-              </ul>
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <LayoutDashboard className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+              </span>
+              <h3 className="font-bold text-[15px]">Your dashboard</h3>
             </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-5 mt-5">
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-2.5 mb-2.5">
-                <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Store className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-                </span>
-                <h3 className="font-bold text-[15px]">Finding and keeping gyms</h3>
-              </div>
-              <p className="text-muted-foreground text-[14px] leading-relaxed">
-                We pass on leads, network opportunities and the standard gym commercial
-                framework. You identify gyms, build the relationships and recommend new or
-                replacement locations. Every location needs our approval before deployment, and
-                we keep pricing, the profit-sharing model and dispute resolution central.
-              </p>
-            </div>
-
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-2.5 mb-2.5">
-                <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <LayoutDashboard className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-                </span>
-                <h3 className="font-bold text-[15px]">Your dashboard</h3>
-              </div>
-              <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
-                Machine level, not territory level. Every figure your share is calculated from
-                is visible to you.
-              </p>
-              <ul className="flex flex-wrap gap-2">
-                {DASHBOARD_VISIBILITY.map((item) => (
-                  <li
-                    key={item}
-                    className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px]"
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
+              Machine level, not territory level. Every figure your share is calculated from is
+              visible to you.
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {DASHBOARD_VISIBILITY.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px]"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
         </Section>
 
@@ -995,8 +981,8 @@ export default function Franchise() {
               <p className="text-muted-foreground text-[13px] leading-relaxed mt-4 pt-4 border-t border-border">
                 A {territory.shortName} may be required to deploy all{" "}
                 {territory.initialMachines} machines within an agreed period, and a{" "}
-                {city.shortName} to deploy its {city.initialMachines} progressively. Missing
-                those requirements can put exclusivity under review.
+                {city.shortName} its {city.initialMachines} progressively. Missing those can
+                put exclusivity under review.
               </p>
             </div>
 
@@ -1008,9 +994,8 @@ export default function Franchise() {
                 Reserved accounts
               </h3>
               <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
-                Some opportunities sit outside territorial exclusivity and are handled directly
-                by MuscleBox Pro, or under a separately agreed arrangement. Better said now
-                than discovered later:
+                These sit outside territorial exclusivity, handled directly by MuscleBox Pro or
+                under a separately agreed arrangement.
               </p>
               <ul className="flex flex-wrap gap-2">
                 {RESERVED_ACCOUNTS.map((item) => (
@@ -1069,9 +1054,9 @@ export default function Franchise() {
                     What this does not mean
                   </p>
                   <p className="text-[14px] leading-relaxed">
-                    The price of additional machines is set at the time of expansion and is not
-                    fixed at your initial per-machine investment, because OEM pricing,
-                    manufacturing, technology, logistics and taxes move.
+                    That additional machines cost what yours did. Their price is set at the
+                    time of expansion, because OEM pricing, technology, logistics and taxes
+                    move.
                   </p>
                 </li>
                 <li className="rounded-xl bg-muted/40 border border-border p-4">
@@ -1079,10 +1064,9 @@ export default function Franchise() {
                     Or this
                   </p>
                   <p className="text-[14px] leading-relaxed">
-                    Additional machines do not by themselves enlarge your territory. Territory
-                    expansion is approved separately, though a franchisee who consistently
-                    meets its requirements may be offered new capacity before it is offered to
-                    anyone else.
+                    That they enlarge your territory. Expansion of the territory itself is
+                    approved separately, though a franchisee who consistently meets its
+                    requirements may be offered new capacity first.
                   </p>
                 </li>
               </ul>
@@ -1100,57 +1084,66 @@ export default function Franchise() {
           />
 
           {/*
-            Four stages of grouped rows, not eleven cards. As a card grid the steps were
-            equally weighted and the last row was ragged, which read as a wall rather
-            than as a process with points where the commitment changes.
+            Four columns of grouped steps, not four full-width bands.
+
+            Stacked, the eleven steps ran to most of a screen and a half of near-empty
+            rows: a 15rem stage label beside a 13rem step title beside one line of body
+            left two thirds of every row blank, and the process read as more of the page's
+            terms to get through. Read across, the four stages are a progression and the
+            whole thing fits one screen, which is what a "how it works" is for.
+
+            The rail behind the stage numbers is the progression, and it is drawn rather
+            than described. `aria-hidden` on it and on every numeral: the nested `ol`s
+            already carry the order.
           */}
-          <ol className="space-y-4 mt-10">
+          <ol className="grid sm:grid-cols-2 lg:grid-cols-4 items-start gap-4 mt-10">
             {journey.map((phase, phaseIndex) => (
               <li
                 key={phase.id}
-                className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden"
+                className="bg-card border border-border rounded-2xl shadow-sm p-5 flex flex-col"
               >
-                <div className="grid lg:grid-cols-[15rem_1fr]">
-                  <div className="flex items-center gap-3 px-6 py-4 lg:py-6 bg-muted/40 border-b lg:border-b-0 lg:border-r border-border">
-                    <span
-                      className="font-display font-black text-2xl leading-none text-muted-foreground/50 tabular-nums"
-                      aria-hidden="true"
-                    >
-                      {String(phaseIndex + 1).padStart(2, "0")}
-                    </span>
-                    <h3 className="font-display font-black uppercase text-base tracking-tight leading-tight">
-                      {phase.title}
-                    </h3>
-                  </div>
-
-                  <ol className="divide-y divide-border">
-                    {phase.steps.map((step) => (
-                      <li
-                        key={step.title}
-                        className="grid sm:grid-cols-[13rem_1fr] gap-x-6 gap-y-1 px-6 py-4"
-                      >
-                        <div className="flex items-baseline gap-2.5">
-                          {/*
-                            White on `--foreground` (15:1), not on `--primary` (3.25:1 at
-                            11px). `aria-hidden` on the digit: the `ol` already carries
-                            the order, and a reader announcing both would say
-                            "item 2 … 2 Market evaluation".
-                          */}
-                          <span
-                            className="w-6 h-6 rounded-full bg-foreground text-white font-display font-black text-[11px] flex items-center justify-center flex-shrink-0 tabular-nums"
-                            aria-hidden="true"
-                          >
-                            {step.position}
-                          </span>
-                          <h4 className="font-bold text-[15px] leading-snug">{step.title}</h4>
-                        </div>
-                        <p className="text-muted-foreground text-[14px] leading-relaxed sm:pt-0.5">
-                          {step.body}
-                        </p>
-                      </li>
-                    ))}
-                  </ol>
+                {/*
+                  A fixed header height so the first step starts on the same line in all
+                  four cards. One of the stage labels wraps to two lines and the others do
+                  not, which otherwise offsets that column's whole list.
+                */}
+                <div className="flex items-center gap-2.5 mb-4 lg:min-h-[2.75rem]">
+                  <span
+                    className="w-7 h-7 rounded-full bg-primary/10 text-primary-ink font-display font-black text-[13px] flex items-center justify-center flex-shrink-0 tabular-nums"
+                    aria-hidden="true"
+                  >
+                    {phaseIndex + 1}
+                  </span>
+                  <h3 className="font-display font-black uppercase text-[13px] tracking-tight leading-tight">
+                    {phase.title}
+                  </h3>
+                  {phaseIndex < journey.length - 1 && (
+                    <span className="hidden lg:block h-px flex-1 bg-border" aria-hidden="true" />
+                  )}
                 </div>
+
+                <ol className="space-y-3.5">
+                  {phase.steps.map((step) => (
+                    <li key={step.title}>
+                      <h4 className="flex items-baseline gap-2 font-bold text-[14px] leading-snug">
+                        {/*
+                          `--muted-foreground` on the numeral, not white on `--primary`:
+                          it is 11px, so 4.5:1 applies and the brand fill is 3.25:1.
+                        */}
+                        <span
+                          className="text-muted-foreground text-[11px] font-display font-black tabular-nums flex-shrink-0"
+                          aria-hidden="true"
+                        >
+                          {String(step.position).padStart(2, "0")}
+                        </span>
+                        {step.title}
+                      </h4>
+                      <p className="text-muted-foreground text-[13px] leading-relaxed mt-1 pl-[1.6rem]">
+                        {step.body}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
               </li>
             ))}
           </ol>
@@ -1212,6 +1205,43 @@ export default function Franchise() {
         label="Apply"
         testId="button-sticky-apply"
       />
+    </div>
+  );
+}
+
+/** One side of the warehouse seam in "Who does what". */
+function ResponsibilityColumn({
+  icon: Icon,
+  title,
+  items,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  title: string;
+  items: readonly string[];
+  tone: "primary" | "accent";
+}) {
+  const hue = tone === "primary" ? "text-primary" : "text-accent";
+  return (
+    <div className="p-6 sm:p-7">
+      <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
+        <span
+          className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+            tone === "primary" ? "bg-primary/10" : "bg-accent/10"
+          }`}
+        >
+          <Icon className={`w-4 h-4 ${hue}`} aria-hidden={true} />
+        </span>
+        {title}
+      </h3>
+      <ul className="space-y-2.5">
+        {items.map((item) => (
+          <li key={item} className="flex items-start gap-2 text-[14px]">
+            <CheckCircle2 className={`w-4 h-4 flex-shrink-0 mt-0.5 ${hue}`} aria-hidden="true" />
+            <span className="leading-snug">{item}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -1313,10 +1343,13 @@ function ApplicationSection({
               <h2 className="font-display font-black uppercase text-white text-2xl sm:text-3xl tracking-tight leading-[1.05] mb-4">
                 Tell us the market you want
               </h2>
+              {/*
+                The evaluation criteria are journey step 2's whole body. What is left is the
+                part that is a commitment rather than a process description.
+              */}
               <p className="text-gray-300 text-[15px] leading-relaxed mb-8">
-                We evaluate market potential, gym density, existing locations and territory
-                capacity before confirming a tier or a territory. If your market has no room
-                for a network, we will say so.
+                Nothing about the tier or the territory is confirmed until we have looked at
+                your market. If it has no room for a MuscleBox Pro network, we will say so.
               </p>
 
               <ul className="space-y-3.5">
@@ -1382,7 +1415,8 @@ function ApplicationSection({
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5" noValidate>
                   <div>
-                    <span className="inline-block text-primary text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
+                    {/* On a white card, so the darker step of the hue. See index.css. */}
+                    <span className="inline-block text-primary-ink text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
                       Franchise enquiry
                     </span>
                     <h3 className="font-display font-black uppercase text-xl tracking-tight">
@@ -1602,7 +1636,7 @@ function ApplicationSection({
                     size="lg"
                     disabled={isSubmitting}
                     data-testid="button-submit-application"
-                    className="w-full min-h-12 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors"
+                    className="w-full min-h-12 rounded-full font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
                   >
                     {isSubmitting ? "Sending…" : "Submit application"}
                     {!isSubmitting && <ArrowRight className="w-4 h-4" aria-hidden="true" />}

@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   PAYOUT_ACCOUNT_TYPE_LABELS,
+  PAYOUT_ACCOUNT_TYPES,
   normaliseAccountNumber,
   parsePayoutAccountResponse,
   payoutAccountFormSchema,
+  payoutAccountTypeSchema,
   toPayoutAccountInput,
   type PayoutAccountFormValues,
 } from "@shared/gym/payoutAccountSchema";
@@ -219,8 +221,15 @@ describe("parsePayoutAccountResponse", () => {
   });
 });
 
-describe("PAYOUT_ACCOUNT_TYPE_LABELS", () => {
-  it("covers both types", () => {
+describe("the two account types", () => {
+  it("has a label for each", () => {
     expect(PAYOUT_ACCOUNT_TYPE_LABELS).toEqual({ current: "Current", savings: "Savings" });
+  });
+
+  it("offers both, current first, whatever order the enum is written in", () => {
+    // The form starts on the first of these. If it ever tracked the enum's order instead,
+    // which account type a gym is offered by default would change with an unrelated edit.
+    expect(PAYOUT_ACCOUNT_TYPES).toEqual(["current", "savings"]);
+    expect([...PAYOUT_ACCOUNT_TYPES].sort()).toEqual([...payoutAccountTypeSchema.options].sort());
   });
 });
