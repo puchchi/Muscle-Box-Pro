@@ -32,8 +32,8 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
+import Image from "next/image";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -68,6 +68,7 @@ import {
   formatInr,
   workedMonth,
 } from "@shared/partnership/summary";
+import { MACHINE_SPEC, dimensionsSpelled } from "@shared/machine/spec";
 import { PARTNERSHIP_FAQ } from "@shared/partnership/faq";
 import {
   Section,
@@ -183,8 +184,6 @@ const heroProof = [
 ];
 
 export default function GymPartnership() {
-  const reduceMotion = useReducedMotion();
-
   return (
     // `pb-24 lg:pb-0` clears the sticky mobile CTA bar, which is fixed and would
     // otherwise sit on top of the last rows of the footer. 24 rather than 20: at
@@ -211,24 +210,59 @@ export default function GymPartnership() {
 
           <div className="max-w-5xl mx-auto relative z-10">
             {/*
-              `animate` always names the visible state, and reduced motion is honoured by
-              dropping the duration rather than by dropping the animation. Leaving both
-              props off under reduced motion left the server-rendered `opacity: 0` on the
-              element with nothing to clear it, so the hero never appeared at all.
+              The visible counterpart to the `BreadcrumbList` in the route shell. Structured
+              data is meant to describe what the page shows, and this trail was markup only.
+
+              Left-aligned above a centred hero deliberately: it is chrome rather than part
+              of the headline block, and centred it reads as a first line of the heading. It
+              is outside `.hero-rise` so it does not move — a breadcrumb that animates is a
+              breadcrumb someone tries to click mid-flight.
             */}
-            <motion.div
-              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.5, ease: "easeOut" }}
-              className="text-center"
-            >
+            <nav aria-label="Breadcrumb" className="mb-7">
+              <ol className="flex items-center gap-2 text-[13px]">
+                <li>
+                  <Link
+                    href="/"
+                    className="text-gray-400 hover:text-white transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    Home
+                  </Link>
+                </li>
+                <li className="text-gray-600" aria-hidden="true">
+                  /
+                </li>
+                <li className="text-gray-300" aria-current="page">
+                  Gym Partnership
+                </li>
+              </ol>
+            </nav>
+
+            {/*
+              CSS, not framer-motion, and it moves the block without ever fading it.
+              Driven from JS this was server-rendered with `opacity: 0` inline, so the
+              `h1` below — the LCP element — stayed invisible until the bundle had
+              downloaded, hydrated and run a 500ms fade. See `.hero-rise` in index.css.
+            */}
+            <div className="text-center hero-rise">
               <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                 Gym Partnership
               </span>
-              <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-5xl leading-[0.95] tracking-tight mb-5">
-                A protein shake machine
-                <br />
+              {/*
+                Two details here are not cosmetic.
+
+                The trailing space before the `<br>` is load-bearing for text
+                extraction: without it the HTML-to-text pass some crawlers and AI
+                scrapers use concatenates the two lines into "machineat no cost".
+
+                The break is `hidden sm:inline` because a forced break defeats
+                `text-balance` — at 390px the balancer honours the break, then wraps
+                the gradient half on its own and leaves "gym" alone on line four.
+                Below `sm` the whole heading flows and balances as one block.
+              */}
+              <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-5xl leading-[0.95] tracking-tight mb-5 text-balance">
+                A protein shake vending machine{" "}
+                <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                   at no cost to your gym
                 </span>
@@ -278,7 +312,7 @@ export default function GymPartnership() {
                   <a href="#money">See how the money works</a>
                 </Button>
               </div>
-            </motion.div>
+            </div>
 
             <dl className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-12">
               {headlines.map((h) => (
@@ -316,8 +350,9 @@ export default function GymPartnership() {
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-700" aria-hidden="true" />
             <span>
               <strong>Indicative terms. Your signed agreement governs.</strong> Figures on this page
-              are the standard offer and typical volumes as of Q1 2026, not a guarantee of income.
-              Published by BlendBox Innovations LLP, the company behind MuscleBoxPro.
+              are the standard offer and typical volumes as of {INDICATIVE_ECONOMICS.asOf}, not a
+              guarantee of income. Published by BlendBox Innovations LLP, the company behind
+              MuscleBoxPro.
             </span>
           </p>
         </div>
@@ -330,7 +365,38 @@ export default function GymPartnership() {
             blurb="The machine stays our property and our expense. You provide the floor space."
           />
 
-          <div className="grid md:grid-cols-2 gap-5 mt-9">
+          {/*
+            The page carried no images at all, which in the section headed "what you get"
+            meant a gym owner read six bullet points about a machine they could not see.
+
+            Same asset as `/specs` and onboarding step 2, through `MACHINE_SPEC.imageSrc`, so
+            a new render replaces all three at once. `width`/`height` are the source's
+            intrinsic pixels rather than the display size — they are what reserves the box and
+            keeps this section out of CLS — and `sizes` is what stops Next serving the 1536px
+            candidate to a phone rendering it at 358.
+          */}
+          <figure className="mt-9">
+            <Image
+              src={MACHINE_SPEC.imageSrc}
+              alt={`The ${MACHINE_SPEC.model} protein shake vending machine on a gym floor, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and a cup in the dispenser`}
+              width={1536}
+              height={1024}
+              sizes="(min-width: 1024px) 1024px, 100vw"
+              className="w-full aspect-[3/2] object-cover rounded-2xl border border-border bg-muted"
+            />
+            <figcaption className="text-muted-foreground text-[13px] leading-relaxed mt-3">
+              The {MACHINE_SPEC.model}. {dimensionsSpelled()}, on a standard power point.{" "}
+              <Link
+                href="/specs"
+                className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Full specifications
+              </Link>
+              .
+            </figcaption>
+          </figure>
+
+          <div className="grid md:grid-cols-2 gap-5 mt-5">
             <Card>
               <CardTitle icon={CheckCircle2} tone="primary">
                 Included at no cost
@@ -842,8 +908,16 @@ export default function GymPartnership() {
             </div>
             <p className="text-white text-[13px] mt-7">
               Already a partner?{" "}
+              {/*
+                `nofollow` because robots.txt disallows `/gym/`. Without it this is the one
+                link on an indexable page pointing at a blocked path, which spends crawl
+                budget on a fetch that returns nothing and shows up in Search Console as a
+                "blocked by robots.txt" discovery. The same link in the navbar is on every
+                page and has the same problem.
+              */}
               <Link
                 href="/gym/login"
+                rel="nofollow"
                 className="text-white font-semibold underline underline-offset-2 hover:text-white/80 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 Sign in to your dashboard

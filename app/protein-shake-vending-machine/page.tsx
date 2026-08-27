@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/protein-shake-vending-machine",
     title: "Protein Shake Vending Machine | MuscleBoxPro",
     description: "Discover how MuscleBoxPro protein shake vending machines help gyms increase member convenience and generate additional recurring revenue.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro protein shake vending machine" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "MuscleBoxPro protein shake vending machine" }],
   },
 };
 
@@ -32,7 +32,7 @@ const productSchema = {
     "Smart protein shake vending machine for gyms. Blends fresh whey or plant protein shakes in 60 seconds with cashless payments and zero staff overhead.",
   brand: { "@type": "Brand", name: "MuscleBoxPro" },
   manufacturer: { "@type": "Organization", name: "BlendBox Innovations LLP" },
-  image: "https://www.muscleboxpro.com/og-image.png",
+  image: "https://www.muscleboxpro.com/og-image.jpg",
   url: "https://www.muscleboxpro.com/protein-shake-vending-machine",
   category: "Fitness Equipment > Vending Machines > Protein Shake Machines",
   offers: {

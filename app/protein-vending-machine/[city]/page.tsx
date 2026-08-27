@@ -166,8 +166,17 @@ function getCityFromSlug(slug: string) {
   return cityConfig[slug as CitySlug] ?? null;
 }
 
+/**
+ * The cities that exist, for `generateStaticParams` and for `app/sitemap.ts`.
+ *
+ * Exported so the sitemap derives its city URLs from `cityConfig` rather than repeating
+ * them: a twelfth city then appears in the sitemap by being added here, which is what
+ * the hand-written `public/sitemap.xml` could not do.
+ */
+export const CITY_SLUGS = Object.keys(cityConfig);
+
 export function generateStaticParams() {
-  return Object.keys(cityConfig).map((city) => ({ city }));
+  return CITY_SLUGS.map((city) => ({ city }));
 }
 
 export function generateMetadata({

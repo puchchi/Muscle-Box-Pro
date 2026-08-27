@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/help",
     title: "Help Center | MuscleBoxPro",
     description: "Find answers to common questions about MuscleBoxPro accounts, machines, billing, and support.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "MuscleBoxPro smart protein shake vending machine" }],
   },
 };
 

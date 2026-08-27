@@ -24,7 +24,7 @@ export function SkipLink() {
   return (
     <a
       href="#main"
-      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-white"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-xl focus:bg-primary-fill focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-white"
     >
       Skip to content
     </a>
@@ -94,7 +94,7 @@ export function StickyCta({
       </div>
       <Button
         asChild
-        className="ml-auto min-h-11 rounded-full px-5 font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer flex-shrink-0"
+        className="ml-auto min-h-11 rounded-full px-5 font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors flex-shrink-0"
       >
         {href.startsWith("#") ? (
           <a href={href} data-testid={testId}>
@@ -118,11 +118,13 @@ export function StickyCta({
 export function Section({
   id,
   tone,
+  ref,
   children,
 }: {
   id: string;
   /** `dark` inverts the section; anything inside it must set its own light text colours. */
   tone?: "tinted" | "dark";
+  ref?: React.Ref<HTMLElement>;
   children: React.ReactNode;
 }) {
   const surface =
@@ -134,6 +136,7 @@ export function Section({
   return (
     <section
       id={id}
+      ref={ref}
       // `scroll-mt` clears the navbar alone on mobile and the navbar plus the jump nav
       // on desktop, where both are pinned.
       className={`scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20 ${surface}`}

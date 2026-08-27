@@ -32,9 +32,19 @@ export default function Navbar() {
   const location = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
+  /**
+   * Partnership sits next to Franchise because they are the two halves of the same
+   * question — host a machine, or buy a territory — and it is the one for the larger
+   * audience. It had been footer-only while Franchise had a nav slot.
+   *
+   * Six labels plus the login button overflow a 768px bar, which is why the desktop
+   * strip below is `lg:` and tablets get the sheet. Adding a seventh needs the same
+   * arithmetic done again, not just another array entry.
+   */
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Gym Demo", path: "/gym-demo" },
+    { name: "Partnership", path: "/gym-partnership" },
     { name: "Franchise", path: "/franchise" },
     { name: "Specs", path: "/specs" },
     { name: "Advertise", path: "/advertise" },
@@ -61,7 +71,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link key={link.path} href={link.path}>
                 <span
@@ -81,7 +91,7 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Nav */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-gray-700">

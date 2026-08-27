@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: "7 Ways Indian Gyms Generate Passive Revenue, Ranked by ROI (2026)",
     description:
       "Complete guide to passive and semi-passive revenue streams for Indian gym owners in 2026. Each method rated by ROI, with pros, cons, investment required, and realistic monthly income ranges.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800 }],
   },
   keywords: [
     "gym passive income india",
@@ -71,7 +71,7 @@ const articleSchema = {
   datePublished: "2026-01-15",
   dateModified: "2026-03-29",
   url: "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
-  image: "https://www.muscleboxpro.com/og-image.png",
+  image: "https://www.muscleboxpro.com/og-image.jpg",
   inLanguage: "en-IN",
   mainEntityOfPage: {
     "@type": "WebPage",

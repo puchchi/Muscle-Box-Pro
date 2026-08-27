@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.jpg",
         alt: "MuscleBoxPro smart protein shake vending machine in a gym",
       },
     ],
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.jpg",
         alt: "MuscleBoxPro smart protein shake vending machine in a gym",
       },
     ],
@@ -125,7 +125,7 @@ export default function RootLayout({
                 "Automated protein shake vending machines installed in gyms and fitness centers across India.",
               url: "https://www.muscleboxpro.com",
               email: "contact@muscleboxpro.com",
-              image: "https://www.muscleboxpro.com/og-image.png",
+              image: "https://www.muscleboxpro.com/og-image.jpg",
               priceRange: "₹₹",
               address: {
                 "@type": "PostalAddress",

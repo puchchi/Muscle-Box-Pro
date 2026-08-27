@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/protein-vending-machine-india",
     title: "Protein Vending Machine India for Gyms | MuscleBoxPro",
     description: "MuscleBoxPro offers automated protein vending machines for gyms in India. Serve fresh protein shakes instantly and generate additional revenue for fitness centers.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "Protein vending machine for gyms in India" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "Protein vending machine for gyms in India" }],
   },
 };
 

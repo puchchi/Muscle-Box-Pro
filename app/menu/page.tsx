@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/menu",
     title: "Protein Shake Blend Menu | MuscleBoxPro",
     description: "Explore our full menu of 12 scientifically formulated protein shake blends available in our automated vending machines.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro protein shake blends menu" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "MuscleBoxPro protein shake blends menu" }],
   },
 };
 

@@ -135,6 +135,16 @@ export const INDICATIVE_ECONOMICS = {
   avgSellingPriceInr: 120,
   directCostPerCupInr: 65,
   exampleCupsPerMonth: 600,
+
+  /**
+   * The vintage of the three figures above, rendered in the /gym-partnership disclaimer.
+   *
+   * Here rather than typed into that sentence so that revising the numbers and revising
+   * the quarter they are "as of" are one edit. A date written into page copy is a date
+   * nobody notices going a year stale, and this one is load-bearing: it is what makes
+   * "typical volumes" a dated estimate rather than an open-ended claim.
+   */
+  asOf: "Q1 2026",
 } as const;
 
 export type WorkedMonth = {

@@ -22,10 +22,16 @@
  * It carries a lot of contract detail, and five presentation decisions keep that from
  * reading as a wall. They are what to preserve when editing:
  *
- *   - **The page alternates light and dark.** The money section is inverted, which gives
- *     the commercials their own weight and breaks eight same-coloured sections into
- *     acts. Anything inside a dark section sets its own light text colours; the
- *     `--muted-foreground` token is near-invisible there.
+ *   - **The page alternates light and dark.** The money and apply sections are inverted,
+ *     which gives the commercials and the enquiry their own weight and breaks eight
+ *     same-coloured sections into acts. Two light tones cannot alternate across six
+ *     consecutive light sections, which is what the second inversion is for. Anything
+ *     inside a dark section sets its own light text colours; the `--muted-foreground`
+ *     token is near-invisible there.
+ *   - **Orange means you, grey means MuscleBox Pro.** The profit-share bars establish it
+ *     and every party-coded mark on the page follows, so nothing else may colour
+ *     MuscleBox Pro with the brand hue. `--accent` is decoration only: it has no
+ *     functional meaning a reader could learn, so it never encodes one.
  *   - **A fact is stated in exactly one place.** Every term here also appears in the
  *     FAQ, in the journey and in the program data, so a fact restated in prose gets
  *     printed three or four times over. When a section needs a term that another
@@ -40,8 +46,9 @@
  *   - **Short enumerations are chips, long ones are checklists.** A tick beside
  *     "Warehousing" implies a benefit; a tick beside "Move machines between approved
  *     locations" is one.
- *   - **Nothing fades in on scroll** except the hero, gated on `useReducedMotion`. This
- *     is a document people scan, jump around in and come back to.
+ *   - **Nothing fades in, on scroll or otherwise.** This is a document people scan, jump
+ *     around in and come back to. Only the hero moves, in CSS, and it never changes
+ *     opacity — see `.hero-rise` in index.css for why that distinction is the LCP.
  *
  * Chrome is shared with /gym-partnership, in components/marketing/pageChrome.
  */
@@ -50,7 +57,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -156,7 +162,11 @@ const headlines = [
     label: "Investment from",
     value: formatLakh(territory.investmentInr),
   },
-  { icon: Boxes, label: "Machines from", value: String(territory.initialMachines) },
+  {
+    icon: Boxes,
+    label: "Machines from",
+    value: String(territory.initialMachines),
+  },
   {
     icon: Gauge,
     label: "Protein profit during recovery",
@@ -221,8 +231,16 @@ const streams = [
  * an unlabelled bar readable. See franchiseViz.
  */
 const distribution = [
-  { key: "recovery", amountInr: example.completesRecoveryInr, fill: "recovery" as const },
-  { key: "yours", amountInr: example.postRecoveryToFranchiseeInr, fill: "share" as const },
+  {
+    key: "recovery",
+    amountInr: example.completesRecoveryInr,
+    fill: "recovery" as const,
+  },
+  {
+    key: "yours",
+    amountInr: example.postRecoveryToFranchiseeInr,
+    fill: "share" as const,
+  },
   { key: "mbp", amountInr: example.postRecoveryToMbpInr, fill: "mbp" as const },
 ];
 
@@ -240,8 +258,7 @@ const costsBeforeYourShare: string[] = [
 ];
 
 export default function Franchise() {
-  const reduceMotion = useReducedMotion();
-  const applyRef = useRef<HTMLDivElement>(null);
+  const applyRef = useRef<HTMLElement>(null);
   const [selectedTier, setSelectedTier] = useState<FranchiseTierId>("territory");
 
   /** A tier card's CTA: carry the choice into the form rather than asking for it twice. */
@@ -275,17 +292,12 @@ export default function Franchise() {
 
           <div className="max-w-5xl mx-auto relative z-10">
             {/*
-              `animate` always names the visible state, and reduced motion is honoured by
-              dropping the duration rather than by dropping the animation. Leaving both
-              props off under reduced motion left the server-rendered `opacity: 0` on the
-              element with nothing to clear it, so the hero never appeared at all.
+              CSS, not framer-motion, and it moves the block without ever fading it.
+              Driven from JS this was server-rendered with `opacity: 0` inline, so the `h1`
+              below — the LCP element — stayed invisible until the bundle had downloaded,
+              hydrated and run a 500ms fade. See `.hero-rise` in index.css.
             */}
-            <motion.div
-              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.5, ease: "easeOut" }}
-              className="text-center"
-            >
+            <div className="text-center hero-rise">
               <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
                 Franchise Program
@@ -339,7 +351,7 @@ export default function Franchise() {
                   <a href="#economics">See how the money works</a>
                 </Button>
               </div>
-            </motion.div>
+            </div>
 
             {/*
               One bordered strip with dividers rather than four floating cards. The
@@ -412,18 +424,12 @@ export default function Franchise() {
                 className="bg-card border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden transition-colors hover:border-primary/30"
               >
                 <div className="p-6 sm:p-7 flex-1">
-                  <div className="flex items-center gap-2.5 mb-5">
-                    <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      {tier.id === "city" ? (
-                        <Building2 className="w-4 h-4 text-primary" aria-hidden="true" />
-                      ) : (
-                        <MapPin className="w-4 h-4 text-primary" aria-hidden="true" />
-                      )}
-                    </span>
-                    <h3 className="font-display font-black uppercase text-lg tracking-tight">
-                      {tier.shortName}
-                    </h3>
-                  </div>
+                  <CardHeading
+                    icon={tier.id === "city" ? Building2 : MapPin}
+                    className="mb-5"
+                  >
+                    {tier.shortName}
+                  </CardHeading>
 
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <p className="font-display font-black text-3xl sm:text-4xl leading-none tabular-nums">
@@ -521,9 +527,7 @@ export default function Franchise() {
           */}
           <div className="bg-card border border-border rounded-2xl shadow-sm p-6 sm:p-7 mt-5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-5">
-              <h3 className="font-display font-black uppercase text-lg tracking-tight">
-                Included in both franchises
-              </h3>
+              <CardHeading>Included in both franchises</CardHeading>
               <p className="text-muted-foreground text-[13px]">
                 {includes.shared.length} inclusions, identical either way
               </p>
@@ -612,9 +616,7 @@ export default function Franchise() {
           */}
           <div className="bg-card rounded-2xl p-6 sm:p-8 shadow-xl mt-5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-1.5">
-              <h3 className="font-display font-black uppercase text-lg tracking-tight">
-                How recovery adds up
-              </h3>
+              <CardHeading>How recovery adds up</CardHeading>
               <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground rounded-full border border-border px-2.5 py-1">
                 Illustration
               </span>
@@ -742,9 +744,7 @@ export default function Franchise() {
           */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:p-7 mt-5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 mb-4">
-              <h3 className="font-bold text-[15px] text-white">
-                What your share is calculated on
-              </h3>
+              <CardHeading dark>What your share is calculated on</CardHeading>
               <p className="flex items-center gap-2 text-gray-400 text-[13px]">
                 <span
                   className="w-2 h-2 rounded-full bg-primary flex-shrink-0"
@@ -820,12 +820,9 @@ export default function Franchise() {
           */}
           <div className="bg-card border border-border rounded-2xl shadow-sm grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border mt-10">
             <div className="p-6 sm:p-7">
-              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
-                <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="w-4 h-4 text-primary" aria-hidden="true" />
-                </span>
+              <CardHeading icon={CheckCircle2} className="mb-4">
                 You may
-              </h3>
+              </CardHeading>
               <ul className="space-y-2.5">
                 {MACHINE_RIGHTS.may.map((item) => (
                   <li key={item} className="flex items-start gap-2 text-[14px]">
@@ -840,12 +837,9 @@ export default function Franchise() {
             </div>
 
             <div className="p-6 sm:p-7 bg-muted/30">
-              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
-                <span className="w-7 h-7 rounded-lg bg-foreground/[0.06] flex items-center justify-center flex-shrink-0">
-                  <X className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                </span>
+              <CardHeading icon={X} tone="neutral" className="mb-4">
                 You may not
-              </h3>
+              </CardHeading>
               <ul className="space-y-2.5">
                 {MACHINE_RIGHTS.mayNot.map((item) => (
                   <li key={item} className="flex items-start gap-2 text-[14px]">
@@ -860,18 +854,15 @@ export default function Franchise() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm mt-5 flex flex-col sm:flex-row gap-4 sm:gap-6">
-            <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Factory className="w-4 h-4 text-primary" aria-hidden="true" />
-            </span>
-            <div>
-              <h3 className="font-bold text-[15px] mb-1.5">Procurement transparency</h3>
-              <p className="text-muted-foreground text-[14px] leading-relaxed max-w-3xl">
-                You get visibility into the OEM order, specifications, manufacturing and
-                dispatch status, and the procurement documentation for your allocation.
-                Transparency about where your investment is, not a transfer of ownership.
-              </p>
-            </div>
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5 max-w-3xl">
+            <CardSubheading icon={Factory} className="mb-2.5">
+              Procurement transparency
+            </CardSubheading>
+            <p className="text-muted-foreground text-[14px] leading-relaxed">
+              You get visibility into the OEM order, specifications, manufacturing and
+              dispatch status, and the procurement documentation for your allocation.
+              Transparency about where your investment is, not a transfer of ownership.
+            </p>
           </div>
         </Section>
 
@@ -896,7 +887,7 @@ export default function Franchise() {
               icon={Cpu}
               title="MuscleBox Pro provides"
               items={RESPONSIBILITIES.mbp}
-              tone="primary"
+              party="mbp"
             />
 
             {/*
@@ -916,7 +907,7 @@ export default function Franchise() {
               icon={Warehouse}
               title="You provide"
               items={RESPONSIBILITIES.franchisee}
-              tone="accent"
+              party="you"
             />
           </div>
 
@@ -928,13 +919,10 @@ export default function Franchise() {
             </span>
           </p>
 
-          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
-            <div className="flex items-center gap-2.5 mb-2.5">
-              <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <LayoutDashboard className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-              </span>
-              <h3 className="font-bold text-[15px]">Your dashboard</h3>
-            </div>
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5 max-w-3xl">
+            <CardSubheading icon={LayoutDashboard} className="mb-2.5">
+              Your dashboard
+            </CardSubheading>
             <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
               Machine level, not territory level. Every figure your share is calculated from is
               visible to you.
@@ -962,12 +950,9 @@ export default function Franchise() {
 
           <div className="grid md:grid-cols-2 gap-5 mt-10">
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="flex items-center gap-2.5 font-bold text-[15px] mb-4">
-                <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Gauge className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-                </span>
+              <CardHeading icon={Gauge} className="mb-4">
                 What exclusivity depends on
-              </h3>
+              </CardHeading>
               <ul className="space-y-2">
                 {PERFORMANCE_REQUIREMENTS.map((item) => (
                   <li key={item} className="flex items-start gap-2 text-[14px]">
@@ -988,12 +973,9 @@ export default function Franchise() {
             </div>
 
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="flex items-center gap-2.5 font-bold text-[15px] mb-2.5">
-                <span className="w-7 h-7 rounded-lg bg-foreground/[0.06] flex items-center justify-center flex-shrink-0">
-                  <Lock className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
-                </span>
+              <CardHeading icon={Lock} tone="neutral" className="mb-2.5">
                 Reserved accounts
-              </h3>
+              </CardHeading>
               <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
                 These sit outside territorial exclusivity, handled directly by MuscleBox Pro or
                 under a separately agreed arrangement.
@@ -1014,9 +996,7 @@ export default function Franchise() {
           <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
             <div className="grid lg:grid-cols-[1fr_1.1fr] gap-7 lg:gap-10">
               <div>
-                <h3 className="font-display font-black uppercase text-lg tracking-tight mb-2">
-                  Adding machines
-                </h3>
+                <CardHeading className="mb-2">Adding machines</CardHeading>
                 <p className="text-muted-foreground text-[14px] leading-relaxed mb-5">
                   Machine networks expand in blocks, subject to approval based on existing
                   machine performance, compliance, territory capacity, the availability of
@@ -1227,35 +1207,41 @@ export default function Franchise() {
   );
 }
 
-/** One side of the warehouse seam in "Who does what". */
+/**
+ * One side of the warehouse seam in "Who does what".
+ *
+ * Coloured by *party*, not by which side looks more attractive: orange is you and grey is
+ * MuscleBox Pro, the same way round as the profit-share bars in franchiseViz. This column
+ * used to run the other way, with accent for you and primary for MuscleBox Pro, which left
+ * the page saying orange meant both parties two sections apart. Only the marks change hue;
+ * both lists keep full-strength body text, because neither side is the lesser one.
+ */
 function ResponsibilityColumn({
   icon: Icon,
   title,
   items,
-  tone,
+  party,
 }: {
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: ChipIcon;
   title: string;
   items: readonly string[];
-  tone: "primary" | "accent";
+  party: "you" | "mbp";
 }) {
-  const hue = tone === "primary" ? "text-primary" : "text-accent";
+  const you = party === "you";
   return (
     <div className="p-6 sm:p-7">
-      <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
-        <span
-          className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            tone === "primary" ? "bg-primary/10" : "bg-accent/10"
-          }`}
-        >
-          <Icon className={`w-4 h-4 ${hue}`} aria-hidden={true} />
-        </span>
+      <CardHeading icon={Icon} tone={you ? "primary" : "neutral"} className="mb-4">
         {title}
-      </h3>
+      </CardHeading>
       <ul className="space-y-2.5">
         {items.map((item) => (
           <li key={item} className="flex items-start gap-2 text-[14px]">
-            <CheckCircle2 className={`w-4 h-4 flex-shrink-0 mt-0.5 ${hue}`} aria-hidden="true" />
+            <CheckCircle2
+              className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                you ? "text-primary" : "text-muted-foreground"
+              }`}
+              aria-hidden="true"
+            />
             <span className="leading-snug">{item}</span>
           </li>
         ))}
@@ -1270,6 +1256,98 @@ function CardLabel({ children }: { children: React.ReactNode }) {
     <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mt-6 mb-3">
       {children}
     </h4>
+  );
+}
+
+type ChipIcon = React.ComponentType<{
+  className?: string;
+  "aria-hidden"?: boolean;
+}>;
+
+/**
+ * The icon chip beside a card heading.
+ *
+ * `neutral` is not "de-emphasised": it is the page's second party. Orange means *you*
+ * throughout, which is the language the profit-share bars establish and the reason the
+ * responsibility columns cannot colour MuscleBox Pro with it. See franchiseViz.
+ */
+function IconChip({
+  icon: Icon,
+  size = "md",
+  tone = "primary",
+}: {
+  icon: ChipIcon;
+  size?: "sm" | "md";
+  tone?: "primary" | "neutral";
+}) {
+  const primary = tone === "primary";
+  return (
+    <span
+      className={`flex items-center justify-center flex-shrink-0 ${
+        size === "md" ? "w-8 h-8 rounded-xl" : "w-7 h-7 rounded-lg"
+      } ${primary ? "bg-primary/10" : "bg-foreground/[0.06]"}`}
+    >
+      <Icon
+        className={`${size === "md" ? "w-4 h-4" : "w-3.5 h-3.5"} ${
+          primary ? "text-primary" : "text-muted-foreground"
+        }`}
+        aria-hidden={true}
+      />
+    </span>
+  );
+}
+
+/**
+ * A card heading, at one of exactly two levels.
+ *
+ * `CardHeading` is for a card that carries a section's argument; `CardSubheading` for a
+ * supporting aside. Five treatments had grown at this depth, two of them colliding inside
+ * a single section, and with one typeface for both display and body the only thing
+ * separating a heading from its list is size. Adding a third level costs more than it
+ * buys.
+ */
+function CardHeading({
+  icon: Icon,
+  tone,
+  dark,
+  className = "",
+  children,
+}: {
+  icon?: ChipIcon;
+  tone?: "primary" | "neutral";
+  /** For the money section, where `--foreground` is near-invisible. */
+  dark?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const base = `font-display font-black uppercase text-lg tracking-tight leading-tight ${
+    dark ? "text-white" : ""
+  } ${className}`;
+  if (!Icon) return <h3 className={base}>{children}</h3>;
+  return (
+    <h3 className={`flex items-center gap-2.5 ${base}`}>
+      <IconChip icon={Icon} tone={tone} />
+      {children}
+    </h3>
+  );
+}
+
+function CardSubheading({
+  icon: Icon,
+  className = "",
+  children,
+}: {
+  icon?: ChipIcon;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const base = `font-bold text-[15px] ${className}`;
+  if (!Icon) return <h3 className={base}>{children}</h3>;
+  return (
+    <h3 className={`flex items-center gap-2.5 ${base}`}>
+      <IconChip icon={Icon} size="sm" />
+      {children}
+    </h3>
   );
 }
 
@@ -1299,7 +1377,7 @@ function ApplicationSection({
   selectedTier,
   onTierChange,
 }: {
-  ref: React.Ref<HTMLDivElement>;
+  ref: React.Ref<HTMLElement>;
   selectedTier: FranchiseTierId;
   onTierChange: (id: FranchiseTierId) => void;
 }) {
@@ -1331,7 +1409,9 @@ function ApplicationSection({
       if (fieldErrors) {
         for (const [field, message] of Object.entries(fieldErrors)) {
           if (field in EMPTY_APPLICATION) {
-            form.setError(field as keyof FranchiseApplicationInput, { message });
+            form.setError(field as keyof FranchiseApplicationInput, {
+              message,
+            });
           }
         }
       }
@@ -1344,350 +1424,355 @@ function ApplicationSection({
   };
 
   return (
-    <section
-      id="apply"
-      ref={ref}
-      className="scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20 bg-muted/40 border-t border-border"
-    >
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-card rounded-3xl border border-border shadow-lg overflow-hidden grid lg:grid-cols-[22rem_1fr]">
-          {/* Left rail: what happens next */}
-          <div className="bg-gray-950 p-8 sm:p-10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/20 to-accent/10 blur-[80px] pointer-events-none" />
-            <div className="relative z-10 flex flex-col h-full">
-              <span className="inline-block text-primary text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
-                Apply
-              </span>
-              <h2 className="font-display font-black uppercase text-white text-2xl sm:text-3xl tracking-tight leading-[1.05] mb-4">
-                Tell us the market you want
-              </h2>
-              {/*
-                The evaluation criteria are journey step 2's whole body. What is left is the
-                part that is a commitment rather than a process description.
-              */}
-              <p className="text-gray-300 text-[15px] leading-relaxed mb-8">
-                Nothing about the tier or the territory is confirmed until we have looked at
-                your market. If it has no room for a MuscleBox Pro network, we will say so.
-              </p>
+    // Dark, and the second inverted section on the page after the money.
+    //
+    // It used to be `bg-muted/40`, which is the surface the journey section directly above
+    // it already uses, so two sections ran together with only a border between them. Six
+    // consecutive light sections cannot alternate on two light tones, and of the two ways
+    // out this is the one that also puts weight where conviction turns into an enquiry.
+    // The white card floating on gray-950 is the same device the worked example uses.
+    <Section id="apply" tone="dark" ref={ref}>
+      <div className="bg-card rounded-2xl shadow-2xl overflow-hidden grid lg:grid-cols-[22rem_1fr]">
+        {/*
+          Left rail: what happens next. Light, since the section behind it is now the dark
+          one; a gray-950 rail would dissolve into it and take the card's left edge with it.
+        */}
+        <div className="bg-primary/[0.05] border-b lg:border-b-0 lg:border-r border-border p-8 sm:p-10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/20 to-accent/10 blur-[80px] pointer-events-none" />
+          <div className="relative z-10 flex flex-col h-full">
+            <span className="inline-block text-primary-ink text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
+              Apply
+            </span>
+            <h2 className="font-display font-black uppercase text-2xl sm:text-3xl tracking-tight leading-[1.05] mb-4">
+              Tell us the market you want
+            </h2>
+            {/*
+              The evaluation criteria are journey step 2's whole body. What is left is the
+              part that is a commitment rather than a process description.
+            */}
+            <p className="text-muted-foreground text-[15px] leading-relaxed mb-8">
+              Nothing about the tier or the territory is confirmed until we have looked at
+              your market. If it has no room for a MuscleBox Pro network, we will say so.
+            </p>
 
-              <ul className="space-y-3.5">
-                {[
-                  { icon: MapPin, text: "Territory or city availability checked first" },
+            <ul className="space-y-3.5">
+              {[
+                {
+                  icon: MapPin,
+                  text: "Territory or city availability checked first",
+                },
                   { icon: BadgeIndianRupee, text: "Full commercial terms before any payment" },
-                  { icon: Clock, text: "We reply within two working days" },
-                ].map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-4 h-4 text-primary" aria-hidden="true" />
-                    </span>
-                    <span className="text-gray-300 text-[13px]">{text}</span>
-                  </li>
-                ))}
-              </ul>
+                { icon: Clock, text: "We reply within two working days" },
+              ].map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-3">
+                  <IconChip icon={Icon} />
+                  <span className="text-[14px] leading-snug">{text}</span>
+                </li>
+              ))}
+            </ul>
 
-              {/*
-                Pushed to the foot of the rail on desktop. The rail is as tall as the form
-                beside it and its content is not, so anchored to the bottom rather than
-                left mid-panel with the rest of the height empty below it.
-              */}
-              <p className="text-gray-400 text-[13px] leading-relaxed mt-8 lg:mt-auto lg:pt-10">
-                Running a gym instead?{" "}
-                <Link
-                  href="/gym-partnership"
-                  className="text-white font-semibold underline underline-offset-2 hover:text-gray-200 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white transition-colors"
-                >
-                  See the gym partnership
-                </Link>
-                , where the machine costs your gym nothing.
-              </p>
-            </div>
-          </div>
-
-          {/* Right: the form, or the receipt */}
-          <div className="p-8 sm:p-10">
-            {receipt ? (
-              <div
-                className="flex flex-col items-center text-center h-full justify-center py-6"
-                data-testid="application-received"
+            {/*
+              Pushed to the foot of the rail on desktop. The rail is as tall as the form
+              beside it and its content is not, so anchored to the bottom rather than
+              left mid-panel with the rest of the height empty below it.
+            */}
+            <p className="text-muted-foreground text-[14px] leading-relaxed mt-8 lg:mt-auto lg:pt-10">
+              Running a gym instead?{" "}
+              <Link
+                href="/gym-partnership"
+                className="text-primary-ink font-semibold underline underline-offset-2 hover:text-primary-fill rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
               >
-                <span className="w-16 h-16 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/25 mb-6">
-                  <CheckCircle2 className="w-8 h-8 text-white" strokeWidth={2.5} aria-hidden="true" />
-                </span>
-                <h3 className="font-display font-black uppercase text-xl tracking-tight mb-2">
-                  Application received
-                </h3>
-                <p className="text-muted-foreground text-[15px] leading-relaxed max-w-sm mb-5">
-                  We will review the market you have asked for and come back within two working
-                  days, including if the territory is already taken.
-                </p>
-                {receipt.reference && (
-                  <p className="text-[13px] text-muted-foreground">
-                    Your reference:{" "}
-                    <strong className="font-bold text-foreground">{receipt.reference}</strong>
-                  </p>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => setReceipt(null)}
-                  className="mt-7 min-h-11 rounded-full px-6 font-semibold cursor-pointer"
-                >
-                  Submit another application
-                </Button>
-              </div>
-            ) : (
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5" noValidate>
-                  <div>
-                    {/* On a white card, so the darker step of the hue. See index.css. */}
-                    <span className="inline-block text-primary-ink text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
-                      Franchise enquiry
-                    </span>
-                    <h3 className="font-display font-black uppercase text-xl tracking-tight">
-                      Your details
-                    </h3>
-                  </div>
+                See the gym partnership
+              </Link>
+              , where the machine costs your gym nothing.
+            </p>
+          </div>
+        </div>
 
-                  {error && (
-                    <div
-                      role="alert"
-                      className="rounded-2xl border border-destructive/30 bg-destructive/[0.06] px-4 py-3.5 flex items-start gap-3"
-                    >
-                      <AlertCircle
-                        className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5"
-                        aria-hidden="true"
-                      />
-                      <div>
-                        <p className="text-sm font-semibold text-destructive mb-0.5">
-                          We could not submit that
-                        </p>
-                        <p className="text-[13px] text-muted-foreground leading-relaxed">
-                          {error}
-                        </p>
-                        {/*
+        {/* Right: the form, or the receipt */}
+        <div className="p-8 sm:p-10">
+          {receipt ? (
+            <div
+              className="flex flex-col items-center text-center h-full justify-center py-6"
+              data-testid="application-received"
+            >
+              <span className="w-16 h-16 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/25 mb-6">
+                <CheckCircle2
+                  className="w-8 h-8 text-white"
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                />
+              </span>
+              <CardHeading className="mb-2">Application received</CardHeading>
+              <p className="text-muted-foreground text-[15px] leading-relaxed max-w-sm mb-5">
+                We will review the market you have asked for and come back within two working
+                days, including if the territory is already taken.
+              </p>
+              {receipt.reference && (
+                <p className="text-[13px] text-muted-foreground">
+                  Your reference:{" "}
+                  <strong className="font-bold text-foreground">{receipt.reference}</strong>
+                </p>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => setReceipt(null)}
+                className="mt-7 min-h-11 rounded-full px-6 font-semibold cursor-pointer"
+              >
+                Submit another application
+              </Button>
+            </div>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5" noValidate>
+                <div>
+                  {/* On a white card, so the darker step of the hue. See index.css. */}
+                  <span className="inline-block text-primary-ink text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
+                    Franchise enquiry
+                  </span>
+                  <CardHeading>Your details</CardHeading>
+                </div>
+
+                {error && (
+                  <div
+                    role="alert"
+                    className="rounded-2xl border border-destructive/30 bg-destructive/[0.06] px-4 py-3.5 flex items-start gap-3"
+                  >
+                    <AlertCircle
+                      className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-destructive mb-0.5">
+                        We could not submit that
+                      </p>
+                      <p className="text-[13px] text-muted-foreground leading-relaxed">
+                        {error}
+                      </p>
+                      {/*
                           The recovery path, not a courtesy line. Until the endpoint is
                           deployed this is how a franchise enquiry actually reaches us, so
                           it carries the answers rather than opening an empty message.
                         */}
-                        <a
-                          href={mailtoFallback(form.getValues())}
-                          className="inline-block text-[13px] font-semibold text-primary-ink underline underline-offset-2 mt-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          Email this application to us instead
-                        </a>
-                      </div>
+                      <a
+                        href={mailtoFallback(form.getValues())}
+                        className="inline-block text-[13px] font-semibold text-primary-ink underline underline-offset-2 mt-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        Email this application to us instead
+                      </a>
                     </div>
-                  )}
+                  </div>
+                )}
 
+                <FormField
+                  control={form.control}
+                  name="tier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Which franchise</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            onTierChange(value as FranchiseTierId);
+                          }}
+                          className="grid sm:grid-cols-2 gap-2.5"
+                        >
+                          {FRANCHISE_TIERS.map((tier) => {
+                            const checked = field.value === tier.id;
+                            return (
+                              <label
+                                key={tier.id}
+                                htmlFor={`tier-${tier.id}`}
+                                className={`flex items-start gap-3 rounded-xl border p-3.5 cursor-pointer transition-colors ${
+                                  checked
+                                    ? "border-primary bg-primary/[0.06]"
+                                    : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
+                                }`}
+                              >
+                                <RadioGroupItem
+                                  value={tier.id}
+                                  id={`tier-${tier.id}`}
+                                  className="mt-0.5 flex-shrink-0 cursor-pointer"
+                                />
+                                <span className="min-w-0">
+                                  <span className="block font-bold text-[14px] leading-snug">
+                                    {tier.shortName}
+                                  </span>
+                                  <span className="block text-muted-foreground text-[13px] tabular-nums">
+                                    {formatLakh(tier.investmentInr)} · {tier.initialMachines}{" "}
+                                    machines
+                                  </span>
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="tier"
+                    name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Which franchise</FormLabel>
+                        <FormLabel>Your name</FormLabel>
                         <FormControl>
-                          <RadioGroup
-                            value={field.value}
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              onTierChange(value as FranchiseTierId);
-                            }}
-                            className="grid sm:grid-cols-2 gap-2.5"
-                          >
-                            {FRANCHISE_TIERS.map((tier) => {
-                              const checked = field.value === tier.id;
-                              return (
-                                <label
-                                  key={tier.id}
-                                  htmlFor={`tier-${tier.id}`}
-                                  className={`flex items-start gap-3 rounded-xl border p-3.5 cursor-pointer transition-colors ${
-                                    checked
-                                      ? "border-primary bg-primary/[0.06]"
-                                      : "border-border bg-card hover:border-primary/40 hover:bg-muted/40"
-                                  }`}
-                                >
-                                  <RadioGroupItem
-                                    value={tier.id}
-                                    id={`tier-${tier.id}`}
-                                    className="mt-0.5 flex-shrink-0 cursor-pointer"
-                                  />
-                                  <span className="min-w-0">
-                                    <span className="block font-bold text-[14px] leading-snug">
-                                      {tier.shortName}
-                                    </span>
-                                    <span className="block text-muted-foreground text-[13px] tabular-nums">
-                                      {formatLakh(tier.investmentInr)} ·{" "}
-                                      {tier.initialMachines} machines
-                                    </span>
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </RadioGroup>
+                          <Input
+                            autoComplete="name"
+                            placeholder="Rahul Sharma"
+                            className="min-h-11"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="targetMarket"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City or region you want</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Indore, or west Pune"
+                            className="min-h-11"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            inputMode="email"
+                            autoComplete="email"
+                            placeholder="rahul@example.com"
+                            className="min-h-11"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="mobile"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mobile</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="98765 43210"
+                            className="min-h-11"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/*
+                    A rule above the two optional fields, so the required path has a
+                    visible end. They are also the two largest controls on the form, and
+                    without the break the whole thing read as six fields of equal weight.
+                  */}
+                <div className="space-y-5 pt-5 border-t border-border">
+                  <FormField
+                    control={form.control}
+                    name="company"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Company{" "}
+                            <span className="text-muted-foreground font-normal">(optional)</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            autoComplete="organization"
+                            placeholder="Sharma Ventures LLP"
+                            className="min-h-11"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Your name</FormLabel>
-                          <FormControl>
-                            <Input
-                              autoComplete="name"
-                              placeholder="Rahul Sharma"
-                              className="min-h-11"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="targetMarket"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City or region you want</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Indore, or west Pune"
-                              className="min-h-11"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="email"
-                              inputMode="email"
-                              autoComplete="email"
-                              placeholder="rahul@example.com"
-                              className="min-h-11"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="mobile"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mobile</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="tel"
-                              inputMode="tel"
-                              autoComplete="tel"
-                              placeholder="98765 43210"
-                              className="min-h-11"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/*
-                    A rule above the two optional fields, so the required path has a
-                    visible end. They are also the two largest controls on the form, and
-                    without the break the whole thing read as six fields of equal weight.
-                  */}
-                  <div className="space-y-5 pt-5 border-t border-border">
-                    <FormField
-                      control={form.control}
-                      name="company"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Company{" "}
+                  <FormField
+                    control={form.control}
+                    name="background"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Your background{" "}
                             <span className="text-muted-foreground font-normal">(optional)</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              autoComplete="organization"
-                              placeholder="Sharma Ventures LLP"
-                              className="min-h-11"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="background"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Your background{" "}
-                            <span className="text-muted-foreground font-normal">(optional)</span>
-                          </FormLabel>
-                          {/*
+                        </FormLabel>
+                        {/*
                             A description rather than a placeholder. It is the prompt that
                             decides what someone writes here, and a placeholder clears on
                             the first keystroke, which is exactly when it is needed.
                           */}
-                          <FormDescription>
-                            Businesses you run, gyms or distribution you already work with,
-                            warehouse space, and when you would want to start.
-                          </FormDescription>
-                          <FormControl>
-                            <Textarea rows={3} className="resize-none" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                        <FormDescription>
+                          Businesses you run, gyms or distribution you already work with,
+                          warehouse space, and when you would want to start.
+                        </FormDescription>
+                        <FormControl>
+                          <Textarea rows={3} className="resize-none" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={isSubmitting}
-                    data-testid="button-submit-application"
-                    className="w-full min-h-12 rounded-full font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
-                  >
-                    {isSubmitting ? "Sending…" : "Submit application"}
-                    {!isSubmitting && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
-                  </Button>
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={isSubmitting}
+                  data-testid="button-submit-application"
+                  className="w-full min-h-12 rounded-full font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
+                >
+                  {isSubmitting ? "Sending…" : "Submit application"}
+                  {!isSubmitting && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
+                </Button>
 
-                  <p className="text-muted-foreground text-[13px] leading-relaxed">
-                    Submitting an application does not create a franchise, reserve a territory
-                    or commit either side to anything. Nothing is payable until a definitive
-                    franchise agreement is executed.
-                  </p>
-                </form>
-              </Form>
-            )}
-          </div>
+                <p className="text-muted-foreground text-[13px] leading-relaxed">
+                  Submitting an application does not create a franchise, reserve a territory
+                  or commit either side to anything. Nothing is payable until a definitive
+                  franchise agreement is executed.
+                </p>
+              </form>
+            </Form>
+          )}
         </div>
       </div>
-    </section>
+    </Section>
   );
 }
 

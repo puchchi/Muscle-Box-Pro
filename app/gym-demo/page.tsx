@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/gym-demo",
     title: "Gym Demo | MuscleBoxPro",
     description: "See how MuscleBoxPro works inside gyms and how smart shake vending improves member experience and boosts recurring revenue.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "MuscleBoxPro smart protein shake vending machine" }],
   },
 };
 

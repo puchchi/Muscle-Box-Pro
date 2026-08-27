@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: "Vending Machine vs. Supplement Counter: ROI Analysis for Gym Owners India (2026)",
     description:
       "Which generates more passive income for Indian gyms — a protein shake vending machine or a front-desk supplement counter? Full ROI breakdown, 10-dimension comparison, and honest verdict.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800 }],
   },
   keywords: [
     "gym supplement counter vs vending machine india",
@@ -69,7 +69,7 @@ const articleSchema = {
   datePublished: "2026-01-15",
   dateModified: "2026-03-29",
   url: "https://www.muscleboxpro.com/vs/supplement-counter",
-  image: "https://www.muscleboxpro.com/og-image.png",
+  image: "https://www.muscleboxpro.com/og-image.jpg",
   inLanguage: "en-IN",
   mainEntityOfPage: {
     "@type": "WebPage",

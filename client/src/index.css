@@ -208,7 +208,27 @@
   }
 }
 
+/*
+ * Transform only, never opacity. This animates the hero of a long reference page,
+ * whose heading is the LCP element: an element rendered at `opacity: 0` is not a
+ * *contentful* paint, so fading one in defers LCP until the fade finishes — and a
+ * JS-driven fade defers it until hydration finishes. Painting the text on the first
+ * frame and moving it is the same effect at no cost to the metric. The
+ * `prefers-reduced-motion` reset in the base layer above collapses the duration.
+ */
+@keyframes hero-rise {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: none;
+  }
+}
+
 @layer utilities {
+  .hero-rise {
+    animation: hero-rise 0.5s ease-out both;
+  }
   .text-glow {
     text-shadow: 0 0 10px hsla(var(--primary), 0.5), 0 0 20px hsla(var(--primary), 0.3);
   }

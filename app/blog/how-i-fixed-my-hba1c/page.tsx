@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     title: "How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story",
     description:
       "Real lab reports, 14 days of CGM glucose data, and 12 dietary findings that reversed early pre-diabetes. No medication, just food changes.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "HbA1C journey from 6.1 to 5.2" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "HbA1C journey from 6.1 to 5.2" }],
   },
 };
 

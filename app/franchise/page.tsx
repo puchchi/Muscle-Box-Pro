@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     description,
     images: [
       {
-        url: "https://www.muscleboxpro.com/og-image.png",
+        url: "https://www.muscleboxpro.com/og-image.jpg",
         width: 1200,
-        height: 630,
+        height: 800,
         alt: "MuscleBoxPro smart protein shake vending machine",
       },
     ],

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     url: "/blog/best-protein-shake-after-workout",
     title: "The Best Protein Shake After a Workout: Whey vs. Plant | MuscleBoxPro",
     description: "Discover the science behind the best post-workout protein shakes. Compare whey and plant protein to find the perfect recovery drink.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "Best protein shake after workout" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "Best protein shake after workout" }],
   },
 };
 

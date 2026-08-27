@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/gym-protein-shake-machine",
     title: "Gym Protein Shake Machine | MuscleBoxPro",
     description: "Discover how MuscleBoxPro gym protein shake machines help gyms increase member convenience and generate additional recurring revenue.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro gym protein shake machine" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "MuscleBoxPro gym protein shake machine" }],
   },
 };
 
@@ -32,7 +32,7 @@ const productSchema = {
     "Automated gym protein shake machine that blends fresh whey and plant protein shakes in 60 seconds. Zero staff, 24/7 operation, cashless payments.",
   brand: { "@type": "Brand", name: "MuscleBoxPro" },
   manufacturer: { "@type": "Organization", name: "BlendBox Innovations LLP" },
-  image: "https://www.muscleboxpro.com/og-image.png",
+  image: "https://www.muscleboxpro.com/og-image.jpg",
   url: "https://www.muscleboxpro.com/gym-protein-shake-machine",
   category: "Fitness Equipment > Vending Machines > Protein Shake Machines",
   offers: {

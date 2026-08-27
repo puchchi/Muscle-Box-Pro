@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     url: "/blog/why-gyms-need-vending-machines",
     title: "Why Every Gym Should Install a Protein Shake Vending Machine | MuscleBoxPro",
     description: "Discover why protein shake vending machines are becoming the most profitable and member-retaining asset for modern gyms.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "Protein shake vending machine in a modern gym" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "Protein shake vending machine in a modern gym" }],
   },
 };
 
