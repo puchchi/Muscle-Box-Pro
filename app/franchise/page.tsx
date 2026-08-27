@@ -53,7 +53,7 @@ const breadcrumbSchema = {
 /*
  * Built from the same FRANCHISE_FAQ array the page renders visibly. Google requires
  * FAQPage markup to match on-page content, so these must never be maintained as two
- * separate lists — see shared/franchise/faq.ts.
+ * separate lists. See shared/franchise/faq.ts.
  */
 const faqSchema = {
   "@context": "https://schema.org",

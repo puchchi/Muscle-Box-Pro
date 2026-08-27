@@ -3,7 +3,7 @@
  *
  * Single source of truth for every figure the public /franchise page shows, and the
  * defaults a franchise application is evaluated against. Two rules carry over from
- * `shared/partnership/summary.ts`, for the same reason — a published number is a
+ * `shared/partnership/summary.ts`, for the same reason. A published number is a
  * representation:
  *
  *   1. Nothing in the UI hardcodes a rupee figure, a percentage or a machine count.
@@ -30,13 +30,13 @@ export type FranchiseTier = {
   initialMachines: number;
   /** §1, "Market Rights" column. */
   marketRights: string;
-  /** One line on who the tier is for — §2, §3. */
+  /** One line on who the tier is for. §2, §3. */
   positioning: string;
   /**
    * The recovery threshold, or `null` where the program does not fix one publicly.
    *
    * §21: the City Franchise threshold is set in the definitive agreement rather than
-   * here. `null` is not "no recovery" — it is "not published", and the page must say
+   * here. `null` is not "no recovery". It is "not published", and the page must say
    * so rather than render a figure or imply the model does not apply.
    */
   capitalRecoveryInr: number | null;
@@ -141,7 +141,7 @@ export const FRANCHISE = {
   /**
    * §17, §19. The protein-business split, before and after capital recovery.
    *
-   * 100% during recovery is a *capital recovery mechanism*, not a margin — it is how
+   * 100% during recovery is a *capital recovery mechanism*, not a margin. It is how
    * the franchisee gets the investment back, and the page must not present it as a
    * permanent share.
    */
@@ -179,7 +179,7 @@ export const FRANCHISE = {
     "Other directly attributable operating costs",
   ],
 
-  /** §11. Examples only — MuscleBox Pro sets the applicable split per location. */
+  /** §11. Examples only. MuscleBox Pro sets the applicable split per location. */
   gymProfitSharingExamples: ["80:20", "50:50"],
 } as const;
 
@@ -386,7 +386,7 @@ export function recoveryExample(tierId: FranchiseTierId = "territory") {
     /**
      * The remainder of the pool, and the whole distribution's total to the franchisee.
      * Derived here rather than in the page so the illustration's three parts always sum
-     * to `nextDistributionInr` — subtracting in JSX is where a rounded half goes missing.
+     * to `nextDistributionInr`. Subtracting in JSX is where a rounded half goes missing.
      */
     postRecoveryToMbpInr: postRecoveryPoolInr - postRecoveryToFranchiseeInr,
     totalToFranchiseeInr: completesRecoveryInr + postRecoveryToFranchiseeInr,
@@ -396,7 +396,7 @@ export function recoveryExample(tierId: FranchiseTierId = "territory") {
 }
 
 /**
- * "₹25 Lakh" — the headline form. `formatInr` gives "₹25,00,000", which is the right
+ * The headline form, "₹25 Lakh". `formatInr` gives "₹25,00,000", which is the right
  * thing in a table and eight characters of noise in a 48px display heading.
  *
  * Falls back to `formatInr` below one lakh and for anything that is not a whole

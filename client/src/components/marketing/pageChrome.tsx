@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Layout chrome for the site's two long reference pages — /gym-partnership and
+ * Layout chrome for the site's two long reference pages, /gym-partnership and
  * /franchise.
  *
  * Both are documents rather than landing pages: someone scans them, jumps around in
@@ -36,7 +36,7 @@ export function SkipLink() {
  *
  * Desktop only. The mobile equivalent of "let me get to the bit I care about" is a
  * horizontally scrolling strip, which is the one thing a phone layout should not
- * introduce; phones get the sticky CTA instead. No active-section highlighting — that
+ * introduce; phones get the sticky CTA instead. No active-section highlighting. That
  * needs a scroll observer running on every marketing page view to move a colour, and
  * the anchors are already the useful part.
  */
@@ -69,7 +69,7 @@ export function SectionNav({ sections }: { sections: readonly { id: string; labe
  * one visual nicety and costs a listener on every phone visit, and the bar is the only
  * CTA in reach while someone is four sections deep in the terms.
  *
- * The page that renders this owes it `pb-24 lg:pb-0` on its own root — the bar is fixed
+ * The page that renders this owes it `pb-24 lg:pb-0` on its own root. The bar is fixed
  * and would otherwise sit on top of the last rows of the footer. 24 rather than 20: at
  * 320px the label wraps and the bar grows to 90px, which overran an 80px reserve.
  */
@@ -146,22 +146,20 @@ export function Section({
 /**
  * A section's eyebrow, title and standfirst.
  *
- * `split` puts the standfirst in a second column on desktop. Stacked, a 2xl-capped
- * paragraph under a 3xl heading leaves the right half of a 5xl container empty for the
- * length of the header, which on a page of eight sections reads as an unfinished layout
- * rather than as whitespace.
+ * The standfirst sits under the title, not beside it. Beside it, the pattern repeated
+ * down a page of eight sections reads as a second column of body copy the reader has to
+ * decide whether to read, and it invites a standfirst long enough to fill the column.
+ * Under the title it is capped at a 2xl measure and stays a caption to the heading.
  */
 export function SectionHeading({
   eyebrow,
   title,
   blurb,
-  split,
   tone,
 }: {
   eyebrow: string;
   title: string;
   blurb?: string;
-  split?: boolean;
   tone?: "dark";
 }) {
   const dark = tone === "dark";
@@ -169,7 +167,7 @@ export function SectionHeading({
     <div>
       {/*
         `--primary-ink` on light, `--primary` on dark. The eyebrow is 12px bold, so 4.5:1
-        applies to it, and `--primary` is 3.25:1 on white — the reason index.css keeps a
+        applies to it, and `--primary` is 3.25:1 on white, which is why index.css keeps a
         second step of the hue for brand-coloured text. On gray-950 it is 5.9:1 and the
         darker step is the one that fails.
       */}
@@ -194,15 +192,6 @@ export function SectionHeading({
       {blurb}
     </p>
   );
-
-  if (split) {
-    return (
-      <div className="grid lg:grid-cols-2 gap-x-12 gap-y-4 lg:items-end">
-        {heading}
-        {standfirst}
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-2xl space-y-3">

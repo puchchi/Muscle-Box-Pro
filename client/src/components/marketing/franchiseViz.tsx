@@ -16,9 +16,9 @@
  *     observations, so nothing carries `aria-valuenow` or a time axis.
  *
  * The fill colours are literal hex rather than theme tokens, which is the one deliberate
- * exception on the page. Chart fills have their own contrast gates — a lightness band
- * against the surface they sit on, and a colour-vision separation between adjacent marks
- * — that `--primary` and `--accent` are not stepped for. These are the brand hues moved
+ * exception on the page. Chart fills have their own contrast gates that `--primary` and
+ * `--accent` are not stepped for: a lightness band against the surface they sit on, and
+ * a colour-vision separation between adjacent marks. These are the brand hues moved
  * to the nearest step that clears every gate against the surface each figure renders on,
  * verified rather than judged by eye:
  *
@@ -54,7 +54,7 @@ const INK_ON = { [FILL.dark.you]: "#0B0B0B", [FILL.dark.mbp]: "#FFFFFF" } as con
  * Part-to-whole bars rather than a share-over-time line: there is no time axis in the
  * program, only a threshold, and a line drawn left to right would imply one. Three bars
  * in one frame is also what makes the comparison the section is about visible at a
- * glance — protein steps down at recovery, advertising does not move.
+ * glance: protein steps down at recovery, advertising does not move.
  */
 export function StreamSplitFigure({
   streams,
@@ -106,7 +106,7 @@ export function StreamSplitFigure({
                 <div key={row.label}>
                   {/*
                     The threshold, drawn where it actually falls: between the two rows it
-                    separates. Solid hairline rather than dashed — a dash on a chart reads
+                    separates. Solid hairline rather than dashed. A dash on a chart reads
                     as a projection, and this is a stated term.
                   */}
                   {i > 0 && (
@@ -213,7 +213,7 @@ export function RecoveryMeter({ fraction }: { fraction: number }) {
  *
  * `aria-hidden`, and deliberately unlabelled: the table beside it is the accessible twin
  * and carries every amount in full. Labelling the segments too would either clip on a
- * phone — the narrow ones are under 60px there — or print each figure twice.
+ * phone, where the narrow ones are under 60px, or print each figure twice.
  */
 export function DistributionBar({
   segments,
@@ -254,7 +254,7 @@ export function Swatch({ fill }: { fill: keyof typeof FILL.light }) {
  *
  * Five and ten are small enough to count at a glance, which is the whole comparison
  * between the two tiers, and a numeral makes the reader do arithmetic that a row of
- * glyphs does for them. `aria-hidden` — the count is already stated in text beside it.
+ * glyphs does for them. `aria-hidden`, because the count is already stated beside it.
  */
 export function MachineCount({ count }: { count: number }) {
   return (

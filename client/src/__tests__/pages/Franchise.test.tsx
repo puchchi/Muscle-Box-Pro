@@ -95,8 +95,8 @@ describe("Franchise page", () => {
 
   /*
    * The term people most often read the other way round, and the one that decides whether
-   * the worked example adds up. It used to be stated three times over — a headline tile, a
-   * paragraph and a footnote under the illustration — and is now stated once, in the
+   * the worked example adds up. It used to be stated three times over: a headline tile, a
+   * paragraph and a footnote under the illustration. It is now stated once, in the
    * caption of the figure that draws the two streams. This asserts the fact, not the
    * wording around it, so the caption can be reworded but not lost.
    */

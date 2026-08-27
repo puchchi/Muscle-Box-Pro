@@ -17,7 +17,7 @@ export const franchiseApplicationSchema = z.object({
     .string()
     .min(10, "A valid mobile number is required")
     .max(20, "That mobile number looks too long"),
-  /** The city or region the applicant wants to develop. Not a MuscleBoxPro city list — a territory need not match one. */
+  /** The city or region the applicant wants to develop. Not a MuscleBoxPro city list; a territory need not match one. */
   targetMarket: z.string().min(2, "Tell us which city or region you want to develop"),
   tier: z.enum(
     FRANCHISE_TIERS.map((t) => t.id) as [string, ...string[]],

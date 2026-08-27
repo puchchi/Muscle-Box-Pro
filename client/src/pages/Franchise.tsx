@@ -35,8 +35,8 @@
  *   - **A ratio is drawn, not described.** The three profit splits and the worked
  *     recovery example are marks, in components/marketing/franchiseViz, and the prose
  *     around them is cut to what a mark cannot say. Three sentences replaced two cards
- *     of paragraphs, and the comparison the money section exists to make — protein
- *     steps down at recovery, advertising does not move — is now visible at a glance.
+ *     of paragraphs, and the comparison the money section exists to make is now visible
+ *     at a glance: protein steps down at recovery, advertising does not move.
  *   - **Short enumerations are chips, long ones are checklists.** A tick beside
  *     "Warehousing" implies a benefit; a tick beside "Move machines between approved
  *     locations" is one.
@@ -170,7 +170,7 @@ const headlines = [
 
 /**
  * Facts from the program, phrased for the hero. Never a claim the data does not carry,
- * and never one the headline strip below it already makes — the machine count and both
+ * and never one the headline strip below it already makes. The machine count and both
  * profit shares are in that strip, so repeating them here would print the page's four
  * headline numbers twice inside one screen.
  */
@@ -184,7 +184,7 @@ const heroProof = [
  * The two profit streams, as the three bars the money section leads with.
  *
  * Every share is read from the program, and the two protein rows are ordered so the
- * recovery threshold falls between them — which is what lets the figure draw it as the
+ * recovery threshold falls between them, which is what lets the figure draw it as the
  * boundary it is rather than as a footnote.
  */
 const streams = [
@@ -217,7 +217,7 @@ const streams = [
 /**
  * The worked example's three parts, in the order they come off the distribution. The
  * `fill` keys tie each one to its row in the table beside the bar, which is what makes
- * an unlabelled bar readable — see franchiseViz.
+ * an unlabelled bar readable. See franchiseViz.
  */
 const distribution = [
   { key: "recovery", amountInr: example.completesRecoveryInr, fill: "recovery" as const },
@@ -369,7 +369,7 @@ export default function Franchise() {
 
         {/*
           Load-bearing disclaimer (§55). Do not remove it and do not move it below the
-          fold — it is the reason a proposed franchise program can be published with
+          fold. It is the reason a proposed franchise program can be published with
           rupee figures on it at all.
 
           Left-aligned rather than centred: it runs to three lines on a phone, and
@@ -398,10 +398,9 @@ export default function Franchise() {
         {/* ── The two franchises ───────────────────────────────────────────── */}
         <Section id="tiers">
           <SectionHeading
-            split
             eyebrow="The franchises"
             title="Two ways in"
-            blurb="They differ in one thing: how much market you take responsibility for. Everything else in the two packages is identical, and it is listed once below rather than printed inside both cards. Larger regional structures may be introduced later."
+            blurb="They differ in one thing: how much market you take responsibility for."
           />
 
           <div className="grid lg:grid-cols-2 gap-5 mt-10">
@@ -556,19 +555,23 @@ export default function Franchise() {
 
         {/* ── The money ────────────────────────────────────────────────────── */}
         <Section id="economics" tone="dark">
+          {/*
+            The one qualifier the bars below cannot carry, and the thing a reader needs
+            before reading "100%". Not a summary of the figure: its groups, row labels and
+            caption already say two streams, protein funds recovery, advertising does not.
+          */}
           <SectionHeading
-            split
             tone="dark"
             eyebrow="The money"
             title="Recover your capital first"
-            blurb="Your franchise earns from two separate streams, and they behave differently. Protein profit funds your capital recovery. Advertising profit never does, and it never stops."
+            blurb="Every percentage below is a share of distributable profit, after the costs of running the network. Not a share of revenue."
           />
 
           {/*
             Two cards of ratio tiles and paragraphs before this, which asked the reader to
             hold three splits in their head to notice the one thing that matters: protein
             steps down at recovery and advertising does not move. Drawn, that is the first
-            thing they see, and the caption carries only what a bar cannot — that the
+            thing they see, and the caption carries only what a bar cannot: that the
             {duringRecovery}% is a recovery mechanism rather than a margin, and that
             advertising sits outside recovery entirely.
           */}
@@ -658,9 +661,9 @@ export default function Franchise() {
                   The point of §20 is that a distribution straddling the threshold is not
                   paid out whole, and the proportions are the argument: two thirds of this
                   one completes recovery, and the remainder is halved. The bar carries no
-                  labels of its own — on a phone its narrow segments are under 60px — so
-                  the table below is both the label layer and the accessible twin, tied to
-                  it by the swatches.
+                  labels of its own: on a phone its narrow segments are under 60px. The
+                  table below is both the label layer and the accessible twin, tied to it
+                  by the swatches.
                 */}
                 <DistributionBar segments={distribution} />
 
@@ -731,7 +734,7 @@ export default function Franchise() {
           {/*
             The two cost lists, as one set with a subset marked, rather than as two lists
             side by side. Every gym-level cost is also a franchise-level cost, and printing
-            the lists separately hid that containment behind a two-column diff — the reader
+            the lists separately hid that containment behind a two-column diff. The reader
             had to compare ten chips against two to find out that the gym's two are the
             same two. Marked in place, the relationship and the difference in scope are the
             same glance.
@@ -804,10 +807,9 @@ export default function Franchise() {
         {/* ── Machines ─────────────────────────────────────────────────────── */}
         <Section id="ownership">
           <SectionHeading
-            split
             eyebrow="Machines"
             title="You operate them. We own them."
-            blurb="This is the term to be clearest about before anyone pays. The franchise investment is not a purchase of the machines. It buys the contractual right to operate them inside the MuscleBox Pro ecosystem and your assigned territory, and on expiry or termination they remain ours."
+            blurb="The franchise investment is not a purchase of the machines. It buys the right to operate them in your territory, and on expiry or termination they remain ours."
           />
 
           {/*
@@ -875,17 +877,16 @@ export default function Franchise() {
         {/* ── Who does what ────────────────────────────────────────────────── */}
         <Section id="network" tone="tinted">
           <SectionHeading
-            split
             eyebrow="Who does what"
             title="We run the ecosystem. You run the ground."
-            blurb="The line between the two sides is your warehouse. We deliver machines and protein to it and run everything upstream; everything past it is local, and it is yours."
+            blurb="The line between the two sides is your warehouse. We run everything upstream of it."
           />
 
           {/*
             One diagram where there were four prose cards, two lists and a fifth card.
-            The cards were a paragraph-length retelling of the very list beside them —
-            "Machines and procurement" against "Machine procurement, OEM coordination and
-            delivery" — so the section said everything it had to say twice, at four times
+            The cards were a paragraph-length retelling of the very list beside them
+            ("Machines and procurement" against "Machine procurement, OEM coordination and
+            delivery"), so the section said everything it had to say twice, at four times
             the length. The lists are the canonical version, and the seam between them is
             the one thing the lists could not show: where the handover actually happens.
           */}
@@ -953,7 +954,6 @@ export default function Franchise() {
         {/* ── Territory & growth ───────────────────────────────────────────── */}
         <Section id="growth">
           <SectionHeading
-            split
             eyebrow="Territory & growth"
             title="Exclusivity you keep by earning it"
             blurb="Territorial exclusivity is real, and it is conditional. A franchisee cannot pay for a city, leave most of it undeveloped, and block MuscleBox Pro from expanding into it."
@@ -1077,7 +1077,6 @@ export default function Franchise() {
         {/* ── How it works ─────────────────────────────────────────────────── */}
         <Section id="journey" tone="tinted">
           <SectionHeading
-            split
             eyebrow="How it works"
             title="From application to long-term partnership"
             blurb="Eleven steps in four stages, of which the first is a conversation about whether your market has room for a MuscleBox Pro network at all."
@@ -1180,7 +1179,7 @@ export default function Franchise() {
                   <AccordionTrigger className="min-h-[3.5rem] text-left text-[15px] font-bold hover:no-underline cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed max-w-[34rem]">
+                  <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>

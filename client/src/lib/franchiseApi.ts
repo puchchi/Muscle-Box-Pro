@@ -5,8 +5,8 @@
  * `api.muscleboxpro.com` is the shape this client assumes; until it is deployed every
  * submission fails as a `network` error, which is why `Franchise.tsx` renders a mailto
  * fallback carrying the applicant's own answers on failure. That is deliberate: a
- * franchise enquiry is a ₹25–50 lakh lead, and the alternative — resolving as success
- * against a mock — would drop those leads silently and look identical to working.
+ * franchise enquiry is a ₹25–50 lakh lead, and the alternative, resolving as success
+ * against a mock, would drop those leads silently and look identical to working.
  *
  * Not a Supabase edge function, unlike the older marketing forms (`investor-request`,
  * `demo-request`). New backend work goes to the AWS API, and it goes through
