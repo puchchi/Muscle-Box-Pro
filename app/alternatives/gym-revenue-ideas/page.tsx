@@ -10,7 +10,7 @@ import GymRevenueIdeas from "@/pages/GymRevenueIdeas";
 export const metadata: Metadata = {
   title: "7 Ways Indian Gyms Generate Passive Revenue, Ranked by ROI (2026) | MuscleBoxPro",
   description:
-    "Gym passive income India: 7 revenue ideas for Indian gym owners ranked by ROI. Protein vending machines, merchandise, locker rentals, PT upsells, spa, parking, and sponsorships — with honest investment and monthly revenue estimates.",
+    "Gym passive income India: 7 revenue ideas for Indian gym owners ranked by ROI. Protein vending machines, merchandise, locker rentals, PT upsells, spa, parking, and sponsorships, with honest investment and monthly revenue estimates.",
   alternates: { canonical: "/alternatives/gym-revenue-ideas" },
   openGraph: {
     type: "article",
@@ -88,7 +88,7 @@ const articleSchema = {
 const itemListSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "7 Ways Indian Gyms Generate Passive Revenue (Ranked by ROI) — 2026",
+  name: "7 Ways Indian Gyms Generate Passive Revenue in 2026 (Ranked by ROI)",
   description: "Ranked list of passive and semi-passive revenue ideas for gym owners in India, evaluated by capital efficiency, passivity, reliability, and scalability.",
   url: "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
   numberOfItems: 7,
@@ -132,7 +132,7 @@ const itemListSchema = {
         "@type": "Thing",
         name: "Locker Rentals",
         description:
-          "Monthly or annual locker rentals — genuinely passive after installation with predictable recurring revenue.",
+          "Monthly or annual locker rentals: genuinely passive after installation with predictable recurring revenue.",
       },
     },
     {
@@ -152,7 +152,7 @@ const itemListSchema = {
         "@type": "Thing",
         name: "Parking Fees",
         description:
-          "Charging for controlled gym parking — particularly effective in high-density metro markets.",
+          "Charging for controlled gym parking, particularly effective in high-density metro markets.",
       },
     },
     {

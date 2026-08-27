@@ -30,7 +30,7 @@ const productSchema = {
   "@id": "https://www.muscleboxpro.com/specs#product",
   name: "MuscleBoxPro Protein Shake Vending Machine",
   description:
-    "Technical specifications of the MuscleBoxPro automated protein shake vending machine for gyms — 60s blend time, UPI payments, HD 4K display, self-cleaning system, under 10 sq ft footprint.",
+    "Technical specifications of the MuscleBoxPro automated protein shake vending machine for gyms: 60s blend time, UPI payments, HD 4K display, self-cleaning system, under 10 sq ft footprint.",
   brand: { "@type": "Brand", name: "MuscleBoxPro" },
   manufacturer: { "@type": "Organization", name: "BlendBox Innovations LLP" },
   image: "https://www.muscleboxpro.com/images/futuristic_protein_shake_vending_machine_specs.png",

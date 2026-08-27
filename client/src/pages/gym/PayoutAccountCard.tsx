@@ -149,10 +149,16 @@ export default function PayoutAccountCard({
       <Dialog open={formOpen} onOpenChange={onFormOpenChange}>
         {/* `dark` on the content itself, not inherited: a Radix portal mounts on
             `document.body`, outside the `dark` root the portal page scopes to itself, so
-            without this the dialog renders in light tokens over a dark page. */}
-        <DialogContent className="dark border-border bg-card sm:max-w-[480px]">
+            without this the dialog renders in light tokens over a dark page.
+
+            The scroll cap is not defensive. This is the tallest thing in the portal and it is
+            centred with a transform, so once it outgrows the viewport it is clipped at the top
+            *and* the bottom: the title and the save button go at the same time, leaving five
+            fields and no way to submit them. */}
+        <DialogContent className="dark max-h-[calc(100dvh-2rem)] overflow-y-auto border-border bg-card sm:max-w-[480px]">
           <PayoutAccountForm
             existing={onFile}
+            onCancel={() => onFormOpenChange(false)}
             onSaved={async () => {
               onFormOpenChange(false);
               await queryClient.invalidateQueries({ queryKey: GYM_PAYOUT_ACCOUNT_QUERY_KEY });
@@ -259,6 +265,29 @@ function AccountOnFile({
 }
 
 /**
+ * The boundary of every box on this form, and why it is this bright.
+ *
+ * `border-input` is 16% lightness in the dark theme and the dialog sits on `--card` at 11%,
+ * which is a 1.2:1 boundary: an empty field was a rounded rectangle you had to already know
+ * was there. SC 1.4.11 asks 3:1 of a control's boundary, and 30% white composited over the
+ * card measures 3.2:1 against the fill inside it. It reads heavier than the rest of the
+ * portal's hairlines on purpose. These are the only boxes on the screen a gym has to type
+ * into, and the hairline weight the read-only cards use is what made them invisible.
+ *
+ * The fill is `--background`, one step *darker* than the card, so the field reads as a well
+ * rather than as a raised panel. Both directions are legible; a lighter fill on a card this
+ * dark starts to look like a disabled control.
+ */
+const FIELD =
+  "h-11 rounded-xl border-white/30 bg-background px-3.5 text-[15px] md:text-[15px] placeholder:text-white/40 focus-visible:border-primary/70 focus-visible:ring-2 focus-visible:ring-primary/30";
+
+/**
+ * `--destructive` is 4.3:1 on this card, and a field error is 12.8px text, so AA wants 4.5:1.
+ * Rose 300 is 8:1 there and matches the failure banner this form already renders.
+ */
+const FIELD_ERROR = "text-rose-300";
+
+/**
  * The form, mounted fresh each time the dialog opens.
  *
  * `existing` decides the copy and the prefill, not a separate mode flag: an account on file
@@ -266,9 +295,11 @@ function AccountOnFile({
  */
 function PayoutAccountForm({
   existing,
+  onCancel,
   onSaved,
 }: {
   existing: PayoutAccount | null;
+  onCancel: () => void;
   onSaved: () => void;
 }) {
   const form = useForm<PayoutAccountFormValues>({
@@ -326,72 +357,79 @@ function PayoutAccountForm({
             control={form.control}
             name="accountHolderName"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1.5">
                 <FormLabel>Account holder</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     placeholder="Iron Temple Fitness Pvt Ltd"
                     autoComplete="off"
-                    className="h-11 rounded-xl bg-secondary/40"
+                    className={FIELD}
                     data-testid="input-account-holder"
                   />
                 </FormControl>
                 <FormDescription>As your bank has it, not your trading name.</FormDescription>
-                <FormMessage />
+                <FormMessage className={FIELD_ERROR} />
               </FormItem>
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="accountNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Account number</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    // Off, not "on": a browser offering a remembered account number here
-                    // would be offering it on any machine the owner has ever signed in on.
-                    autoComplete="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    className="h-11 rounded-xl bg-secondary/40 font-mono tabular-nums"
-                    data-testid="input-account-number"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* The two number boxes are one question, so they are grouped tighter than the
+              gaps around them. A `space-y-4` between them read as two unrelated fields, and
+              the second one is only worth typing if you can see it belongs to the first. */}
+          <div className="space-y-2.5">
+            <FormField
+              control={form.control}
+              name="accountNumber"
+              render={({ field }) => (
+                <FormItem className="space-y-1.5">
+                  <FormLabel>Account number</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      // Off, not "on": a browser offering a remembered account number here
+                      // would be offering it on any machine the owner has ever signed in on.
+                      autoComplete="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      className={`${FIELD} font-mono tracking-[0.04em] tabular-nums`}
+                      data-testid="input-account-number"
+                    />
+                  </FormControl>
+                  <FormMessage className={FIELD_ERROR} />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="confirmAccountNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm account number</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    autoComplete="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    className="h-11 rounded-xl bg-secondary/40 font-mono tabular-nums"
-                    data-testid="input-confirm-account-number"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="confirmAccountNumber"
+              render={({ field }) => (
+                <FormItem className="space-y-1.5">
+                  {/* Not "Confirm account number": read on its own by a screen reader, which
+                      is how a label is read, "again" says what to do and "confirm" does not. */}
+                  <FormLabel>Account number again</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      autoComplete="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      className={`${FIELD} font-mono tracking-[0.04em] tabular-nums`}
+                      data-testid="input-confirm-account-number"
+                    />
+                  </FormControl>
+                  <FormMessage className={FIELD_ERROR} />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}
             name="ifsc"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1.5">
                 <FormLabel>IFSC</FormLabel>
                 <FormControl>
                   <Input
@@ -400,12 +438,12 @@ function PayoutAccountForm({
                     autoComplete="off"
                     autoCapitalize="characters"
                     spellCheck={false}
-                    className="h-11 rounded-xl bg-secondary/40 font-mono uppercase"
+                    className={`${FIELD} font-mono uppercase tracking-[0.04em]`}
                     data-testid="input-ifsc"
                   />
                 </FormControl>
                 <FormDescription>Eleven characters, on your cheque book or passbook.</FormDescription>
-                <FormMessage />
+                <FormMessage className={FIELD_ERROR} />
               </FormItem>
             )}
           />
@@ -414,21 +452,22 @@ function PayoutAccountForm({
             control={form.control}
             name="accountType"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-1.5">
                 {/* A fieldset, because two radios without one are two unrelated controls to
                     a screen reader. */}
                 <fieldset>
                   <legend className="text-sm font-medium leading-none">Account type</legend>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex gap-2.5">
                     {PAYOUT_ACCOUNT_TYPES.map((option) => (
                       <label
                         key={option}
                         // 44px tall including the border, so the whole chip is the target
-                        // rather than the 16px dot inside it.
+                        // rather than the 16px dot inside it. Unselected borrows the field
+                        // boundary above rather than `border-border`, for the same reason.
                         className={`flex h-11 flex-1 cursor-pointer items-center gap-2.5 rounded-xl border px-4 text-sm font-semibold transition-colors ${
                           field.value === option
-                            ? "border-primary/40 bg-primary/10 text-foreground"
-                            : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary"
+                            ? "border-primary bg-primary/15 text-foreground"
+                            : "border-white/30 bg-background text-muted-foreground hover:border-white/45 hover:text-foreground"
                         }`}
                       >
                         <input
@@ -448,17 +487,33 @@ function PayoutAccountForm({
                     ))}
                   </div>
                 </fieldset>
-                <FormMessage />
+                <FormMessage className={FIELD_ERROR} />
               </FormItem>
             )}
           />
         </div>
 
-        <DialogFooter className="mt-6">
+        <p className="mt-5 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
+          Once saved, only the last four digits are shown back to you.
+        </p>
+
+        <DialogFooter className="mt-4 gap-2.5">
+          {/* An explicit way out, not only the Escape key and the corner cross. This is a
+              five-field form about where money goes, which is the kind a person opens to look
+              at before deciding to fill it in. */}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            className="h-11 w-full cursor-pointer rounded-xl border-white/30 px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary sm:w-auto"
+            data-testid="button-cancel-payout-account"
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
             disabled={save.isPending}
-            className="h-11 w-full cursor-pointer rounded-xl text-sm font-bold sm:w-auto"
+            className="h-11 w-full cursor-pointer rounded-xl px-5 text-sm font-bold sm:w-auto"
             data-testid="button-save-payout-account"
           >
             {save.isPending ? "Saving..." : existing ? "Replace account" : "Save account"}

@@ -287,7 +287,7 @@ export default function MachineSpecs() {
               <Link href="/gym-partnership" className="text-primary font-semibold hover:underline">
                 full partnership terms
               </Link>{" "}
-              first — what it costs, how the profit share works, and who pays for what.
+              first: what it costs, how the profit share works, and who pays for what.
             </p>
           </div>
         </section>

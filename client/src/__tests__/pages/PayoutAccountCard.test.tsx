@@ -173,6 +173,19 @@ describe("the account on file", () => {
 
     expect(await screen.findByTestId("input-account-number")).toBeInTheDocument();
   });
+
+  it("lets a gym back out of the form without saving anything", async () => {
+    // The corner cross and the Escape key are both discoverable only if you already know
+    // them, and this is the form someone opens to see what it asks for before filling it in.
+    mockFetch.mockResolvedValue(null);
+    renderCard({ initialFormOpen: true });
+    await screen.findByTestId("input-account-number");
+
+    await user().click(screen.getByTestId("button-cancel-payout-account"));
+
+    await waitFor(() => expect(screen.queryByTestId("input-account-number")).toBeNull());
+    expect(mockSave).not.toHaveBeenCalled();
+  });
 });
 
 describe("adding an account", () => {

@@ -107,7 +107,7 @@ function InviteCreated({ result }: { result: AdminInviteResult }) {
         Gym created
       </h1>
       <p className="text-muted-foreground text-sm mb-6">
-        Send this link to the gym. There is no email sender yet (§8) — this is the delivery
+        Send this link to the gym. There is no email sender yet (§8). This is the delivery
         mechanism.
       </p>
 
@@ -262,7 +262,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
         Invite a gym
       </h1>
       <p className="text-muted-foreground text-sm mb-6">
-        One form, submitted once. There is no autosave — finish it in one sitting.
+        One form, submitted once. There is no autosave. Finish it in one sitting.
       </p>
 
       <Form {...form}>
@@ -283,7 +283,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
           >
             <p className="text-sm text-foreground leading-relaxed">
               Legal entity name, entity type, GSTIN, both addresses and the signatory are
-              collected from the gym directly at step 1 of onboarding — there's nothing to enter
+              collected from the gym directly at step 1 of onboarding, so there's nothing to enter
               for them here.
             </p>
           </div>
@@ -305,7 +305,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
 
           <Section
             title="Commercial terms"
-            note="Prefilled with the standard partnership terms — check they're right for this gym before creating it."
+            note="Prefilled with the standard partnership terms. Check they're right for this gym before creating it."
           >
             <NumberField form={form} name="terms.securityDepositInr" label="Security deposit (₹)" />
             <NumberField form={form} name="terms.termMonths" label="Term (months)" />
@@ -328,14 +328,14 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
               <p className="text-gray-700 text-sm font-semibold mb-0">Early-termination charge</p>
               <p className="text-xs text-muted-foreground mb-2">
                 §36.1: the standard term is nil if the gym gives 30 days' written notice. Zero and
-                "not agreed" are different answers — a blank must not print as ₹0 in the agreement.
+                "not agreed" are different answers. A blank must not print as ₹0 in the agreement.
               </p>
               <div className="space-y-2">
                 <RadioOption
                   name="early-termination-choice"
                   checked={earlyChargeChoice.value === "zero"}
                   onChange={() => earlyChargeChoice.choose("zero")}
-                  label="Standard — nil, on 30 days' notice"
+                  label="Standard: nil, on 30 days' notice"
                   testId="radio-early-termination-zero"
                 />
                 <RadioOption

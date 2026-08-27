@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Home, ArrowLeft, Dumbbell, HelpCircle, Mail } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
@@ -33,12 +32,7 @@ export default function NotFound() {
         </div>
 
         {/* Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55 }}
-          className="relative z-10 text-center max-w-xl w-full"
-        >
+        <div className="hero-rise relative z-10 text-center max-w-xl w-full">
           {/* Badge */}
           <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
             Error 404
@@ -102,7 +96,7 @@ export default function NotFound() {
               </Link>
             ))}
           </div>
-        </motion.div>
+        </div>
       </main>
 
       <Footer />

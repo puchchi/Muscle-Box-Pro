@@ -149,7 +149,7 @@ export default function AdminGyms() {
             data-testid="input-filter"
           />
           <p className="text-xs text-muted-foreground mt-1.5">
-            Filters the {rows.length} loaded {rows.length === 1 ? "gym" : "gyms"} only — the API
+            Filters the {rows.length} loaded {rows.length === 1 ? "gym" : "gyms"} only. The API
             has no search, so load more to widen it.
           </p>
         </div>

@@ -116,49 +116,31 @@ export default function Invest() {
       {/* ── Hero ── */}
       <section className="bg-gray-950 pt-32 pb-24 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[320px] bg-gradient-to-r from-accent/25 to-primary/25 blur-[120px] rounded-full pointer-events-none" />
-        <div className="max-w-4xl mx-auto text-center relative z-10">
+        <div className="max-w-4xl mx-auto text-center relative z-10 hero-rise">
 
           {/* Credibility badges */}
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex items-center justify-center mb-6"
-          >
+          <div className="flex items-center justify-center mb-6">
             <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-primary/40 bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
               <Award className="w-3 h-3" />
               DPIIT Recognised
             </span>
-          </motion.div>
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display font-black text-white uppercase leading-none mb-6"
+          <h1
+            className="font-display font-black text-white uppercase leading-none mb-6 text-balance"
             style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)" }}
           >
             Partner in India's{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
               Fitness Revolution
             </span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-white/60 text-base leading-relaxed max-w-xl mx-auto mb-10"
-          >
+          <p className="text-white/60 text-base leading-relaxed max-w-xl mx-auto mb-10">
             India's first automated gym nutrition network. Zero-capex for gym partners, high-margin recurring revenue, and a scalable distribution moat across 75,000+ fitness centres.
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-            className="flex flex-col sm:flex-row gap-3 justify-center mb-8"
-          >
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
             <a href="#investor-form">
               <Button size="lg" className="h-12 px-8 rounded-full font-bold bg-gradient-to-r from-accent to-primary text-white hover:opacity-90 border-0 cursor-pointer shadow-lg shadow-primary/25 transition-opacity">
                 Request Pitch Deck <ArrowRight className="ml-2 w-4 h-4" />
@@ -169,22 +151,17 @@ export default function Invest() {
                 View Machine Specs
               </Button>
             </Link>
-          </motion.div>
+          </div>
 
           {/* Proof strip */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="flex items-center justify-center gap-6 flex-wrap"
-          >
+          <div className="flex items-center justify-center gap-6 flex-wrap">
             {["Zero-capex for gyms", "Multi-city presence", "Revenue from day 1"].map((chip, i) => (
               <span key={i} className="flex items-center gap-1.5 text-white/40 text-xs">
                 <CheckCircle2 className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" />
                 {chip}
               </span>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 

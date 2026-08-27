@@ -125,6 +125,6 @@ export const PLAIN_LANGUAGE_V2_3: readonly PlainLanguageItem[] = [
     clause: "47",
     section: "47",
     short:
-      "Confirming in this flow is your signature — there is nothing to print, sign by hand or stamp. We store the fingerprint of the exact text you agreed to and the moment you agreed to it, and you get both with your copy.",
+      "Confirming in this flow is your signature. There is nothing to print, sign by hand or stamp. We store the fingerprint of the exact text you agreed to and the moment you agreed to it, and you get both with your copy.",
   },
 ] as const;

@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ArrowLeft, Mail, ShieldCheck, UserCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -45,7 +44,7 @@ const resetFacts = [
   },
   {
     icon: Clock,
-    text: "Same working day, in practice — we'll tell you when it's on its way",
+    text: "Same working day, in practice. We'll tell you when it's on its way",
   },
 ];
 
@@ -60,28 +59,18 @@ export default function GymForgotPassword() {
           <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-white translate-x-1/3 translate-y-1/3" />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative z-10"
-        >
+        <div className="relative z-10 hero-rise">
           <Link href="/">
             <img src="/assets/logo.png" alt="MuscleBoxPro" className="h-12 w-auto brightness-0 invert cursor-pointer" />
           </Link>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          className="relative z-10"
-        >
+        <div className="relative z-10 hero-rise">
           <h2
-            className="font-display font-black text-white uppercase leading-none mb-4"
+            className="font-display font-black text-white uppercase leading-none mb-4 text-balance"
             style={{ fontSize: "clamp(2.2rem, 3.5vw, 3.2rem)" }}
           >
-            Locked out?{"\n"}
+            Locked out?{" "}
             <span className="text-white/80">Talk to us.</span>
           </h2>
           <p className="text-white/70 text-base leading-relaxed mb-10 max-w-xs">
@@ -91,40 +80,24 @@ export default function GymForgotPassword() {
 
           <div className="space-y-4">
             {resetFacts.map((fact, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-                className="flex items-center gap-3"
-              >
+              <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                   <fact.icon className="w-4 h-4 text-white" />
                 </div>
                 <p className="text-white/90 text-sm font-medium">{fact.text}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="relative z-10 text-white/40 text-xs"
-        >
+        <p className="relative z-10 text-white/40 text-xs hero-rise">
           © 2026 MuscleBoxPro. All rights reserved.
-        </motion.p>
+        </p>
       </div>
 
       {/* ── Right Panel ── */}
       <div className="flex-1 flex items-center justify-center px-6 py-12 bg-white">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-sm"
-        >
+        <div className="hero-rise w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <Link href="/">
@@ -152,7 +125,7 @@ export default function GymForgotPassword() {
           >
             <p className="text-sm text-foreground leading-relaxed">
               Password resets for the partner portal are handled by a person rather than
-              automatically. Email us from any address and say which gym you're with — we'll
+              automatically. Email us from any address and say which gym you're with. We'll
               confirm you're the account holder and send you a one-time link to set a new
               password.
             </p>
@@ -170,7 +143,7 @@ export default function GymForgotPassword() {
 
           <p className="text-muted-foreground text-xs leading-relaxed mt-4">
             Already been sent a link? Open it and it will take you straight to setting a new
-            password — you don't need to come back here.
+            password. You don't need to come back here.
           </p>
 
           <Link href="/contact">
@@ -189,7 +162,7 @@ export default function GymForgotPassword() {
               <ArrowLeft className="h-4 w-4" /> Back to Sign In
             </span>
           </Link>
-        </motion.div>
+        </div>
       </div>
 
     </div>

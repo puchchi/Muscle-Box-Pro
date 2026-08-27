@@ -9,7 +9,7 @@ import VsProteinShakeBar from "@/pages/VsProteinShakeBar";
 export const metadata: Metadata = {
   title: "Protein Shake Vending Machine vs. Protein Shake Bar (2026) | MuscleBoxPro",
   description:
-    "Protein shake bar vs vending machine for your gym — a detailed 2026 comparison across upfront cost, staff, hygiene, 24/7 availability, and revenue. See which model wins for Indian gym owners.",
+    "Protein shake bar vs vending machine for your gym: a detailed 2026 comparison across upfront cost, staff, hygiene, 24/7 availability, and revenue. See which model wins for Indian gym owners.",
   alternates: { canonical: "/vs/protein-shake-bar" },
   openGraph: {
     type: "article",

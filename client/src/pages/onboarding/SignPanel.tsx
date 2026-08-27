@@ -418,7 +418,7 @@ function SigningAs({
       </p>
       <p className="text-xs text-gray-700 leading-relaxed mt-2">
         From the details you gave us in step 1, and printed in the signature block above. If either
-        is wrong, email us before you sign — they are part of the document, so changing them means a
+        is wrong, email us before you sign. They are part of the document, so changing them means a
         fresh copy rather than an edit.{" "}
         <button
           type="button"

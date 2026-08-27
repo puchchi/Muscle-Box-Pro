@@ -4,7 +4,7 @@ import GymDemo from "@/pages/GymDemo";
 export const metadata: Metadata = {
   title: "Gym Demo | MuscleBoxPro",
   description:
-    "See how the Muscle Box Pro machine works inside gyms — smart shake vending that improves member experience and generates recurring passive revenue for gym owners.",
+    "See how the Muscle Box Pro machine works inside gyms: smart shake vending that improves member experience and generates recurring passive revenue for gym owners.",
   alternates: { canonical: "/gym-demo" },
   openGraph: {
     type: "website",

@@ -51,11 +51,7 @@ export default function ContactUs() {
       <section className="bg-gray-950 pt-32 pb-20 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[260px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-2xl mx-auto text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="hero-rise">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Get in Touch
             </span>
@@ -71,7 +67,7 @@ export default function ContactUs() {
             <p className="text-white/50 text-base leading-relaxed">
               Have questions? Our team is here to help you fuel your fitness journey.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 

@@ -138,7 +138,7 @@ function GymView({ gym }: { gym: AdminGymView }) {
           </span>
         </div>
         <p className="text-sm text-muted-foreground">
-          On step {gym.currentStep} — {STEP_LABEL[gym.currentStep]}
+          On step {gym.currentStep}: {STEP_LABEL[gym.currentStep]}
           {" · "}
           <span className="font-mono text-xs" data-testid="gym-id">
             {gym.gymId}
@@ -184,7 +184,7 @@ function GymView({ gym }: { gym: AdminGymView }) {
           </Fields>
         ) : (
           <Empty testId="invite-none">
-            No live link. Either none was issued or it was voided — resending mints a new one.
+            No live link. Either none was issued or it was voided. Resending mints a new one.
           </Empty>
         )}
       </Card>
@@ -194,7 +194,7 @@ function GymView({ gym }: { gym: AdminGymView }) {
         testId="card-details"
         note={
           gym.details.legalEntityName === ""
-            ? "Legal entity, entity type, GSTIN, both addresses and the signatory are pending — the gym hasn't reached step 1 of onboarding yet."
+            ? "Legal entity, entity type, GSTIN, both addresses and the signatory are pending. The gym hasn't reached step 1 of onboarding yet."
             : undefined
         }
       >
@@ -220,7 +220,7 @@ function GymView({ gym }: { gym: AdminGymView }) {
         note={
           gym.termsUpdatedByEmail
             ? `Last set by ${gym.termsUpdatedByEmail}`
-            : "Never edited — these are the values the gym was created with."
+            : "Never edited. These are the values the gym was created with."
         }
       >
         <Fields>
@@ -283,7 +283,7 @@ function GymView({ gym }: { gym: AdminGymView }) {
           <Fields>
             <Field
               label="Device no."
-              value={isPending ? "Pending — not yet chosen" : gym.machine.deviceNo}
+              value={isPending ? "Pending, not yet chosen" : gym.machine.deviceNo}
               mono={!isPending}
             />
             <Field label="Model" value={gym.machine.model} />
@@ -356,7 +356,7 @@ function GymView({ gym }: { gym: AdminGymView }) {
             */}
             <p className="text-xs font-semibold text-amber-800 mb-0.5">Deposit waived</p>
             <p className="text-xs text-amber-700">
-              {gym.depositWaiver.reason} — {gym.depositWaiver.byEmail},{" "}
+              {gym.depositWaiver.reason}. By {gym.depositWaiver.byEmail},{" "}
               {formatIstDateTime(gym.depositWaiver.at)}
             </p>
           </div>

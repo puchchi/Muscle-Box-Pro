@@ -36,7 +36,7 @@ import type { OnboardingErrorCode } from "@shared/onboarding/types";
 const COPY: Record<OnboardingErrorCode, { title: string; body: string } | undefined> = {
   expired_token: {
     title: "This link has expired",
-    body: "Set-password links are short-lived on purpose. Email us and we'll send a fresh one — it only takes a moment at our end.",
+    body: "Set-password links are short-lived on purpose. Email us and we'll send a fresh one. It only takes a moment at our end.",
   },
   revoked_token: {
     title: "This link has already been used",

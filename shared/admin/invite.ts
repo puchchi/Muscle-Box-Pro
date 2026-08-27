@@ -73,7 +73,7 @@ const MAX_AMOUNT_INR = 100_000_000;
 /** A whole rupee amount, never negative, capped at the digit-slip guard. */
 const wholeRupees = z
   .number({ invalid_type_error: "Enter an amount in whole rupees." })
-  .int("Paise are not accepted here — whole rupees only.")
+  .int("Paise are not accepted here. Whole rupees only.")
   .min(0, "Cannot be negative.")
   .max(MAX_AMOUNT_INR, `Must be at most ₹${MAX_AMOUNT_INR.toLocaleString("en-IN")}.`);
 

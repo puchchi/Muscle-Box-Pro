@@ -10,14 +10,14 @@ import VsSupplementCounter from "@/pages/VsSupplementCounter";
 export const metadata: Metadata = {
   title: "Vending Machine vs. Supplement Counter: ROI Analysis for Gym Owners India (2026) | MuscleBoxPro",
   description:
-    "Gym supplement counter vs vending machine India — honest ROI analysis. Compare capital required, inventory risk, theft, staff cost, and monthly net income for Indian gym owners in 2026.",
+    "Gym supplement counter vs vending machine India: honest ROI analysis. Compare capital required, inventory risk, theft, staff cost, and monthly net income for Indian gym owners in 2026.",
   alternates: { canonical: "/vs/supplement-counter" },
   openGraph: {
     type: "article",
     url: "/vs/supplement-counter",
     title: "Vending Machine vs. Supplement Counter: ROI Analysis for Gym Owners India (2026)",
     description:
-      "Which generates more passive income for Indian gyms — a protein shake vending machine or a front-desk supplement counter? Full ROI breakdown, 10-dimension comparison, and honest verdict.",
+      "Which generates more passive income for Indian gyms: a protein shake vending machine or a front-desk supplement counter? Full ROI breakdown, 10-dimension comparison, and honest verdict.",
     images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800 }],
   },
   keywords: [

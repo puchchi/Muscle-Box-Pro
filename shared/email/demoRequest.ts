@@ -136,7 +136,7 @@ export function getDemoRequestEmailTemplate(input: DemoRequestTemplateInput) {
                       <tr>
                         <td style="padding:14px 18px;">
                           <p style="margin:0 0 4px 0;color:#FF512F;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">What happens next?</p>
-                          <p style="margin:0;color:#a07a50;font-size:13px;line-height:1.6;">Our team will reach out within 24 hours to schedule a free product demonstration and discuss installation at your gym — at zero upfront cost.</p>
+                          <p style="margin:0;color:#a07a50;font-size:13px;line-height:1.6;">Our team will reach out within 24 hours to schedule a free product demonstration and discuss installation at your gym, at zero upfront cost.</p>
                         </td>
                       </tr>
                     </table>

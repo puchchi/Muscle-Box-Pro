@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { AlertCircle, BarChart3, IndianRupee, FileText } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -128,26 +127,17 @@ export default function GymLogin() {
           <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-white translate-x-1/3 translate-y-1/3" />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative z-10"
-        >
+        <div className="relative z-10 hero-rise">
           <Link href="/">
             <img src="/assets/logo.png" alt="MuscleBoxPro" className="h-12 w-auto brightness-0 invert cursor-pointer" />
           </Link>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          className="relative z-10"
-        >
-          <h2 className="font-display font-black text-white uppercase leading-none mb-4"
+        <div className="relative z-10 hero-rise">
+          <h2 className="font-display font-black text-white uppercase leading-none mb-4 text-balance"
             style={{ fontSize: "clamp(2.2rem, 3.5vw, 3.2rem)" }}>
-            Your machine,<br />
+            Your machine,{" "}
+            <br className="hidden sm:inline" />
             <span className="text-white/80">your numbers.</span>
           </h2>
           <p className="text-white/70 text-base leading-relaxed mb-10 max-w-xs">
@@ -156,40 +146,24 @@ export default function GymLogin() {
 
           <div className="space-y-4">
             {partnerPerks.map((perk, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-                className="flex items-center gap-3"
-              >
+              <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                   <perk.icon className="w-4 h-4 text-white" />
                 </div>
                 <p className="text-white/90 text-sm font-medium">{perk.text}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="relative z-10 text-white/40 text-xs"
-        >
+        <p className="relative z-10 text-white/40 text-xs hero-rise">
           © 2026 MuscleBoxPro. All rights reserved.
-        </motion.p>
+        </p>
       </div>
 
       {/* ── Right Form Panel ── */}
       <div className="flex-1 flex items-center justify-center px-6 py-12 bg-white">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-sm"
-        >
+        <div className="hero-rise w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <Link href="/">
@@ -290,7 +264,7 @@ export default function GymLogin() {
               </span>
             </Link>
           </p>
-        </motion.div>
+        </div>
       </div>
 
     </div>

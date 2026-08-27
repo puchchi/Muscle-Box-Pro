@@ -35,11 +35,7 @@ export default function PrivacyPolicy() {
       <section className="bg-gray-950 pt-32 pb-16 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[220px] bg-gradient-to-r from-accent/15 to-primary/15 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-3xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="hero-rise">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Legal
             </span>
@@ -53,7 +49,7 @@ export default function PrivacyPolicy() {
               </span>
             </h1>
             <p className="text-white/40 text-sm italic">Last Updated: February 26, 2026</p>
-          </motion.div>
+          </div>
         </div>
       </section>
 

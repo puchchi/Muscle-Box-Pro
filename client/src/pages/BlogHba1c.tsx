@@ -411,12 +411,7 @@ export default function BlogHba1c() {
       <section className="bg-gray-950 pt-32 pb-0 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[240px] bg-gradient-to-r from-green-500/15 to-primary/15 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-3xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center pb-10"
-          >
+          <div className="hero-rise text-center pb-10">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Personal Health Story
             </span>
@@ -440,7 +435,7 @@ export default function BlogHba1c() {
               <span>·</span>
               <span>Apr 2026</span>
             </div>
-          </motion.div>
+          </div>
 
           {/* HbA1C journey bar */}
           <motion.div

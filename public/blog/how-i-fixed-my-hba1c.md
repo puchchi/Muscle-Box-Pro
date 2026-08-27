@@ -1,5 +1,5 @@
 ---
-title: "How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story"
+title: "How I Dropped My HbA1C from 6.1 to 5.2: A Real Data Story"
 author: Anurag Singh
 published: 2026-04-20
 updated: 2026-04-03
@@ -9,7 +9,7 @@ read_time: 12 min
 language: en-IN
 ---
 
-# How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story
+# How I Dropped My HbA1C from 6.1 to 5.2: A Real Data Story
 
 A borderline pre-diabetic shares 18 months of real lab reports, 14 days of continuous glucose data, and 12 dietary findings that reversed early diabetes without medication.
 
@@ -30,7 +30,7 @@ A borderline pre-diabetic shares 18 months of real lab reports, 14 days of conti
 
 The data was collected using a **FreeStyle LibreSensor** worn on the arm. It measures glucose in interstitial fluid every few minutes and syncs to a phone app (Gurucose), which exported the data as CSV for analysis.
 
-14 days of continuous glucose monitoring provided the actual patterns behind the HbA1C numbers — showing in real time how specific Indian foods caused spikes.
+14 days of continuous glucose monitoring provided the actual patterns behind the HbA1C numbers, showing in real time how specific Indian foods caused spikes.
 
 ## 12 Learnings from 14 Days of CGM Data
 
@@ -55,7 +55,7 @@ Having ACV (with or without lemon juice) before or during a meal produced a noti
 ### 7. Salad with lemon juice blunted spikes
 Cucumber with lemon juice and salt before or during a meal reduced post-meal spike. The lemon's acidity slows glucose absorption.
 
-### 8. Tea spikes glucose — but less if you're active
+### 8. Tea spikes glucose, but less if you're active
 2–4 cups of tea per day caused small spikes, but they were noticeably less when paired with physical activity vs sitting still.
 
 ### 9. 20 min post-dinner walk didn't help much
@@ -74,11 +74,11 @@ Stress, sleep quality, time of day, and activity level all changed how the body 
 
 Three principles applied consistently to every meal:
 
-1. **Add acid to every meal** — Lemon juice, ACV, or salad with lemon. This alone can reduce post-meal spike by 20–30%. Add it to dal, raita, or as a side salad.
+1. **Add acid to every meal.** Lemon juice, ACV, or salad with lemon. This alone can reduce post-meal spike by 20–30%. Add it to dal, raita, or as a side salad.
 
-2. **Always add a protein source** — Eggs, paneer, dal, tofu. Protein slows carb absorption and keeps you fuller longer.
+2. **Always add a protein source.** Eggs, paneer, dal, tofu. Protein slows carb absorption and keeps you fuller longer.
 
-3. **A small amount of fat helps** — Fat slows gastric emptying. A little ghee on roti or cheese in a meal smooths the glucose curve.
+3. **A small amount of fat helps.** Fat slows gastric emptying. A little ghee on roti or cheese in a meal smooths the glucose curve.
 
 ## Frequently Asked Questions
 

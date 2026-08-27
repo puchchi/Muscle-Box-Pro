@@ -44,12 +44,12 @@ interface ComparisonRow {
 const rows: ComparisonRow[] = [
   {
     dimension: "Upfront Cost to Gym Owner",
-    mbp: { mark: "yes", note: "₹0 — machine supplied free of charge under revenue-share model" },
+    mbp: { mark: "yes", note: "₹0: machine supplied free of charge under revenue-share model" },
     bar: { mark: "no", note: "₹2–8 L for equipment, refrigerators, blenders, counter fit-out (est. Q1 2026)" },
   },
   {
     dimension: "Staff Requirement",
-    mbp: { mark: "yes", note: "Zero — fully automated blending, dispensing, and self-cleaning" },
+    mbp: { mark: "yes", note: "Zero: fully automated blending, dispensing, and self-cleaning" },
     bar: { mark: "no", note: "1–2 dedicated staff per shift; wages ₹12,000–₹22,000/month each (est. Q1 2026)" },
   },
   {
@@ -79,12 +79,12 @@ const rows: ComparisonRow[] = [
   },
   {
     dimension: "Cashless / UPI Payments",
-    mbp: { mark: "yes", note: "UPI, PhonePe, Google Pay, Paytm, Visa, Mastercard, RuPay — all built-in" },
+    mbp: { mark: "yes", note: "UPI, PhonePe, Google Pay, Paytm, Visa, Mastercard, RuPay: all built-in" },
     bar: { mark: "partial", note: "Requires separate POS device; some bars still cash-only" },
   },
   {
     dimension: "Ad / Digital Revenue",
-    mbp: { mark: "yes", note: "Built-in HD display generates brand advertising income — a second passive revenue stream" },
+    mbp: { mark: "yes", note: "Built-in HD display generates brand advertising income, a second passive revenue stream" },
     bar: { mark: "no", note: "No equivalent digital advertising capability" },
   },
   {
@@ -131,7 +131,7 @@ const verdicts = [
 const faqs = [
   {
     q: "Can a gym run both a protein shake bar and a MuscleBoxPro machine?",
-    a: "Yes — some large gyms use a staffed bar for peak hours and a MuscleBoxPro machine for off-hours coverage. The machine handles early-morning and late-night members without additional staffing costs.",
+    a: "Yes. Some large gyms use a staffed bar for peak hours and a MuscleBoxPro machine for off-hours coverage. The machine handles early-morning and late-night members without additional staffing costs.",
   },
   {
     q: "Does MuscleBoxPro charge the gym owner anything?",
@@ -168,55 +168,40 @@ export default function VsProteinShakeBar() {
             <span className="text-white/50">Protein Shake Bar vs Vending Machine</span>
           </nav>
 
-          <motion.span
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6"
-          >
-            Comparison Guide · Q1 2026
-          </motion.span>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="font-display font-black text-white uppercase leading-none mb-5"
-            style={{ fontSize: "clamp(1.9rem, 4.5vw, 3.4rem)" }}
-          >
-            Protein Shake Vending Machine{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-              vs. Protein Shake Bar
+          <div className="hero-rise">
+            <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
+              Comparison Guide · Q1 2026
             </span>
-          </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            className="text-white/55 text-base leading-relaxed max-w-2xl mx-auto mb-8"
-          >
-            Which model generates more passive income for Indian gym owners in 2026 —
-            a fully automated smart machine or a staffed protein shake bar? We break down
-            cost, operations, hygiene, and revenue across 10 dimensions.
-          </motion.p>
+            <h1
+              className="font-display font-black text-white uppercase leading-none mb-5 text-balance"
+              style={{ fontSize: "clamp(1.9rem, 4.5vw, 3.4rem)" }}
+            >
+              Protein Shake Vending Machine{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                vs. Protein Shake Bar
+              </span>
+            </h1>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35 }}
-            className="flex flex-col sm:flex-row gap-3 justify-center"
-          >
-            <Link href="/gym-demo">
-              <Button size="lg" className="h-12 px-7 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 shadow-lg shadow-primary/25">
-                Request Free Machine Demo <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </Link>
-            <Link href="/specs">
-              <Button size="lg" variant="outline" className="h-12 px-7 rounded-full font-semibold border-white/20 text-white/80 hover:bg-white/8">
-                View Machine Specs
-              </Button>
-            </Link>
-          </motion.div>
+            <p className="text-white/55 text-base leading-relaxed max-w-2xl mx-auto mb-8">
+              Which model generates more passive income for Indian gym owners in 2026: a fully
+              automated smart machine or a staffed protein shake bar? We break down cost,
+              operations, hygiene, and revenue across 10 dimensions.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/gym-demo">
+                <Button size="lg" className="h-12 px-7 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 shadow-lg shadow-primary/25">
+                  Request Free Machine Demo <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </Link>
+              <Link href="/specs">
+                <Button size="lg" variant="outline" className="h-12 px-7 rounded-full font-semibold border-white/20 text-white/80 hover:bg-white/8">
+                  View Machine Specs
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -336,7 +321,7 @@ export default function VsProteinShakeBar() {
               </p>
               <p className="text-gray-600 leading-relaxed">
                 MuscleBoxPro's model flips this completely: the machine is supplied, installed, and maintained by BlendBox Innovations LLP at{" "}
-                <strong>zero cost to the gym owner</strong>. The gym earns a revenue share on every shake sold without putting any capital on the line. For gyms still growing their membership base — or those wanting to test nutrition revenue before committing fully — the zero-risk entry is the primary advantage. The trade-off is that the gym does not retain 100% of the margin.
+                <strong>zero cost to the gym owner</strong>. The gym earns a revenue share on every shake sold without putting any capital on the line. For gyms still growing their membership base, or those wanting to test nutrition revenue before committing fully, the zero-risk entry is the primary advantage. The trade-off is that the gym does not retain 100% of the margin.
               </p>
             </motion.div>
 
@@ -372,11 +357,11 @@ export default function VsProteinShakeBar() {
                 <h2 className="font-display font-black text-foreground uppercase text-xl">Hygiene & Consistency</h2>
               </div>
               <p className="text-gray-600 leading-relaxed mb-3">
-                Both models can meet FSSAI hygiene requirements, but for different reasons. A well-run bar with trained, conscientious staff can deliver excellent hygiene — but consistency relies entirely on human compliance. Portion sizes, cleaning frequency, and ingredient freshness all vary between staff members and shifts.
+                Both models can meet FSSAI hygiene requirements, but for different reasons. A well-run bar with trained, conscientious staff can deliver excellent hygiene, but consistency relies entirely on human compliance. Portion sizes, cleaning frequency, and ingredient freshness all vary between staff members and shifts.
               </p>
               <p className="text-gray-600 leading-relaxed">
                 MuscleBoxPro machines use an <strong>independent mechanical stirring system</strong> and{" "}
-                <strong>automated pipe-cleaning</strong> after each use. Dosing is calibrated electronically, so every member gets an identical shake regardless of time of day. This is particularly valuable for members tracking macros, where consistency matters as much as taste. One real downside: if the machine's cleaning system malfunctions, service halts entirely — human bars can continue operating.
+                <strong>automated pipe-cleaning</strong> after each use. Dosing is calibrated electronically, so every member gets an identical shake regardless of time of day. This is particularly valuable for members tracking macros, where consistency matters as much as taste. One real downside: if the machine's cleaning system malfunctions, service halts entirely. Human bars can continue operating.
               </p>
             </motion.div>
 
@@ -392,7 +377,7 @@ export default function VsProteinShakeBar() {
                 <h2 className="font-display font-black text-foreground uppercase text-xl">Revenue Model & Long-Term ROI</h2>
               </div>
               <p className="text-gray-600 leading-relaxed mb-3">
-                A well-operated shake bar at a 300+ member gym can yield strong margins — particularly if the owner sources protein powder in bulk and keeps staff costs tight. The ceiling on revenue is higher with full ownership. However, the floor — the break-even point — is also much higher due to fixed costs.
+                A well-operated shake bar at a 300+ member gym can yield strong margins, particularly if the owner sources protein powder in bulk and keeps staff costs tight. The ceiling on revenue is higher with full ownership. However, the floor (the break-even point) is also much higher due to fixed costs.
               </p>
               <p className="text-gray-600 leading-relaxed mb-3">
                 MuscleBoxPro creates two revenue streams simultaneously: the{" "}
@@ -514,7 +499,7 @@ export default function VsProteinShakeBar() {
               Ready to add a machine at zero cost?
             </h2>
             <p className="text-white/80 text-sm mb-8 leading-relaxed">
-              Join gyms across 11 Indian cities generating passive shake and advertising revenue — no capital required.
+              Join gyms across 11 Indian cities generating passive shake and advertising revenue. No capital required.
             </p>
             <Link href="/gym-demo">
               <Button size="lg" className="h-12 px-8 rounded-full font-bold bg-white text-primary hover:bg-white/90 border-0 shadow-lg">

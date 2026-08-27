@@ -143,7 +143,7 @@ describe("AdminGymDetail", () => {
     expect(card).toHaveTextContent("₹4,50,000");
     // The raw placeholder string never reaches the screen as if it were a real device number.
     expect(card).not.toHaveTextContent("PENDING-A1B2C3D4");
-    expect(card).toHaveTextContent("Pending — not yet chosen");
+    expect(card).toHaveTextContent("Pending, not yet chosen");
     expect(screen.queryByTestId("machine-none")).not.toBeInTheDocument();
   });
 

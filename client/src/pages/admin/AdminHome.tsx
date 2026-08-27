@@ -61,8 +61,7 @@ export default function AdminHome() {
         <p className="text-sm text-muted-foreground mt-8">
           <Link href="/admin/gyms" className="font-semibold text-foreground hover:underline">
             Gyms
-          </Link>{" "}
-          — every gym and where it is in onboarding.
+          </Link>: every gym and where it is in onboarding.
         </p>
       </div>
     </AdminShell>

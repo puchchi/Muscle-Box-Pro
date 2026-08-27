@@ -76,7 +76,7 @@ export default function DepositReturn() {
             </p>
             <p className="text-sm text-muted-foreground leading-relaxed mt-3">
               To carry on with the onboarding, open the link from our email. This page can't tell
-              which gym you're paying for, on purpose — that identifier is never handed to the
+              which gym you're paying for, on purpose. That identifier is never handed to the
               payment provider.
             </p>
             <Button

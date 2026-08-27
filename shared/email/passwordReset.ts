@@ -92,7 +92,7 @@ export function getPasswordResetEmailTemplate(input: PasswordResetTemplateInput)
                       <tr>
                         <td style="padding:12px 16px;">
                           <p style="margin:0;color:#f87171;font-size:13px;line-height:1.5;">
-                            This link expires in <strong>1 hour</strong>. If you did not request a password reset, please ignore this email — your account remains secure.
+                            This link expires in <strong>1 hour</strong>. If you did not request a password reset, please ignore this email. Your account remains secure.
                           </p>
                         </td>
                       </tr>

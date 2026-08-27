@@ -59,7 +59,7 @@ const posts = [
     href: "/blog/how-i-fixed-my-hba1c",
     tag: "Personal Story",
     tagColor: "text-green-700 bg-green-50",
-    title: "How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story",
+    title: "How I Dropped My HbA1C from 6.1 to 5.2: A Real Data Story",
     excerpt:
       "Real lab reports, 14 days of CGM glucose data, and 12 dietary findings from a borderline pre-diabetic who reversed it without medication.",
     readTime: "10 min read",
@@ -81,11 +81,7 @@ export default function Blog() {
       <section className="bg-gray-950 pt-32 pb-16 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[260px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-4xl mx-auto relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="hero-rise">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Insights
             </span>
@@ -100,9 +96,9 @@ export default function Blog() {
               Blog
             </h1>
             <p className="text-white/50 text-base leading-relaxed max-w-xl mx-auto">
-              Nutrition science, gym business insights, and fitness technology — straight from our team.
+              Nutrition science, gym business insights, and fitness technology, straight from our team.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 

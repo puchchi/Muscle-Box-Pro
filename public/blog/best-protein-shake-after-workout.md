@@ -25,7 +25,7 @@ Whey protein, derived from milk during the cheese-making process, has long been 
 - **Rapid absorption:** Whey isolate is digested faster than almost any other protein source, flooding muscles with amino acids within 30 minutes
 - **High leucine content:** Leucine is the primary BCAA responsible for triggering Muscle Protein Synthesis (MPS). Whey is exceptionally high in leucine
 
-> "Research published in the American Journal of Clinical Nutrition demonstrates that whey protein stimulates muscle protein synthesis to a greater degree than other proteins like casein or soy at rest and after resistance exercise." — Tang et al., 2009 *(academic.oup.com/ajcn/article/89/1/161/4598335)*
+> "Research published in the American Journal of Clinical Nutrition demonstrates that whey protein stimulates muscle protein synthesis to a greater degree than other proteins like casein or soy at rest and after resistance exercise." Tang et al., 2009 *(academic.oup.com/ajcn/article/89/1/161/4598335)*
 
 ## The Rising Star: Plant-Based Protein
 
@@ -35,7 +35,7 @@ Plant-based proteins (pea, rice, hemp, or a blend) have surged in popularity amo
 - **Easier digestion:** For those with lactose intolerance, plant protein eliminates bloating often associated with cheap whey concentrates
 - **Complete amino acid profiles:** High-quality blends combine sources (e.g., pea and rice) to create a profile comparable to whey
 
-> "A 2015 study in the Journal of the International Society of Sports Nutrition found that pea protein yielded similar results to whey protein in promoting muscle thickness during a 12-week resistance training program." — Babault et al., 2015 *(jissn.biomedcentral.com/articles/10.1186/s12970-015-0087-9)*
+> "A 2015 study in the Journal of the International Society of Sports Nutrition found that pea protein yielded similar results to whey protein in promoting muscle thickness during a 12-week resistance training program." Babault et al., 2015 *(jissn.biomedcentral.com/articles/10.1186/s12970-015-0087-9)*
 
 ## The Verdict: Which Is Better?
 
@@ -44,7 +44,7 @@ Plant-based proteins (pea, rice, hemp, or a blend) have surged in popularity amo
 
 ## Timing: When Should You Drink Your Post-Workout Shake?
 
-Early research suggested a 30-minute window. More recent meta-analyses indicate the window is broader — likely 1–2 hours post-workout — though earlier is still better.
+Early research suggested a 30-minute window. More recent meta-analyses indicate the window is broader, likely 1–2 hours post-workout, though earlier is still better.
 
 Consuming protein as soon as possible after training maximises the Muscle Protein Synthesis (MPS) response. The combination of mechanical stimulus (lifting) and amino acid availability creates a synergistic effect that neither stimulus produces alone.
 
@@ -52,15 +52,15 @@ A gym protein shake machine that delivers a fresh shake within 60 seconds elimin
 
 ## How Much Protein Do You Need Per Serving?
 
-- **The leucine threshold:** MPS is not triggered by just any amount of protein — you need to clear a threshold of approximately 2–3 g of leucine per serving. Most 25–30 g servings of whey isolate achieve this
+- **The leucine threshold:** MPS is not triggered by just any amount of protein. You need to clear a threshold of approximately 2–3 g of leucine per serving. Most 25–30 g servings of whey isolate achieve this
 - **Body weight matters:** A 90 kg lifter may need 35–40 g post-workout; a 60 kg person achieves the same with 20–25 g
-- **Diminishing returns above 40 g:** Consuming more than 40 g in a single post-workout serving produces no additional MPS benefit — excess protein is oxidised for energy
+- **Diminishing returns above 40 g:** Consuming more than 40 g in a single post-workout serving produces no additional MPS benefit. Excess protein is oxidised for energy
 
 ## Water vs. Milk: Which Base Maximises Recovery?
 
 **Water-based:**
-- Fastest absorption — ideal immediately post-workout
-- Fewer total calories — suits fat-loss phases
+- Fastest absorption: ideal immediately post-workout
+- Fewer total calories: suits fat-loss phases
 - Zero added carbohydrates
 
 **Milk-based:**
@@ -75,7 +75,7 @@ For most gym-goers focused on muscle gain, milk provides a meaningful edge. For 
 
 - **Excessive added sugar:** Shakes with 15–25 g of added sugar spike blood glucose and blunt fat-oxidation effects. Look for under 5 g total sugar
 - **Whey concentrate as the base:** Slower absorption and potential digestive discomfort. Premium shakes use whey isolate
-- **Maltodextrin as a first ingredient:** Higher glycemic index than table sugar — rapid glucose spikes with zero nutritional benefit
+- **Maltodextrin as a first ingredient:** Higher glycemic index than table sugar, with rapid glucose spikes and zero nutritional benefit
 - **Artificial fillers:** Many budget shakes bulk up with cheaper, lower-bioavailability soy protein isolate
 
 ## Frequently Asked Questions

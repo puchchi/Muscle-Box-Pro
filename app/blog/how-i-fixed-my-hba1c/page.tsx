@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import BlogHba1c from "@/pages/BlogHba1c";
 
 export const metadata: Metadata = {
-  title: "How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story | MuscleBoxPro",
+  title: "How I Dropped My HbA1C from 6.1 to 5.2: A Real Data Story | MuscleBoxPro",
   description:
     "A borderline pre-diabetic shares 18 months of real lab reports, 14 days of continuous glucose data, and 12 dietary findings that reversed early diabetes without medication.",
   alternates: { canonical: "/blog/how-i-fixed-my-hba1c" },
   openGraph: {
     type: "article",
     url: "/blog/how-i-fixed-my-hba1c",
-    title: "How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story",
+    title: "How I Dropped My HbA1C from 6.1 to 5.2: A Real Data Story",
     description:
       "Real lab reports, 14 days of CGM glucose data, and 12 dietary findings that reversed early pre-diabetes. No medication, just food changes.",
     images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "HbA1C journey from 6.1 to 5.2" }],
@@ -35,7 +35,7 @@ const blogPostingSchema = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
   "@id": "https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c#article",
-  headline: "How I Dropped My HbA1C from 6.1 to 5.2 — A Real Data Story",
+  headline: "How I Dropped My HbA1C from 6.1 to 5.2: A Real Data Story",
   description:
     "A borderline pre-diabetic shares 18 months of real lab reports, 14 days of continuous glucose data, and 12 dietary findings that reversed early diabetes without medication.",
   url: "https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c",

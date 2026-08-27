@@ -88,8 +88,8 @@ export default function OnboardingIntro({
       <p className="text-sm text-muted-foreground leading-relaxed">
         Five short steps: your details, your terms, the agreement, the refundable deposit, and your
         dashboard password. Nothing is committed until you sign the agreement at step 3, and the
-        deposit can wait until after that. The sixth step is ours — installing your machine — and
-        this same link is where you'll track it.
+        deposit can wait until after that. The sixth step is ours. We install your
+        machine, and this same link is where you'll track it.
       </p>
 
       {/*
