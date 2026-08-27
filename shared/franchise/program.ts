@@ -116,6 +116,27 @@ export function franchiseTier(id: FranchiseTierId): FranchiseTier {
   return tier;
 }
 
+/**
+ * The tiers' `includes` lists split into what both carry and what is specific to one.
+ *
+ * Derived rather than authored, so the two lists above stay the single description of
+ * each tier. Eleven of the fourteen entries are common, and printing both lists in full
+ * side by side asks the reader to diff them to find the three lines that differ.
+ */
+export function tierIncludes(): {
+  shared: string[];
+  unique: Record<FranchiseTierId, string[]>;
+} {
+  const [first, ...rest] = FRANCHISE_TIERS;
+  const shared = first.includes.filter((item) =>
+    rest.every((tier) => tier.includes.includes(item)),
+  );
+  const unique = Object.fromEntries(
+    FRANCHISE_TIERS.map((tier) => [tier.id, tier.includes.filter((i) => !shared.includes(i))]),
+  ) as Record<FranchiseTierId, string[]>;
+  return { shared, unique };
+}
+
 export const FRANCHISE = {
   /**
    * §17, §19. The protein-business split, before and after capital recovery.
@@ -242,35 +263,92 @@ export const RESERVED_ACCOUNTS = [
   "Partnerships negotiated directly by MuscleBox Pro",
 ] as const;
 
-/** §51. Application through to the long-term partnership. */
+/**
+ * §51. Application through to the long-term partnership.
+ *
+ * `phase` groups the eleven steps into the four stages of `JOURNEY_PHASES`. Eleven
+ * equally-weighted steps read as a list to get through; four stages read as a process,
+ * and the stage boundaries are where the commitment actually changes.
+ */
 export const FRANCHISE_JOURNEY = [
-  { title: "Apply", body: "Submit an application for the territory or city you want to develop." },
   {
+    phase: "approve",
+    title: "Apply",
+    body: "Submit an application for the territory or city you want to develop.",
+  },
+  {
+    phase: "approve",
     title: "Market evaluation",
     body: "We assess market potential, gym density, existing locations and territory capacity.",
   },
-  { title: "Franchise approval", body: "The tier and the territory are finalised together." },
-  { title: "Agreement", body: "The definitive franchise agreement is executed." },
-  { title: "Initial payment", body: "The first-stage investment is paid at registration." },
   {
+    phase: "approve",
+    title: "Franchise approval",
+    body: "The tier and the territory are finalised together.",
+  },
+  {
+    phase: "approve",
+    title: "Agreement",
+    body: "The definitive franchise agreement is executed.",
+  },
+  {
+    phase: "fund",
+    title: "Initial payment",
+    body: "The first-stage investment is paid at registration.",
+  },
+  {
+    phase: "fund",
     title: "Machine procurement",
     body: "We place the OEM order and you get procurement and manufacturing updates.",
   },
   {
+    phase: "fund",
     title: "Machine readiness",
     body: "The second-stage investment is paid once machines are ready at the OEM.",
   },
-  { title: "Deployment", body: "Machines are delivered and installed at approved gym locations." },
-  { title: "Network operation", body: "You develop and run the local network with us." },
   {
+    phase: "deploy",
+    title: "Deployment",
+    body: "Machines are delivered and installed at approved gym locations.",
+  },
+  {
+    phase: "deploy",
+    title: "Network operation",
+    body: "You develop and run the local network with us.",
+  },
+  {
+    phase: "grow",
     title: "Capital recovery",
     body: "You receive 100% of eligible protein-business distributable profit until the recovery threshold is met.",
   },
   {
+    phase: "grow",
     title: "Long-term partnership",
     body: "Protein profit moves to 50:50. Advertising stays at 25:75.",
   },
 ] as const;
+
+export type FranchiseJourneyPhaseId = (typeof FRANCHISE_JOURNEY)[number]["phase"];
+
+export const JOURNEY_PHASES: readonly { id: FranchiseJourneyPhaseId; title: string }[] = [
+  { id: "approve", title: "Apply and get approved" },
+  { id: "fund", title: "Fund and procure" },
+  { id: "deploy", title: "Deploy and operate" },
+  { id: "grow", title: "Recover and grow" },
+];
+
+/**
+ * The journey grouped for rendering, with each step keeping its position in the full
+ * eleven so the numbering on the page matches the order in §51.
+ */
+export function journeyByPhase() {
+  return JOURNEY_PHASES.map((phase) => ({
+    ...phase,
+    steps: FRANCHISE_JOURNEY.map((step, index) => ({ ...step, position: index + 1 })).filter(
+      (step) => step.phase === phase.id,
+    ),
+  }));
+}
 
 /**
  * §20's worked illustration, computed rather than transcribed.

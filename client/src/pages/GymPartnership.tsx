@@ -210,10 +210,16 @@ export default function GymPartnership() {
           />
 
           <div className="max-w-5xl mx-auto relative z-10">
+            {/*
+              `animate` always names the visible state, and reduced motion is honoured by
+              dropping the duration rather than by dropping the animation. Leaving both
+              props off under reduced motion left the server-rendered `opacity: 0` on the
+              element with nothing to clear it, so the hero never appeared at all.
+            */}
             <motion.div
-              initial={reduceMotion ? undefined : { opacity: 0, y: 16 }}
-              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
+              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.5, ease: "easeOut" }}
               className="text-center"
             >
               <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
@@ -368,7 +374,7 @@ export default function GymPartnership() {
         </Section>
 
         {/* ── How the money works ──────────────────────────────────────────── */}
-        <Section id="money" tinted>
+        <Section id="money" tone="tinted">
           <SectionHeading
             eyebrow="The economics"
             title="How the money works"
@@ -622,7 +628,7 @@ export default function GymPartnership() {
         </Section>
 
         {/* ── Term and exit ────────────────────────────────────────────────── */}
-        <Section id="term" tinted>
+        <Section id="term" tone="tinted">
           <SectionHeading
             eyebrow="Term and exit"
             title="You are not locked in"
@@ -742,7 +748,7 @@ export default function GymPartnership() {
         </Section>
 
         {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-        <Section id="faq" tinted>
+        <Section id="faq" tone="tinted">
           {/*
             A heading rail beside the questions rather than above them. Stacked, the
             accordion needs a `max-w-*` to keep the answers at a readable measure, and

@@ -117,45 +117,87 @@ export function StickyCta({
  */
 export function Section({
   id,
-  tinted,
+  tone,
   children,
 }: {
   id: string;
-  tinted?: boolean;
+  /** `dark` inverts the section; anything inside it must set its own light text colours. */
+  tone?: "tinted" | "dark";
   children: React.ReactNode;
 }) {
+  const surface =
+    tone === "dark"
+      ? "bg-gray-950 border-y border-gray-900"
+      : tone === "tinted"
+        ? "bg-muted/40 border-y border-border"
+        : "";
   return (
     <section
       id={id}
       // `scroll-mt` clears the navbar alone on mobile and the navbar plus the jump nav
       // on desktop, where both are pinned.
-      className={`scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 ${
-        tinted ? "bg-muted/40 border-y border-border" : ""
-      }`}
+      className={`scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20 ${surface}`}
     >
       <div className="max-w-5xl mx-auto">{children}</div>
     </section>
   );
 }
 
+/**
+ * A section's eyebrow, title and standfirst.
+ *
+ * `split` puts the standfirst in a second column on desktop. Stacked, a 2xl-capped
+ * paragraph under a 3xl heading leaves the right half of a 5xl container empty for the
+ * length of the header, which on a page of eight sections reads as an unfinished layout
+ * rather than as whitespace.
+ */
 export function SectionHeading({
   eyebrow,
   title,
   blurb,
+  split,
+  tone,
 }: {
   eyebrow: string;
   title: string;
   blurb?: string;
+  split?: boolean;
+  tone?: "dark";
 }) {
-  return (
-    <div className="max-w-2xl">
+  const dark = tone === "dark";
+  const heading = (
+    <div>
       <span className="inline-block text-primary text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
         {eyebrow}
       </span>
-      <h2 className="font-display font-black uppercase text-2xl sm:text-3xl tracking-tight leading-[1.05] mb-3">
+      <h2
+        className={`font-display font-black uppercase text-2xl sm:text-3xl tracking-tight leading-[1.05] text-balance ${
+          dark ? "text-white" : ""
+        }`}
+      >
         {title}
       </h2>
-      {blurb && <p className="text-muted-foreground text-[15px] leading-relaxed">{blurb}</p>}
+    </div>
+  );
+  const standfirst = blurb && (
+    <p className={`text-[15px] leading-relaxed ${dark ? "text-gray-300" : "text-muted-foreground"}`}>
+      {blurb}
+    </p>
+  );
+
+  if (split) {
+    return (
+      <div className="grid lg:grid-cols-2 gap-x-12 gap-y-4 lg:items-end">
+        {heading}
+        {standfirst}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl space-y-3">
+      {heading}
+      {standfirst}
     </div>
   );
 }

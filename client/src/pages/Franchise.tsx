@@ -19,14 +19,23 @@
  *      than a forecast of what a machine will earn. A revenue calculator here would be a
  *      performance representation, which §55 exists to disclaim.
  *
- * Layout follows /gym-partnership deliberately — jump nav, sticky mobile CTA, and
- * nothing fading in on scroll except the hero. A reference document that animates on
- * every pass fights the way it is actually read. Chrome is shared, in
- * components/marketing/pageChrome.
+ * It carries a lot of contract detail, and four presentation decisions keep that from
+ * reading as a wall. They are what to preserve when editing:
  *
- * The one piece of state on the page is the selected tier, which the tier cards write
- * and the application form reads. That link is the point: someone who has decided
- * between Territory and City on the cards should not have to say so again in the form.
+ *   - **The page alternates light and dark.** The money section is inverted, which gives
+ *     the commercials their own weight and breaks eight same-coloured sections into
+ *     acts. Anything inside a dark section sets its own light text colours; the
+ *     `--muted-foreground` token is near-invisible there.
+ *   - **Repetition is factored out, not printed twice.** Eleven of the tiers' fourteen
+ *     inclusions are identical, so the cards carry only what differs and the shared list
+ *     is stated once. `tierIncludes()` derives that split, so no line is lost.
+ *   - **Short enumerations are chips, long ones are checklists.** A tick beside
+ *     "Warehousing" implies a benefit; a tick beside "Move machines between approved
+ *     locations" is one.
+ *   - **Nothing fades in on scroll** except the hero, gated on `useReducedMotion`. This
+ *     is a document people scan, jump around in and come back to.
+ *
+ * Chrome is shared with /gym-partnership, in components/marketing/pageChrome.
  */
 
 import Navbar from "@/components/layout/Navbar";
@@ -73,13 +82,13 @@ import {
   CreditCard,
   Factory,
   Gauge,
+  LayoutDashboard,
   Lock,
   MapPin,
   Megaphone,
   Package,
   ShieldCheck,
-  Sparkles,
-  Truck,
+  Store,
   Warehouse,
   Wrench,
   X,
@@ -87,7 +96,6 @@ import {
 import {
   DASHBOARD_VISIBILITY,
   FRANCHISE,
-  FRANCHISE_JOURNEY,
   FRANCHISE_TIERS,
   MACHINE_RIGHTS,
   PERFORMANCE_REQUIREMENTS,
@@ -96,7 +104,9 @@ import {
   formatInr,
   formatLakh,
   franchiseTier,
+  journeyByPhase,
   recoveryExample,
+  tierIncludes,
   type FranchiseTierId,
 } from "@shared/franchise/program";
 import { FRANCHISE_FAQ } from "@shared/franchise/faq";
@@ -110,6 +120,8 @@ import { scrollIntoViewGently } from "@/lib/motion";
 const territory = franchiseTier("territory");
 const city = franchiseTier("city");
 const example = recoveryExample("territory");
+const includes = tierIncludes();
+const journey = journeyByPhase();
 
 /**
  * The jump nav, and the `id`s the sections carry. One list so a section renamed here
@@ -171,7 +183,7 @@ const whatWeRun = [
   {
     icon: Wrench,
     title: "Technology and support",
-    body: `Platform, software and firmware updates, remote diagnostics, OEM and warranty coordination. No separate technical service fee during capital recovery.`,
+    body: "Platform, software and firmware updates, remote diagnostics, OEM and warranty coordination. No separate technical service fee during capital recovery.",
   },
 ];
 
@@ -198,7 +210,7 @@ export default function Franchise() {
 
       <main id="main" className="flex-1">
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <section className="bg-gray-950 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 relative overflow-hidden">
+        <section className="bg-gray-950 px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-12 sm:pb-14 relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
           <div
             className="absolute inset-0 opacity-[0.035] pointer-events-none"
@@ -210,10 +222,16 @@ export default function Franchise() {
           />
 
           <div className="max-w-5xl mx-auto relative z-10">
+            {/*
+              `animate` always names the visible state, and reduced motion is honoured by
+              dropping the duration rather than by dropping the animation. Leaving both
+              props off under reduced motion left the server-rendered `opacity: 0` on the
+              element with nothing to clear it, so the hero never appeared at all.
+            */}
             <motion.div
-              initial={reduceMotion ? undefined : { opacity: 0, y: 16 }}
-              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
+              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.5, ease: "easeOut" }}
               className="text-center"
             >
               <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
@@ -232,11 +250,16 @@ export default function Franchise() {
                 pipeline. You run the local network and share in the profit it generates.
               </p>
 
-              <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-6">
+              {/*
+                A column on a phone, a row from `sm` up. Wrapped as a centred row at
+                390px the middle item ran to two lines and left its tick alone at the far
+                left of the pair, which read as a rendering fault.
+              */}
+              <ul className="flex flex-col items-start gap-2 text-left max-w-sm mx-auto mt-6 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-5">
                 {heroProof.map((item) => (
-                  <li key={item} className="flex items-center gap-1.5 text-gray-300 text-[13px]">
+                  <li key={item} className="flex items-start gap-1.5 text-gray-300 text-[13px]">
                     <CheckCircle2
-                      className="w-3.5 h-3.5 text-primary flex-shrink-0"
+                      className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-[3px]"
                       aria-hidden="true"
                     />
                     {item}
@@ -266,18 +289,23 @@ export default function Franchise() {
               </div>
             </motion.div>
 
-            <dl className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-12">
+            {/*
+              One bordered strip with dividers rather than four floating cards. The
+              figures are a single set of headline commercials, and reading them as a row
+              of an accounts summary is closer to what they are.
+            */}
+            <dl className="grid grid-cols-2 lg:grid-cols-4 rounded-2xl border border-white/10 bg-gray-900/70 divide-x divide-y lg:divide-y-0 divide-white/10 overflow-hidden mt-12 sm:mt-14">
               {headlines.map((h) => (
                 <div
                   key={h.label}
-                  className="bg-white/[0.04] border border-white/10 rounded-2xl p-4 sm:p-5 transition-colors hover:border-white/25 hover:bg-white/[0.07]"
+                  className="p-4 sm:p-5 transition-colors hover:bg-white/[0.04]"
                   data-testid={`headline-${h.label}`}
                 >
                   <h.icon className="w-4 h-4 text-primary mb-3" aria-hidden="true" />
                   {/* Reversed so the figure reads first visually while `dt` still
                       precedes its `dd` in the DOM. */}
                   <div className="flex flex-col-reverse gap-1">
-                    <dt className="text-gray-300 text-xs leading-snug">{h.label}</dt>
+                    <dt className="text-gray-400 text-xs leading-snug">{h.label}</dt>
                     <dd className="text-white font-display font-black text-xl sm:text-2xl leading-none tabular-nums">
                       {h.value}
                     </dd>
@@ -296,41 +324,44 @@ export default function Franchise() {
           Left-aligned rather than centred: it runs to three lines on a phone, and
           centred ragged text at 13px is the hardest thing on the page to read.
         */}
-        <div className="bg-muted/60 border-b border-border px-4 sm:px-6 lg:px-8 py-3.5">
-          <p className="max-w-5xl mx-auto text-muted-foreground text-[13px] leading-relaxed flex items-start gap-2">
-            <ShieldCheck
-              className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
-              aria-hidden="true"
-            />
-            <span>
-              <strong className="font-semibold text-foreground">
-                Indicative program terms. Not an offer, and not a guarantee of returns.
-              </strong>{" "}
-              Availability, territory, investment, machine allocation and commercial terms are
-              subject to approval, due diligence and the definitive franchise agreement, which
-              is what governs. Take independent legal, tax and financial advice before
-              committing.
-            </span>
-          </p>
+        <div className="bg-muted/60 border-b border-border px-4 sm:px-6 lg:px-8 py-4">
+          <div className="max-w-5xl mx-auto">
+            <p className="max-w-4xl text-muted-foreground text-[13px] leading-relaxed flex items-start gap-2">
+              <ShieldCheck
+                className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
+              <span>
+                <strong className="font-semibold text-foreground">
+                  Indicative program terms. Not an offer, and not a guarantee of returns.
+                </strong>{" "}
+                Availability, territory, investment, machine allocation and commercial terms are
+                subject to approval, due diligence and the definitive franchise agreement, which
+                is what governs. Take independent legal, tax and financial advice before
+                committing.
+              </span>
+            </p>
+          </div>
         </div>
 
         {/* ── The two franchises ───────────────────────────────────────────── */}
         <Section id="tiers">
           <SectionHeading
+            split
             eyebrow="The franchises"
             title="Two ways in"
             blurb="Both give you machines, the technology platform, the protein pipeline, centralised payments and a financial dashboard. They differ in how much market you take responsibility for. Larger regional structures may be introduced later."
           />
 
-          <div className="grid lg:grid-cols-2 gap-5 mt-9">
+          <div className="grid lg:grid-cols-2 gap-5 mt-10">
             {FRANCHISE_TIERS.map((tier) => (
               <div
                 key={tier.id}
                 data-testid={`tier-${tier.id}`}
-                className="bg-card border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden"
+                className="bg-card border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden transition-colors hover:border-primary/30"
               >
-                <div className="p-6 sm:p-7 border-b border-border">
-                  <div className="flex items-center gap-2.5 mb-4">
+                <div className="p-6 sm:p-7 flex-1">
+                  <div className="flex items-center gap-2.5 mb-5">
                     <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                       {tier.id === "city" ? (
                         <Building2 className="w-4 h-4 text-primary" aria-hidden="true" />
@@ -343,14 +374,35 @@ export default function Franchise() {
                     </h3>
                   </div>
 
-                  <p className="font-display font-black text-3xl sm:text-4xl leading-none tabular-nums">
-                    {formatLakh(tier.investmentInr)}
-                  </p>
-                  <p className="text-muted-foreground text-[13px] mt-1.5">
-                    {formatInr(tier.investmentInr)} · {tier.initialMachines} machines ·{" "}
-                    {tier.marketRights.replace(/^A /, "")}
-                  </p>
-                  <p className="text-muted-foreground text-[15px] leading-relaxed mt-4">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <p className="font-display font-black text-3xl sm:text-4xl leading-none tabular-nums">
+                      {formatLakh(tier.investmentInr)}
+                    </p>
+                    <p className="text-muted-foreground text-[13px] tabular-nums">
+                      {formatInr(tier.investmentInr)}
+                    </p>
+                  </div>
+
+                  <dl className="grid grid-cols-2 gap-3 mt-5">
+                    <div className="rounded-xl border border-border bg-muted/40 px-3.5 py-3">
+                      <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                        Machines
+                      </dt>
+                      <dd className="font-bold text-[15px] tabular-nums mt-0.5">
+                        {tier.initialMachines} machines
+                      </dd>
+                    </div>
+                    <div className="rounded-xl border border-border bg-muted/40 px-3.5 py-3">
+                      <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                        Market rights
+                      </dt>
+                      <dd className="font-bold text-[15px] mt-0.5 leading-snug">
+                        {tier.marketRights}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <p className="text-muted-foreground text-[15px] leading-relaxed mt-5">
                     {tier.positioning}
                   </p>
 
@@ -358,39 +410,31 @@ export default function Franchise() {
                     The payment schedule, or an honest statement that it is not published.
                     Rendering nothing for the City tier read as "pay it all up front".
                   */}
-                  <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
-                    <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground mb-3">
-                      Payment schedule
-                    </h4>
-                    {tier.paymentSchedule ? (
-                      <ol className="space-y-2">
-                        {tier.paymentSchedule.map((stage) => (
-                          <li
-                            key={stage.trigger}
-                            className="flex items-baseline justify-between gap-3 text-[13px]"
-                          >
-                            <span className="text-muted-foreground">{stage.trigger}</span>
-                            <span className="font-bold tabular-nums flex-shrink-0">
-                              {formatInr((tier.investmentInr * stage.pct) / 100)}
-                            </span>
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="text-muted-foreground text-[13px] leading-relaxed">
-                        Generally linked to franchise registration and machine procurement
-                        readiness, with the exact schedule set in the definitive agreement.
-                      </p>
-                    )}
-                  </div>
-                </div>
+                  <CardLabel>Payment schedule</CardLabel>
+                  {tier.paymentSchedule ? (
+                    <ol className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+                      {tier.paymentSchedule.map((stage) => (
+                        <li
+                          key={stage.trigger}
+                          className="flex items-baseline justify-between gap-3 px-3.5 py-2.5 text-[13px]"
+                        >
+                          <span className="text-muted-foreground">{stage.trigger}</span>
+                          <span className="font-bold tabular-nums flex-shrink-0">
+                            {formatInr((tier.investmentInr * stage.pct) / 100)}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="text-muted-foreground text-[13px] leading-relaxed rounded-xl border border-border px-3.5 py-2.5">
+                      Generally linked to franchise registration and machine procurement
+                      readiness, with the exact schedule set in the definitive agreement.
+                    </p>
+                  )}
 
-                <div className="p-6 sm:p-7 flex-1 flex flex-col">
-                  <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground mb-3">
-                    What it includes
-                  </h4>
-                  <ul className="space-y-2 flex-1">
-                    {tier.includes.map((item) => (
+                  <CardLabel>Specific to this franchise</CardLabel>
+                  <ul className="space-y-2">
+                    {includes.unique[tier.id].map((item) => (
                       <li key={item} className="flex items-start gap-2 text-[14px]">
                         <CheckCircle2
                           className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
@@ -400,11 +444,13 @@ export default function Franchise() {
                       </li>
                     ))}
                   </ul>
+                </div>
 
+                <div className="px-6 sm:px-7 pb-6 sm:pb-7">
                   <Button
                     onClick={() => chooseTier(tier.id)}
                     data-testid={`button-apply-${tier.id}`}
-                    className="mt-6 min-h-12 w-full rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors"
+                    className="min-h-12 w-full rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors"
                   >
                     Apply for the {tier.shortName}
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -414,7 +460,34 @@ export default function Franchise() {
             ))}
           </div>
 
-          <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 flex items-start gap-2">
+          {/*
+            The twelve inclusions both tiers share, stated once. Printed inside both
+            cards it was 24 rows the reader had to compare line by line to find the two
+            that actually differ.
+          */}
+          <div className="bg-card border border-border rounded-2xl shadow-sm p-6 sm:p-7 mt-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-5">
+              <h3 className="font-display font-black uppercase text-lg tracking-tight">
+                Included in both franchises
+              </h3>
+              <p className="text-muted-foreground text-[13px]">
+                {includes.shared.length} inclusions, identical either way
+              </p>
+            </div>
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2.5">
+              {includes.shared.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-[14px]">
+                  <CheckCircle2
+                    className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
+                    aria-hidden="true"
+                  />
+                  <span className="leading-snug">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 max-w-3xl flex items-start gap-2">
             <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               The franchise investment is not a purchase of the machines. Every machine remains
@@ -425,40 +498,42 @@ export default function Franchise() {
         </Section>
 
         {/* ── The money ────────────────────────────────────────────────────── */}
-        <Section id="economics" tinted>
+        <Section id="economics" tone="dark">
           <SectionHeading
+            split
+            tone="dark"
             eyebrow="The money"
             title="Recover your capital first"
             blurb="Your franchise earns from two separate streams, and they behave differently. Protein profit funds your capital recovery. Advertising profit never does, and it never stops."
           />
 
-          <div className="grid md:grid-cols-2 gap-5 mt-9">
+          <div className="grid md:grid-cols-2 gap-5 mt-10">
             {/* Protein stream */}
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-2.5 mb-4">
-                <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+              <div className="flex items-center gap-2.5 mb-5">
+                <span className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
                   <Gauge className="w-4 h-4 text-primary" aria-hidden="true" />
                 </span>
-                <h3 className="font-display font-black uppercase text-lg tracking-tight">
+                <h3 className="font-display font-black uppercase text-lg tracking-tight text-white">
                   Protein business
                 </h3>
               </div>
 
-              <dl className="space-y-3">
-                <div className="rounded-xl border border-primary/25 bg-primary/[0.06] p-4">
-                  <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1">
+              <dl className="space-y-2.5">
+                <div className="rounded-xl border border-primary/40 bg-primary/[0.12] p-4">
+                  <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-300 mb-1">
                     Until capital recovery
                   </dt>
-                  <dd className="font-display font-black text-2xl leading-none tabular-nums">
+                  <dd className="font-display font-black text-2xl leading-none tabular-nums text-white">
                     {FRANCHISE.proteinProfitSharePct.duringRecovery}%{" "}
                     <span className="text-sm font-bold uppercase tracking-tight">to you</span>
                   </dd>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/40 p-4">
-                  <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">
                     After capital recovery
                   </dt>
-                  <dd className="font-display font-black text-2xl leading-none tabular-nums">
+                  <dd className="font-display font-black text-2xl leading-none tabular-nums text-white">
                     {FRANCHISE.proteinProfitSharePct.afterRecovery}:
                     {100 - FRANCHISE.proteinProfitSharePct.afterRecovery}{" "}
                     <span className="text-sm font-bold uppercase tracking-tight">
@@ -468,7 +543,7 @@ export default function Franchise() {
                 </div>
               </dl>
 
-              <p className="text-muted-foreground text-[13px] leading-relaxed mt-4">
+              <p className="text-gray-300 text-[13px] leading-relaxed mt-4">
                 {FRANCHISE.proteinProfitSharePct.duringRecovery}% is a capital recovery
                 mechanism, not a margin. It runs until you have received cumulative eligible
                 protein-business profit of {formatInr(example.thresholdInr)} on the{" "}
@@ -478,22 +553,22 @@ export default function Franchise() {
             </div>
 
             {/* Advertising stream */}
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-2.5 mb-4">
-                <span className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+              <div className="flex items-center gap-2.5 mb-5">
+                <span className="w-8 h-8 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
                   <Megaphone className="w-4 h-4 text-accent" aria-hidden="true" />
                 </span>
-                <h3 className="font-display font-black uppercase text-lg tracking-tight">
+                <h3 className="font-display font-black uppercase text-lg tracking-tight text-white">
                   Advertising
                 </h3>
               </div>
 
-              <dl className="space-y-3">
-                <div className="rounded-xl border border-accent/25 bg-accent/[0.06] p-4">
-                  <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1">
+              <dl className="space-y-2.5">
+                <div className="rounded-xl border border-accent/40 bg-accent/[0.12] p-4">
+                  <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-300 mb-1">
                     Before and after recovery
                   </dt>
-                  <dd className="font-display font-black text-2xl leading-none tabular-nums">
+                  <dd className="font-display font-black text-2xl leading-none tabular-nums text-white">
                     {FRANCHISE.advertising.franchiseeSharePct}:
                     {FRANCHISE.advertising.mbpSharePct}{" "}
                     <span className="text-sm font-bold uppercase tracking-tight">
@@ -505,17 +580,17 @@ export default function Franchise() {
                   The term people most often read the other way round, so it is stated as
                   a headline rather than left in the paragraph below.
                 */}
-                <div className="rounded-xl border border-border bg-muted/40 p-4">
-                  <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400 mb-1">
                     Counts toward capital recovery
                   </dt>
-                  <dd className="font-display font-black text-2xl leading-none uppercase tracking-tight">
+                  <dd className="font-display font-black text-2xl leading-none uppercase tracking-tight text-white">
                     No
                   </dd>
                 </div>
               </dl>
 
-              <p className="text-muted-foreground text-[13px] leading-relaxed mt-4">
+              <p className="text-gray-300 text-[13px] leading-relaxed mt-4">
                 Machine displays, digital screens and campaign placements across the network
                 are monetised centrally. Your share is calculated after applicable advertising
                 costs, it does not reduce your remaining recovery amount, and it continues
@@ -524,178 +599,207 @@ export default function Franchise() {
             </div>
           </div>
 
-          {/* ── Worked recovery illustration (§20) ── */}
-          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
-            <h3 className="font-display font-black uppercase text-lg tracking-tight mb-1.5">
-              How recovery adds up
-            </h3>
-            <p className="text-muted-foreground text-[13px] leading-relaxed mb-6">
+          {/*
+            Worked recovery illustration (§20), on white inside the dark section. It is
+            the one block on the page a prospective franchisee will read twice, and the
+            inversion is what marks it as the worked example rather than more prose.
+          */}
+          <div className="bg-card rounded-2xl p-6 sm:p-8 shadow-xl mt-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-1.5">
+              <h3 className="font-display font-black uppercase text-lg tracking-tight">
+                How recovery adds up
+              </h3>
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground rounded-full border border-border px-2.5 py-1">
+                Illustration
+              </span>
+            </div>
+            <p className="text-muted-foreground text-[13px] leading-relaxed mb-7 max-w-2xl">
               An illustration of the mechanism on a {territory.shortName}, not a forecast of
               what a machine earns.
             </p>
 
-            <div className="mb-6">
-              <div className="flex items-baseline justify-between gap-3 mb-2">
-                <span className="text-[13px] font-semibold">
-                  {formatInr(example.alreadyReceivedInr)} received
-                </span>
-                <span className="text-[13px] text-muted-foreground tabular-nums">
-                  of {formatInr(example.thresholdInr)}
-                </span>
+            <div className="grid lg:grid-cols-[1fr_1.15fr] gap-8 lg:gap-10 items-start">
+              <div>
+                <div className="flex items-baseline justify-between gap-3 mb-2">
+                  <span className="text-[13px] font-semibold tabular-nums">
+                    {formatInr(example.alreadyReceivedInr)} received
+                  </span>
+                  <span className="text-[13px] text-muted-foreground tabular-nums">
+                    of {formatInr(example.thresholdInr)}
+                  </span>
+                </div>
+                {/*
+                  A plain div rather than the Progress component: this is an illustration
+                  of a stated example, not live state, so `aria-valuenow` would claim a
+                  measurement. The figures either side say it in text.
+                */}
+                <div className="h-2.5 rounded-full bg-muted overflow-hidden" role="presentation">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-accent to-primary"
+                    style={{ width: `${Math.round(example.progress * 100)}%` }}
+                  />
+                </div>
+                <p className="text-muted-foreground text-[13px] mt-2.5">
+                  Remaining recovery amount:{" "}
+                  <strong className="font-bold text-foreground tabular-nums">
+                    {formatInr(example.remainingInr)}
+                  </strong>
+                </p>
+
+                <p className="text-muted-foreground text-[13px] leading-relaxed mt-6 flex items-start gap-2">
+                  <Megaphone
+                    className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5"
+                    aria-hidden="true"
+                  />
+                  <span>
+                    Any advertising income received over the same period is paid at{" "}
+                    {FRANCHISE.advertising.franchiseeSharePct}:
+                    {FRANCHISE.advertising.mbpSharePct} and does not reduce the{" "}
+                    {formatInr(example.remainingInr)} above.
+                  </span>
+                </p>
               </div>
+
               {/*
-                A plain div rather than the Progress component: this is an illustration of
-                a stated example, not live state, so `aria-valuenow` would claim a
-                measurement. The figures either side say it in text.
+                A real table. This is tabular data — a screen reader should read
+                "Completes capital recovery, ₹5,00,000" as a row rather than as two
+                unrelated runs of text.
               */}
-              <div
-                className="h-2.5 rounded-full bg-muted overflow-hidden"
-                role="presentation"
-              >
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-accent to-primary"
-                  style={{ width: `${Math.round(example.progress * 100)}%` }}
-                />
+              <div className="overflow-x-auto -mx-1 px-1">
+                <table className="w-full text-[14px]">
+                  <caption className="sr-only">
+                    What happens to the next {formatInr(example.nextDistributionInr)} of
+                    eligible protein-business profit
+                  </caption>
+                  <thead>
+                    <tr className="border-b-2 border-foreground/10">
+                      <th scope="col" className="text-left font-bold py-2.5 pr-3">
+                        Next {formatInr(example.nextDistributionInr)} of eligible protein
+                        profit
+                      </th>
+                      <th scope="col" className="text-right font-bold py-2.5 pl-3 w-28">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border">
+                      <th scope="row" className="text-left font-normal py-3 pr-3">
+                        Completes capital recovery
+                        <span className="block text-muted-foreground text-[13px]">
+                          paid to you in full, {FRANCHISE.proteinProfitSharePct.duringRecovery}%
+                        </span>
+                      </th>
+                      <td className="text-right py-3 pl-3 tabular-nums font-semibold">
+                        {formatInr(example.completesRecoveryInr)}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <th scope="row" className="text-left font-normal py-3 pr-3">
+                        Falls into the post-recovery split
+                        <span className="block text-muted-foreground text-[13px]">
+                          shared {FRANCHISE.proteinProfitSharePct.afterRecovery}:
+                          {100 - FRANCHISE.proteinProfitSharePct.afterRecovery}
+                        </span>
+                      </th>
+                      <td className="text-right py-3 pl-3 tabular-nums font-semibold">
+                        {formatInr(example.postRecoveryPoolInr)}
+                      </td>
+                    </tr>
+                    <tr className="bg-primary/[0.06]">
+                      <th scope="row" className="text-left font-bold py-3 pl-3 pr-3 rounded-l-lg">
+                        Your share of that {formatInr(example.postRecoveryPoolInr)}
+                      </th>
+                      <td className="text-right py-3 pl-3 pr-3 tabular-nums font-display font-black text-lg rounded-r-lg">
+                        {formatInr(example.postRecoveryToFranchiseeInr)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <p className="text-muted-foreground text-[13px] mt-2">
-                Remaining recovery amount:{" "}
-                <strong className="font-bold text-foreground tabular-nums">
-                  {formatInr(example.remainingInr)}
-                </strong>
-              </p>
             </div>
-
-            {/*
-              A real table. This is tabular data — a screen reader should read "Completes
-              capital recovery, ₹5,00,000" as a row rather than as two unrelated runs of
-              text.
-            */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-[14px]">
-                <caption className="sr-only">
-                  What happens to the next {formatInr(example.nextDistributionInr)} of eligible
-                  protein-business profit
-                </caption>
-                <thead>
-                  <tr className="border-b border-border">
-                    <th scope="col" className="text-left font-bold py-2.5 pr-3">
-                      Next {formatInr(example.nextDistributionInr)} of eligible protein profit
-                    </th>
-                    <th scope="col" className="text-right font-bold py-2.5 pl-3 w-32">
-                      Amount
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-border">
-                    <th scope="row" className="text-left font-normal py-3 pr-3">
-                      Completes capital recovery
-                      <span className="block text-muted-foreground text-[13px]">
-                        paid to you in full, {FRANCHISE.proteinProfitSharePct.duringRecovery}%
-                      </span>
-                    </th>
-                    <td className="text-right py-3 pl-3 tabular-nums font-semibold">
-                      {formatInr(example.completesRecoveryInr)}
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <th scope="row" className="text-left font-normal py-3 pr-3">
-                      Falls into the post-recovery split
-                      <span className="block text-muted-foreground text-[13px]">
-                        shared {FRANCHISE.proteinProfitSharePct.afterRecovery}:
-                        {100 - FRANCHISE.proteinProfitSharePct.afterRecovery}
-                      </span>
-                    </th>
-                    <td className="text-right py-3 pl-3 tabular-nums font-semibold">
-                      {formatInr(example.postRecoveryPoolInr)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th scope="row" className="text-left font-bold py-3 pr-3">
-                      Your share of that {formatInr(example.postRecoveryPoolInr)}
-                    </th>
-                    <td className="text-right py-3 pl-3 tabular-nums font-display font-black text-lg">
-                      {formatInr(example.postRecoveryToFranchiseeInr)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 flex items-start gap-2">
-              <Megaphone
-                className="w-3.5 h-3.5 text-accent flex-shrink-0 mt-0.5"
-                aria-hidden="true"
-              />
-              <span>
-                Any advertising income received over the same period is paid at{" "}
-                {FRANCHISE.advertising.franchiseeSharePct}:{FRANCHISE.advertising.mbpSharePct}{" "}
-                and does not reduce the {formatInr(example.remainingInr)} above.
-              </span>
-            </p>
           </div>
 
-          {/* ── What comes off first ── */}
-          <div className="grid md:grid-cols-2 gap-5 mt-5">
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-[15px] mb-1.5">Gym-level profit</h3>
-              <p className="text-muted-foreground text-[13px] leading-relaxed mb-4">
+          {/*
+            Two and ten items, so one divided card rather than two: side by side the
+            two-chip card carried most of a screen of empty space, and the pairing is the
+            comparison being drawn.
+          */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] grid md:grid-cols-[0.8fr_1.2fr] divide-y md:divide-y-0 md:divide-x divide-white/10 mt-5">
+            <div className="p-6">
+              <h3 className="font-bold text-[15px] text-white mb-1.5">Gym-level profit</h3>
+              <p className="text-gray-400 text-[13px] leading-relaxed mb-4">
                 What a gym&rsquo;s own share is calculated on, under its gym agreement.
-                Arrangements run at splits such as {FRANCHISE.gymProfitSharingExamples.join(" or ")}
-                , set by MuscleBox Pro per location.
+                Arrangements run at splits such as{" "}
+                {FRANCHISE.gymProfitSharingExamples.join(" or ")}, set by MuscleBox Pro per
+                location.
               </p>
-              <ul className="space-y-1.5">
+              <ul className="flex flex-wrap gap-2">
                 {FRANCHISE.gymLevelCosts.map((cost) => (
                   <li
                     key={cost}
-                    className="flex items-start gap-2 text-[14px] text-muted-foreground"
+                    className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[13px] text-gray-200"
                   >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-[0.45rem]"
-                      aria-hidden="true"
-                    />
                     {cost}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-[15px] mb-1.5">Franchise-level profit</h3>
-              <p className="text-muted-foreground text-[13px] leading-relaxed mb-4">
+            <div className="p-6">
+              <h3 className="font-bold text-[15px] text-white mb-1.5">Franchise-level profit</h3>
+              <p className="text-gray-400 text-[13px] leading-relaxed mb-4">
                 What your share is calculated on. A longer list on purpose: franchise profit
                 uses the actual economics of running a local network.
               </p>
-              <ul className="space-y-1.5 sm:columns-2 sm:gap-6">
+              <ul className="flex flex-wrap gap-2">
                 {FRANCHISE.franchiseLevelCosts.map((cost) => (
                   <li
                     key={cost}
-                    className="flex items-start gap-2 text-[14px] text-muted-foreground break-inside-avoid"
+                    className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[13px] text-gray-200"
                   >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 mt-[0.45rem]"
-                      aria-hidden="true"
-                    />
                     {cost}
                   </li>
                 ))}
               </ul>
             </div>
+          </div>
+
+          {/* A CTA where conviction forms, rather than only at the top and the bottom. */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 mt-5">
+            <p className="text-gray-300 text-[15px] leading-snug">
+              Ready to talk about a specific market?
+            </p>
+            <Button
+              asChild
+              className="min-h-11 rounded-full px-6 font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors flex-shrink-0"
+            >
+              <a href="#apply">
+                Apply for a franchise
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </a>
+            </Button>
           </div>
         </Section>
 
         {/* ── Machines ─────────────────────────────────────────────────────── */}
         <Section id="ownership">
           <SectionHeading
+            split
             eyebrow="Machines"
             title="You operate them. We own them."
             blurb="This is the term to be clearest about before anyone pays. The franchise buys the contractual right to operate machines inside the MuscleBox Pro ecosystem and your assigned territory. It does not buy the machines, and on expiry or termination they remain ours."
           />
 
-          <div className="grid md:grid-cols-2 gap-5 mt-9">
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-lg tracking-tight mb-4">
-                <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          {/*
+            One card in two halves rather than two cards. The lists are four and six
+            items, so as separate cards the shorter one carried visible dead space, and
+            the pairing is the point being made.
+          */}
+          <div className="bg-card border border-border rounded-2xl shadow-sm grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border mt-10">
+            <div className="p-6 sm:p-7">
+              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
+                <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <CheckCircle2 className="w-4 h-4 text-primary" aria-hidden="true" />
                 </span>
                 You may
@@ -713,9 +817,9 @@ export default function Franchise() {
               </ul>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-lg tracking-tight mb-4">
-                <span className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+            <div className="p-6 sm:p-7 bg-muted/30">
+              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
+                <span className="w-7 h-7 rounded-lg bg-foreground/[0.06] flex items-center justify-center flex-shrink-0">
                   <X className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 </span>
                 You may not
@@ -734,35 +838,36 @@ export default function Franchise() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm mt-5">
-            <h3 className="flex items-center gap-2.5 font-bold text-[15px] mb-2">
-              <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Factory className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-              </span>
-              Procurement transparency
-            </h3>
-            <p className="text-muted-foreground text-[14px] leading-relaxed">
-              You get visibility into the OEM order, machine specifications, manufacturing
-              status, dispatch status and the relevant procurement documentation for your
-              allocation. Visibility is transparency about where your investment is, not a
-              transfer of ownership.
-            </p>
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm mt-5 flex flex-col sm:flex-row gap-4 sm:gap-6">
+            <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Factory className="w-4 h-4 text-primary" aria-hidden="true" />
+            </span>
+            <div>
+              <h3 className="font-bold text-[15px] mb-1.5">Procurement transparency</h3>
+              <p className="text-muted-foreground text-[14px] leading-relaxed max-w-3xl">
+                You get visibility into the OEM order, machine specifications, manufacturing
+                status, dispatch status and the relevant procurement documentation for your
+                allocation. Visibility is transparency about where your investment is, not a
+                transfer of ownership.
+              </p>
+            </div>
           </div>
         </Section>
 
         {/* ── Who does what ────────────────────────────────────────────────── */}
-        <Section id="network" tinted>
+        <Section id="network" tone="tinted">
           <SectionHeading
+            split
             eyebrow="Who does what"
             title="We run the ecosystem. You run the ground."
             blurb="MuscleBox Pro does not provide local operations or local logistics on your behalf. Your local operating costs are included in the franchise-level profit calculation, so the work you do locally is accounted for in the split rather than absorbed."
           />
 
-          <div className="grid sm:grid-cols-2 gap-4 mt-9">
+          <div className="grid sm:grid-cols-2 gap-4 mt-10">
             {whatWeRun.map((item) => (
               <div
                 key={item.title}
-                className="bg-card border border-border rounded-2xl p-5 shadow-sm"
+                className="bg-card border border-border rounded-2xl p-5 shadow-sm transition-colors hover:border-primary/30"
               >
                 <div className="flex items-center gap-2.5 mb-2">
                   <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -775,10 +880,11 @@ export default function Franchise() {
             ))}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-5 mt-5">
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-lg tracking-tight mb-4">
-                <span className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          {/* The two obligation lists are the same length, so they belong in one frame. */}
+          <div className="bg-card border border-border rounded-2xl shadow-sm grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border mt-5">
+            <div className="p-6 sm:p-7">
+              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
+                <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <Cpu className="w-4 h-4 text-primary" aria-hidden="true" />
                 </span>
                 MuscleBox Pro provides
@@ -796,9 +902,9 @@ export default function Franchise() {
               </ul>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-lg tracking-tight mb-4">
-                <span className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
+            <div className="p-6 sm:p-7">
+              <h3 className="flex items-center gap-2.5 font-display font-black uppercase text-base tracking-tight mb-4">
+                <span className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
                   <Warehouse className="w-4 h-4 text-accent" aria-hidden="true" />
                 </span>
                 You provide
@@ -817,15 +923,15 @@ export default function Franchise() {
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4 mt-5">
-            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-2.5 mb-2">
+          <div className="grid md:grid-cols-2 gap-5 mt-5">
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-2.5 mb-2.5">
                 <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Truck className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+                  <Store className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
                 </span>
                 <h3 className="font-bold text-[15px]">Finding and keeping gyms</h3>
               </div>
-              <p className="text-muted-foreground text-[13px] leading-relaxed">
+              <p className="text-muted-foreground text-[14px] leading-relaxed">
                 We pass on leads, network opportunities and the standard gym commercial
                 framework. You identify gyms, build the relationships and recommend new or
                 replacement locations. Every location needs our approval before deployment, and
@@ -833,24 +939,24 @@ export default function Franchise() {
               </p>
             </div>
 
-            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-2.5 mb-2">
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-2.5 mb-2.5">
                 <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+                  <LayoutDashboard className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
                 </span>
                 <h3 className="font-bold text-[15px]">Your dashboard</h3>
               </div>
-              <ul className="space-y-1.5 mt-3">
+              <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
+                Machine level, not territory level. Every figure your share is calculated from
+                is visible to you.
+              </p>
+              <ul className="flex flex-wrap gap-2">
                 {DASHBOARD_VISIBILITY.map((item) => (
                   <li
                     key={item}
-                    className="flex items-start gap-2 text-[13px] text-muted-foreground"
+                    className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px]"
                   >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-[0.4rem]"
-                      aria-hidden="true"
-                    />
-                    <span className="leading-snug">{item}</span>
+                    {item}
                   </li>
                 ))}
               </ul>
@@ -861,12 +967,13 @@ export default function Franchise() {
         {/* ── Territory & growth ───────────────────────────────────────────── */}
         <Section id="growth">
           <SectionHeading
+            split
             eyebrow="Territory & growth"
             title="Exclusivity you keep by earning it"
             blurb="Territorial exclusivity is real, and it is conditional. A franchisee cannot pay for a city, leave most of it undeveloped, and block MuscleBox Pro from expanding into it."
           />
 
-          <div className="grid md:grid-cols-2 gap-5 mt-9">
+          <div className="grid md:grid-cols-2 gap-5 mt-10">
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
               <h3 className="flex items-center gap-2.5 font-bold text-[15px] mb-4">
                 <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -885,7 +992,7 @@ export default function Franchise() {
                   </li>
                 ))}
               </ul>
-              <p className="text-muted-foreground text-[13px] leading-relaxed mt-4">
+              <p className="text-muted-foreground text-[13px] leading-relaxed mt-4 pt-4 border-t border-border">
                 A {territory.shortName} may be required to deploy all{" "}
                 {territory.initialMachines} machines within an agreed period, and a{" "}
                 {city.shortName} to deploy its {city.initialMachines} progressively. Missing
@@ -894,28 +1001,24 @@ export default function Franchise() {
             </div>
 
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-              <h3 className="flex items-center gap-2.5 font-bold text-[15px] mb-4">
-                <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+              <h3 className="flex items-center gap-2.5 font-bold text-[15px] mb-2.5">
+                <span className="w-7 h-7 rounded-lg bg-foreground/[0.06] flex items-center justify-center flex-shrink-0">
                   <Lock className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                 </span>
                 Reserved accounts
               </h3>
-              <p className="text-muted-foreground text-[13px] leading-relaxed mb-4">
+              <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
                 Some opportunities sit outside territorial exclusivity and are handled directly
                 by MuscleBox Pro, or under a separately agreed arrangement. Better said now
                 than discovered later:
               </p>
-              <ul className="space-y-2">
+              <ul className="flex flex-wrap gap-2">
                 {RESERVED_ACCOUNTS.map((item) => (
                   <li
                     key={item}
-                    className="flex items-start gap-2 text-[14px] text-muted-foreground"
+                    className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px] text-muted-foreground"
                   >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 flex-shrink-0 mt-[0.45rem]"
-                      aria-hidden="true"
-                    />
-                    <span className="leading-snug">{item}</span>
+                    {item}
                   </li>
                 ))}
               </ul>
@@ -923,70 +1026,131 @@ export default function Franchise() {
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
-            <h3 className="font-display font-black uppercase text-lg tracking-tight mb-1.5">
-              Adding machines
-            </h3>
-            <p className="text-muted-foreground text-[14px] leading-relaxed mb-5">
-              Machine networks expand in blocks, subject to approval based on existing machine
-              performance, compliance, territory capacity, the availability of suitable gyms
-              and further investment.
-            </p>
+            <div className="grid lg:grid-cols-[1fr_1.1fr] gap-7 lg:gap-10">
+              <div>
+                <h3 className="font-display font-black uppercase text-lg tracking-tight mb-2">
+                  Adding machines
+                </h3>
+                <p className="text-muted-foreground text-[14px] leading-relaxed mb-5">
+                  Machine networks expand in blocks, subject to approval based on existing
+                  machine performance, compliance, territory capacity, the availability of
+                  suitable gyms and further investment.
+                </p>
 
-            {/* The expansion example from §34, as a row rather than the doc's vertical arrows. */}
-            <div className="flex flex-wrap items-center gap-3 text-[14px]">
-              <span className="rounded-xl border border-border bg-muted/40 px-4 py-2.5 font-semibold tabular-nums">
-                {territory.initialMachines} machines
-              </span>
-              <span className="text-muted-foreground font-bold" aria-hidden="true">
-                +
-              </span>
-              <span className="rounded-xl border border-primary/25 bg-primary/[0.06] px-4 py-2.5 font-semibold tabular-nums">
-                {territory.initialMachines} more
-              </span>
-              <ArrowRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-              <span className="rounded-xl border border-border bg-muted/40 px-4 py-2.5 font-semibold tabular-nums">
-                {territory.initialMachines * 2} machines, same territory
-              </span>
+                {/* The expansion example from §34, as a row rather than the doc's arrows. */}
+                <div className="flex flex-wrap items-center gap-2.5 text-[14px]">
+                  <span className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 font-semibold tabular-nums">
+                    {territory.initialMachines} machines
+                  </span>
+                  <span className="text-muted-foreground font-bold" aria-hidden="true">
+                    +
+                  </span>
+                  <span className="rounded-xl border border-primary/25 bg-primary/[0.06] px-3.5 py-2.5 font-semibold tabular-nums">
+                    {territory.initialMachines} more
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                  <span className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 font-semibold tabular-nums">
+                    {territory.initialMachines * 2} machines
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-[13px] mt-2.5">
+                  in the same territory, not a larger one
+                </p>
+              </div>
+
+              {/*
+                The two misreadings, as their own labelled notes. Buried in a paragraph
+                they were the two sentences a prospective franchisee most needed to see
+                and least likely to reach.
+              */}
+              <ul className="space-y-3 lg:border-l lg:border-border lg:pl-10">
+                <li className="rounded-xl bg-muted/40 border border-border p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                    What this does not mean
+                  </p>
+                  <p className="text-[14px] leading-relaxed">
+                    The price of additional machines is set at the time of expansion and is not
+                    fixed at your initial per-machine investment, because OEM pricing,
+                    manufacturing, technology, logistics and taxes move.
+                  </p>
+                </li>
+                <li className="rounded-xl bg-muted/40 border border-border p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                    Or this
+                  </p>
+                  <p className="text-[14px] leading-relaxed">
+                    Additional machines do not by themselves enlarge your territory. Territory
+                    expansion is approved separately, though a franchisee who consistently
+                    meets its requirements may be offered new capacity before it is offered to
+                    anyone else.
+                  </p>
+                </li>
+              </ul>
             </div>
-
-            <p className="text-muted-foreground text-[13px] leading-relaxed mt-5">
-              Two things this does not mean. The price of additional machines is set at the time
-              of expansion and is not fixed at your initial per-machine investment, because OEM
-              pricing, manufacturing, technology, logistics and taxes move. And additional
-              machines do not by themselves enlarge your territory. Territory expansion is
-              approved separately, though a franchisee who consistently meets its requirements
-              may be offered new capacity before it is offered to anyone else.
-            </p>
           </div>
         </Section>
 
         {/* ── How it works ─────────────────────────────────────────────────── */}
-        <Section id="journey" tinted>
+        <Section id="journey" tone="tinted">
           <SectionHeading
+            split
             eyebrow="How it works"
             title="From application to long-term partnership"
-            blurb="Eleven steps, of which the first is a conversation about whether your market has room for a MuscleBox Pro network at all."
+            blurb="Eleven steps in four stages, of which the first is a conversation about whether your market has room for a MuscleBox Pro network at all."
           />
 
-          <ol className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-9">
-            {FRANCHISE_JOURNEY.map((step, i) => (
+          {/*
+            Four stages of grouped rows, not eleven cards. As a card grid the steps were
+            equally weighted and the last row was ragged, which read as a wall rather
+            than as a process with points where the commitment changes.
+          */}
+          <ol className="space-y-4 mt-10">
+            {journey.map((phase, phaseIndex) => (
               <li
-                key={step.title}
-                className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col"
+                key={phase.id}
+                className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden"
               >
-                {/*
-                  White on `--foreground` (15:1), not on `--primary` (3.25:1 at 12px).
-                  `aria-hidden` on the digit: the `ol` already carries the order, and a
-                  reader that announced both would say "item 2 … 2 Market evaluation".
-                */}
-                <span
-                  className="w-7 h-7 rounded-full bg-foreground text-white font-display font-black text-xs flex items-center justify-center flex-shrink-0 mb-3"
-                  aria-hidden="true"
-                >
-                  {i + 1}
-                </span>
-                <h3 className="font-bold text-[15px] mb-1.5">{step.title}</h3>
-                <p className="text-muted-foreground text-[13px] leading-relaxed">{step.body}</p>
+                <div className="grid lg:grid-cols-[15rem_1fr]">
+                  <div className="flex items-center gap-3 px-6 py-4 lg:py-6 bg-muted/40 border-b lg:border-b-0 lg:border-r border-border">
+                    <span
+                      className="font-display font-black text-2xl leading-none text-muted-foreground/50 tabular-nums"
+                      aria-hidden="true"
+                    >
+                      {String(phaseIndex + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="font-display font-black uppercase text-base tracking-tight leading-tight">
+                      {phase.title}
+                    </h3>
+                  </div>
+
+                  <ol className="divide-y divide-border">
+                    {phase.steps.map((step) => (
+                      <li
+                        key={step.title}
+                        className="grid sm:grid-cols-[13rem_1fr] gap-x-6 gap-y-1 px-6 py-4"
+                      >
+                        <div className="flex items-baseline gap-2.5">
+                          {/*
+                            White on `--foreground` (15:1), not on `--primary` (3.25:1 at
+                            11px). `aria-hidden` on the digit: the `ol` already carries
+                            the order, and a reader announcing both would say
+                            "item 2 … 2 Market evaluation".
+                          */}
+                          <span
+                            className="w-6 h-6 rounded-full bg-foreground text-white font-display font-black text-[11px] flex items-center justify-center flex-shrink-0 tabular-nums"
+                            aria-hidden="true"
+                          >
+                            {step.position}
+                          </span>
+                          <h4 className="font-bold text-[15px] leading-snug">{step.title}</h4>
+                        </div>
+                        <p className="text-muted-foreground text-[14px] leading-relaxed sm:pt-0.5">
+                          {step.body}
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               </li>
             ))}
           </ol>
@@ -1002,6 +1166,10 @@ export default function Franchise() {
           <div className="grid lg:grid-cols-[17rem_1fr] gap-8 lg:gap-14">
             <div className="lg:sticky lg:top-32 lg:self-start">
               <SectionHeading eyebrow="Questions" title="Frequently asked" />
+              <p className="text-muted-foreground text-[13px] leading-relaxed mt-4">
+                {FRANCHISE_FAQ.length} answers on the terms people ask about most. Anything
+                else, ask in the application.
+              </p>
             </div>
 
             {/*
@@ -1014,12 +1182,12 @@ export default function Franchise() {
                 <AccordionItem
                   key={faq.question}
                   value={`faq-${i}`}
-                  className="border border-border rounded-2xl bg-card px-4 sm:px-5"
+                  className="border border-border rounded-2xl bg-card px-4 sm:px-5 transition-colors hover:border-primary/30"
                 >
                   <AccordionTrigger className="min-h-[3.5rem] text-left text-[15px] font-bold hover:no-underline cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed max-w-[32rem]">
+                  <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed max-w-[34rem]">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
@@ -1045,6 +1213,15 @@ export default function Franchise() {
         testId="button-sticky-apply"
       />
     </div>
+  );
+}
+
+/** The label above a block inside a card. `h4`, since every one of these sits under an `h3`. */
+function CardLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mt-6 mb-3">
+      {children}
+    </h4>
   );
 }
 
@@ -1122,7 +1299,7 @@ function ApplicationSection({
     <section
       id="apply"
       ref={ref}
-      className="scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 bg-muted/40 border-t border-border"
+      className="scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20 bg-muted/40 border-t border-border"
     >
       <div className="max-w-5xl mx-auto">
         <div className="bg-card rounded-3xl border border-border shadow-lg overflow-hidden grid lg:grid-cols-[22rem_1fr]">

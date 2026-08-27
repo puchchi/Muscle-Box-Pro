@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import {
   FileText,
   IndianRupee,
   Info,
+  Landmark,
   Megaphone,
   RefreshCw,
   ShieldCheck,
@@ -48,6 +49,13 @@ import {
   computePeriodSettlement,
   type PeriodSettlement,
 } from "@shared/settlement/compute";
+import {
+  GYM_PAYOUT_ACCOUNT_QUERY_KEY,
+  fetchPayoutAccount,
+} from "@/lib/gymPayoutAccountApi";
+import PayoutAccountCard from "./PayoutAccountCard";
+import { Card, Row, RowGroup, type CardProps } from "./portalCards";
+import { formatIstDate, formatIstDateTime } from "./istDates";
 
 /**
  * The gym's portal.
@@ -77,18 +85,21 @@ import {
  *    is the string "₹NaN" — so a bad response has to fail into the error state, not
  *    into a card.
  *
- * 5. **An absent section says so; it never renders as zero.** `GET /gym/portal` ships
- *    partial — cups, advertising revenue, electricity and settled statements are four
- *    separate feeds and none of them exists yet. Each is a `PortalSection`, and where one
- *    is absent the card keeps its heading and says the figure is not there. ₹0 in those
- *    cards is the one output this file must not produce: a gym reading ₹0 settled concludes
- *    it earned nothing, and will believe that number long before it suspects the page. The
- *    card is kept rather than hidden so a gym also learns the figure is coming.
+ * 5. **Zero only where zero is a fact.** `GET /gym/portal` ships partial — cups,
+ *    advertising revenue, electricity and settled statements are four separate feeds and
+ *    none of them exists yet. Each is a `PortalSection`, and where one is absent the card
+ *    keeps its heading and `UnavailableCard` decides what may go in the numeral slot:
  *
- *    The *reassurance* that goes with it — that settled statements are unaffected — is
- *    stated once, by `ReportingNotice`, rather than in each of the six cards that can be
- *    absent at the same time. Six copies of the same paragraph is how a working dashboard
- *    comes to look like a broken one.
+ *      - Nothing has been installed, or the feed reports no data for this gym: **0**. No
+ *        cup can have been sold, so zero is the true figure and not a placeholder.
+ *      - The machine is trading and the feed is unbuilt: **a dash**. ₹0 here is the one
+ *        output this file must not produce, because a gym reading ₹0 concludes it earned
+ *        nothing and will believe that number long before it suspects the page.
+ *
+ *    The reassurance that goes with an absence — that settled statements are unaffected —
+ *    is one line from `ReportingNotice` for the whole page, not a paragraph in each of the
+ *    six cards that can be absent at once. Six copies of the same apology is how a working
+ *    dashboard comes to look like a broken one.
  *
  * The data source is still a fixture until the reporting endpoint exists (§15 of
  * docs/gym-onboarding.md), but it is reached asynchronously and validated, so the
@@ -106,6 +117,12 @@ import {
  * up perhaps twice a year, and while they sat below the figures they took up half the
  * screen every day to do it. Only the selected panel is mounted, so the reference cards
  * are genuinely not rendered rather than merely scrolled past.
+ *
+ * The one thing on the account tab that is not a record is `PayoutAccountCard`, which
+ * writes. Being a tab away is right for a bank account a gym changes when it changes banks
+ * and wrong for a gym that has never given us one — so `PayoutAccountPrompt` says so on the
+ * tab that is open by default, and its button opens the form rather than merely pointing at
+ * the tab that holds it.
  */
 
 /**
@@ -163,50 +180,16 @@ const MACHINE_STATUS_TONE: Record<MachineStatus, string> = {
 };
 
 /**
- * An ISO timestamp as a date a gym owner in India reads.
+ * Has this gym's machine ever been able to sell a cup?
  *
- * **Not `formatAgreementDate`, and the difference matters.** That one formats in UTC
- * because its output goes inside the hashed agreement text, where the same record must
- * render identically on every machine. Feed it a timestamp and a service at 01:00 IST
- * prints as the previous day — correct for a hash, wrong for a person who watched the
- * engineer leave.
- *
- * `installationDate` still goes through `formatAgreementDate`: it is a date string with
- * no time in it, so there is no timezone to get wrong.
+ * It decides whether an absent figure may be shown as 0. Before installation every trading
+ * figure is genuinely zero, whatever the state of our feeds, so a dashboard of zeros is
+ * accurate and reads as one — while for a trading machine the same zero would be a lie.
+ * `allocated` is the only status that precedes installation, and the date is checked too
+ * because a status can be moved on before the engineer's visit is recorded.
  */
-function formatIstDate(isoTimestamp: string): string {
-  const date = new Date(isoTimestamp);
-  if (Number.isNaN(date.getTime())) return isoTimestamp;
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    timeZone: "Asia/Kolkata",
-  }).format(date);
-}
-
-/**
- * The same instant with its time of day, for the one place that needs the minute.
- *
- * A date alone cannot answer the only question a freshness stamp is asked — "is this from
- * before or after I looked this morning?" — so the header carries the clock and says which
- * one: IST, spelled out, because a partner reading "12:00" has no way to know whose noon
- * it is.
- */
-function formatIstDateTime(isoTimestamp: string): string {
-  const date = new Date(isoTimestamp);
-  if (Number.isNaN(date.getTime())) return isoTimestamp;
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    // `hourCycle`, not `hour12`. The two are not synonyms: `hour12: true` selects the h11
-    // cycle in this locale, which numbers noon as 00 and printed midday as "00:00 pm".
-    hourCycle: "h12",
-    timeZone: "Asia/Kolkata",
-  }).format(date);
+function neverInstalled(machine: GymPortalSnapshot["machine"]): boolean {
+  return machine.status === "allocated" || machine.installationDate === null;
 }
 
 export default function GymDashboard() {
@@ -243,6 +226,8 @@ export default function GymDashboard() {
     // there for whoever signs in next while the refetch is in flight.
     await signOutOfPortal();
     queryClient.removeQueries({ queryKey: GYM_PORTAL_QUERY_KEY });
+    // For the same reason, and this one names a bank account rather than a figure.
+    queryClient.removeQueries({ queryKey: GYM_PAYOUT_ACCOUNT_QUERY_KEY });
     queryClient.removeQueries({ queryKey: GYM_SESSION_QUERY_KEY });
     router.replace("/gym/login");
   }
@@ -330,7 +315,33 @@ export default function GymDashboard() {
 function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
   const { terms, sales, adRevenue, electricity, statements } = snapshot;
 
-  // One notice for the whole page, so `UnavailableCard` can stay a single short line.
+  // Whether an absent figure may read 0 — see `neverInstalled`.
+  const preInstall = neverInstalled(snapshot.machine);
+
+  /**
+   * Controlled, so `PayoutAccountPrompt` can bring the tab that holds the form into view
+   * and open it in the same click. `defaultValue` cannot be told to change.
+   */
+  const [tab, setTab] = useState("figures");
+  const [addingPayoutAccount, setAddingPayoutAccount] = useState(false);
+
+  /**
+   * The same query the card runs, sharing one cache entry, and here only to decide whether
+   * to prompt for an account at all.
+   *
+   * A gym with no account on file has to be told on the tab it actually looks at: the card
+   * is one tab away, and a bank account nobody is asked for is a payout that cannot be
+   * transferred on settlement day.
+   */
+  const payoutAccount = useQuery({
+    queryKey: GYM_PAYOUT_ACCOUNT_QUERY_KEY,
+    queryFn: fetchPayoutAccount,
+  });
+  // Only on a settled answer. Prompting while the request is in flight would flash a banner
+  // at every gym that has one, and prompting on a failure would claim something we do not know.
+  const needsPayoutAccount = payoutAccount.isSuccess && payoutAccount.data === null;
+
+  // One notice for the whole page, so `UnavailableCard` can stay a caption.
   const anythingUnbuilt =
     (!sales.available && sales.reason === "not_implemented") ||
     (!adRevenue.available && adRevenue.reason === "not_implemented") ||
@@ -362,7 +373,16 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
 
       {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
 
-      <Tabs defaultValue="figures" className="mt-8">
+      {needsPayoutAccount && (
+        <PayoutAccountPrompt
+          onAdd={() => {
+            setTab("account");
+            setAddingPayoutAccount(true);
+          }}
+        />
+      )}
+
+      <Tabs value={tab} onValueChange={setTab} className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <TabsList className="h-auto rounded-xl border border-border bg-card p-1 text-muted-foreground">
             <TabsTrigger
@@ -396,7 +416,7 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
                 statements={statements}
               />
             ) : (
-              <TradingCardsUnavailable reason={sales.reason} />
+              <TradingCardsUnavailable reason={sales.reason} preInstall={preInstall} />
             )}
 
             {adRevenue.available ? (
@@ -407,7 +427,8 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
                 label="Advertising share"
                 testId="card-advertising"
                 reason={adRevenue.reason}
-                what="Your share of screen advertising"
+                preInstall={preInstall}
+                zero={formatInr(0)}
               />
             )}
 
@@ -419,31 +440,33 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
                 label="Electricity reimbursement"
                 testId="card-electricity"
                 reason={electricity.reason}
-                what="Your electricity reimbursement"
+                preInstall={preInstall}
+                zero={formatInr(0)}
               />
             )}
           </div>
 
-          {anythingUnbuilt && <ReportingNotice />}
+          {anythingUnbuilt && <ReportingNotice preInstall={preInstall} />}
 
           {sales.available && (
             <p className="mt-6 max-w-[70ch] text-[13px] leading-relaxed text-muted-foreground">
-              Figures shown here before the {terms.settlementDaysAfterMonthEnd}th of a month are
-              provisional. Your monthly statement is the settled amount, issued within{" "}
-              {terms.settlementDaysAfterMonthEnd} days of month-end. Costs are shown as a single
-              total because your share is calculated on net profit, not on our ingredient pricing.
+              Provisional until your monthly statement, which is the settled amount and is issued
+              within {terms.settlementDaysAfterMonthEnd} days of month-end. Costs are one total
+              because your share is calculated on net profit.
             </p>
           )}
         </TabsContent>
 
         <TabsContent value="account" className="mt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <MachineCard machine={snapshot.machine} />
-            <StatementsCard
-              statements={statements}
-              agreement={snapshot.agreement}
-              wide={snapshot.deposit.status !== "paid"}
+            {/* First, because it is the only card here a gym ever has to act on. The other
+                three are a record it reads. */}
+            <PayoutAccountCard
+              formOpen={addingPayoutAccount}
+              onFormOpenChange={setAddingPayoutAccount}
             />
+            <MachineCard machine={snapshot.machine} />
+            <StatementsCard statements={statements} agreement={snapshot.agreement} />
             {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
           </div>
         </TabsContent>
@@ -545,36 +568,39 @@ function TradingCards({
 }
 
 /** The same four cards, with nothing to put in them. */
-function TradingCardsUnavailable({ reason }: { reason: PortalAbsence }) {
+function TradingCardsUnavailable({
+  reason,
+  preInstall,
+}: {
+  reason: PortalAbsence;
+  preInstall: boolean;
+}) {
+  const shared = { reason, preInstall };
   return (
     <>
-      <UnavailableCard
-        icon={BarChart3}
-        label="Cups sold"
-        testId="card-cups"
-        reason={reason}
-        what="Your cup count"
-      />
+      {/* A count, not a currency: `zero` carries the unit so the empty card is the same
+          shape as the one that replaces it. */}
+      <UnavailableCard icon={BarChart3} label="Cups sold" testId="card-cups" zero={count(0)} {...shared} />
       <UnavailableCard
         icon={IndianRupee}
         label="Revenue collected"
         testId="card-revenue"
-        reason={reason}
-        what="Revenue from your machine"
+        zero={formatInr(0)}
+        {...shared}
       />
       <UnavailableCard
         icon={TrendingUp}
         label="Net profit"
         testId="card-profit"
-        reason={reason}
-        what="Net profit on your machine"
+        zero={formatInr(0)}
+        {...shared}
       />
       <UnavailableCard
         icon={Wallet}
         label="Your payout"
         testId="card-payout"
-        reason={reason}
-        what="Your provisional payout"
+        zero={formatInr(0)}
+        {...shared}
       />
     </>
   );
@@ -678,20 +704,23 @@ function MachineStatusPill({ status }: { status: MachineStatus }) {
 /**
  * Said once for the page, not once per card.
  *
- * Four feeds can be absent at the same time, and six of the nine cards then carry the
- * same three-line apology. That is the state a real gym is in today, so it is the state
- * the layout has to look right in.
+ * Four feeds can be absent at the same time, and six of the nine cards would otherwise
+ * carry the same apology. That is the state a real gym is in today, so it is the state the
+ * layout has to look right in.
+ *
+ * Before installation the honest reason the cards read zero is that there is no machine
+ * yet, not that we have not built the reporting — both are true, and only one of them is
+ * the gym's answer. Nothing is said about settled statements in that case because a gym
+ * with no machine is owed none.
  */
-function ReportingNotice() {
+function ReportingNotice({ preInstall }: { preInstall: boolean }) {
   return (
     <p className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
       <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/70" aria-hidden="true" />
-      {/* Capped, not full width. The panel spans the grid above it, and a line of text
-          that wide runs past 200 characters — twice what an eye tracks back from. */}
       <span className="max-w-[80ch]">
-        Some figures above are not reported on this page yet. We are still building them.
-        Nothing you are owed depends on it: your settled statements are issued from our records
-        and emailed to you as usual.
+        {preInstall
+          ? "Your figures start on the day your machine is installed."
+          : "Some figures are not reported here yet. Your settled statements are unaffected."}
       </span>
     </p>
   );
@@ -779,9 +808,8 @@ function PortalError({
         We can't show your figures right now
       </p>
       <p className="mt-2 text-sm leading-relaxed text-amber-100/70">
-        This is a problem at our end, not with your machine or your account. It is still trading
-        and every cup is still counted. Nothing you are owed depends on it: your settled
-        statements are issued from our records, not from this page.
+        This is a problem at our end, not with your machine or your account. Every cup is still
+        counted, and your settled statements are issued from our records rather than from this page.
       </p>
       <Button
         type="button"
@@ -798,37 +826,6 @@ function PortalError({
 }
 
 // ── Cards ───────────────────────────────────────────────────────────────────
-
-type CardProps = {
-  icon: typeof Cpu;
-  label: string;
-  testId: string;
-  className?: string;
-  children: React.ReactNode;
-};
-
-/**
- * The detail cards: machine, statements, deposit, advertising, electricity.
- *
- * Icon and heading on one line, because these are read rather than scanned. The figure
- * cards do the opposite — see `MetricCard`.
- */
-function Card({ icon: Icon, label, testId, className, children }: CardProps) {
-  return (
-    <div
-      className={`flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 ${className ?? ""}`}
-      data-testid={testId}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </span>
-        <h3 className="text-sm font-semibold text-foreground">{label}</h3>
-      </div>
-      {children}
-    </div>
-  );
-}
 
 /**
  * One of the four figures a gym signs in for.
@@ -893,10 +890,22 @@ function MetricCard({
  * for nothing else, on the one figure that must not look like a warning. The payout card
  * is distinguished by its frame instead.
  */
-function Figure({ value, caption }: { value: string; caption: string }) {
+function Figure({
+  value,
+  caption,
+  muted = false,
+}: {
+  value: string;
+  caption: string;
+  muted?: boolean;
+}) {
   return (
     <div>
-      <p className="font-display text-[26px] font-black leading-none tracking-tight tabular-nums text-foreground">
+      <p
+        className={`font-display text-[26px] font-black leading-none tracking-tight tabular-nums ${
+          muted ? "text-muted-foreground/60" : "text-foreground"
+        }`}
+      >
         {value}
       </p>
       <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{caption}</p>
@@ -909,62 +918,49 @@ function Figure({ value, caption }: { value: string; caption: string }) {
  *
  * Rendered in place of the real card rather than instead of nothing, and with its heading
  * and icon intact, because two things have to be true at once: the gym must not read a
- * figure that is not there, and it should still learn that the figure exists and is
- * coming. A missing card teaches nothing; a card reading ₹0 teaches something false.
+ * figure that is not there, and it should still learn that the figure exists and is coming.
+ * A missing card teaches nothing.
  *
- * One line, not a paragraph. `ReportingNotice` carries the rest for the whole page, which
- * is what keeps six of these from reading as six separate faults.
+ * What goes in the numeral slot is the whole judgement here, and it is not a matter of
+ * taste (see rule 5 at the top of the file). Zero when no cup can have been sold — nothing
+ * installed, or a live feed reporting none — because then zero is the figure. A dash when
+ * the machine is trading and we simply are not reading it yet, because ₹0 beside a working
+ * machine is a number a gym will act on.
  *
- * `what` is the subject of the sentence, capitalised — "Your cup count", not "cups".
- * Passed in rather than derived from `label` because the heading is a noun phrase for a
- * grid ("Cups sold") and this is one for a sentence.
+ * The caption does the explaining in three or four words. `ReportingNotice` carries the
+ * reassurance once for the page, which is what keeps six of these from reading as six
+ * separate faults.
  */
 function UnavailableCard({
   icon,
   label,
   testId,
   reason,
-  what,
+  preInstall,
+  zero,
 }: {
   icon: typeof Cpu;
   label: string;
   testId: string;
   reason: PortalAbsence;
-  what: string;
+  preInstall: boolean;
+  zero: string;
 }) {
+  const trueZero = preInstall || reason === "no_data_yet";
+
   return (
     <MetricCard icon={icon} label={label} testId={testId}>
       <div data-testid={`${testId}-unavailable`}>
-        {/* Deliberately not styled as a `Figure`. The headline slot on every other card
-            holds a number, and putting words in the same weight and size is how a
-            skim-read turns "not available" into a value. */}
-        <p className="inline-flex items-center gap-2 rounded-lg bg-secondary/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
-          Not available yet
-        </p>
-        <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
-          {reason === "no_data_yet" ? (
-            <>{what} appears here once your machine is installed and trading.</>
-          ) : (
-            <>{what} is not reported on this page yet.</>
-          )}
-        </p>
+        {trueZero ? (
+          <Figure value={zero} caption={preInstall ? "awaiting installation" : "none this month"} />
+        ) : (
+          // Muted, because at full contrast in the numeral slot a dash reads as a value
+          // that has been struck out. It is in the slot at all so the card keeps the
+          // height of its neighbours.
+          <Figure value="—" caption="not reported here yet" muted />
+        )}
       </div>
     </MetricCard>
-  );
-}
-
-/** The detail lines under a figure, hairline-separated. */
-function RowGroup({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <dl className={`divide-y divide-border/70 ${className ?? ""}`}>{children}</dl>;
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3 py-2 text-[13px] first:pt-0 last:pb-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-semibold tabular-nums text-foreground">{value}</dd>
-    </div>
   );
 }
 
@@ -1025,8 +1021,8 @@ function CupsCard({
           // way in — the gym would think the step-up is a year off when it is a month.
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground/80">
             {milestone.binding === "netProfit"
-              ? `Tracking ${formatInr(terms.milestoneNetProfitInr)} of cumulative net profit. At your margin that arrives before ${count(terms.milestoneCups)} cups.`
-              : `Tracking ${count(terms.milestoneCups)} cups. At your margin that arrives before ${formatInr(terms.milestoneNetProfitInr)} of net profit.`}
+              ? `Tracking ${formatInr(terms.milestoneNetProfitInr)} of net profit, which at your margin comes before ${count(terms.milestoneCups)} cups.`
+              : `Tracking ${count(terms.milestoneCups)} cups, which at your margin comes before ${formatInr(terms.milestoneNetProfitInr)} of net profit.`}
           </p>
         )}
       </div>
@@ -1067,10 +1063,9 @@ function ProfitCard({ settlement }: { settlement: PeriodSettlement }) {
       </RowGroup>
       {shake.split && (
         <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground" data-testid="split-note">
-          Your milestone fell inside this month, so two rates apply:{" "}
-          {shake.tranches[0].gymSharePct}% on the first {count(shake.tranches[0].paidCups)} cups and{" "}
-          {shake.tranches[1].gymSharePct}% on the rest, an effective{" "}
-          {shake.effectiveGymSharePct}%.
+          Your milestone fell inside this month: {shake.tranches[0].gymSharePct}% on the first{" "}
+          {count(shake.tranches[0].paidCups)} cups, {shake.tranches[1].gymSharePct}% on the rest, an
+          effective {shake.effectiveGymSharePct}%.
         </p>
       )}
     </MetricCard>
@@ -1106,15 +1101,14 @@ function PayoutCard({
           className="text-[13px] leading-relaxed text-muted-foreground"
           data-testid="payout-excludes-advertising"
         >
-          This is your shake profit share only. Your advertising share is not reported here yet. It
-          is settled with your monthly statement either way.
+          Shake profit only. Your advertising share is settled with your statement.
         </p>
       )}
       <div className="mt-auto border-t border-border/70 pt-2">
         {!statements.available ? (
           // Not "your first statement is issued after your first full month": that would
           // be a claim about this gym's history, and we do not have it.
-          <p className="text-[13px] text-muted-foreground">Settled months are not listed here yet.</p>
+          <p className="text-[13px] text-muted-foreground">Settled months are not listed yet.</p>
         ) : lastSettled ? (
           <RowGroup>
             <Row
@@ -1158,22 +1152,20 @@ function ElectricityCard({
       </RowGroup>
       {electricity.floorApplied && (
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          That is the {formatInr(terms.electricityInrPerBlock)} minimum for the review period,
-          which you are paid whatever the cup count.
+          The {formatInr(terms.electricityInrPerBlock)} minimum, paid whatever the cup count.
         </p>
       )}
       {/* Cups to the next *increase*, not to the next block boundary. Under the floor
           the two differ, and "600 more cups earns another ₹1,000" would be false. */}
       {electricity.nextIncreaseAtCups > 0 && (
         <p className="text-[13px] leading-relaxed text-muted-foreground" data-testid="electricity-next">
-          {count(electricity.cupsToNextIncrease)} more cups in this review period takes it to{" "}
+          {count(electricity.cupsToNextIncrease)} more cups takes it to{" "}
           {formatInr(electricity.earnedInr + terms.electricityInrPerBlock)}.
         </p>
       )}
       {electricity.cupsInIncompleteBlock > 0 && (
         <p className="text-xs leading-relaxed text-muted-foreground/80">
-          Part-blocks are not carried into the next review period, which ends{" "}
-          {formatAgreementDate(reviewPeriod.endsOn)}.
+          Part-blocks do not carry past {formatAgreementDate(reviewPeriod.endsOn)}.
         </p>
       )}
     </MetricCard>
@@ -1212,8 +1204,8 @@ function AdvertisingCard({
       {/* §9.4. Stated on the card rather than in a tooltip, because a gym that has
           just stepped up to 50% on shakes will otherwise read this as an error. */}
       <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
-        Advertising is shared {100 - advertising.gymSharePct}:{advertising.gymSharePct} for the
-        whole term. It does not move with your shake profit share.
+        Shared {100 - advertising.gymSharePct}:{advertising.gymSharePct} for the whole term,
+        whatever your shake profit share.
       </p>
     </MetricCard>
   );
@@ -1236,8 +1228,7 @@ function MachineCard({ machine }: { machine: GymPortalSnapshot["machine"] }) {
         />
       </RowGroup>
       <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
-        Servicing, restocking and repairs are ours. Anything wrong with the machine is a call to
-        us, at no cost to you.
+        Servicing, restocking and repairs are ours, at no cost to you.
       </p>
     </Card>
   );
@@ -1250,30 +1241,20 @@ function MachineCard({ machine }: { machine: GymPortalSnapshot["machine"] }) {
  * statements come from a pipeline that does not exist yet. Keeping them together means a
  * gym with no statements can still see and check its signed agreement, which is the one
  * thing on this screen it may actually need.
- *
- * `wide` fills the column the deposit card would have taken. A deferred deposit moves
- * that card out to a banner, and without this the row below ends in a gap.
  */
 function StatementsCard({
   statements,
   agreement,
-  wide,
 }: {
   statements: GymPortalSnapshot["statements"];
   agreement: GymPortalSnapshot["agreement"];
-  wide: boolean;
 }) {
   return (
-    <Card
-      icon={FileText}
-      label="Statements & agreement"
-      testId="card-statements"
-      className={wide ? "lg:col-span-2" : undefined}
-    >
+    <Card icon={FileText} label="Statements & agreement" testId="card-statements">
       {!statements.available ? (
         <p className="text-[13px] leading-relaxed text-muted-foreground" data-testid="statements-unavailable">
           {statements.reason === "no_data_yet"
-            ? "Your first statement appears here after your first full month of trading."
+            ? "Your first statement appears after your first full month of trading."
             : "Settled statements are not listed here yet."}
         </p>
       ) : statements.data.length === 0 ? (
@@ -1351,8 +1332,8 @@ function DepositCard({ snapshot }: { snapshot: GymPortalSnapshot }) {
         </RowGroup>
       )}
       <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
-        Refundable within 30 days of the machine being returned in working order, less any amounts
-        properly due.
+        Refunded within 30 days of the machine being returned in working order, less any amounts
+        due.
       </p>
     </Card>
   );
@@ -1379,8 +1360,7 @@ function DepositBanner({ snapshot }: { snapshot: GymPortalSnapshot }) {
             Security deposit of {formatInr(snapshot.terms.securityDepositInr)} is still outstanding
           </p>
           <p className="mt-1 text-xs leading-relaxed text-amber-100/70">
-            Your machine is running and your share is accruing. The deposit is refundable and is due
-            under clause 5.1 of your agreement.
+            Refundable, and due under clause 5.1. Your share keeps accruing meanwhile.
           </p>
         </div>
       </div>
@@ -1393,6 +1373,41 @@ function DepositBanner({ snapshot }: { snapshot: GymPortalSnapshot }) {
           Pay the deposit
         </a>
       )}
+    </div>
+  );
+}
+
+/**
+ * No bank account on file, said on the tab the gym is actually looking at.
+ *
+ * The card that fixes this is one tab away, which is right for a record a gym checks twice
+ * a year and wrong for the one thing standing between it and being paid. So the prompt is
+ * here, it is one line, and its button both switches tabs and opens the form — a button
+ * that merely reveals another button is a button that gets ignored.
+ *
+ * Not styled as a warning. Nothing is broken and nothing is late: most gyms reach this
+ * screen before their first settlement, so this is a task, not a fault.
+ */
+function PayoutAccountPrompt({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div
+      className="mt-6 flex flex-col justify-between gap-4 rounded-2xl border border-border bg-secondary/40 p-5 sm:flex-row sm:items-center"
+      data-testid="payout-account-prompt"
+    >
+      <div className="flex items-start gap-3">
+        <Landmark className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" aria-hidden="true" />
+        <p className="text-sm font-semibold text-foreground">
+          Add a bank account so we can transfer your payout
+        </p>
+      </div>
+      <Button
+        type="button"
+        onClick={onAdd}
+        className="h-10 flex-shrink-0 cursor-pointer rounded-xl px-5 text-sm font-bold"
+        data-testid="button-prompt-add-payout-account"
+      >
+        Add bank account
+      </Button>
     </div>
   );
 }

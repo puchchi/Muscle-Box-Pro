@@ -79,9 +79,36 @@ vi.mock("@/lib/gymPortalApi", async (importOriginal) => {
   };
 });
 
+/**
+ * The payout account is mocked here even though the seam already answers under test, because
+ * the seam answers from module state: one test removing the account would decide what every
+ * later test in this file sees. `payoutOverride` is the account on file, and null is a gym
+ * that has not given us one.
+ */
+const { payoutOverride, mockFetchPayoutAccount } = vi.hoisted(() => ({
+  payoutOverride: { value: null as unknown },
+  mockFetchPayoutAccount: vi.fn(),
+}));
+vi.mock("@/lib/gymPayoutAccountApi", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/gymPayoutAccountApi")>();
+  return { ...actual, fetchPayoutAccount: mockFetchPayoutAccount };
+});
+
 import GymDashboard from "@/pages/gym/GymDashboard";
 import { GYM_PORTAL_QUERY_KEY, GymPortalRequestError } from "@/lib/gymPortalApi";
+import { GYM_PAYOUT_ACCOUNT_QUERY_KEY } from "@/lib/gymPayoutAccountApi";
 import type { GymPortalSnapshot, Statement } from "@shared/gym/portal";
+import type { PayoutAccount } from "@shared/gym/payoutAccount";
+
+/** An account on file, which is the state most of this file's tests are indifferent to. */
+const PAYOUT_ACCOUNT: PayoutAccount = {
+  accountHolderName: "Iron Temple Fitness Pvt Ltd",
+  accountNumberLast4: "4417",
+  ifsc: "HDFC0001234",
+  bankName: "HDFC Bank",
+  accountType: "current",
+  updatedAt: "2026-04-29T10:05:00.000Z",
+};
 
 /** The real fixture, unaffected by whatever a test has set. */
 async function realSnapshot(): Promise<GymPortalSnapshot> {
@@ -104,6 +131,16 @@ function statementsOf(snapshot: GymPortalSnapshot): Statement[] {
  * `@shared/gym/fixtures` is mocked in this file and only `DEMO_GYM_PORTAL` survives the
  * mock's getter.
  */
+/** The six figure cards, in the order they appear, for the states where none can be filled. */
+const ABSENT_FIGURE_CARDS = [
+  "card-cups",
+  "card-revenue",
+  "card-profit",
+  "card-payout",
+  "card-advertising",
+  "card-electricity",
+] as const;
+
 const NO_TRADING_DATA = {
   sales: { available: false, reason: "not_implemented" },
   adRevenue: { available: false, reason: "not_implemented" },
@@ -169,6 +206,8 @@ const signedIn = {
 describe("GymDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    payoutOverride.value = PAYOUT_ACCOUNT;
+    mockFetchPayoutAccount.mockImplementation(async () => payoutOverride.value);
   });
 
   afterEach(() => {
@@ -260,6 +299,64 @@ describe("GymDashboard", () => {
   });
 
   /**
+   * Where the bank account sits, and how a gym without one is told.
+   *
+   * A tab away is right for details a gym changes when it changes banks, and wrong for a gym
+   * that has never given us any: that gym cannot be paid and will not go looking. So the
+   * prompt is on the tab the dashboard opens on, and it opens the form rather than merely
+   * pointing at the tab that holds it.
+   */
+  describe("the bank account we transfer the payout to", () => {
+    it("lives with the account record rather than among the figures", async () => {
+      await renderDashboard();
+      expect(screen.queryByTestId("card-payout-account")).toBeNull();
+
+      await userEvent.setup().click(screen.getByTestId("tab-account"));
+
+      await waitFor(() => screen.getByTestId("card-payout-account"));
+      expect(
+        within(screen.getByTestId("card-payout-account")).getByText("••••4417"),
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId("payout-account-prompt")).toBeNull();
+    });
+
+    it("asks for one on the tab the dashboard opens on when there is none", async () => {
+      payoutOverride.value = null;
+      await renderDashboard();
+
+      // Behind a tab this says nothing to the gym it is written for, since a gym that has
+      // never entered bank details has no reason to open the account record looking for them.
+      await waitFor(() => screen.getByTestId("payout-account-prompt"));
+      expect(
+        screen.getByText(/add a bank account so we can transfer your payout/i),
+      ).toBeInTheDocument();
+    });
+
+    it("says nothing until the answer arrives", async () => {
+      // A prompt that appears while the request is in flight tells a gym that has given us an
+      // account that we have lost it.
+      mockFetchPayoutAccount.mockReturnValue(new Promise(() => {}));
+      await renderDashboard();
+
+      expect(screen.queryByTestId("payout-account-prompt")).toBeNull();
+    });
+
+    it("opens the form itself rather than leaving the gym to find the card", async () => {
+      payoutOverride.value = null;
+      await renderDashboard();
+      const user = userEvent.setup();
+
+      await waitFor(() => screen.getByTestId("payout-account-prompt"));
+      await user.click(screen.getByTestId("button-prompt-add-payout-account"));
+
+      // One click: the tab changes and the form is up.
+      await waitFor(() => screen.getByTestId("input-account-number"));
+      expect(screen.getByTestId("card-payout-account")).toBeInTheDocument();
+      expect(screen.queryByTestId("card-payout")).toBeNull();
+    });
+  });
+
+  /**
    * `asOf` is stamped when the handler composes the response, so it is always moments old
    * and says nothing about the age of the figures inside it. `dataSyncedAt` is the reading
    * of the machine, which is the staleness a gym can actually be misled by, so the header
@@ -295,7 +392,7 @@ describe("GymDashboard", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/figures shown here before the 15th of a month are provisional/i),
+        screen.getByText(/provisional until your monthly statement/i),
       ).toBeInTheDocument();
     });
   });
@@ -343,7 +440,7 @@ describe("GymDashboard", () => {
       expect(cups.getByText(/94.4% of the way/)).toBeInTheDocument();
       expect(cups.getByText(/433 more cups/)).toBeInTheDocument();
       expect(
-        cups.getByText(/Tracking ₹5,00,000 of cumulative net profit/),
+        cups.getByText(/Tracking ₹5,00,000 of net profit/),
       ).toBeInTheDocument();
     });
 
@@ -355,7 +452,7 @@ describe("GymDashboard", () => {
       expect(ads.getByText("₹4,000")).toBeInTheDocument();
       // §9.4 — stated on the card, because a gym that steps up to 50% on shakes will
       // otherwise read a 20% advertising share as a mistake.
-      expect(ads.getByText(/shared 80:20 for the whole term/)).toBeInTheDocument();
+      expect(ads.getByText(/80:20 for the whole term/)).toBeInTheDocument();
       // The ad revenue is not in net profit.
       expect(within(screen.getByTestId("card-profit")).getByText("₹16,900")).toBeInTheDocument();
     });
@@ -369,7 +466,7 @@ describe("GymDashboard", () => {
       expect(power.getByText("1")).toBeInTheDocument();
       expect(power.getByText(/820 more cups/)).toBeInTheDocument();
       // §10.6 — the 180 cups in the incomplete block do not carry forward.
-      expect(power.getByText(/not carried into the next review period/)).toBeInTheDocument();
+      expect(power.getByText(/Part-blocks do not carry past 30 September 2026/)).toBeInTheDocument();
     });
 
     it("lists settled months without pretending a PDF exists", async () => {
@@ -493,36 +590,66 @@ describe("GymDashboard", () => {
    * settled statements are four separate feeds and none of them exists yet (`mbp-backend`
    * `docs/gym-onboarding-api-design.md` §2.6, gated on §9.4).
    *
-   * Everything below is one assertion in four costumes: **a section with no data must not
-   * render as zero.** A gym shown ₹0 settled concludes it earned nothing and believes that
-   * number long before it suspects the page — which is the same failure the error state was
-   * written to avoid, except this one happens on a working dashboard.
+   * Everything below turns on one distinction: **zero is a figure where no cup can have
+   * been sold, and a lie where one can.** A trading gym shown ₹0 concludes it earned
+   * nothing and believes that number long before it suspects the page — the same failure
+   * the error state was written to avoid, except this one happens on a working dashboard.
+   * Before installation the opposite holds, and a grid of "not available yet" badges is
+   * six evasions of a question whose answer is nought.
    */
   describe("when the reporting pipeline has nothing to report", () => {
-    it("shows every card and not a single rupee figure", async () => {
+    it("refuses to print zero beside a machine that is trading", async () => {
       const snapshot = await realSnapshot();
       snapshotOverride.value = { ...snapshot, ...NO_TRADING_DATA } satisfies GymPortalSnapshot;
 
       await renderDashboard();
 
-      // The cards stay, with their headings, so a gym learns the figures are coming
-      // rather than never discovering the feature exists.
-      for (const testId of ["card-cups", "card-revenue", "card-profit", "card-payout"]) {
-        expect(
-          within(screen.getByTestId(testId)).getByTestId(`${testId}-unavailable`),
-        ).toBeInTheDocument();
+      // The cards stay, with their headings, so a gym learns the figures are coming rather
+      // than never discovering the feature exists. This fixture's machine is installed and
+      // trading, so each of these has a real non-zero value we are simply not reading yet:
+      // a dash, never a nought.
+      for (const testId of ABSENT_FIGURE_CARDS) {
+        const card = within(screen.getByTestId(`${testId}-unavailable`));
+        expect(card.getByText("—")).toBeInTheDocument();
+        expect(card.getByText(/not reported here yet/i)).toBeInTheDocument();
       }
-      expect(screen.getByTestId("card-advertising-unavailable")).toBeInTheDocument();
-      expect(screen.getByTestId("card-electricity-unavailable")).toBeInTheDocument();
-
-      // The whole point. Not ₹0, not "—", not an empty card.
       expect(screen.queryByText("₹0")).toBeNull();
       expect(screen.queryByText("0")).toBeNull();
-      expect(screen.getAllByText(/not available yet/i).length).toBeGreaterThan(0);
       // And it is our doing, not theirs.
+      expect(screen.getByText(/your settled statements are unaffected/i)).toBeInTheDocument();
+    });
+
+    it("reads zero across the board before the machine is installed", async () => {
+      const snapshot = await realSnapshot();
+      snapshotOverride.value = {
+        ...snapshot,
+        ...NO_TRADING_DATA,
+        // The state every gym is in on day one. Nothing has dispensed a cup, so nought is
+        // the true figure whatever our feeds are doing, and six cards hedging about
+        // reporting we have not built answers a question the gym did not ask.
+        machine: {
+          ...snapshot.machine,
+          status: "allocated",
+          serialNumber: null,
+          installationDate: null,
+          lastServiceAt: null,
+        },
+      } satisfies GymPortalSnapshot;
+
+      await renderDashboard();
+
+      for (const testId of ABSENT_FIGURE_CARDS) {
+        const card = within(screen.getByTestId(`${testId}-unavailable`));
+        expect(card.getByText(testId === "card-cups" ? "0" : "₹0")).toBeInTheDocument();
+        expect(card.getByText(/awaiting installation/i)).toBeInTheDocument();
+      }
+      expect(screen.queryByText("—")).toBeNull();
+      // Not "we are still building it". Both are true, and only one of them is the gym's
+      // answer.
       expect(
-        screen.getAllByText(/nothing you are owed depends on it/i).length,
-      ).toBeGreaterThan(0);
+        screen.getByText(/figures start on the day your machine is installed/i),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/not reported here yet/i)).toBeNull();
     });
 
     it("still shows the machine, the deposit and the signed agreement", async () => {
@@ -564,17 +691,19 @@ describe("GymDashboard", () => {
       const snapshot = await realSnapshot();
       snapshotOverride.value = {
         ...snapshot,
-        // The state a real gym is in the day it signs: the pipeline works, and this gym
-        // has genuinely sold nothing yet. Telling it "we are still building this" would
-        // be false, and telling it "₹0" would be true but unreadable as such.
+        // The pipeline works and this gym has genuinely sold nothing this month. Zero is
+        // the answer even though the machine is installed, because the feed is the thing
+        // saying so, and "not reported here yet" would be false.
         sales: { available: false, reason: "no_data_yet" },
       } satisfies GymPortalSnapshot;
 
       await renderDashboard();
       const cups = within(screen.getByTestId("card-cups"));
 
-      expect(cups.getByText(/once your machine is installed and trading/i)).toBeInTheDocument();
-      expect(cups.queryByText(/still building/i)).toBeNull();
+      expect(cups.getByText("0")).toBeInTheDocument();
+      expect(cups.getByText(/none this month/i)).toBeInTheDocument();
+      expect(cups.queryByText("—")).toBeNull();
+      expect(cups.queryByText(/not reported here yet/i)).toBeNull();
     });
 
     it("says a payout excludes advertising rather than quietly understating it", async () => {
@@ -651,7 +780,7 @@ describe("GymDashboard", () => {
       expect(screen.queryByText("₹0")).toBeNull();
       expect(screen.queryByTestId("card-payout")).toBeNull();
       expect(screen.queryByTestId("as-of")).toBeNull();
-      expect(screen.getByText(/still trading and every cup is still counted/i)).toBeInTheDocument();
+      expect(screen.getByText(/every cup is still counted/i)).toBeInTheDocument();
       // Nothing about our field names, exceptions or endpoints on a gym owner's screen.
       expect(screen.queryByText(/reporting endpoint down/)).toBeNull();
       // It does go to the console, which is where we need it.
@@ -735,6 +864,10 @@ describe("GymDashboard", () => {
 
       await waitFor(() => {
         expect(mockRemoveQueries).toHaveBeenCalledWith({ queryKey: GYM_PORTAL_QUERY_KEY });
+      });
+      // Same reasoning, and this one names a bank account rather than a figure.
+      expect(mockRemoveQueries).toHaveBeenCalledWith({
+        queryKey: GYM_PAYOUT_ACCOUNT_QUERY_KEY,
       });
       expect(mockRemoveQueries).toHaveBeenCalledWith({ queryKey: ["gym-session"] });
     });
