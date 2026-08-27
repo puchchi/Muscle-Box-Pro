@@ -69,6 +69,13 @@ import {
   workedMonth,
 } from "@shared/partnership/summary";
 import { PARTNERSHIP_FAQ } from "@shared/partnership/faq";
+import {
+  Section,
+  SectionHeading,
+  SectionNav,
+  SkipLink,
+  StickyCta,
+} from "@/components/marketing/pageChrome";
 
 const example = workedMonth();
 const exampleAtMilestone = workedMonth(INDICATIVE_ECONOMICS.exampleCupsPerMonth, true);
@@ -187,7 +194,7 @@ export default function GymPartnership() {
       <Navbar />
       {/* Spacer for the fixed navbar, so the sticky jump nav below can pin at top-16. */}
       <div className="h-16 flex-shrink-0" aria-hidden="true" />
-      <SectionNav />
+      <SectionNav sections={sections} />
 
       <main id="main" className="flex-1">
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
@@ -841,145 +848,18 @@ export default function GymPartnership() {
       </main>
 
       <Footer />
-      <StickyCta />
-    </div>
-  );
-}
-
-// ─── Chrome ───────────────────────────────────────────────────────────────────
-
-/**
- * First thing in the tab order, invisible until focused.
- *
- * The footer on this page carries roughly forty links, so without this a keyboard
- * user arriving from another page tabs through the whole nav before reaching the
- * terms. `z-[60]` rather than the site's `z-50` scale on purpose: it has to sit
- * over the fixed navbar, which is the one thing it would otherwise appear behind.
- */
-function SkipLink() {
-  return (
-    <a
-      href="#main"
-      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-white"
-    >
-      Skip to content
-    </a>
-  );
-}
-
-/**
- * Jump nav for a page that is eight sections of reference material.
- *
- * Desktop only. The mobile equivalent of "let me get to the bit I care about" is a
- * horizontally scrolling strip, which is the one thing a phone layout should not
- * introduce; phones get the sticky CTA instead. No active-section highlighting —
- * that needs a scroll observer running on every marketing page view to move a
- * colour, and the anchors are already the useful part.
- */
-function SectionNav() {
-  return (
-    <nav
-      aria-label="On this page"
-      className="hidden lg:block sticky top-16 z-40 border-b border-border bg-white/90 backdrop-blur-md"
-    >
-      <ul className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 h-12">
-        {sections.map((s) => (
-          <li key={s.id}>
-            <a
-              href={`#${s.id}`}
-              className="block px-3 py-2 rounded-lg text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {s.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-/**
- * The mobile CTA.
- *
- * Fixed rather than revealed on scroll: a scroll listener to hide it over the hero
- * buys one visual nicety and costs a listener on every phone visit, and the bar is
- * the only CTA in reach while someone is four sections deep in the terms.
- */
-function StickyCta() {
-  return (
-    <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-white/95 backdrop-blur-md px-4 py-3 flex items-center gap-3 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="min-w-0">
-        <p className="text-[13px] font-bold leading-tight">Nothing to buy or maintain</p>
-        <p className="text-muted-foreground text-xs leading-tight mt-0.5">
-          {PARTNERSHIP.gymNetProfitSharePct.beforeMilestone}% →{" "}
-          {PARTNERSHIP.gymNetProfitSharePct.afterMilestone}% profit share
-        </p>
-      </div>
-      <Button
-        asChild
-        className="ml-auto min-h-11 rounded-full px-5 font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer flex-shrink-0"
-      >
-        <Link href="/gym-demo" data-testid="button-sticky-demo">
-          Request a demo
-        </Link>
-      </Button>
+      <StickyCta
+        title="Nothing to buy or maintain"
+        subtitle={`${PARTNERSHIP.gymNetProfitSharePct.beforeMilestone}% \u2192 ${PARTNERSHIP.gymNetProfitSharePct.afterMilestone}% profit share`}
+        href="/gym-demo"
+        label="Request a demo"
+        testId="button-sticky-demo"
+      />
     </div>
   );
 }
 
 // ─── Small presentational helpers ─────────────────────────────────────────────
-
-/**
- * One section wrapper so padding, container width and the `scroll-mt` that keeps
- * an anchored heading clear of the two stacked sticky bars are defined once. Get
- * `scroll-mt` wrong and every jump-nav link lands with its heading under the nav.
- */
-function Section({
-  id,
-  tinted,
-  children,
-}: {
-  id: string;
-  tinted?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <section
-      id={id}
-      // `scroll-mt` clears the navbar alone on mobile and the navbar plus the
-      // jump nav on desktop, where both are pinned.
-      className={`scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 ${
-        tinted ? "bg-muted/40 border-y border-border" : ""
-      }`}
-    >
-      <div className="max-w-5xl mx-auto">{children}</div>
-    </section>
-  );
-}
-
-function SectionHeading({
-  eyebrow,
-  title,
-  blurb,
-}: {
-  eyebrow: string;
-  title: string;
-  blurb?: string;
-}) {
-  return (
-    <div className="max-w-2xl">
-      <span className="inline-block text-primary text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
-        {eyebrow}
-      </span>
-      <h2 className="font-display font-black uppercase text-2xl sm:text-3xl tracking-tight leading-[1.05] mb-3">
-        {title}
-      </h2>
-      {blurb && (
-        <p className="text-muted-foreground text-[15px] leading-relaxed">{blurb}</p>
-      )}
-    </div>
-  );
-}
 
 /**
  * The label above a list inside a card.

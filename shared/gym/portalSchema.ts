@@ -254,6 +254,11 @@ export const gymPortalSnapshotSchema = z.object({
   deposit: depositSchema,
   agreement: agreementSchema.nullable(),
   asOf: isoTimestamp,
+  // Optional, unlike `asOf`: the endpoint does not send it yet, and requiring it would
+  // fail every live response into the dashboard's error state. Still validated when it
+  // is there — a date-only value would print as midnight and claim a sync that did not
+  // happen at midnight.
+  dataSyncedAt: isoTimestamp.nullable().optional(),
 });
 
 /**

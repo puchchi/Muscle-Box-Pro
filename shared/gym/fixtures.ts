@@ -122,6 +122,9 @@ export const DEMO_GYM_PORTAL: GymPortalSnapshot = {
   },
 
   asOf: "2026-08-22T06:30:00.000Z",
+  // Fifteen minutes behind `asOf`, because that is the state the header has to render
+  // honestly: the response is new and the cup count it carries is not.
+  dataSyncedAt: "2026-08-22T06:15:00.000Z",
 };
 
 /**
@@ -143,4 +146,6 @@ export const PARTIAL_GYM_PORTAL: GymPortalSnapshot = {
   adRevenue: { available: false, reason: "not_implemented" },
   electricity: { available: false, reason: "not_implemented" },
   statements: { available: false, reason: "not_implemented" },
+  // Nothing has been read from the machine, because nothing reads it yet.
+  dataSyncedAt: null,
 };

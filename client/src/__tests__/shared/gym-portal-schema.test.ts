@@ -222,10 +222,33 @@ describe("the reporting response boundary", () => {
 
     it("rejects a date where a timestamp is required", () => {
       const snapshot = valid();
-      // `asOf` is rendered as "Figures as at …". A date-only value would silently
+      // `asOf` is rendered as "Updated …" to the minute. A date-only value would silently
       // present month-old figures as today's.
       snapshot.asOf = "2026-08-22";
       expect(reject(snapshot)[0]).toMatch(/^asOf:/);
+    });
+
+    /**
+     * `dataSyncedAt` is the one field the endpoint may legitimately omit: the trading
+     * feeds it describes are unbuilt, and requiring it would fail every live response
+     * into the dashboard's error state. Optional is not the same as unchecked, though —
+     * the header prints it to the minute, so a date-only value would claim a sync at
+     * midnight that did not happen at midnight.
+     */
+    it("accepts a response with no machine sync timestamp, however it is omitted", () => {
+      for (const value of [null, undefined]) {
+        const snapshot = { ...valid(), dataSyncedAt: value };
+        expect(parseGymPortalSnapshot(snapshot).ok).toBe(true);
+      }
+      const snapshot = valid();
+      delete (snapshot as Partial<GymPortalSnapshot>).dataSyncedAt;
+      expect(parseGymPortalSnapshot(snapshot).ok).toBe(true);
+    });
+
+    it("rejects a machine sync timestamp that is only a date", () => {
+      const snapshot = valid();
+      snapshot.dataSyncedAt = "2026-08-22";
+      expect(reject(snapshot)[0]).toMatch(/^dataSyncedAt:/);
     });
 
     it.each([

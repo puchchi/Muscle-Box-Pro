@@ -144,6 +144,21 @@ async function renderDashboard() {
   await waitFor(() => screen.getByTestId("card-payout"));
 }
 
+/**
+ * Renders and switches to the account tab.
+ *
+ * The machine record, the statements and the deposit are a tab rather than a second band
+ * of the same page, so anything asserting on them has to open it — which is also the
+ * assertion that the tab works. `getByTestId("card-machine")` failing without this is the
+ * intended behaviour: the panel is unmounted, not hidden.
+ */
+async function renderAccountTab() {
+  const user = userEvent.setup();
+  await renderDashboard();
+  await user.click(screen.getByTestId("tab-account"));
+  await waitFor(() => screen.getByTestId("card-machine"));
+}
+
 const signedIn = {
   email: "owner@yourgym.com",
   gymId: "gym_iron_temple",
@@ -213,18 +228,64 @@ describe("GymDashboard", () => {
     expect(screen.queryByTestId("button-signout")).toBeNull();
   });
 
-  it("renders the six partner metric cards", async () => {
+  it("opens on the six figure cards, with the account record put away", async () => {
     mockFetchSession.mockResolvedValue(signedIn);
     renderPortal();
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /your machine/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /cups sold/i })).toBeInTheDocument();
     });
-    expect(screen.getByRole("heading", { name: /cups sold/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /revenue collected/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /net profit/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /your payout/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /advertising share/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /electricity reimbursement/i })).toBeInTheDocument();
+
+    // The serial number, the agreement hash and the deposit receipt are looked up twice a
+    // year and took up half the screen every day doing it. Not merely below the fold now:
+    // the panel is not mounted at all.
+    expect(screen.queryByTestId("card-machine")).toBeNull();
+    expect(screen.queryByTestId("card-statements")).toBeNull();
+    expect(screen.queryByTestId("card-deposit")).toBeNull();
+  });
+
+  it("shows the account record when its tab is chosen", async () => {
+    await renderAccountTab();
+
+    expect(screen.getByRole("heading", { name: /your machine/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /statements & agreement/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /security deposit/i })).toBeInTheDocument();
+    // And the figures step aside rather than both panels being on screen at once.
+    expect(screen.queryByTestId("card-payout")).toBeNull();
+  });
+
+  /**
+   * `asOf` is stamped when the handler composes the response, so it is always moments old
+   * and says nothing about the age of the figures inside it. `dataSyncedAt` is the reading
+   * of the machine, which is the staleness a gym can actually be misled by, so the header
+   * prefers it and changes its wording when it has it.
+   */
+  it("dates the figures by the machine sync, to the minute and in IST", async () => {
+    await renderDashboard();
+    const stamp = screen.getByTestId("as-of");
+
+    // 06:15Z, which is 11:45 in Kolkata. A UTC render would say 06:15 am and be an hour
+    // and a half out of the working day it describes.
+    expect(stamp).toHaveTextContent(/Machine data synced/);
+    expect(stamp).toHaveTextContent(/22 Aug 2026, 11:45 am IST/);
+  });
+
+  it("says only that the response is new when no machine sync is reported", async () => {
+    const snapshot = await realSnapshot();
+    snapshotOverride.value = { ...snapshot, dataSyncedAt: null } satisfies GymPortalSnapshot;
+
+    await renderDashboard();
+    const stamp = screen.getByTestId("as-of");
+
+    // "Updated" is the strongest honest word for a timestamp that only proves the server
+    // answered. Claiming a sync we were not told about is the failure to avoid.
+    expect(stamp).toHaveTextContent(/Updated 22 Aug 2026, 12:00 pm IST/);
+    expect(stamp).not.toHaveTextContent(/synced/i);
   });
 
   // §8.3 of the agreement makes the monthly statement the amount actually owed.
@@ -312,7 +373,7 @@ describe("GymDashboard", () => {
     });
 
     it("lists settled months without pretending a PDF exists", async () => {
-      await renderDashboard();
+      await renderAccountTab();
       const july = within(screen.getByTestId("statement-2026-07"));
 
       expect(july.getByText("July 2026")).toBeInTheDocument();
@@ -322,7 +383,7 @@ describe("GymDashboard", () => {
     });
 
     it("shows the paid deposit with its receipt, and no banner", async () => {
-      await renderDashboard();
+      await renderAccountTab();
       const deposit = within(screen.getByTestId("card-deposit"));
 
       expect(deposit.getByText("₹50,000")).toBeInTheDocument();
@@ -347,13 +408,18 @@ describe("GymDashboard", () => {
       await renderDashboard();
       const banner = within(screen.getByTestId("deposit-banner"));
 
-      // A gym that deferred at step 4 is live and trading with a receivable against
-      // it. That must not be discoverable only by scrolling.
+      // A gym that deferred at step 4 is live and trading with a receivable against it.
+      // That must not be discoverable only by scrolling — and now that the deposit card
+      // lives behind a tab, not by opening one either. The banner sits above both.
       expect(banner.getByText(/still outstanding/)).toBeInTheDocument();
       expect(banner.getByTestId("link-deposit-payment")).toHaveAttribute(
         "href",
         "https://rzp.io/i/deferred-deposit",
       );
+
+      // And no receipt card in the account tab, because there is no receipt.
+      await userEvent.setup().click(screen.getByTestId("tab-account"));
+      await waitFor(() => screen.getByTestId("card-machine"));
       expect(screen.queryByTestId("card-deposit")).toBeNull();
     });
 
@@ -408,12 +474,17 @@ describe("GymDashboard", () => {
         },
       } satisfies GymPortalSnapshot;
 
-      await renderDashboard();
+      await renderAccountTab();
       const machine = within(screen.getByTestId("card-machine"));
 
-      expect(machine.getByText("Allocated to you")).toBeInTheDocument();
+      // "Awaiting installation", not the backend's "allocated". Allocation is our word for
+      // a warehouse fact; what the gym needs to know is that the unit is not in yet, which
+      // is also why every figure on the page is empty.
+      expect(machine.getByText("Awaiting installation")).toBeInTheDocument();
       expect(machine.getByText("Not yet allocated")).toBeInTheDocument();
       expect(machine.getByText("Pending")).toBeInTheDocument();
+      // The same words in the header, where a gym sees them without opening anything.
+      expect(screen.getByTestId("machine-status")).toHaveTextContent("Awaiting installation");
     });
   });
 
@@ -443,7 +514,6 @@ describe("GymDashboard", () => {
       }
       expect(screen.getByTestId("card-advertising-unavailable")).toBeInTheDocument();
       expect(screen.getByTestId("card-electricity-unavailable")).toBeInTheDocument();
-      expect(screen.getByTestId("statements-unavailable")).toBeInTheDocument();
 
       // The whole point. Not ₹0, not "—", not an empty card.
       expect(screen.queryByText("₹0")).toBeNull();
@@ -459,7 +529,7 @@ describe("GymDashboard", () => {
       const snapshot = await realSnapshot();
       snapshotOverride.value = { ...snapshot, ...NO_TRADING_DATA } satisfies GymPortalSnapshot;
 
-      await renderDashboard();
+      await renderAccountTab();
 
       // The reason the endpoint ships partial rather than not at all: these three come
       // from our own table and are exactly what a gym signs in to check.
@@ -470,6 +540,7 @@ describe("GymDashboard", () => {
       ).toBeInTheDocument();
       expect(within(screen.getByTestId("card-deposit")).getByText("₹50,000")).toBeInTheDocument();
       expect(screen.getByTestId("agreement-summary")).toBeInTheDocument();
+      expect(screen.getByTestId("statements-unavailable")).toBeInTheDocument();
     });
 
     it("claims nothing about a month it cannot name", async () => {
@@ -479,10 +550,13 @@ describe("GymDashboard", () => {
       await renderDashboard();
 
       // "August so far — provisional, settles by the 15th" is a statement about a trading
-      // month, and there is no trading month.
+      // month, and there is no trading month. The timestamp survives, because when the
+      // response was read is true either way — but it drops the sync wording, which would
+      // claim a reading of figures that are not there.
+      expect(screen.queryByTestId("period-note")).toBeNull();
       const asOf = screen.getByTestId("as-of");
-      expect(asOf).toHaveTextContent(/as at 22 August 2026/);
-      expect(asOf).not.toHaveTextContent(/provisional/);
+      expect(asOf).toHaveTextContent(/Updated 22 Aug 2026, 12:00 pm IST/);
+      expect(asOf).not.toHaveTextContent(/provisional/i);
       expect(screen.queryByText(/figures shown here before the 15th/i)).toBeNull();
     });
 

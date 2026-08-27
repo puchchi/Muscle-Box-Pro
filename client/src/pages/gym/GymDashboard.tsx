@@ -13,12 +13,14 @@ import {
   IndianRupee,
   Info,
   Megaphone,
+  RefreshCw,
   ShieldCheck,
   TrendingUp,
   Wallet,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryClient } from "@/lib/queryClient";
 import {
   GYM_PORTAL_QUERY_KEY,
@@ -98,6 +100,12 @@ import {
  * tokens in `index.css` resolve to their dark values and every shadcn control inside
  * follows. Nothing here hardcodes a surface colour, which is what makes that one class
  * enough.
+ *
+ * The figures and the account record are two tabs rather than two bands of one long page.
+ * The machine's serial, the agreement hash and the deposit receipt are things a gym looks
+ * up perhaps twice a year, and while they sat below the figures they took up half the
+ * screen every day to do it. Only the selected panel is mounted, so the reference cards
+ * are genuinely not rendered rather than merely scrolled past.
  */
 
 /**
@@ -128,9 +136,14 @@ function isSessionGone(error: unknown): boolean {
  * here rather than rendering `undefined` in the status row. `replaced` and `removed` read
  * differently on purpose — a replaced unit means there is a working machine on the floor,
  * a removed one means there is not.
+ *
+ * `allocated` says "Awaiting installation" rather than "Allocated to you". Allocation is
+ * our word for a warehouse fact, and a gym reading it learns nothing it can act on; what
+ * it actually needs to know is that the unit is not in yet, which is also the answer to
+ * why every figure on the page is empty.
  */
 const MACHINE_STATUS_LABEL: Record<MachineStatus, string> = {
-  allocated: "Allocated to you",
+  allocated: "Awaiting installation",
   installed: "Installed and trading",
   servicing: "Being serviced",
   replaced: "Replaced with a newer unit",
@@ -168,6 +181,30 @@ function formatIstDate(isoTimestamp: string): string {
     day: "2-digit",
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(date);
+}
+
+/**
+ * The same instant with its time of day, for the one place that needs the minute.
+ *
+ * A date alone cannot answer the only question a freshness stamp is asked — "is this from
+ * before or after I looked this morning?" — so the header carries the clock and says which
+ * one: IST, spelled out, because a partner reading "12:00" has no way to know whose noon
+ * it is.
+ */
+function formatIstDateTime(isoTimestamp: string): string {
+  const date = new Date(isoTimestamp);
+  if (Number.isNaN(date.getTime())) return isoTimestamp;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    // `hourCycle`, not `hour12`. The two are not synonyms: `hour12: true` selects the h11
+    // cycle in this locale, which numbers noon as 00 and printed midday as "00:00 pm".
+    hourCycle: "h12",
     timeZone: "Asia/Kolkata",
   }).format(date);
 }
@@ -307,95 +344,154 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
           <h1 className="font-display text-2xl font-black uppercase tracking-tight text-foreground sm:text-3xl">
             {snapshot.gymDisplayName}
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="as-of">
-            {sales.available ? (
-              <>
-                {monthName(sales.data.currentPeriod.period)} so far. Provisional, settles by the{" "}
-                {terms.settlementDaysAfterMonthEnd}th. Figures as at{" "}
-                {formatAgreementDate(snapshot.asOf)}.
-              </>
-            ) : (
-              // No period to name, so nothing is claimed about one. The timestamp still
-              // belongs here: it is when the record below was read, and it is true whether or
-              // not the trading feeds answered.
-              <>Your account as at {formatAgreementDate(snapshot.asOf)}.</>
-            )}
-          </p>
+          {/* Only when there is a trading month to name. With the feeds absent this said
+              "Your account as at ...", which is a sentence about nothing — the freshness
+              stamp beside the tabs already carries the timestamp. */}
+          {sales.available && (
+            <p
+              className="mt-2 text-sm leading-relaxed text-muted-foreground"
+              data-testid="period-note"
+            >
+              {monthName(sales.data.currentPeriod.period)} so far. Provisional, settles by the{" "}
+              {terms.settlementDaysAfterMonthEnd}th of next month.
+            </p>
+          )}
         </div>
         <MachineStatusPill status={snapshot.machine.status} />
       </div>
 
       {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
 
-      <Section
-        title="Your figures"
-        note={sales.available ? <Chip>Provisional</Chip> : null}
-        className="mt-8"
-      >
-        {/* One grid, not a four-up band and a two-up band: advertising and electricity are
-            money the gym is owed on the same terms as the rest, and a card twice the width
-            of its neighbours is a card that is mostly empty. */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sales.available ? (
-            <TradingCards
-              trading={sales.data}
-              terms={terms}
-              adRevenue={adRevenue}
+      <Tabs defaultValue="figures" className="mt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList className="h-auto rounded-xl border border-border bg-card p-1 text-muted-foreground">
+            <TabsTrigger
+              value="figures"
+              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              data-testid="tab-figures"
+            >
+              Figures
+            </TabsTrigger>
+            <TabsTrigger
+              value="account"
+              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              data-testid="tab-account"
+            >
+              Your account
+            </TabsTrigger>
+          </TabsList>
+          <LastUpdated snapshot={snapshot} />
+        </div>
+
+        <TabsContent value="figures" className="mt-6">
+          {/* One grid, not a four-up band and a two-up band: advertising and electricity are
+              money the gym is owed on the same terms as the rest, and a card twice the width
+              of its neighbours is a card that is mostly empty. */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sales.available ? (
+              <TradingCards
+                trading={sales.data}
+                terms={terms}
+                adRevenue={adRevenue}
+                statements={statements}
+              />
+            ) : (
+              <TradingCardsUnavailable reason={sales.reason} />
+            )}
+
+            {adRevenue.available ? (
+              <AdvertisingCard terms={terms} revenueExTaxInr={adRevenue.data.revenueExTaxInr} />
+            ) : (
+              <UnavailableCard
+                icon={Megaphone}
+                label="Advertising share"
+                testId="card-advertising"
+                reason={adRevenue.reason}
+                what="Your share of screen advertising"
+              />
+            )}
+
+            {electricity.available ? (
+              <ElectricityCard reviewPeriod={electricity.data} terms={terms} />
+            ) : (
+              <UnavailableCard
+                icon={Zap}
+                label="Electricity reimbursement"
+                testId="card-electricity"
+                reason={electricity.reason}
+                what="Your electricity reimbursement"
+              />
+            )}
+          </div>
+
+          {anythingUnbuilt && <ReportingNotice />}
+
+          {sales.available && (
+            <p className="mt-6 max-w-[70ch] text-[13px] leading-relaxed text-muted-foreground">
+              Figures shown here before the {terms.settlementDaysAfterMonthEnd}th of a month are
+              provisional. Your monthly statement is the settled amount, issued within{" "}
+              {terms.settlementDaysAfterMonthEnd} days of month-end. Costs are shown as a single
+              total because your share is calculated on net profit, not on our ingredient pricing.
+            </p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="account" className="mt-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <MachineCard machine={snapshot.machine} />
+            <StatementsCard
               statements={statements}
+              agreement={snapshot.agreement}
+              wide={snapshot.deposit.status !== "paid"}
             />
-          ) : (
-            <TradingCardsUnavailable reason={sales.reason} />
-          )}
-
-          {adRevenue.available ? (
-            <AdvertisingCard terms={terms} revenueExTaxInr={adRevenue.data.revenueExTaxInr} />
-          ) : (
-            <UnavailableCard
-              icon={Megaphone}
-              label="Advertising share"
-              testId="card-advertising"
-              reason={adRevenue.reason}
-              what="Your share of screen advertising"
-            />
-          )}
-
-          {electricity.available ? (
-            <ElectricityCard reviewPeriod={electricity.data} terms={terms} />
-          ) : (
-            <UnavailableCard
-              icon={Zap}
-              label="Electricity reimbursement"
-              testId="card-electricity"
-              reason={electricity.reason}
-              what="Your electricity reimbursement"
-            />
-          )}
-        </div>
-
-        {anythingUnbuilt && <ReportingNotice />}
-      </Section>
-
-      <Section title="Your account" className="mt-10">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <MachineCard machine={snapshot.machine} />
-          <StatementsCard
-            statements={statements}
-            agreement={snapshot.agreement}
-            wide={snapshot.deposit.status !== "paid"}
-          />
-          {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
-        </div>
-      </Section>
-
-      {sales.available && (
-        <p className="mt-10 max-w-3xl text-xs leading-relaxed text-muted-foreground">
-          Figures shown here before the 15th of a month are provisional. Your monthly statement is
-          the settled amount, issued within {terms.settlementDaysAfterMonthEnd} days of month-end.
-          Costs are shown as a single total because your share is calculated on net profit, not on
-          our ingredient pricing.
-        </p>
-      )}
+            {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
+          </div>
+        </TabsContent>
+      </Tabs>
     </>
+  );
+}
+
+/**
+ * How old the figures are, in one line.
+ *
+ * Two different claims, and which one is true depends on what the endpoint sent, so the
+ * copy changes with it rather than picking the friendlier wording:
+ *
+ *   - `dataSyncedAt` — when our records last read the machine. This is the number that
+ *     answers "is this cup count current?", and the only one a gym can be misled by.
+ *   - `asOf` — when the response was composed. Always moments ago, so it says nothing
+ *     about the figures' age. It is the fallback because it is what the endpoint has
+ *     today, and "Updated" is the strongest honest word for it.
+ *
+ * The sync line is withheld when the trading feeds are absent: a sync timestamp beside no
+ * figures describes a reading of nothing.
+ */
+function LastUpdated({ snapshot }: { snapshot: GymPortalSnapshot }) {
+  const syncedAt = snapshot.sales.available ? snapshot.dataSyncedAt : null;
+
+  return (
+    <p
+      className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-[13px] text-muted-foreground"
+      data-testid="as-of"
+    >
+      <RefreshCw className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/80" aria-hidden="true" />
+      {syncedAt ? (
+        <>
+          <span className="text-muted-foreground">Machine data synced</span>{" "}
+          <span className="font-semibold tabular-nums text-foreground">
+            {formatIstDateTime(syncedAt)} IST
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="text-muted-foreground">Updated</span>{" "}
+          <span className="font-semibold tabular-nums text-foreground">
+            {formatIstDateTime(snapshot.asOf)} IST
+          </span>
+        </>
+      )}
+    </p>
   );
 }
 
@@ -529,7 +625,7 @@ function PortalChrome({
               />
             </Link>
             <span aria-hidden="true" className="hidden h-5 w-px bg-border sm:block" />
-            <span className="hidden text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground sm:block">
+            <span className="hidden text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground sm:block">
               Partner portal
             </span>
           </div>
@@ -567,46 +663,6 @@ function PortalChrome({
   );
 }
 
-/**
- * A labelled hairline over a band of cards.
- *
- * Nine cards in one undifferentiated grid is nine things of equal importance, which is
- * how the page read before: the figures that change every day sat in the same row as the
- * agreement hash. The rule is the cheapest way to say "these belong together".
- */
-function Section({
-  title,
-  note,
-  className,
-  children,
-}: {
-  title: string;
-  note?: React.ReactNode;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className={className}>
-      <div className="mb-4 flex items-center gap-4">
-        <h2 className="flex-shrink-0 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          {title}
-        </h2>
-        <span aria-hidden="true" className="h-px flex-1 bg-border" />
-        {note}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="flex-shrink-0 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-      {children}
-    </span>
-  );
-}
-
 function MachineStatusPill({ status }: { status: MachineStatus }) {
   return (
     <span
@@ -628,9 +684,11 @@ function MachineStatusPill({ status }: { status: MachineStatus }) {
  */
 function ReportingNotice() {
   return (
-    <p className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+    <p className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
       <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/70" aria-hidden="true" />
-      <span>
+      {/* Capped, not full width. The panel spans the grid above it, and a line of text
+          that wide runs past 200 characters — twice what an eye tracks back from. */}
+      <span className="max-w-[80ch]">
         Some figures above are not reported on this page yet. We are still building them.
         Nothing you are owed depends on it: your settled statements are issued from our records
         and emailed to you as usual.
@@ -809,7 +867,7 @@ function MetricCard({
         </>
       )}
       <div className="relative flex items-start justify-between gap-3">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
           {label}
         </h3>
         <span
@@ -841,7 +899,7 @@ function Figure({ value, caption }: { value: string; caption: string }) {
       <p className="font-display text-[26px] font-black leading-none tracking-tight tabular-nums text-foreground">
         {value}
       </p>
-      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{caption}</p>
+      <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{caption}</p>
     </div>
   );
 }
@@ -884,7 +942,7 @@ function UnavailableCard({
           <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
           Not available yet
         </p>
-        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
           {reason === "no_data_yet" ? (
             <>{what} appears here once your machine is installed and trading.</>
           ) : (
@@ -903,7 +961,7 @@ function RowGroup({ children, className }: { children: React.ReactNode; classNam
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-2 text-xs first:pt-0 last:pb-0">
+    <div className="flex items-baseline justify-between gap-3 py-2 text-[13px] first:pt-0 last:pb-0">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-semibold tabular-nums text-foreground">{value}</dd>
     </div>
@@ -941,7 +999,7 @@ function CupsCard({
             style={{ width: `${milestone.progressPct}%` }}
           />
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-testid="milestone-note">
+        <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground" data-testid="milestone-note">
           {milestone.reachedByPeriodEnd ? (
             <>
               Milestone reached. Your share of net profit is now{" "}
@@ -965,7 +1023,7 @@ function CupsCard({
           // Which of §6.1's two tests is being tracked, and why. A bar tracking the
           // 15,000-cup figure would read 48% here while the real threshold is 94% of the
           // way in — the gym would think the step-up is a year off when it is a month.
-          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/80">
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground/80">
             {milestone.binding === "netProfit"
               ? `Tracking ${formatInr(terms.milestoneNetProfitInr)} of cumulative net profit. At your margin that arrives before ${count(terms.milestoneCups)} cups.`
               : `Tracking ${count(terms.milestoneCups)} cups. At your margin that arrives before ${formatInr(terms.milestoneNetProfitInr)} of net profit.`}
@@ -1008,7 +1066,7 @@ function ProfitCard({ settlement }: { settlement: PeriodSettlement }) {
         <Row label="Your share" value={`${shake.currentGymSharePct}%`} />
       </RowGroup>
       {shake.split && (
-        <p className="mt-auto text-xs leading-relaxed text-muted-foreground" data-testid="split-note">
+        <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground" data-testid="split-note">
           Your milestone fell inside this month, so two rates apply:{" "}
           {shake.tranches[0].gymSharePct}% on the first {count(shake.tranches[0].paidCups)} cups and{" "}
           {shake.tranches[1].gymSharePct}% on the rest, an effective{" "}
@@ -1045,7 +1103,7 @@ function PayoutCard({
           understatement is indistinguishable from a bad month. */}
       {!advertisingReported && (
         <p
-          className="text-xs leading-relaxed text-muted-foreground"
+          className="text-[13px] leading-relaxed text-muted-foreground"
           data-testid="payout-excludes-advertising"
         >
           This is your shake profit share only. Your advertising share is not reported here yet. It
@@ -1056,7 +1114,7 @@ function PayoutCard({
         {!statements.available ? (
           // Not "your first statement is issued after your first full month": that would
           // be a claim about this gym's history, and we do not have it.
-          <p className="text-xs text-muted-foreground">Settled months are not listed here yet.</p>
+          <p className="text-[13px] text-muted-foreground">Settled months are not listed here yet.</p>
         ) : lastSettled ? (
           <RowGroup>
             <Row
@@ -1065,7 +1123,7 @@ function PayoutCard({
             />
           </RowGroup>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             Your first statement is issued after your first full month.
           </p>
         )}
@@ -1099,7 +1157,7 @@ function ElectricityCard({
         />
       </RowGroup>
       {electricity.floorApplied && (
-        <p className="text-xs leading-relaxed text-muted-foreground">
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           That is the {formatInr(terms.electricityInrPerBlock)} minimum for the review period,
           which you are paid whatever the cup count.
         </p>
@@ -1107,13 +1165,13 @@ function ElectricityCard({
       {/* Cups to the next *increase*, not to the next block boundary. Under the floor
           the two differ, and "600 more cups earns another ₹1,000" would be false. */}
       {electricity.nextIncreaseAtCups > 0 && (
-        <p className="text-xs leading-relaxed text-muted-foreground" data-testid="electricity-next">
+        <p className="text-[13px] leading-relaxed text-muted-foreground" data-testid="electricity-next">
           {count(electricity.cupsToNextIncrease)} more cups in this review period takes it to{" "}
           {formatInr(electricity.earnedInr + terms.electricityInrPerBlock)}.
         </p>
       )}
       {electricity.cupsInIncompleteBlock > 0 && (
-        <p className="text-[11px] leading-relaxed text-muted-foreground/80">
+        <p className="text-xs leading-relaxed text-muted-foreground/80">
           Part-blocks are not carried into the next review period, which ends{" "}
           {formatAgreementDate(reviewPeriod.endsOn)}.
         </p>
@@ -1153,7 +1211,7 @@ function AdvertisingCard({
       </RowGroup>
       {/* §9.4. Stated on the card rather than in a tooltip, because a gym that has
           just stepped up to 50% on shakes will otherwise read this as an error. */}
-      <p className="mt-auto text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
         Advertising is shared {100 - advertising.gymSharePct}:{advertising.gymSharePct} for the
         whole term. It does not move with your shake profit share.
       </p>
@@ -1177,7 +1235,7 @@ function MachineCard({ machine }: { machine: GymPortalSnapshot["machine"] }) {
           value={machine.lastServiceAt ? formatIstDate(machine.lastServiceAt) : "—"}
         />
       </RowGroup>
-      <p className="mt-auto text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
         Servicing, restocking and repairs are ours. Anything wrong with the machine is a call to
         us, at no cost to you.
       </p>
@@ -1213,26 +1271,26 @@ function StatementsCard({
       className={wide ? "lg:col-span-2" : undefined}
     >
       {!statements.available ? (
-        <p className="text-xs leading-relaxed text-muted-foreground" data-testid="statements-unavailable">
+        <p className="text-[13px] leading-relaxed text-muted-foreground" data-testid="statements-unavailable">
           {statements.reason === "no_data_yet"
             ? "Your first statement appears here after your first full month of trading."
             : "Settled statements are not listed here yet."}
         </p>
       ) : statements.data.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No settled months yet.</p>
+        <p className="text-[13px] text-muted-foreground">No settled months yet.</p>
       ) : (
         <div className="divide-y divide-border/70">
           {statements.data.map((statement) => (
             <div
               key={statement.period}
-              className="flex items-baseline justify-between gap-3 py-2.5 text-xs first:pt-0"
+              className="flex items-baseline justify-between gap-3 py-2.5 text-[13px] first:pt-0"
               data-testid={`statement-${statement.period}`}
             >
               <span className="text-muted-foreground">
                 <span className="block font-semibold text-foreground">
                   {monthName(statement.period)}
                 </span>
-                <span className="block text-[11px] text-muted-foreground/80">
+                <span className="block text-xs text-muted-foreground/80">
                   settled {formatAgreementDate(statement.settledOn)}
                 </span>
               </span>
@@ -1243,13 +1301,13 @@ function StatementsCard({
                 {statement.documentUrl ? (
                   <a
                     href={statement.documentUrl}
-                    className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-primary transition-colors hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                   >
                     <Download className="h-3 w-3" aria-hidden="true" />
                     Download PDF
                   </a>
                 ) : (
-                  <span className="text-[11px] text-muted-foreground/80">PDF not yet issued</span>
+                  <span className="text-xs text-muted-foreground/80">PDF not yet issued</span>
                 )}
               </span>
             </div>
@@ -1263,7 +1321,7 @@ function StatementsCard({
             <Row label="Agreement" value={`v${agreement.version}`} />
             <Row label="Signed" value={formatIstDate(agreement.signedAt)} />
           </RowGroup>
-          <p className="mt-2 break-all font-mono text-[11px] text-muted-foreground/80">
+          <p className="mt-2 break-all font-mono text-xs text-muted-foreground/80">
             {/* The hash is here so a gym can check its own copy against ours. It is
                 evidence, and evidence you cannot see is not much use. */}
             Document hash {agreement.contentHash.slice(0, 16)}…
@@ -1292,7 +1350,7 @@ function DepositCard({ snapshot }: { snapshot: GymPortalSnapshot }) {
           <Row label="Paid on" value={formatAgreementDate(receipt.paidAt)} />
         </RowGroup>
       )}
-      <p className="mt-auto text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
         Refundable within 30 days of the machine being returned in working order, less any amounts
         properly due.
       </p>

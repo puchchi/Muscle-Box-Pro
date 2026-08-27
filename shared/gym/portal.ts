@@ -223,4 +223,17 @@ export type GymPortalSnapshot = {
   agreement: { version: string; signedAt: string; contentHash: string } | null;
   /** ISO timestamp the figures were read. Shown, because a stale dashboard lies. */
   asOf: string;
+  /**
+   * ISO timestamp our records last took a reading from the machine backend.
+   *
+   * Not `asOf`, and the difference is the whole reason this field exists. `asOf` is
+   * stamped when the handler composes the response, so it is always "just now" — a true
+   * statement about the response and a silent one about the figures inside it. A gym
+   * reading a payout wants to know how old the cup count is, and that is this.
+   *
+   * Optional because `GET /gym/portal` does not send it yet: the trading feeds it would
+   * describe are unbuilt (§2.6). The header falls back to `asOf` until it arrives, which
+   * is honest in both worlds — the copy differs, because the two are different claims.
+   */
+  dataSyncedAt?: string | null;
 };
