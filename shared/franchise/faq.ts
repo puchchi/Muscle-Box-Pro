@@ -108,9 +108,12 @@ export const FRANCHISE_FAQ: FaqEntry[] = [
     question: "What am I responsible for locally?",
     answer:
       `We deliver machines and protein to your warehouse and run the technology, supply chain and support. ` +
-      `Everything local is yours: storage, inventory after delivery, transportation, machine movement between ` +
-      `locations, gym coordination, local manpower and day-to-day operations. Those costs are included in the ` +
-      `franchise-level profit calculation.`,
+      `Everything after that is yours: storage, transport, moving machines between locations, gym relationships, ` +
+      `your own team, and keeping every machine working and stocked. That last part is the daily job. You check ` +
+      `the machines, top up protein, refill cups and approved supplies, clear expired stock, keep the machine and ` +
+      `its area clean, act on platform alerts and report faults quickly. You cannot pass that work to the gym, ` +
+      `its staff or anyone else without our written approval. These costs are included in the franchise-level ` +
+      `profit calculation.`,
   },
   {
     question: "Can I add machines later?",

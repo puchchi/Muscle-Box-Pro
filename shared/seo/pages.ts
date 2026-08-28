@@ -17,7 +17,7 @@ export const PAGE_CHANGED_ON = {
   "/": "2026-08-27",
   "/gym-demo": "2026-03-28",
   "/gym-partnership": "2026-08-27",
-  "/franchise": "2026-08-27",
+  "/franchise": "2026-08-28",
   "/specs": "2026-03-28",
   "/advertise": "2026-03-28",
   "/protein-shake-vending-machine": "2026-03-28",

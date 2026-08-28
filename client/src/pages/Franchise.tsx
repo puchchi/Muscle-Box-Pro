@@ -353,13 +353,12 @@ export default function Franchise() {
               <div className="lg:col-span-7 hero-rise">
                 <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
-                  Franchise Program
+                  For operators and investors
                 </span>
                 {/*
                   No forced `<br>`, unlike the centred full-width heroes elsewhere on the
                   site. In a ~580px column a forced break defeats `text-balance`: the
-                  balancer honours it and then wraps the gradient half anyway. Balanced
-                  freely it splits after "operate a".
+                  balancer honours it and then wraps the gradient half anyway.
 
                   The `{" "}` is load-bearing all the same: the HTML-to-text pass some
                   crawlers and AI scrapers use would otherwise read "aProtein".
@@ -367,7 +366,7 @@ export default function Franchise() {
                 <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] leading-[0.95] tracking-tight mb-5 text-balance">
                   Build and operate a{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-                    protein vending machine network
+                    protein vending machine franchise
                   </span>
                 </h1>
                 <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl text-balance">
