@@ -29,8 +29,19 @@ import {
   parseAdminGymList,
   parseAdminGymView,
 } from "@shared/admin/gymsSchema";
-import type { AdminGymList, AdminGymView } from "@shared/admin/gyms";
+import type { AdminGymList, AdminGymView, AdminOffboarding } from "@shared/admin/gyms";
 import type { AdminInviteBody, AdminInviteResult } from "@shared/admin/invite";
+import type {
+  AdminMachinePutBody,
+  AdminMachinePutResult,
+  AdminNoticeForm,
+  AdminRecoveredForm,
+  AdminSettlementBody,
+  AdminSettlementResult,
+  AdminTerminateBody,
+  AdminTermsPatchBody,
+  AdminTermsPatchResult,
+} from "@shared/admin/writes";
 import type { OnboardingError, OnboardingResult } from "@shared/onboarding/types";
 
 /**
@@ -128,6 +139,133 @@ export async function createGym(
   const invite = asInviteResult(result.data);
   if (!invite) return { ok: false, error: MALFORMED_INVITE };
   return { ok: true, data: invite };
+}
+
+// ── The writes ──────────────────────────────────────────────────────────────
+
+/**
+ * `PATCH /admin/gyms/{gymId}/terms` — **refused once the gym has signed.**
+ *
+ * The refusal is not a client-side check and must not become one. The signed agreement embeds the
+ * commercials *and a content hash over them*, so a re-price afterwards would leave us holding a
+ * signature over terms that no longer exist — and the race that produces exactly that is an admin
+ * saving this form while the gym is on the signing screen. Only the database can arbitrate it, so
+ * the guard is a `ConditionCheck` inside the server's transaction and this function's job is to
+ * carry the refusal back intact.
+ *
+ * It arrives as `already_signed`, which is also the code `conflict()` uses for everything else, so
+ * the *message* is what distinguishes them. That is why nothing here rewrites it: the server
+ * re-reads the row before answering specifically so it can say which refusal it was.
+ */
+export async function patchGymTerms(
+  gymId: string,
+  patch: AdminTermsPatchBody,
+): Promise<OnboardingResult<AdminTermsPatchResult>> {
+  return apiRequest<AdminTermsPatchResult>(
+    "PATCH",
+    `/admin/gyms/${encodeURIComponent(gymId)}/terms`,
+    { body: patch },
+  );
+}
+
+/**
+ * `PUT /admin/gyms/{gymId}/machine` — assign, patch or replace the unit.
+ *
+ * One route, two behaviours, and the server picks by reading the current row: a `deviceNo` this gym
+ * already holds is a patch; a different one is a replacement, which writes a new item and marks the
+ * old one `replaced` rather than deleting it. `toAdminMachineBody` always sends a whole machine
+ * because of that — see its docstring.
+ *
+ * Two refusals worth knowing about, both server-side and neither reproducible here:
+ *
+ * - **A `deviceNo` another live gym holds is refused.** It is §11's join key, so a typo that lands
+ *   on a real other unit repoints that gym's revenue, and the symptom is a settlement nobody can
+ *   explain. `replaced`/`removed` rows are exempt, because units physically move.
+ * - **A partial body naming an unknown `deviceNo` is refused** rather than treated as a new
+ *   assignment, so a mistyped device number says so instead of creating a second machine out of
+ *   three fields and a default.
+ */
+export async function putGymMachine(
+  gymId: string,
+  body: AdminMachinePutBody,
+): Promise<OnboardingResult<AdminMachinePutResult>> {
+  return apiRequest<AdminMachinePutResult>(
+    "PUT",
+    `/admin/gyms/${encodeURIComponent(gymId)}/machine`,
+    { body },
+  );
+}
+
+/**
+ * The four offboarding writes, which all answer with the same record.
+ *
+ * `offboardingOf(after)` is every handler's response, so one parse and one cache update serve all
+ * four — and the panel never has to re-fetch the gym to learn what its own write did. The shape is
+ * `AdminOffboarding`, the same one that rides on `GET /admin/gyms/{gymId}`.
+ *
+ * They are strictly ordered by the ladder, and each refusal names the route that unblocks it:
+ * notice (optional, and only for a signed gym) → terminate → machine-recovered → settlement.
+ * Nothing here enforces that order; the server does, with a forward-only condition, and it answers
+ * a repeat with the stored state rather than an error.
+ */
+type OffboardingResponse = { offboarding: AdminOffboarding | null };
+
+export async function recordOffboardingNotice(
+  gymId: string,
+  form: AdminNoticeForm,
+): Promise<OnboardingResult<OffboardingResponse>> {
+  return apiRequest<OffboardingResponse>(
+    "POST",
+    `/admin/gyms/${encodeURIComponent(gymId)}/offboarding/notice`,
+    { body: { receivedOn: form.receivedOn, channel: form.channel.trim() } },
+  );
+}
+
+export async function terminateGym(
+  gymId: string,
+  body: AdminTerminateBody,
+): Promise<OnboardingResult<OffboardingResponse & { loginsDisabled?: boolean }>> {
+  return apiRequest(
+    "POST",
+    `/admin/gyms/${encodeURIComponent(gymId)}/offboarding/terminate`,
+    { body },
+  );
+}
+
+export async function recordMachineRecovered(
+  gymId: string,
+  form: AdminRecoveredForm,
+): Promise<OnboardingResult<OffboardingResponse & { settlementDueAt?: string }>> {
+  return apiRequest(
+    "POST",
+    `/admin/gyms/${encodeURIComponent(gymId)}/offboarding/machine-recovered`,
+    {
+      body: {
+        deviceNo: form.deviceNo.trim(),
+        recoveredOn: form.recoveredOn,
+        condition: form.condition.trim(),
+      },
+    },
+  );
+}
+
+/**
+ * Record the settlement. **Records figures; moves no money.**
+ *
+ * The response says `payoutStatus: "not_paid"` in so many words, and the panel renders it beside
+ * the payable, because the one misreading that costs real money is a payable read as a payment
+ * already made. Somebody pays it from the Razorpay dashboard afterwards — no code in that service
+ * has a refund path at all.
+ */
+export async function recordOffboardingSettlement(
+  gymId: string,
+  body: AdminSettlementBody,
+): Promise<OnboardingResult<OffboardingResponse & AdminSettlementResult>> {
+  return apiRequest(
+    "POST",
+    `/admin/gyms/${encodeURIComponent(gymId)}/offboarding/settlement`,
+    { body },
+  );
 }
 
 const MALFORMED_INVITE: OnboardingError = {

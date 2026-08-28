@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { queryClient } from "@/lib/queryClient";
 import { ADMIN_SESSION_QUERY_KEY, signOutAsAdmin, type AdminSession } from "@/lib/adminSession";
@@ -22,6 +22,7 @@ export function AdminShell({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname() ?? "";
 
   async function handleSignOut() {
     // The result is not checked, for the same reason the gym portal does not check its own:
@@ -39,8 +40,8 @@ export function AdminShell({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-6">
           <div className="flex items-center gap-6">
             <Link
               href="/admin"
@@ -48,14 +49,13 @@ export function AdminShell({
             >
               MBP admin
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link
-                href="/admin/gyms"
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="link-gyms"
-              >
+            <nav className="flex items-center gap-1 text-sm">
+              <NavLink href="/admin" pathname={pathname} testId="link-overview" exact>
+                Overview
+              </NavLink>
+              <NavLink href="/admin/gyms" pathname={pathname} testId="link-gyms">
                 Gyms
-              </Link>
+              </NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-4">
@@ -75,9 +75,9 @@ export function AdminShell({
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">{children}</main>
+      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
 
-      <footer className="max-w-5xl mx-auto px-6 pb-10">
+      <footer className="max-w-6xl mx-auto px-6 pb-10">
         {/*
           Not a leak — the origin is in the JS bundle either way. It is here because pointing a
           build at the wrong stage is the most common way for all of this to be mysteriously
@@ -90,6 +90,44 @@ export function AdminShell({
         </p>
       </footer>
     </div>
+  );
+}
+
+/**
+ * A nav link that knows whether it is the page you are on.
+ *
+ * `exact` exists because `/admin` is a prefix of every other admin route, so the prefix match that
+ * keeps `Gyms` lit on a gym's detail page would keep `Overview` lit everywhere. `aria-current`
+ * rather than colour alone: the highlight is the only thing distinguishing two links that otherwise
+ * read identically, and colour is not an indicator a screen reader has.
+ */
+function NavLink({
+  href,
+  pathname,
+  testId,
+  exact = false,
+  children,
+}: {
+  href: string;
+  pathname: string;
+  testId: string;
+  exact?: boolean;
+  children: React.ReactNode;
+}) {
+  const active = exact ? pathname === href : pathname.startsWith(href);
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
+        active
+          ? "bg-gray-100 text-foreground"
+          : "text-muted-foreground hover:bg-gray-50 hover:text-foreground"
+      }`}
+      data-testid={testId}
+    >
+      {children}
+    </Link>
   );
 }
 

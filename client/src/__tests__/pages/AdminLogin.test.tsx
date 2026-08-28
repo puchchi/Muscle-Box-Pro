@@ -43,8 +43,22 @@ vi.mock("@/lib/queryClient", () => ({
   },
 }));
 
+// The overview counts the funnel over `GET /admin/gyms` — mocked here so these cases stay about
+// the session and nothing reaches the network. What it does with a page of gyms is
+// `AdminGyms.test.tsx`'s and the funnel's own business.
+const { mockFetchList } = vi.hoisted(() => ({ mockFetchList: vi.fn() }));
+vi.mock("@/lib/adminApi", () => ({
+  fetchAdminGymList: mockFetchList,
+  ADMIN_GYMS_QUERY_KEY: ["admin", "gyms"],
+  adminGymQueryKey: (gymId: string) => ["admin", "gym", gymId],
+}));
+
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminHome from "@/pages/admin/AdminHome";
+import { adminGymListFixture } from "@/test/adminGymFixture";
+
+/** One list row to vary the status of. The overview reads nothing else off it. */
+const LIST_ROW = adminGymListFixture().gyms[0];
 
 const SESSION = {
   email: "ops@muscleboxpro.com",
@@ -163,6 +177,7 @@ describe("AdminHome", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSignOut.mockResolvedValue(undefined);
+    mockFetchList.mockResolvedValue({ ok: true, data: { gyms: [], nextCursor: null } });
   });
 
   it("proves the session by rendering what the server said", async () => {
@@ -214,6 +229,53 @@ describe("AdminHome", () => {
       expect(mockSignOut).toHaveBeenCalled();
       expect(mockReplace).toHaveBeenCalledWith("/admin/login");
     });
+  });
+
+  it("says the sales figures do not exist rather than showing them as zero", async () => {
+    // The expensive misreading this page can produce. An overview that reported ₹0 of trading
+    // would be quoted at a partner or an investor as a fact about the gyms, when it is a fact
+    // about our pipeline: nothing is ingested from the machines at all.
+    mockFetchSession.mockResolvedValue(SESSION);
+    render(<AdminHome />);
+
+    const trading = await screen.findByTestId("card-trading");
+    expect(screen.getByTestId("trading-cups-unavailable")).toBeInTheDocument();
+    expect(screen.getByTestId("trading-statements-unavailable")).toBeInTheDocument();
+    expect(trading).toHaveTextContent("no ingestion from the machines");
+    expect(trading).toHaveTextContent("blanks rather than zeros");
+    expect(trading).not.toHaveTextContent("₹0");
+  });
+
+  it("frames the gap by how many gyms are live", async () => {
+    mockFetchSession.mockResolvedValue(SESSION);
+    mockFetchList.mockResolvedValue({
+      ok: true,
+      data: {
+        gyms: [
+          { ...LIST_ROW, gymId: "g1", status: "active" },
+          { ...LIST_ROW, gymId: "g2", status: "active" },
+          { ...LIST_ROW, gymId: "g3", status: "invited" },
+        ],
+        nextCursor: null,
+      },
+    });
+    render(<AdminHome />);
+
+    // `findByText` rather than the notice's own test id: the notice is on screen while the count is
+    // still loading, so asserting on the element resolves before the figure it is being asked about.
+    expect(
+      await screen.findByText("2 gyms are live. We hold no sales figures for any of them."),
+    ).toBeInTheDocument();
+  });
+
+  it("does not claim missing sales when no gym is trading yet", async () => {
+    mockFetchSession.mockResolvedValue(SESSION);
+    render(<AdminHome />);
+    expect(
+      await screen.findByText(
+        "No gym is live yet, so there would be nothing to report even with the pipeline built.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("names the API host it is talking to", async () => {

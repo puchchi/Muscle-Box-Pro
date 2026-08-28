@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 /**
  * The gym detail page — the screen that answers "why is this gym stuck?"
@@ -34,9 +35,25 @@ vi.mock("@/lib/adminSession", () => ({
   signOutAsAdmin: mockSignOut,
 }));
 
-const { mockFetchView } = vi.hoisted(() => ({ mockFetchView: vi.fn() }));
+// The six writes are mocked alongside the read, and they have to be: Vitest's module mock is
+// exhaustive, so an export the factory omits throws on import rather than arriving as undefined.
+const { mockFetchView, mockPatchTerms, mockPutMachine, mockNotice, mockTerminate } = vi.hoisted(
+  () => ({
+    mockFetchView: vi.fn(),
+    mockPatchTerms: vi.fn(),
+    mockPutMachine: vi.fn(),
+    mockNotice: vi.fn(),
+    mockTerminate: vi.fn(),
+  }),
+);
 vi.mock("@/lib/adminApi", () => ({
   fetchAdminGymView: mockFetchView,
+  patchGymTerms: mockPatchTerms,
+  putGymMachine: mockPutMachine,
+  recordOffboardingNotice: mockNotice,
+  terminateGym: mockTerminate,
+  recordMachineRecovered: vi.fn(),
+  recordOffboardingSettlement: vi.fn(),
   ADMIN_GYMS_QUERY_KEY: ["admin", "gyms"],
   adminGymQueryKey: (gymId: string) => ["admin", "gym", gymId],
 }));
@@ -46,7 +63,7 @@ vi.mock("@/lib/queryClient", () => ({
 }));
 
 import AdminGymDetail from "@/pages/admin/AdminGymDetail";
-import { adminGymFixture } from "@/test/adminGymFixture";
+import { adminGymFixture, adminOffboardingFixture } from "@/test/adminGymFixture";
 
 const SESSION = {
   email: "ops@muscleboxpro.com",
@@ -288,5 +305,251 @@ describe("AdminGymDetail", () => {
     render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
 
     expect(await screen.findByTestId("link-back-to-gyms")).toHaveAttribute("href", "/admin/gyms");
+  });
+});
+
+/**
+ * The gym's own dashboard, mirrored.
+ *
+ * The cases here are all about the seven cards that have nothing in them. There is no ingestion from
+ * the machines and no settlement job, so a figure on this screen could only have been invented — and
+ * an invented figure on an admin screen is one that gets read out to a partner on the phone.
+ */
+describe("AdminGymDetail — the partner dashboard", () => {
+  it("shows the figures the gym cannot see as unavailable, not as zero", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    const card = await screen.findByTestId("card-dashboard");
+    expect(screen.getByTestId("mirror-cups-unavailable")).toBeInTheDocument();
+    expect(screen.getByTestId("mirror-revenue-unavailable")).toBeInTheDocument();
+    expect(card).toHaveTextContent("pipeline not built");
+    // The one thing a mirrored dashboard must never do: turn "not reported" into a number.
+    expect(card).not.toHaveTextContent("₹0");
+  });
+
+  it("fills in the three cards it can, from the gym it already has", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    expect(await screen.findByTestId("mirror-machine")).toHaveTextContent("Installed");
+    expect(screen.getByTestId("mirror-deposit")).toHaveTextContent("₹50,000");
+    expect(screen.getByTestId("mirror-agreement")).toHaveTextContent("v2.2");
+  });
+});
+
+describe("AdminGymDetail — editing the terms", () => {
+  it("does not offer to edit terms a signature already covers", async () => {
+    // The signature is over a hash of these figures, so `PATCH …/terms` is refused once the gym
+    // has signed — by a `ConditionCheck` in the server's transaction. Offering the form anyway
+    // would be a button whose only outcome is a 409.
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    expect(await screen.findByTestId("card-terms")).toHaveTextContent(/no longer be edited/);
+    expect(screen.queryByTestId("button-edit-terms")).not.toBeInTheDocument();
+  });
+
+  it("sends only the figures that changed", async () => {
+    // The route patches, but the form is prefilled and complete, so a submission that sent all
+    // eleven fields would rewrite ten of them with what they already were — and any concurrent
+    // edit with them.
+    const gym = adminGymFixture();
+    gym.signature = null;
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    mockPatchTerms.mockResolvedValue({ ok: true, data: { changed: ["securityDepositInr"] } });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-edit-terms"));
+    // `fireEvent.change` rather than `user.clear` then `user.type`: jsdom does not implement
+    // selection on `type="number"`, so `clear` is a silent no-op there and the typed digits land
+    // *after* the prefilled ones — ₹5,00,00,60,000, which the form then correctly refuses.
+    fireEvent.change(screen.getByTestId("input-securityDepositInr"), {
+      target: { value: "60000" },
+    });
+    await user.click(screen.getByTestId("button-save-terms"));
+
+    await waitFor(() =>
+      expect(mockPatchTerms).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R", {
+        securityDepositInr: 60000,
+      }),
+    );
+    expect(await screen.findByTestId("terms-saved")).toHaveTextContent("securityDepositInr");
+  });
+
+  it("says nothing changed rather than letting the server say it", async () => {
+    // `PATCH …/terms` refuses an empty patch with "send at least one term", which is a confusing
+    // thing to be told after pressing Save on a form you did not edit.
+    const gym = adminGymFixture();
+    gym.signature = null;
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-edit-terms"));
+    await user.click(screen.getByTestId("button-save-terms"));
+
+    expect(await screen.findByTestId("terms-error")).toHaveTextContent("Nothing changed");
+    expect(mockPatchTerms).not.toHaveBeenCalled();
+  });
+});
+
+describe("AdminGymDetail — assigning a machine", () => {
+  it("says a different device number will replace the unit, before it does", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockPutMachine.mockResolvedValue({
+      ok: true,
+      data: { gymId: "gym_01HQZX9K2M4N6P8R", deviceNo: "MBP-000999", replaced: true },
+    });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-edit-machine"));
+    await user.clear(screen.getByTestId("input-deviceNo"));
+    await user.type(screen.getByTestId("input-deviceNo"), "MBP-000999");
+    expect(screen.getByTestId("machine-replace-warning")).toHaveTextContent("MBP-000241");
+
+    await user.click(screen.getByTestId("button-save-machine"));
+
+    // A whole machine, even though only the device number was touched: the route reads the
+    // current row to decide between a patch and a replacement, and a partial body naming an
+    // unknown device is refused as a typo rather than treated as an assignment.
+    await waitFor(() =>
+      expect(mockPutMachine).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R", {
+        deviceNo: "MBP-000999",
+        model: "MBP-Pro-1",
+        serialNumber: "SN-2026-000241",
+        valueInr: 450000,
+        accessories: "Cup dispenser, water filter, base cabinet",
+        installationDate: "2026-07-10",
+        status: "installed",
+      }),
+    );
+    expect(await screen.findByTestId("machine-saved")).toHaveTextContent("Replaced");
+  });
+
+  it("starts the device number blank when the one on file is a placeholder", async () => {
+    // Prefilling it would make "save without noticing" write a second pending row, and typing the
+    // number off the unit is the entire reason for the visit.
+    const gym = adminGymFixture();
+    gym.machine = { ...gym.machine, deviceNo: "PENDING-A1B2C3D4", installationDate: null };
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-edit-machine"));
+    expect(screen.getByTestId("input-deviceNo")).toHaveValue("");
+    // The model and value are prefilled, because those were real when the gym was created.
+    expect(screen.getByTestId("input-model")).toHaveValue("MBP-Pro-1");
+  });
+});
+
+describe("AdminGymDetail — offboarding", () => {
+  it("offers only the rung the ladder allows", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    // Nothing recorded: a notice may never arrive (breach, mutual, expiry), so terminate is
+    // offered beside it from the start.
+    expect(await screen.findByTestId("button-open-notice")).toBeInTheDocument();
+    expect(screen.getByTestId("button-open-terminate")).toBeInTheDocument();
+    // The two rungs the server would refuse are not on screen at all.
+    expect(screen.queryByTestId("button-open-recovered")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("button-open-settlement")).not.toBeInTheDocument();
+  });
+
+  it("moves to recovery once the agreement has ended", async () => {
+    const gym = adminGymFixture();
+    gym.offboarding = {
+      ...adminOffboardingFixture(),
+      state: "terminated",
+      machineRecoveredAt: null,
+      machineRecoveredByEmail: null,
+      recoveredDeviceNo: null,
+      machineCondition: null,
+      settlement: null,
+      settledAt: null,
+    };
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    expect(await screen.findByTestId("button-open-recovered")).toBeInTheDocument();
+    expect(screen.queryByTestId("button-open-terminate")).not.toBeInTheDocument();
+    // And the state is visible at the top, not only in the section: an admin who does not know
+    // the agreement has ended reads every section above as if it were live.
+    expect(screen.getByTestId("gym-ended")).toHaveTextContent("terminated");
+  });
+
+  it("offers nothing to a gym that never signed", async () => {
+    const gym = adminGymFixture();
+    gym.signature = null;
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    expect(await screen.findByTestId("offboarding-none")).toHaveTextContent("Nothing to end");
+    expect(screen.queryByTestId("button-open-terminate")).not.toBeInTheDocument();
+  });
+
+  it("records a settlement to the paise and says nobody has been paid", async () => {
+    // The payable is the one figure reconciled against a Razorpay statement, so it is not
+    // rounded — and it is a figure somebody still has to pay by hand, which the card has to say
+    // out loud beside it.
+    const gym = adminGymFixture();
+    gym.offboarding = adminOffboardingFixture();
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    const card = await screen.findByTestId("card-offboarding");
+    expect(card).toHaveTextContent("₹41,500.00");
+    expect(screen.getByTestId("settlement-not-paid")).toHaveTextContent("Recorded, not paid");
+    expect(screen.getByTestId("table-deductions")).toHaveTextContent("Damage (§35)");
+    // Settled is terminal: there is no further rung and the card says so rather than showing an
+    // empty footer.
+    expect(screen.getByTestId("offboarding-complete")).toBeInTheDocument();
+  });
+
+  it("records a notice against the date on the letter", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockNotice.mockResolvedValue({
+      ok: true,
+      data: {
+        offboarding: {
+          ...adminOffboardingFixture(),
+          state: "notice_served",
+        },
+      },
+    });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-open-notice"));
+    await user.type(screen.getByTestId("input-receivedOn"), "2026-08-01");
+    await user.type(screen.getByTestId("input-channel"), "Email to ops@");
+    await user.click(screen.getByTestId("button-save-notice"));
+
+    await waitFor(() =>
+      expect(mockNotice).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R", {
+        receivedOn: "2026-08-01",
+        channel: "Email to ops@",
+      }),
+    );
+    // §36.1's thirty days are counted server-side, and the confirmation quotes the date it
+    // answered with rather than one computed here.
+    expect(await screen.findByTestId("offboarding-saved")).toHaveTextContent("01 Sept 2026");
+  });
+
+  it("will not terminate without a cause", async () => {
+    // Four causes, and picking the wrong one changes what may be deducted from money we hold.
+    // So the select starts blank, and a blank is refused here rather than at the server.
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-open-terminate"));
+    await user.click(screen.getByTestId("button-save-terminate"));
+
+    expect(await screen.findByText("Choose a cause.")).toBeInTheDocument();
+    expect(mockTerminate).not.toHaveBeenCalled();
   });
 });

@@ -201,21 +201,6 @@ const heroProof = [
   "Machine-level financial dashboard",
 ];
 
-/**
- * Three figures small enough to sit over the hero photograph.
- *
- * A subset of `machineFacts` rather than a fourth set of numbers, so the chips can be
- * `aria-hidden` — they are decoration over an image, and the strip in "Machines" is where
- * the same facts are readable. Machine specifications rather than commercials on purpose:
- * every headline number is in the strip below the hero, and printing any of them again
- * inside the same screen would say the page's four figures twice.
- */
-const heroSpecs = [
-  { value: `${MACHINE_SPEC.displayInches}"`, label: "Touchscreen" },
-  { value: `${MACHINE_SPEC.canisters}`, label: "Canisters" },
-  { value: `${MACHINE_SPEC.cupMl} ml`, label: "Per cup" },
-];
-
 const machineFacts = [
   { icon: Monitor, value: `${MACHINE_SPEC.displayInches}-inch`, label: "Touchscreen" },
   { icon: Layers, value: `${MACHINE_SPEC.canisters}`, label: "Ingredient canisters" },
@@ -428,47 +413,64 @@ export default function Franchise() {
               </div>
 
               {/*
-                The in-gym photograph, not the studio render the "Machines" section uses:
-                the question this hero answers is what a franchisee is putting on a gym
-                floor, and the render answers what it measures.
+                A preview of the two tiers, not the machine photograph /gym-partnership
+                leads with. That page is a gym deciding whether to host one machine, and
+                its hero answers "what does the thing look like". This one is answering
+                "which of two businesses am I buying", and the choice — not the hardware
+                — is what a franchisee has to make first. The photograph still runs,
+                once, in "Machines" below.
 
-                `priority` because at `lg` it is the largest element above the fold and so
-                a candidate for LCP; `sizes` is what stops Next handing a phone the 1024px
-                candidate for a 358px box.
+                Real figures, not decoration: both rows read straight off
+                `FRANCHISE_TIERS`, the same array the full comparison in "The franchises"
+                renders from, so a number changed there cannot leave this card stale.
               */}
               <div className="lg:col-span-5 hero-rise">
-                <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.85)]">
-                  <Image
-                    src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
-                    alt={`A ${MACHINE_SPEC.model} protein shake vending machine installed against the wall of a modern gym, members training behind it`}
-                    width={1024}
-                    height={1024}
-                    priority
-                    sizes="(min-width: 1024px) 420px, 100vw"
-                    className="w-full aspect-[4/3] lg:aspect-square object-cover"
-                  />
-                  <div
-                    className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/25 to-transparent"
-                    aria-hidden="true"
-                  />
-                  <div
-                    className="absolute bottom-3 inset-x-3 grid grid-cols-3 gap-2"
-                    aria-hidden="true"
-                  >
-                    {heroSpecs.map((s) => (
-                      <div
-                        key={s.label}
-                        className="rounded-xl border border-white/10 bg-black/50 backdrop-blur-sm py-2 text-center"
-                      >
-                        <p className="text-white font-display font-black text-base leading-none">
-                          {s.value}
-                        </p>
-                        <p className="text-white/60 text-[9px] uppercase tracking-wider mt-1">
-                          {s.label}
-                        </p>
-                      </div>
-                    ))}
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+                  {/* "The franchises" — its own section's eyebrow, not its title. This
+                      card is a preview of that section, and "Two ways in" is the title
+                      down there; printing it here too put the same three words on the
+                      page twice inside one screen. */}
+                  <p className="text-xs font-bold tracking-[0.2em] uppercase text-primary mb-4">
+                    The franchises
+                  </p>
+                  <div className="space-y-3">
+                    {FRANCHISE_TIERS.map((tier) => {
+                      const TierIcon = tier.id === "city" ? Building2 : MapPin;
+                      return (
+                        <div
+                          key={tier.id}
+                          className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-black/30 p-4"
+                        >
+                          <span className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                            <TierIcon className="w-5 h-5 text-primary" aria-hidden="true" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white font-bold text-[15px] leading-snug">
+                              {tier.shortName}
+                            </p>
+                            <p className="text-gray-400 text-[13px] leading-snug truncate">
+                              {tier.marketRights}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-white font-display font-black text-lg sm:text-xl leading-none tabular-nums">
+                              {formatLakh(tier.investmentInr)}
+                            </p>
+                            <p className="text-gray-500 text-[11px] mt-1.5">
+                              {tier.initialMachines} machines
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+                  <a
+                    href="#tiers"
+                    className="flex items-center justify-center gap-1.5 text-primary text-[13px] font-bold mt-4 py-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:underline"
+                  >
+                    Compare both tiers in full
+                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                  </a>
                 </div>
               </div>
             </div>

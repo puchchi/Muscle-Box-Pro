@@ -266,7 +266,15 @@ const RECOGNISED_CODES: ReadonlySet<string> = new Set<OnboardingErrorCode>([
   "otp_invalid",
 ]);
 
-export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE";
+/**
+ * `PATCH` earns its place here for exactly one route: `PATCH /admin/gyms/{gymId}/terms`.
+ *
+ * It matters for rule 2 rather than for tidiness. `sendsBody` below is `method !== "GET"`, so
+ * adding it to this union is also what gives the request its `Content-Type: application/json` —
+ * and the API *refuses* a state-changing request without that header, because requiring it
+ * guarantees the CORS preflight a non-allowlisted origin fails (§4.2).
+ */
+export type ApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export type ApiRequestOptions = {
   /**

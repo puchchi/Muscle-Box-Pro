@@ -291,6 +291,74 @@ const onboardingTimestampsSchema = z.object({
   accountCreatedAt: instant,
 });
 
+const offboardingState = z.enum(["notice_served", "terminated", "machine_recovered", "settled"]);
+const terminationCause = z.enum(["gym_notice", "gym_breach", "mutual", "term_expiry"]);
+const deductionKind = z.enum(["outstanding_dues", "retrieval_costs", "damage", "other"]);
+
+/**
+ * A settlement line, in both units.
+ *
+ * `amountPaise` is checked as an integer and `amountInr` is not asserted to agree with it. The
+ * server derives one from the other and re-deriving here would be a second implementation of
+ * `paiseToInr` — which throws on a fractional rupee rather than rounding, so a disagreement is a
+ * backend fault to be seen rather than a client-side correction to apply.
+ */
+const adminDeductionSchema = z.object({
+  kind: deductionKind,
+  amountPaise: paise,
+  amountInr: rupees,
+  note: label,
+});
+
+const adminOffboardingSettlementSchema = z.object({
+  depositHeldPaise: paise,
+  depositHeldInr: rupees,
+  deductionsPaise: paise,
+  deductionsInr: rupees,
+  payableToGymPaise: paise,
+  payableToGymInr: rupees,
+  // A receivable, not a negative payable — so it is non-negative like every other paise figure
+  // here, and the two together are what the split means.
+  shortfallPaise: paise,
+  shortfallInr: rupees,
+  deductions: z.array(adminDeductionSchema),
+  dueAt: instant,
+  recordedByEmail: label,
+});
+
+/**
+ * The offboarding record.
+ *
+ * Almost everything is nullable, and that is the record rather than laxity: the row is written
+ * once per stage, so a gym at `notice_served` genuinely has no `terminatedAt`. What is *not*
+ * nullable is `state`, because the row cannot exist without one — `serveNotice` writes it in the
+ * same upsert that creates the row.
+ */
+const adminOffboardingSchema = z.object({
+  state: offboardingState,
+  notice: z
+    .object({
+      receivedAt: instant,
+      effectiveAt: instant,
+      channel: label,
+      recordedByEmail: label,
+      recordedAt: instant,
+    })
+    .nullable(),
+  cause: terminationCause.nullable(),
+  reason: label.nullable(),
+  earlyAgainstNotice: z.boolean().nullable(),
+  terminatedAt: instant,
+  terminatedByEmail: label.nullable(),
+  loginsDisabled: z.boolean().nullable(),
+  machineRecoveredAt: instant,
+  machineRecoveredByEmail: label.nullable(),
+  recoveredDeviceNo: label.nullable(),
+  machineCondition: label.nullable(),
+  settlement: adminOffboardingSettlementSchema.nullable(),
+  settledAt: instant,
+});
+
 export const adminGymViewSchema = z.object({
   gymId: label,
   slug: label,
@@ -312,6 +380,7 @@ export const adminGymViewSchema = z.object({
   invite: adminInviteSchema.nullable(),
   activatedAt: instant,
   activatedByEmail: label.nullable(),
+  offboarding: adminOffboardingSchema.nullable(),
 });
 
 /**

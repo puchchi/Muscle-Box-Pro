@@ -1,5 +1,6 @@
 import type { DepositChoice, DepositStatus, EntityType, OnboardingStatus } from "@shared/onboarding/types";
 import type { MachineStatus } from "@shared/gym/portal";
+import type { DeductionKind, OffboardingState, TerminationCause } from "@shared/admin/gyms";
 
 /**
  * Display helpers for the admin panel. Presentation only — nothing here derives anything.
@@ -63,6 +64,22 @@ export function formatInr(rupees: number): string {
  */
 export function formatPaiseAsInr(paise: number): string {
   return `₹${Math.round(paise / 100).toLocaleString("en-IN")}`;
+}
+
+/**
+ * Paise → rupees **to the paise**, for the settlement figures alone.
+ *
+ * Everything else on this surface rounds, because everything else is a label. A settlement payable
+ * is the one figure a human copies into a bank transfer and then reconciles against a Razorpay
+ * statement, and `AdminOffboardingSettlement` sends the exact integer for that purpose. Rounding it
+ * would make the two disagree by up to fifty paise, which is the kind of difference that costs an
+ * afternoon to find.
+ */
+export function formatPaiseExact(paise: number): string {
+  const sign = paise < 0 ? "-" : "";
+  const abs = Math.abs(paise);
+  const rest = abs % 100;
+  return `${sign}₹${Math.trunc(abs / 100).toLocaleString("en-IN")}.${String(rest).padStart(2, "0")}`;
 }
 
 /**
@@ -145,6 +162,66 @@ export const MACHINE_STATUS_LABEL: Record<MachineStatus, string> = {
   servicing: "In service",
   replaced: "Replaced",
   removed: "Removed",
+};
+
+/**
+ * The offboarding ladder, in words.
+ *
+ * All four read as states rather than events, matching `STATUS_LABEL` above, and `settled` is
+ * phrased as the end of the relationship because that is what it is: unlike the onboarding ladder,
+ * this one is genuinely terminal and nothing progresses out of its last rung.
+ */
+export const OFFBOARDING_STATE_LABEL: Record<OffboardingState, string> = {
+  notice_served: "Notice served",
+  terminated: "Terminated",
+  machine_recovered: "Machine recovered",
+  settled: "Settled",
+};
+
+/**
+ * Red throughout, and deliberately not graded the way `STATUS_CLASS` is.
+ *
+ * Grading these by rung would say a settled offboarding is "better" than a served notice, and it is
+ * not — a completed offboarding is a gym we no longer have. Amber for the two stages where
+ * something is still owed or outstanding, red once it is done, so the colour tracks *whether there
+ * is work left* rather than progress toward a goal nobody wants.
+ */
+export const OFFBOARDING_STATE_CLASS: Record<OffboardingState, string> = {
+  notice_served: "bg-amber-50 text-amber-800",
+  terminated: "bg-red-50 text-red-700",
+  machine_recovered: "bg-red-50 text-red-700",
+  settled: "bg-gray-200 text-gray-700",
+};
+
+/**
+ * The four causes, each named with its clause.
+ *
+ * The clause number is in the label rather than in a tooltip because these are not
+ * interchangeable: `gym_notice` is a nil-cost exit the gym is entitled to (§36.1/§36.2), while
+ * `gym_breach` is a factual claim about the gym that also unlocks retrieval costs (§35/§37.6).
+ * Picking the wrong one changes what may be deducted from money we are holding.
+ */
+export const TERMINATION_CAUSE_LABEL: Record<TerminationCause, string> = {
+  gym_notice: "Gym's 30-day notice (§36.1)",
+  gym_breach: "Gym's breach (§35)",
+  mutual: "By mutual agreement",
+  term_expiry: "Term expired (§4.1)",
+};
+
+export const TERMINATION_CAUSE_NOTE: Record<TerminationCause, string> = {
+  gym_notice:
+    "The gym's right to exit for convenience. Nil charge, and a recorded notice is required first.",
+  gym_breach: "Our right to end the agreement on an enumerated ground. Name the ground in the reason.",
+  mutual:
+    "Not a clause. Recorded as its own cause because folding it into the notice route would claim a notice we never received.",
+  term_expiry: "The initial term ran out and nobody renewed. Not a termination in the document's language.",
+};
+
+export const DEDUCTION_KIND_LABEL: Record<DeductionKind, string> = {
+  outstanding_dues: "Outstanding dues (§38)",
+  retrieval_costs: "Retrieval costs (§37.6)",
+  damage: "Damage (§35)",
+  other: "Other",
 };
 
 /** The steps, by name, so a step number is legible without counting. */

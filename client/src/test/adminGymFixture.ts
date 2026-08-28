@@ -17,7 +17,7 @@
  * question it answers is "why is this gym stuck?".
  */
 
-import type { AdminGymList, AdminGymView } from "@shared/admin/gyms";
+import type { AdminGymList, AdminGymView, AdminOffboarding } from "@shared/admin/gyms";
 
 /** A deep clone, so a test that mutates the fixture cannot reach another test. */
 export function adminGymFixture(): AdminGymView {
@@ -27,6 +27,60 @@ export function adminGymFixture(): AdminGymView {
 export function adminGymListFixture(): AdminGymList {
   return structuredClone(ADMIN_GYM_LIST);
 }
+
+/**
+ * A completed offboarding, for spreading onto `adminGymFixture()`.
+ *
+ * Separate from the gym above rather than a second whole fixture because the two describe the same
+ * gym at different times, and a test that needs the offboarding almost always needs the terms and
+ * the machine alongside it. Settled with one deduction, which is the state that exercises the most:
+ * every rung of the ladder is populated, and the payable is neither the whole deposit nor nil.
+ */
+export function adminOffboardingFixture(): AdminOffboarding {
+  return structuredClone(ADMIN_OFFBOARDING);
+}
+
+const ADMIN_OFFBOARDING: AdminOffboarding = {
+  state: "settled",
+  notice: {
+    receivedAt: "2026-08-01T18:30:00.000Z",
+    effectiveAt: "2026-08-31T18:30:00.000Z",
+    channel: "Email to contact@muscleboxpro.com",
+    recordedByEmail: "contact@muscleboxpro.com",
+    recordedAt: "2026-08-02T05:10:00.000Z",
+  },
+  cause: "gym_notice",
+  reason: null,
+  earlyAgainstNotice: false,
+  terminatedAt: "2026-09-01T04:00:00.000Z",
+  terminatedByEmail: "contact@muscleboxpro.com",
+  loginsDisabled: true,
+  machineRecoveredAt: "2026-09-04T09:20:00.000Z",
+  machineRecoveredByEmail: "contact@muscleboxpro.com",
+  recoveredDeviceNo: "MBP-000241",
+  machineCondition: "Working. Cup dispenser cracked, water filter missing.",
+  settlement: {
+    depositHeldPaise: 5000000,
+    depositHeldInr: 50000,
+    deductionsPaise: 850000,
+    deductionsInr: 8500,
+    payableToGymPaise: 4150000,
+    payableToGymInr: 41500,
+    shortfallPaise: 0,
+    shortfallInr: 0,
+    deductions: [
+      {
+        kind: "damage",
+        amountPaise: 850000,
+        amountInr: 8500,
+        note: "Cracked cup dispenser and missing water filter, replaced at cost.",
+      },
+    ],
+    dueAt: "2026-10-04T09:20:00.000Z",
+    recordedByEmail: "contact@muscleboxpro.com",
+  },
+  settledAt: "2026-09-05T06:45:00.000Z",
+};
 
 const ADMIN_GYM_VIEW: AdminGymView = {
   gymId: "gym_01HQZX9K2M4N6P8R",
@@ -164,6 +218,9 @@ const ADMIN_GYM_VIEW: AdminGymView = {
   },
   activatedAt: null,
   activatedByEmail: null,
+  // Null is the ordinary case and the one the panel must not confuse with a zeroed record. Use
+  // `adminOffboardingFixture()` for the other.
+  offboarding: null,
 };
 
 const ADMIN_GYM_LIST: AdminGymList = {

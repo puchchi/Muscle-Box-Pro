@@ -1,49 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { fetchAdminGymView } from "@/lib/adminApi";
-import { isPendingDeviceNo, type AdminGymView } from "@shared/admin/gyms";
+import type { AdminGymView } from "@shared/admin/gyms";
 import type { OnboardingTimestamps } from "@shared/onboarding/types";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
+import { Card, Empty, ErrorPanel, Field, Fields, Pill } from "./AdminUi";
+import { AdminGymDashboard } from "./AdminGymDashboard";
+import { AdminTermsEditor } from "./AdminTermsEditor";
+import { AdminMachineEditor } from "./AdminMachineEditor";
+import { AdminOffboardingSection } from "./AdminOffboardingSection";
 import {
   DEPOSIT_CHOICE_LABEL,
   DEPOSIT_STATUS_LABEL,
   ENTITY_TYPE_LABEL,
-  MACHINE_STATUS_LABEL,
+  OFFBOARDING_STATE_LABEL,
   STATUS_CLASS,
   STATUS_LABEL,
   STEP_LABEL,
   formatCalendarDate,
-  formatInr,
   formatIstDateTime,
   formatPaiseAsInr,
 } from "./adminFormat";
 
 /**
- * One gym, read-only — the screen that answers **"why is this gym stuck?"**
+ * One gym, completely — the screen that answers **"why is this gym stuck?"**, and now the screen
+ * that unsticks it.
  *
  * That question is the whole design brief, and it is why this page is wide rather than a tidy
- * summary. Every partial answer sends whoever asked to the DynamoDB console, which is the state
- * this panel exists to leave (§2.7: *"the one that needs to be genuinely complete"*).
+ * summary. Every partial answer sends whoever asked to the DynamoDB console, which is the state this
+ * panel exists to leave (§2.7: *"the one that needs to be genuinely complete"*).
  *
- * Three things here are not obvious:
+ * ## What is not obvious
  *
- * 1. **"No unit allocated" is `machine.deviceNo === null`, never `machine === null`.**
- *    `machineOf(null)` returns a zero-valued projection, so the wrong check shows a gym with no
- *    machine a ₹0 unit called "". See `AdminGymView.machine`.
- * 2. **The timeline shows every stage, including the ones that have not happened.** A blank
- *    `signedAt` beside a filled `agreementViewedAt` is the answer to the question; a timeline
- *    that only listed what did happen would make the gap invisible.
- * 3. **Schema failures are shown with their field paths.** The audience is us, and
- *    `terms.securityDepositInr: Required` is the entire answer to "what changed on the
- *    backend?" — better on screen than in a console nobody has open.
+ * 1. **The timeline shows every stage, including the ones that have not happened.** A blank
+ *    `signedAt` beside a filled `agreementViewedAt` is the answer to the question; a timeline that
+ *    only listed what did happen would make the gap invisible.
+ * 2. **Schema failures are shown with their field paths.** The audience is us, and
+ *    `terms.securityDepositInr: Required` is the entire answer to "what changed on the backend?" —
+ *    better on screen than in a console nobody has open.
+ * 3. **Every write re-reads the whole gym rather than patching local state.** `reload` is what each
+ *    editor calls on success. The alternative is a page that agrees with its own last request
+ *    instead of with the database: terminating changes `loginsDisabled` and the offboarding state,
+ *    replacing a machine writes a second row in the history table, and both are server decisions.
+ *    A re-read is one request on a screen nobody opens in a loop.
+ * 4. **The section nav is anchors, not tabs.** Everything stays mounted and Cmd-F still finds it,
+ *    which matters more here than tidiness: this page is read by someone who does not yet know
+ *    which section holds the answer.
  *
- * Nothing here writes. The six write actions (resend, void, terms, machine, activate,
- * set-password-link) land on this page next; the read screen exists first so each one has
- * something to be verified against.
+ * The write actions live in their own components — `AdminTermsEditor`, `AdminMachineEditor`,
+ * `AdminOffboardingSection` — because each carries a rule about *when* it may be used, and those
+ * rules are the interesting part. `AdminGymDashboard` is the gym's own view, mirrored, blanks
+ * included.
+ *
+ * Invite resend/void and activation remain read-only here.
  */
 
 export default function AdminGymDetail({ gymId }: { gymId: string }) {
@@ -52,19 +65,26 @@ export default function AdminGymDetail({ gymId }: { gymId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [problem, setProblem] = useState<{ message: string; issues: string[] } | null>(null);
 
+  const load = useCallback(async () => {
+    const result = await fetchAdminGymView(gymId);
+    if (result.ok) {
+      setGym(result.data);
+      setProblem(null);
+    } else {
+      setProblem({ message: result.error.message, issues: result.issues });
+    }
+  }, [gymId]);
+
   useEffect(() => {
     if (guard.state !== "ready") return;
     let cancelled = false;
-    fetchAdminGymView(gymId).then((result) => {
-      if (cancelled) return;
-      if (result.ok) setGym(result.data);
-      else setProblem({ message: result.error.message, issues: result.issues });
-      setIsLoading(false);
+    load().then(() => {
+      if (!cancelled) setIsLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [guard.state, gymId]);
+  }, [guard.state, load]);
 
   if (guard.state !== "ready") return <AdminChecking />;
 
@@ -72,10 +92,10 @@ export default function AdminGymDetail({ gymId }: { gymId: string }) {
     <AdminShell session={guard.session}>
       <Link
         href="/admin/gyms"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5"
         data-testid="link-back-to-gyms"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
+        <ArrowLeft className="w-3.5 h-3.5" aria-hidden />
         All gyms
       </Link>
 
@@ -86,56 +106,46 @@ export default function AdminGymDetail({ gymId }: { gymId: string }) {
       )}
 
       {problem && (
-        <div
-          className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5"
-          data-testid="gym-error"
-        >
-          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs text-red-600 leading-relaxed">{problem.message}</p>
-            {problem.issues.length > 0 && (
-              <ul className="mt-2 space-y-0.5" data-testid="gym-issues">
-                {problem.issues.map((issue) => (
-                  <li key={issue} className="text-xs text-red-500 font-mono">
-                    {issue}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+        <ErrorPanel
+          message={problem.message}
+          issues={problem.issues}
+          testId="gym-error"
+          issuesTestId="gym-issues"
+        />
       )}
 
-      {gym && <GymView gym={gym} />}
+      {gym && <GymView gym={gym} onChanged={load} />}
     </AdminShell>
   );
 }
 
-function GymView({ gym }: { gym: AdminGymView }) {
-  // The trap, spelled out once so no section below has to remember it.
-  const hasUnit = gym.machine.deviceNo !== null;
-  // A second trap since 2026-08-23: `hasUnit` alone no longer means a real, physical unit is
-  // assigned. `POST /admin/gyms` allocates a machine row (with a real model and value) even
-  // when the admin has not chosen a unit yet, filling `deviceNo` with a placeholder rather than
-  // leaving it null — see `isPendingDeviceNo`'s docstring in `shared/admin/gyms.ts`.
-  const isPending = hasUnit && isPendingDeviceNo(gym.machine.deviceNo);
+const SECTIONS: Array<{ id: string; label: string }> = [
+  { id: "progress", label: "Progress" },
+  { id: "invite", label: "Link" },
+  { id: "details", label: "Details" },
+  { id: "terms", label: "Terms" },
+  { id: "signature", label: "Signature" },
+  { id: "deposit", label: "Deposit" },
+  { id: "machine", label: "Machine" },
+  { id: "activation", label: "Activation" },
+  { id: "dashboard", label: "Dashboard" },
+  { id: "offboarding", label: "Offboarding" },
+];
 
+function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <div className="flex items-center gap-3 mb-1">
+        <div className="flex flex-wrap items-center gap-3 mb-1">
           <h1
             className="text-2xl font-display font-black text-foreground uppercase tracking-tight"
             data-testid="gym-heading"
           >
             {gym.details.tradeName || gym.details.legalEntityName || gym.slug}
           </h1>
-          <span
-            className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_CLASS[gym.status]}`}
-            data-testid="gym-status"
-          >
+          <Pill className={STATUS_CLASS[gym.status]} testId="gym-status">
             {STATUS_LABEL[gym.status]}
-          </span>
+          </Pill>
         </div>
         <p className="text-sm text-muted-foreground">
           On step {gym.currentStep}: {STEP_LABEL[gym.currentStep]}
@@ -146,19 +156,52 @@ function GymView({ gym }: { gym: AdminGymView }) {
         </p>
       </div>
 
-      <Card title="Progress" testId="card-progress">
+      {/*
+        At the top rather than only in its own section, because an admin who does not know the
+        agreement has ended will spend the visit reading the onboarding sections as if it were live.
+      */}
+      {gym.offboarding && (
+        <a
+          href="#offboarding"
+          className="block rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 hover:bg-red-100 transition-colors"
+          data-testid="gym-ended"
+        >
+          <span className="font-semibold">
+            Offboarding: {OFFBOARDING_STATE_LABEL[gym.offboarding.state].toLowerCase()}.
+          </span>{" "}
+          The onboarding sections below describe a relationship that is ending or over.
+        </a>
+      )}
+
+      <nav
+        className="sticky top-[3.4rem] z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-white/80"
+        aria-label="Sections of this gym"
+      >
+        {SECTIONS.map((section) => (
+          <a
+            key={section.id}
+            href={`#${section.id}`}
+            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-muted-foreground hover:bg-gray-100 hover:text-foreground transition-colors"
+            data-testid={`jump-${section.id}`}
+          >
+            {section.label}
+          </a>
+        ))}
+      </nav>
+
+      <Card id="progress" title="Progress" testId="card-progress">
         {/*
           Every stage, including the empty ones — the gap is the diagnosis. `completedSteps` is
           shown alongside because the two can legitimately disagree: a timestamp records when
           something happened, `completedSteps` is what the server will let the gym do next.
         */}
         <Timeline timestamps={gym.timestamps} />
-        <p className="px-5 pb-4 text-xs text-muted-foreground">
+        <p className="px-4 sm:px-5 pb-4 text-xs text-muted-foreground">
           Steps completed: {gym.completedSteps.length > 0 ? gym.completedSteps.join(", ") : "none"}
         </p>
       </Card>
 
-      <Card title="Onboarding link" testId="card-invite">
+      <Card id="invite" title="Onboarding link" testId="card-invite">
         {gym.invite ? (
           <Fields>
             <Field label="Token" value={gym.invite.tokenId} mono />
@@ -175,9 +218,7 @@ function GymView({ gym }: { gym: AdminGymView }) {
             {gym.invite.revokedAt && (
               <Field label="Revoked" value={formatIstDateTime(gym.invite.revokedAt)} />
             )}
-            {gym.invite.revokedReason && (
-              <Field label="Reason" value={gym.invite.revokedReason} />
-            )}
+            {gym.invite.revokedReason && <Field label="Reason" value={gym.invite.revokedReason} />}
             {gym.invite.supersededByTokenId && (
               <Field label="Superseded by" value={gym.invite.supersededByTokenId} mono />
             )}
@@ -190,6 +231,7 @@ function GymView({ gym }: { gym: AdminGymView }) {
       </Card>
 
       <Card
+        id="details"
         title="Details"
         testId="card-details"
         note={
@@ -214,186 +256,9 @@ function GymView({ gym }: { gym: AdminGymView }) {
         </Fields>
       </Card>
 
-      <Card
-        title="Terms"
-        testId="card-terms"
-        note={
-          gym.termsUpdatedByEmail
-            ? `Last set by ${gym.termsUpdatedByEmail}`
-            : "Never edited. These are the values the gym was created with."
-        }
-      >
-        <Fields>
-          <Field label="Security deposit" value={formatInr(gym.terms.securityDepositInr)} />
-          <Field label="Term" value={`${gym.terms.termMonths} months`} />
-          <Field
-            label="Gym share, before milestone"
-            value={`${gym.terms.gymSharePctBeforeMilestone}%`}
-          />
-          <Field
-            label="Gym share, after milestone"
-            value={`${gym.terms.gymSharePctAfterMilestone}%`}
-          />
-          <Field label="Milestone, cups" value={gym.terms.milestoneCups.toLocaleString("en-IN")} />
-          {/* §6.1's profit test is cumulative Net Profit, not gross sales — hence both figures. */}
-          <Field
-            label="Milestone, net profit"
-            value={formatInr(gym.terms.milestoneNetProfitInr)}
-          />
-          <Field label="Advertising, gym share" value={`${gym.terms.advertisingGymSharePct}%`} />
-          <Field
-            label="Electricity"
-            value={`${formatInr(gym.terms.electricityInrPerBlock)} per ${gym.terms.electricityCupsPerBlock.toLocaleString("en-IN")} cups`}
-          />
-          <Field
-            label="Electricity review"
-            value={`Every ${gym.terms.electricityReviewWindowMonths} months`}
-          />
-          <Field
-            label="Settlement"
-            value={`${gym.terms.settlementDaysAfterMonthEnd} days after month end`}
-          />
-          {/*
-            Zero and null are different answers and are shown differently. Zero is the standard
-            term and means the exit price is nil on 30 days' notice (§36.1); null means the
-            charge is genuinely unagreed. A blank printing as "₹0" is how a placeholder becomes
-            a term nobody chose.
-          */}
-          <Field
-            label="Early termination charge"
-            value={
-              gym.terms.earlyTerminationChargeInr === null
-                ? "Not agreed"
-                : formatInr(gym.terms.earlyTerminationChargeInr)
-            }
-          />
-        </Fields>
-      </Card>
+      <AdminTermsEditor gym={gym} onSaved={onChanged} />
 
-      <Card
-        title="Machine"
-        testId="card-machine"
-        note={
-          isPending
-            ? "Model and value are set; the physical unit hasn't been chosen yet."
-            : undefined
-        }
-      >
-        {hasUnit ? (
-          <Fields>
-            <Field
-              label="Device no."
-              value={isPending ? "Pending, not yet chosen" : gym.machine.deviceNo}
-              mono={!isPending}
-            />
-            <Field label="Model" value={gym.machine.model} />
-            <Field label="Serial" value={gym.machine.serialNumber} mono />
-            <Field label="Value" value={formatInr(gym.machine.valueInr)} />
-            <Field label="Accessories" value={gym.machine.accessories} />
-            {/* A contractual calendar date (§4.1), formatted as one — never through `Date`. */}
-            <Field
-              label="Installed"
-              value={formatCalendarDate(gym.machine.installationDate)}
-            />
-          </Fields>
-        ) : (
-          <Empty testId="machine-none">
-            No unit allocated. Signing does not require one; activation does.
-          </Empty>
-        )}
-
-        {gym.machines.length > 0 && (
-          <div className="border-t border-gray-100">
-            <p className="px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              All units, including replaced
-            </p>
-            <table className="w-full text-sm" data-testid="table-machines">
-              <tbody className="divide-y divide-gray-100">
-                {gym.machines.map((unit) => (
-                  <tr key={unit.deviceNo}>
-                    <td className="px-5 py-3 font-mono text-xs">
-                      {isPendingDeviceNo(unit.deviceNo) ? (
-                        <span className="font-sans text-muted-foreground italic">pending</span>
-                      ) : (
-                        unit.deviceNo
-                      )}
-                    </td>
-                    <td className="px-5 py-3">{unit.model}</td>
-                    <td className="px-5 py-3">{MACHINE_STATUS_LABEL[unit.status]}</td>
-                    <td className="px-5 py-3 text-muted-foreground whitespace-nowrap">
-                      {formatCalendarDate(unit.installationDate)}
-                    </td>
-                    <td className="px-5 py-3 text-muted-foreground whitespace-nowrap">
-                      {/* An ISO timestamp, not a date — truncating it in UTC dates a 01:00 IST
-                          service call to the previous day. */}
-                      {unit.lastServiceAt ? `Serviced ${formatIstDateTime(unit.lastServiceAt)}` : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      <Card
-        title="Deposit"
-        testId="card-deposit"
-        note={
-          gym.depositChoice ? DEPOSIT_CHOICE_LABEL[gym.depositChoice] : "No choice made yet"
-        }
-      >
-        <Fields>
-          <Field label="Status" value={DEPOSIT_STATUS_LABEL[gym.depositStatus]} />
-        </Fields>
-
-        {gym.depositWaiver && (
-          <div className="mx-5 mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3" data-testid="deposit-waiver">
-            {/*
-              A waived deposit and a deposit nobody chased look identical in `depositStatus`.
-              This record is the difference, and it matters once the gym is already trading —
-              which is why activation takes a reason and a name rather than a checkbox.
-            */}
-            <p className="text-xs font-semibold text-amber-800 mb-0.5">Deposit waived</p>
-            <p className="text-xs text-amber-700">
-              {gym.depositWaiver.reason}. By {gym.depositWaiver.byEmail},{" "}
-              {formatIstDateTime(gym.depositWaiver.at)}
-            </p>
-          </div>
-        )}
-
-        {gym.deposits.length > 0 ? (
-          <div className="border-t border-gray-100">
-            <table className="w-full text-sm" data-testid="table-deposits">
-              <tbody className="divide-y divide-gray-100">
-                {gym.deposits.map((deposit) => (
-                  <tr key={deposit.depositId}>
-                    <td className="px-5 py-3 font-semibold">{formatPaiseAsInr(deposit.amountPaise)}</td>
-                    <td className="px-5 py-3">{DEPOSIT_STATUS_LABEL[deposit.status]}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{deposit.method ?? "—"}</td>
-                    {/* §2.7 asks for the link id by name: reconciling against Razorpay's own
-                        dashboard is done on it, not on our deposit id. */}
-                    <td className="px-5 py-3 font-mono text-xs text-muted-foreground">
-                      {deposit.receiptNo ?? deposit.linkId ?? deposit.depositId}
-                    </td>
-                    <td className="px-5 py-3 text-muted-foreground whitespace-nowrap">
-                      {deposit.paidAt
-                        ? formatIstDateTime(deposit.paidAt)
-                        : deposit.linkExpiresAt
-                          ? `Link expires ${formatIstDateTime(deposit.linkExpiresAt)}`
-                          : formatIstDateTime(deposit.createdAt)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <Empty testId="deposits-none">No deposit records.</Empty>
-        )}
-      </Card>
-
-      <Card title="Signature" testId="card-signature">
+      <Card id="signature" title="Signature" testId="card-signature">
         {gym.signature ? (
           <Fields>
             <Field label="Signed" value={formatIstDateTime(gym.signature.signedAt)} />
@@ -423,22 +288,24 @@ function GymView({ gym }: { gym: AdminGymView }) {
 
         {gym.agreements.length > 0 && (
           <div className="border-t border-gray-100">
-            <p className="px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="px-4 sm:px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Documents issued
             </p>
             <table className="w-full text-sm" data-testid="table-agreements">
               <tbody className="divide-y divide-gray-100">
                 {gym.agreements.map((agreement) => (
                   <tr key={agreement.contentHash}>
-                    <td className="px-5 py-3 font-semibold">{agreement.version}</td>
-                    <td className="px-5 py-3 text-muted-foreground">
+                    <td className="px-4 sm:px-5 py-2.5 font-semibold">{agreement.version}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
                       Effective {formatCalendarDate(agreement.effectiveDate)}
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs text-muted-foreground">
+                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                       {agreement.contentHash.slice(0, 12)}… · {agreement.length} chars
                     </td>
-                    <td className="px-5 py-3 text-muted-foreground whitespace-nowrap">
-                      {agreement.viewedAt ? `Viewed ${formatIstDateTime(agreement.viewedAt)}` : "Not viewed"}
+                    <td className="px-4 sm:px-5 py-2.5 text-muted-foreground whitespace-nowrap">
+                      {agreement.viewedAt
+                        ? `Viewed ${formatIstDateTime(agreement.viewedAt)}`
+                        : "Not viewed"}
                     </td>
                   </tr>
                 ))}
@@ -448,7 +315,70 @@ function GymView({ gym }: { gym: AdminGymView }) {
         )}
       </Card>
 
-      <Card title="Activation" testId="card-activation">
+      <Card
+        id="deposit"
+        title="Deposit"
+        testId="card-deposit"
+        note={gym.depositChoice ? DEPOSIT_CHOICE_LABEL[gym.depositChoice] : "No choice made yet"}
+      >
+        <Fields>
+          <Field label="Status" value={DEPOSIT_STATUS_LABEL[gym.depositStatus]} />
+        </Fields>
+
+        {gym.depositWaiver && (
+          <div
+            className="mx-4 sm:mx-5 mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3"
+            data-testid="deposit-waiver"
+          >
+            {/*
+              A waived deposit and a deposit nobody chased look identical in `depositStatus`.
+              This record is the difference, and it matters once the gym is already trading —
+              which is why activation takes a reason and a name rather than a checkbox.
+            */}
+            <p className="text-xs font-semibold text-amber-800 mb-0.5">Deposit waived</p>
+            <p className="text-xs text-amber-700">
+              {gym.depositWaiver.reason}. By {gym.depositWaiver.byEmail},{" "}
+              {formatIstDateTime(gym.depositWaiver.at)}
+            </p>
+          </div>
+        )}
+
+        {gym.deposits.length > 0 ? (
+          <div className="border-t border-gray-100">
+            <table className="w-full text-sm" data-testid="table-deposits">
+              <tbody className="divide-y divide-gray-100">
+                {gym.deposits.map((deposit) => (
+                  <tr key={deposit.depositId}>
+                    <td className="px-4 sm:px-5 py-2.5 font-semibold">
+                      {formatPaiseAsInr(deposit.amountPaise)}
+                    </td>
+                    <td className="px-4 py-2.5">{DEPOSIT_STATUS_LABEL[deposit.status]}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">{deposit.method ?? "—"}</td>
+                    {/* §2.7 asks for the link id by name: reconciling against Razorpay's own
+                        dashboard is done on it, not on our deposit id. */}
+                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                      {deposit.receiptNo ?? deposit.linkId ?? deposit.depositId}
+                    </td>
+                    <td className="px-4 sm:px-5 py-2.5 text-muted-foreground whitespace-nowrap">
+                      {deposit.paidAt
+                        ? formatIstDateTime(deposit.paidAt)
+                        : deposit.linkExpiresAt
+                          ? `Link expires ${formatIstDateTime(deposit.linkExpiresAt)}`
+                          : formatIstDateTime(deposit.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty testId="deposits-none">No deposit records.</Empty>
+        )}
+      </Card>
+
+      <AdminMachineEditor gym={gym} onSaved={onChanged} />
+
+      <Card id="activation" title="Activation" testId="card-activation">
         {gym.activatedAt ? (
           <Fields>
             <Field label="Activated" value={formatIstDateTime(gym.activatedAt)} />
@@ -458,6 +388,10 @@ function GymView({ gym }: { gym: AdminGymView }) {
           <Empty testId="activation-none">Not activated.</Empty>
         )}
       </Card>
+
+      <AdminGymDashboard gym={gym} />
+
+      <AdminOffboardingSection gym={gym} onSaved={onChanged} />
     </div>
   );
 }
@@ -482,11 +416,15 @@ const TIMELINE: Array<{ key: keyof OnboardingTimestamps; label: string }> = [
 
 function Timeline({ timestamps }: { timestamps: OnboardingTimestamps }) {
   return (
-    <ol className="px-5 py-4 space-y-2" data-testid="gym-timeline">
+    <ol className="px-4 sm:px-5 py-4 space-y-2" data-testid="gym-timeline">
       {TIMELINE.map(({ key, label }) => {
         const at = timestamps[key];
         return (
-          <li key={key} className="flex items-baseline gap-3 text-sm" data-testid={`timeline-${key}`}>
+          <li
+            key={key}
+            className="flex items-baseline gap-3 text-sm"
+            data-testid={`timeline-${key}`}
+          >
             <span
               className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${at ? "bg-green-500" : "bg-gray-300"}`}
               aria-hidden
@@ -499,66 +437,5 @@ function Timeline({ timestamps }: { timestamps: OnboardingTimestamps }) {
         );
       })}
     </ol>
-  );
-}
-
-function Card({
-  title,
-  note,
-  testId,
-  children,
-}: {
-  title: string;
-  note?: string;
-  testId: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-gray-200 bg-white overflow-hidden" data-testid={testId}>
-      <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
-        {note && <p className="text-xs text-muted-foreground mt-0.5">{note}</p>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Fields({ children }: { children: React.ReactNode }) {
-  return <dl className="divide-y divide-gray-100">{children}</dl>;
-}
-
-/**
- * One label/value pair.
- *
- * An empty string renders as an em dash rather than as nothing, because a row with no value is
- * information — "this gym has no FSSAI number" — and a row that collapses to whitespace looks
- * like a rendering bug. Optional fields on `GymDetails` arrive as `""`, not as null.
- */
-function Field({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string | null;
-  mono?: boolean;
-}) {
-  const shown = value === null || value.trim().length === 0 ? "—" : value;
-  return (
-    <div className="flex items-baseline justify-between gap-6 px-5 py-3">
-      <dt className="text-sm text-muted-foreground flex-shrink-0">{label}</dt>
-      <dd className={`text-sm text-foreground text-right break-words ${mono ? "font-mono text-xs" : ""}`}>
-        {shown}
-      </dd>
-    </div>
-  );
-}
-
-function Empty({ children, testId }: { children: React.ReactNode; testId: string }) {
-  return (
-    <p className="px-5 py-4 text-sm text-muted-foreground" data-testid={testId}>
-      {children}
-    </p>
   );
 }

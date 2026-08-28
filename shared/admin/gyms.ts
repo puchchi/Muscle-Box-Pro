@@ -213,6 +213,112 @@ export type AdminInvite = {
   supersededByTokenId: string | null;
 };
 
+// ── Offboarding ─────────────────────────────────────────────────────────────
+
+/**
+ * The offboarding ladder — `mbp-backend`'s `domain/offboarding.ts`, not ours.
+ *
+ * Forward-only and, unlike `OnboardingStatus`, genuinely terminal: `settled` is the end of the
+ * relationship, not a step to progress from. That is why the admin panel treats a gym with an
+ * offboarding record as read-mostly — the write actions that assume a live agreement (terms,
+ * machine) are refused past `terminated` server-side, so offering them would be a button whose
+ * only outcome is a 409.
+ */
+export type OffboardingState = "notice_served" | "terminated" | "machine_recovered" | "settled";
+
+/**
+ * Why the agreement ended. The document's four causes, not a taxonomy of our own.
+ *
+ * There is deliberately no `mbp_convenience`: §35 gives us no right to terminate at will, so a
+ * member for it would be a state the contract does not permit. See `TerminationCause` in
+ * `mbp-backend`'s `domain/offboarding.ts` for the clause behind each.
+ */
+export type TerminationCause = "gym_notice" | "gym_breach" | "mutual" | "term_expiry";
+
+/** What may be taken out of the deposit before it goes back. §38, §35 and §37.6. */
+export type DeductionKind = "outstanding_dues" | "retrieval_costs" | "damage" | "other";
+
+/**
+ * One line of a settlement, in **both** units.
+ *
+ * The rest of this file sends rupees and drops the paise; this response does not, and the
+ * asymmetry is the backend's on purpose. `offboardingOf`'s docstring gives the reason: this is
+ * the one figure an admin reads while deciding what to pay out of a bank account, and it has to
+ * reconcile against a Razorpay statement to the paise. So the exact integer travels beside the
+ * readable one rather than instead of it.
+ */
+export type AdminDeduction = {
+  kind: DeductionKind;
+  amountPaise: number;
+  amountInr: number;
+  note: string;
+};
+
+/**
+ * The deposit split at the end of the relationship.
+ *
+ * **Recorded, not paid.** Nothing in the onboarding service moves money, so `payableToGymPaise`
+ * is a figure a human pays from the Razorpay dashboard afterwards. The panel has to say that out
+ * loud beside it, because the one misreading that costs real money is a payable read as a
+ * payment already made.
+ *
+ * `payableToGymPaise` and `shortfallPaise` are two fields rather than one signed number for the
+ * reason `settlementFigures` gives: the first thing anything downstream does with a payable is
+ * pay it, so a negative payable is one sign flip away from paying a receivable.
+ */
+export type AdminOffboardingSettlement = {
+  depositHeldPaise: number;
+  depositHeldInr: number;
+  deductionsPaise: number;
+  deductionsInr: number;
+  payableToGymPaise: number;
+  payableToGymInr: number;
+  shortfallPaise: number;
+  shortfallInr: number;
+  deductions: AdminDeduction[];
+  /** §5.x: thirty days from *retrieval*, not from termination. */
+  dueAt: string | null;
+  recordedByEmail: string;
+};
+
+/**
+ * The offboarding record, or null — and **null is the ordinary case**, not a fault.
+ *
+ * The row does not exist until the first offboarding action (§11), so almost every gym has
+ * `offboarding: null`. It is on the shared read rather than only in the offboarding handlers
+ * because every one of those handlers needs it anyway, and because a detail page that had to
+ * fetch it separately would show a terminated gym as live for one render.
+ *
+ * `earlyAgainstNotice` is stored rather than derived: §37.6 makes retrieval costs recoverable
+ * where removal was required *without* the §36.1 notice, and cutting a served notice short is
+ * that case. Recomputing it at settlement time would compare against a notice row that may have
+ * been corrected since, so the answer is whatever was true when we terminated.
+ */
+export type AdminOffboarding = {
+  state: OffboardingState;
+  notice: {
+    receivedAt: string | null;
+    /** §36.1's thirty days, counted from 00:00 IST on the day the notice arrived. */
+    effectiveAt: string | null;
+    /** Free text, because §41 does not close the set of ways a notice can arrive. */
+    channel: string;
+    recordedByEmail: string;
+    recordedAt: string | null;
+  } | null;
+  cause: TerminationCause | null;
+  reason: string | null;
+  earlyAgainstNotice: boolean | null;
+  terminatedAt: string | null;
+  terminatedByEmail: string | null;
+  loginsDisabled: boolean | null;
+  machineRecoveredAt: string | null;
+  machineRecoveredByEmail: string | null;
+  recoveredDeviceNo: string | null;
+  machineCondition: string | null;
+  settlement: AdminOffboardingSettlement | null;
+  settledAt: string | null;
+};
+
 /**
  * One gym, completely — §2.7: *"the one that needs to be genuinely complete."*
  *
@@ -261,4 +367,14 @@ export type AdminGymView = {
   invite: AdminInvite | null;
   activatedAt: string | null;
   activatedByEmail: string | null;
+  /**
+   * Null for almost every gym. See `AdminOffboarding`.
+   *
+   * `toAdminGymView` has always sent this field; this side only started declaring it on
+   * 2026-08-28, which means it was being silently stripped by `gymsSchema`'s `z.object()` until
+   * then. That is the strip direction working as intended — a field the backend adds must not
+   * break the panel — but it also means a terminated gym read as a live one on this screen for
+   * as long as the field went undeclared.
+   */
+  offboarding: AdminOffboarding | null;
 };
