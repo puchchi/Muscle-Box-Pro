@@ -47,17 +47,21 @@ import {
   CalendarClock,
   CheckCircle2,
   CreditCard,
+  CupSoda,
   FileSignature,
   Handshake,
   Info,
   KeyRound,
+  Layers,
   Lock,
   LogOut,
   Megaphone,
+  Monitor,
   Ruler,
   Send,
   ShieldCheck,
   UserCheck,
+  Wifi,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -183,6 +187,26 @@ const heroProof = [
   "No early-termination charge",
 ];
 
+/**
+ * Three figures small enough to sit over the hero photograph.
+ *
+ * A subset of `machineFacts` rather than a fourth set of numbers, so the chips can be
+ * `aria-hidden` — they are decoration over an image, and the strip in "The offer" is
+ * where the same facts are readable.
+ */
+const heroSpecs = [
+  { value: `${MACHINE_SPEC.displayInches}"`, label: "Touchscreen" },
+  { value: `${MACHINE_SPEC.canisters}`, label: "Canisters" },
+  { value: `${MACHINE_SPEC.cupMl} ml`, label: "Per cup" },
+];
+
+const machineFacts = [
+  { icon: Monitor, value: `${MACHINE_SPEC.displayInches}-inch`, label: "Touchscreen" },
+  { icon: Layers, value: `${MACHINE_SPEC.canisters}`, label: "Ingredient canisters" },
+  { icon: CupSoda, value: `${MACHINE_SPEC.cupMl} ml`, label: "Per serving" },
+  { icon: Wifi, value: MACHINE_SPEC.connectivity, label: "Always connected" },
+];
+
 export default function GymPartnership() {
   return (
     // `pb-24 lg:pb-0` clears the sticky mobile CTA bar, which is fixed and would
@@ -238,87 +262,148 @@ export default function GymPartnership() {
             </nav>
 
             {/*
-              CSS, not framer-motion, and it moves the block without ever fading it.
-              Driven from JS this was server-rendered with `opacity: 0` inline, so the
-              `h1` below — the LCP element — stayed invisible until the bundle had
-              downloaded, hydrated and run a 500ms fade. See `.hero-rise` in index.css.
+              Copy and machine side by side, the shape /gym-demo uses, so the object a
+              gym is being offered is visible before the terms describing it.
+
+              Copy first in the DOM at every width, which is also the stacking order on
+              a phone: the `h1` is the LCP element and it should not queue behind a
+              1024px image decode.
             */}
-            <div className="text-center hero-rise">
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
-                Gym Partnership
-              </span>
+            <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 lg:items-center">
               {/*
-                Two details here are not cosmetic.
-
-                The trailing space before the `<br>` is load-bearing for text
-                extraction: without it the HTML-to-text pass some crawlers and AI
-                scrapers use concatenates the two lines into "machineat no cost".
-
-                The break is `hidden sm:inline` because a forced break defeats
-                `text-balance` — at 390px the balancer honours the break, then wraps
-                the gradient half on its own and leaves "gym" alone on line four.
-                Below `sm` the whole heading flows and balances as one block.
+                CSS, not framer-motion, and it moves the block without ever fading it.
+                Driven from JS this was server-rendered with `opacity: 0` inline, so the
+                `h1` below — the LCP element — stayed invisible until the bundle had
+                downloaded, hydrated and run a 500ms fade. See `.hero-rise` in index.css.
               */}
-              <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-5xl leading-[0.95] tracking-tight mb-5 text-balance">
-                A protein shake vending machine{" "}
-                <br className="hidden sm:inline" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-                  at no cost to your gym
+              <div className="lg:col-span-7 hero-rise">
+                <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
+                  Gym Partnership
                 </span>
-              </h1>
-              {/*
-                No "we pay for everything it needs" — `heroProof` directly below opens
-                with "Nothing to buy or maintain", which is the same claim in the same
-                eyeful. `text-balance` because at `max-w-xl` this wraps to two lines and
-                the natural break orphans a short one.
-              */}
-              <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl mx-auto text-balance">
-                We install and run the machine, then share the profit with you every month.
-              </p>
+                {/*
+                  No forced `<br>`, unlike the centred full-width heroes elsewhere on the
+                  site. In a ~580px column a forced break defeats `text-balance`: the
+                  balancer honours it, then wraps the gradient half anyway and leaves
+                  "gym" alone on line four. Balanced freely it splits after "machine".
 
-              {/* Factual reassurances, straight from PARTNERSHIP — not testimonials. */}
-              <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-6">
-                {heroProof.map((item) => (
-                  <li key={item} className="flex items-center gap-1.5 text-gray-300 text-[13px]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-primary flex-shrink-0" aria-hidden="true" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+                  The trailing `{" "}` is load-bearing for text extraction — the
+                  HTML-to-text pass some crawlers and AI scrapers use would otherwise
+                  read "machineat no cost".
+                */}
+                <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] leading-[0.95] tracking-tight mb-5 text-balance">
+                  A protein shake vending machine{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                    at no cost to your gym
+                  </span>
+                </h1>
+                {/*
+                  No "we pay for everything it needs" — `heroProof` directly below opens
+                  with "Nothing to buy or maintain", which is the same claim in the same
+                  eyeful.
+                */}
+                <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl text-balance">
+                  We install and run the machine, then share the profit with you every month.
+                </p>
+
+                {/* Factual reassurances, straight from PARTNERSHIP — not testimonials. */}
+                <ul className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-x-5 mt-6">
+                  {heroProof.map((item) => (
+                    <li key={item} className="flex items-start gap-1.5 text-gray-300 text-[13px]">
+                      <CheckCircle2
+                        className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-[3px]"
+                        aria-hidden="true"
+                      />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+
+                {/*
+                  A CTA above the eight sections of terms, not only after them. The
+                  second button is an in-page jump rather than a route, so someone who
+                  wants to read first is not sent off the page to do it.
+                */}
+                <div className="flex flex-col sm:flex-row gap-3 mt-9">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="min-h-12 rounded-full px-7 font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
+                  >
+                    <Link href="/gym-demo" data-testid="button-hero-demo">
+                      Request a demo
+                      <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="min-h-12 rounded-full px-7 font-bold text-white border-white/25 bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
+                  >
+                    <a href="#money">See how the money works</a>
+                  </Button>
+                </div>
+              </div>
 
               {/*
-                A CTA above the eight sections of terms, not only after them. The
-                second button is an in-page jump rather than a route, so someone who
-                wants to read first is not sent off the page to do it.
+                The in-gym photograph, not the studio render `/specs` and the offer
+                section below use: the question this hero answers is what the thing looks
+                like on a gym floor, and the render answers what it measures.
+
+                `priority` because at `lg` it is the largest element above the fold and
+                therefore a candidate for LCP; `sizes` is what stops Next handing a phone
+                the 1024px candidate for a 358px box.
               */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-9">
-                <Button
-                  asChild
-                  size="lg"
-                  className="min-h-12 rounded-full px-7 font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors"
-                >
-                  <Link href="/gym-demo" data-testid="button-hero-demo">
-                    Request a demo
-                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="min-h-12 rounded-full px-7 font-bold text-white border-white/25 bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
-                >
-                  <a href="#money">See how the money works</a>
-                </Button>
+              <div className="lg:col-span-5 hero-rise">
+                {/*
+                  Capped and centred below `lg`, where the column becomes the full width
+                  of the page. A square image at 704px is 704px tall, which pushed the
+                  headline commercials a screen and a half down on a tablet.
+                */}
+                <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden border border-white/10 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.85)]">
+                  <Image
+                    src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+                    alt={`A ${MACHINE_SPEC.model} protein shake machine installed against the wall of a modern gym, members training behind it`}
+                    width={1024}
+                    height={1024}
+                    priority
+                    sizes="(min-width: 640px) 448px, 100vw"
+                    className="w-full aspect-square object-cover"
+                  />
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/25 to-transparent"
+                    aria-hidden="true"
+                  />
+                  <div className="absolute bottom-3 inset-x-3 grid grid-cols-3 gap-2" aria-hidden="true">
+                    {heroSpecs.map((s) => (
+                      <div
+                        key={s.label}
+                        className="rounded-xl border border-white/10 bg-black/50 backdrop-blur-sm py-2 text-center"
+                      >
+                        <p className="text-white font-display font-black text-base leading-none">
+                          {s.value}
+                        </p>
+                        <p className="text-white/60 text-[9px] uppercase tracking-wider mt-1">
+                          {s.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            <dl className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-12">
+            {/*
+              One bordered strip with dividers rather than four floating cards, matching
+              /franchise. The figures are a single set of headline commercials and reading
+              them as one row of an accounts summary is closer to what they are.
+            */}
+            <dl className="grid grid-cols-2 lg:grid-cols-4 rounded-2xl border border-white/10 bg-gray-900/70 divide-x divide-y lg:divide-y-0 divide-white/10 overflow-hidden mt-12 sm:mt-14">
               {headlines.map((h) => (
                 <div
                   key={h.label}
-                  className="bg-white/[0.04] border border-white/10 rounded-2xl p-4 sm:p-5 transition-colors hover:border-white/25 hover:bg-white/[0.07]"
+                  className="p-4 sm:p-5 transition-colors hover:bg-white/[0.04]"
                   data-testid={`headline-${h.label}`}
                 >
                   <h.icon className="w-4 h-4 text-primary mb-3" aria-hidden="true" />
@@ -375,15 +460,35 @@ export default function GymPartnership() {
             keeps this section out of CLS — and `sizes` is what stops Next serving the 1536px
             candidate to a phone rendering it at 358.
           */}
+          {/*
+            The render and the numbers a gym owner checks it against, in one bordered
+            block. Loose, the image was a photograph with a caption and the specs were a
+            link off the page, so "will this work on my floor" took a navigation.
+          */}
           <figure className="mt-9">
-            <Image
-              src={MACHINE_SPEC.imageSrc}
-              alt={`The ${MACHINE_SPEC.model} protein shake vending machine on a gym floor, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and a cup in the dispenser`}
-              width={1536}
-              height={1024}
-              sizes="(min-width: 1024px) 1024px, 100vw"
-              className="w-full aspect-[3/2] object-cover rounded-2xl border border-border bg-muted"
-            />
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+              <Image
+                src={MACHINE_SPEC.imageSrc}
+                alt={`The ${MACHINE_SPEC.model} protein shake vending machine on a gym floor, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and a cup in the dispenser`}
+                width={1536}
+                height={1024}
+                sizes="(min-width: 1024px) 1024px, 100vw"
+                className="w-full aspect-[3/2] object-cover bg-muted"
+              />
+              <dl className="grid grid-cols-2 sm:grid-cols-4 border-t border-border divide-x divide-y sm:divide-y-0 divide-border">
+                {machineFacts.map((fact) => (
+                  <div key={fact.label} className="p-4 sm:p-5">
+                    <fact.icon className="w-4 h-4 text-primary mb-2.5" aria-hidden="true" />
+                    <div className="flex flex-col-reverse gap-1">
+                      <dt className="text-muted-foreground text-xs leading-snug">{fact.label}</dt>
+                      <dd className="font-display font-black text-base sm:text-lg leading-none tabular-nums">
+                        {fact.value}
+                      </dd>
+                    </div>
+                  </div>
+                ))}
+              </dl>
+            </div>
             <figcaption className="text-muted-foreground text-[13px] leading-relaxed mt-3">
               The {MACHINE_SPEC.model}. {dimensionsSpelled()}, on a standard power point.{" "}
               <Link
@@ -440,19 +545,32 @@ export default function GymPartnership() {
         </Section>
 
         {/* ── How the money works ──────────────────────────────────────────── */}
-        <Section id="money" tone="tinted">
+        {/*
+          Inverted, where the four sections around it are light. This is the section the
+          hero's second button points at and the one a gym owner came to read; tinted the
+          same grey as "Term and exit" it was the least conspicuous thing on the page.
+          Anything inside sets its own light text colours.
+        */}
+        <Section id="money" tone="dark">
           <SectionHeading
+            tone="dark"
             eyebrow="The economics"
             title="How the money works"
             blurb="You share the profit, not the gross. The costs come off first, and they are ours."
           />
 
           <div className="grid lg:grid-cols-5 gap-5 mt-9">
-            {/* Worked month */}
-            <div className="lg:col-span-3 bg-card border border-border rounded-2xl p-5 sm:p-6">
-              <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-muted-foreground mb-4">
-                One example month
-              </h3>
+            {/* The worked month, on white inside the dark section — the inversion is what
+                marks it as the arithmetic rather than more prose. */}
+            <div className="lg:col-span-3 bg-card rounded-2xl p-5 sm:p-6 shadow-xl">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
+                <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-muted-foreground">
+                  One example month
+                </h3>
+                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground rounded-full border border-border px-2.5 py-1">
+                  Illustration
+                </span>
+              </div>
 
               <table className="w-full">
                 <caption className="sr-only">
@@ -501,7 +619,9 @@ export default function GymPartnership() {
                 20:50 proportion without another number to read.
               */}
               <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/[0.06] p-4 sm:p-5">
-                <p className="text-xs font-bold tracking-[0.15em] uppercase text-primary mb-4">
+                {/* `--primary-ink`, not `--primary`: 12px bold is small text, and the
+                    lighter step is 3.25:1 on this white card. */}
+                <p className="text-xs font-bold tracking-[0.15em] uppercase text-primary-ink mb-4">
                   Your share of that month
                 </p>
                 <div className="grid grid-cols-2 gap-4 sm:gap-6">
@@ -548,6 +668,7 @@ export default function GymPartnership() {
             {/* The three streams */}
             <div className="lg:col-span-2 space-y-4">
               <MoneyCard
+                dark
                 icon={Handshake}
                 title="Profit share steps up"
                 body={
@@ -565,6 +686,7 @@ export default function GymPartnership() {
                 }
               />
               <MoneyCard
+                dark
                 icon={Megaphone}
                 title="Advertising, on top"
                 body={
@@ -575,6 +697,7 @@ export default function GymPartnership() {
                 }
               />
               <MoneyCard
+                dark
                 icon={Zap}
                 title="Electricity, reimbursed"
                 body={
@@ -587,6 +710,7 @@ export default function GymPartnership() {
                 }
               />
               <MoneyCard
+                dark
                 icon={CalendarClock}
                 title="Paid monthly, on a statement"
                 body={
@@ -601,16 +725,18 @@ export default function GymPartnership() {
           </div>
 
           {/* Mid-page CTA — placed at the point of highest intent, right after the maths. */}
-          <div className="mt-8 rounded-2xl border border-border bg-card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
-              <p className="font-bold text-[15px] mb-1">Want these numbers for your own footfall?</p>
-              <p className="text-muted-foreground text-[13px] leading-relaxed">
+              <p className="font-bold text-[15px] text-white mb-1">
+                Want these numbers for your own footfall?
+              </p>
+              <p className="text-gray-400 text-[13px] leading-relaxed">
                 Tell us your member count and we will run the same maths.
               </p>
             </div>
             <Button
               asChild
-              className="min-h-12 rounded-full px-6 font-bold bg-primary text-white hover:bg-primary/90 border-0 cursor-pointer transition-colors flex-shrink-0"
+              className="min-h-12 rounded-full px-6 font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors flex-shrink-0"
             >
               <Link href="/gym-demo" data-testid="button-midpage-demo">
                 Get an estimate
@@ -1007,24 +1133,37 @@ function MoneyCard({
   icon: Icon,
   title,
   body,
+  dark,
 }: {
   icon: React.ElementType;
   title: string;
   body: React.ReactNode;
+  /** For the money section, where `--foreground` is near-invisible. */
+  dark?: boolean;
 }) {
   return (
     // No `hover:shadow-md`: nothing in this card is clickable, and a card that lifts
     // under the cursor and then does nothing is a worse affordance than a flat one.
-    <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+    <div
+      className={`rounded-2xl p-5 ${
+        dark ? "border border-white/10 bg-white/[0.04]" : "bg-card border border-border shadow-sm"
+      }`}
+    >
       <div className="flex items-center gap-2.5 mb-2">
-        <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <span
+          className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+            dark ? "bg-primary/15" : "bg-primary/10"
+          }`}
+        >
           <Icon className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
         </span>
         {/* A real heading: `#money` otherwise contributes nothing to the outline, so
             these four are unreachable by heading navigation. */}
-        <h3 className="font-bold text-[15px]">{title}</h3>
+        <h3 className={`font-bold text-[15px] ${dark ? "text-white" : ""}`}>{title}</h3>
       </div>
-      <p className="text-muted-foreground text-[13px] leading-relaxed">{body}</p>
+      <p className={`text-[13px] leading-relaxed ${dark ? "text-gray-400" : "text-muted-foreground"}`}>
+        {body}
+      </p>
     </div>
   );
 }
@@ -1049,8 +1188,12 @@ function TermCard({
         The figure reads first and is the bigger type, but `label` is the heading —
         "Initial term" is what this card is about; "24 months" is its value. So the
         `h3` goes on the label even though it sits second.
+
+        The gradient clip is the treatment /advertise gives its headline figures. It is
+        only safe on type this size: `--primary` is 3.25:1 on white, which clears the 3:1
+        that 24px-and-up bold display type needs and nothing smaller.
       */}
-      <p className="font-display font-black text-2xl sm:text-3xl leading-none mb-1.5 tabular-nums">
+      <p className="font-display font-black text-2xl sm:text-3xl leading-none mb-1.5 tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
         {value}
       </p>
       <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">

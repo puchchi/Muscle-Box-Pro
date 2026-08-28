@@ -48,7 +48,9 @@
  *     locations" is one.
  *   - **Nothing fades in, on scroll or otherwise.** This is a document people scan, jump
  *     around in and come back to. Only the hero moves, in CSS, and it never changes
- *     opacity — see `.hero-rise` in index.css for why that distinction is the LCP.
+ *     opacity — see `.hero-rise` in index.css for why that distinction is the LCP. The
+ *     one other animation on the page is the ring on the application receipt, which is a
+ *     response to something the reader did rather than content arriving.
  *
  * Chrome is shared with /gym-partnership, in components/marketing/pageChrome.
  */
@@ -95,14 +97,19 @@ import {
   CheckCircle2,
   Clock,
   Cpu,
+  CupSoda,
   Factory,
   Gauge,
+  Hash,
+  Layers,
   LayoutDashboard,
   Lock,
   MapPin,
   Megaphone,
+  Monitor,
   ShieldCheck,
   Warehouse,
+  Wifi,
   X,
 } from "lucide-react";
 import {
@@ -192,6 +199,28 @@ const heroProof = [
   `${FRANCHISE.proteinProfitSharePct.duringRecovery}% of protein profit until you recover your investment`,
   "No separate technical service fee while you recover",
   "Machine-level financial dashboard",
+];
+
+/**
+ * Three figures small enough to sit over the hero photograph.
+ *
+ * A subset of `machineFacts` rather than a fourth set of numbers, so the chips can be
+ * `aria-hidden` — they are decoration over an image, and the strip in "Machines" is where
+ * the same facts are readable. Machine specifications rather than commercials on purpose:
+ * every headline number is in the strip below the hero, and printing any of them again
+ * inside the same screen would say the page's four figures twice.
+ */
+const heroSpecs = [
+  { value: `${MACHINE_SPEC.displayInches}"`, label: "Touchscreen" },
+  { value: `${MACHINE_SPEC.canisters}`, label: "Canisters" },
+  { value: `${MACHINE_SPEC.cupMl} ml`, label: "Per cup" },
+];
+
+const machineFacts = [
+  { icon: Monitor, value: `${MACHINE_SPEC.displayInches}-inch`, label: "Touchscreen" },
+  { icon: Layers, value: `${MACHINE_SPEC.canisters}`, label: "Ingredient canisters" },
+  { icon: CupSoda, value: `${MACHINE_SPEC.cupMl} ml`, label: "Per serving" },
+  { icon: Wifi, value: MACHINE_SPEC.connectivity, label: "Always connected" },
 ];
 
 /**
@@ -319,72 +348,128 @@ export default function Franchise() {
             </nav>
 
             {/*
-              CSS, not framer-motion, and it moves the block without ever fading it.
-              Driven from JS this was server-rendered with `opacity: 0` inline, so the `h1`
-              below — the LCP element — stayed invisible until the bundle had downloaded,
-              hydrated and run a 500ms fade. See `.hero-rise` in index.css.
+              Copy and machine side by side, the shape /gym-demo uses, so the thing a
+              franchisee would be deploying five or ten of is visible before the terms
+              describing it.
+
+              Copy first in the DOM at every width, which is also the stacking order on a
+              phone: the `h1` is the LCP element and it should not queue behind a 1024px
+              image decode.
             */}
-            <div className="text-center hero-rise">
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
-                Franchise Program
-              </span>
+            <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 lg:items-center">
               {/*
-                The `{" "}` is load-bearing, not stray whitespace: browsers treat `<br>` as
-                whitespace and the HTML-to-text pass some crawlers and AI scrapers use does
-                not, so without it the heading extracts as "aProtein".
-
-                The break is `hidden sm:inline` because a forced break defeats
-                `text-balance`. Below `sm` the whole heading flows and balances as one block.
+                CSS, not framer-motion, and it moves the block without ever fading it.
+                Driven from JS this was server-rendered with `opacity: 0` inline, so the
+                `h1` below — the LCP element — stayed invisible until the bundle had
+                downloaded, hydrated and run a 500ms fade. See `.hero-rise` in index.css.
               */}
-              <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-5xl leading-[0.95] tracking-tight mb-5 text-balance">
-                Build and operate a{" "}
-                <br className="hidden sm:inline" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-                  protein vending machine network
+              <div className="lg:col-span-7 hero-rise">
+                <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-primary text-xs font-bold tracking-[0.2em] uppercase mb-5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
+                  Franchise Program
                 </span>
-              </h1>
-              <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto text-balance">
-                Develop a territory or a city on our machines, our technology and our protein
-                pipeline. You run the local network and share in the profit it generates.
-              </p>
+                {/*
+                  No forced `<br>`, unlike the centred full-width heroes elsewhere on the
+                  site. In a ~580px column a forced break defeats `text-balance`: the
+                  balancer honours it and then wraps the gradient half anyway. Balanced
+                  freely it splits after "operate a".
+
+                  The `{" "}` is load-bearing all the same: the HTML-to-text pass some
+                  crawlers and AI scrapers use would otherwise read "aProtein".
+                */}
+                <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] leading-[0.95] tracking-tight mb-5 text-balance">
+                  Build and operate a{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                    protein vending machine network
+                  </span>
+                </h1>
+                <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl text-balance">
+                  Develop a territory or a city on our machines, our technology and our protein
+                  pipeline. You run the local network and share in the profit it generates.
+                </p>
+
+                {/*
+                  Stacked at every width, not wrapped as a row. These three run to fifty
+                  characters apiece, so in a seven-column measure a wrapping row breaks
+                  mid-item and leaves a tick stranded at the far left of the next line.
+                */}
+                <ul className="space-y-2 mt-6">
+                  {heroProof.map((item) => (
+                    <li key={item} className="flex items-start gap-1.5 text-gray-300 text-[13px]">
+                      <CheckCircle2
+                        className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-[3px]"
+                        aria-hidden="true"
+                      />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="flex flex-col sm:flex-row gap-3 mt-9">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="min-h-12 rounded-full px-7 font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
+                  >
+                    <a href="#apply" data-testid="button-hero-apply">
+                      Apply for a franchise
+                      <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                    </a>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="min-h-12 rounded-full px-7 font-bold text-white border-white/25 bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
+                  >
+                    <a href="#economics">See how the money works</a>
+                  </Button>
+                </div>
+              </div>
 
               {/*
-                A column on a phone, a row from `sm` up. Wrapped as a centred row at
-                390px the middle item ran to two lines and left its tick alone at the far
-                left of the pair, which read as a rendering fault.
-              */}
-              <ul className="flex flex-col items-start gap-2 text-left max-w-sm mx-auto mt-6 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-5">
-                {heroProof.map((item) => (
-                  <li key={item} className="flex items-start gap-1.5 text-gray-300 text-[13px]">
-                    <CheckCircle2
-                      className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-[3px]"
-                      aria-hidden="true"
-                    />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+                The in-gym photograph, not the studio render the "Machines" section uses:
+                the question this hero answers is what a franchisee is putting on a gym
+                floor, and the render answers what it measures.
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-9">
-                <Button
-                  asChild
-                  size="lg"
-                  className="min-h-12 rounded-full px-7 font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
-                >
-                  <a href="#apply" data-testid="button-hero-apply">
-                    Apply for a franchise
-                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                  </a>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="min-h-12 rounded-full px-7 font-bold text-white border-white/25 bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
-                >
-                  <a href="#economics">See how the money works</a>
-                </Button>
+                `priority` because at `lg` it is the largest element above the fold and so
+                a candidate for LCP; `sizes` is what stops Next handing a phone the 1024px
+                candidate for a 358px box.
+              */}
+              <div className="lg:col-span-5 hero-rise">
+                <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.85)]">
+                  <Image
+                    src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+                    alt={`A ${MACHINE_SPEC.model} protein shake vending machine installed against the wall of a modern gym, members training behind it`}
+                    width={1024}
+                    height={1024}
+                    priority
+                    sizes="(min-width: 1024px) 420px, 100vw"
+                    className="w-full aspect-[4/3] lg:aspect-square object-cover"
+                  />
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/25 to-transparent"
+                    aria-hidden="true"
+                  />
+                  <div
+                    className="absolute bottom-3 inset-x-3 grid grid-cols-3 gap-2"
+                    aria-hidden="true"
+                  >
+                    {heroSpecs.map((s) => (
+                      <div
+                        key={s.label}
+                        className="rounded-xl border border-white/10 bg-black/50 backdrop-blur-sm py-2 text-center"
+                      >
+                        <p className="text-white font-display font-black text-base leading-none">
+                          {s.value}
+                        </p>
+                        <p className="text-white/60 text-[9px] uppercase tracking-wider mt-1">
+                          {s.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -499,7 +584,12 @@ export default function Franchise() {
                   </CardHeading>
 
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <p className="font-display font-black text-3xl sm:text-4xl leading-none tabular-nums">
+                    {/*
+                      The gradient clip /advertise gives its headline figures. Safe only on
+                      type this size: `--primary` is 3.25:1 on white, which clears the 3:1
+                      that 24px-and-up bold display type needs and nothing smaller.
+                    */}
+                    <p className="font-display font-black text-3xl sm:text-4xl leading-none tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                       {formatLakh(tier.investmentInr)}
                     </p>
                     <p className="text-muted-foreground text-[13px] tabular-nums">
@@ -892,15 +982,38 @@ export default function Franchise() {
             a phone pulling the 1536px candidate, and the intrinsic dimensions are the
             file's own so the space is reserved before it loads.
           */}
+          {/*
+            The render and the hardware figures in one bordered block, the way /advertise
+            and /gym-demo pin their stats to the machine rather than leaving them a link
+            away. Loose, this was a picture with a caption and the specifications were off
+            the page, so "what am I actually deploying" took a navigation.
+          */}
           <figure className="mt-10">
-            <Image
-              src={MACHINE_SPEC.imageSrc}
-              alt={`The ${MACHINE_SPEC.model} protein shake vending machine, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and ${MACHINE_SPEC.canisters} ingredient canisters`}
-              width={1536}
-              height={1024}
-              sizes="(min-width: 1024px) 1024px, 100vw"
-              className="w-full aspect-[3/2] object-cover rounded-2xl border border-border bg-muted"
-            />
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+              <Image
+                src={MACHINE_SPEC.imageSrc}
+                alt={`The ${MACHINE_SPEC.model} protein shake vending machine, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and ${MACHINE_SPEC.canisters} ingredient canisters`}
+                width={1536}
+                height={1024}
+                sizes="(min-width: 1024px) 1024px, 100vw"
+                className="w-full aspect-[3/2] object-cover bg-muted"
+              />
+              <dl className="grid grid-cols-2 sm:grid-cols-4 border-t border-border divide-x divide-y sm:divide-y-0 divide-border">
+                {machineFacts.map((fact) => (
+                  <div key={fact.label} className="p-4 sm:p-5">
+                    <fact.icon className="w-4 h-4 text-primary mb-2.5" aria-hidden="true" />
+                    {/* Reversed so the figure reads first visually while `dt` still
+                        precedes its `dd` in the DOM. */}
+                    <div className="flex flex-col-reverse gap-1">
+                      <dt className="text-muted-foreground text-xs leading-snug">{fact.label}</dt>
+                      <dd className="font-display font-black text-base sm:text-lg leading-none tabular-nums">
+                        {fact.value}
+                      </dd>
+                    </div>
+                  </div>
+                ))}
+              </dl>
+            </div>
             <figcaption className="text-muted-foreground text-[13px] leading-relaxed mt-3">
               The {MACHINE_SPEC.model}, the machine every franchise deploys.{" "}
               {dimensionsSpelled()}, on a standard power point.{" "}
@@ -1615,31 +1728,77 @@ function ApplicationSection({
               className="flex flex-col items-center text-center h-full justify-center py-6"
               data-testid="application-received"
             >
-              <span className="w-16 h-16 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/25 mb-6">
-                <CheckCircle2
-                  className="w-8 h-8 text-white"
-                  strokeWidth={2.5}
+              {/*
+                The confirmation mark /advertise and /gym-demo use, and the one thing on
+                this page that animates besides the hero. It is a response to an action
+                rather than page content, which is the distinction the "nothing moves"
+                rule turns on. The base layer's `prefers-reduced-motion` reset stops the
+                ring outright.
+              */}
+              <div className="relative mb-6">
+                <span className="w-20 h-20 rounded-full bg-gradient-to-br from-accent/10 to-primary/10 flex items-center justify-center">
+                  <span className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/25">
+                    <CheckCircle2
+                      className="w-7 h-7 text-white"
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    />
+                  </span>
+                </span>
+                <span
+                  className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping"
+                  style={{ animationDuration: "2s" }}
                   aria-hidden="true"
                 />
-              </span>
+              </div>
+
               <CardHeading className="mb-2">Application received</CardHeading>
-              <p className="text-muted-foreground text-[15px] leading-relaxed max-w-sm mb-5">
+              <p className="text-muted-foreground text-[15px] leading-relaxed max-w-sm">
                 We will review the market you have asked for and come back within two working
                 days, including if the territory is already taken.
               </p>
+
+              {/*
+                The reference, as the one piece of information this state carries that the
+                rail beside it does not. A chip rather than a line of prose because it is
+                the string someone quotes back at us.
+              */}
               {receipt.reference && (
-                <p className="text-[13px] text-muted-foreground">
-                  Your reference:{" "}
-                  <strong className="font-bold text-foreground">{receipt.reference}</strong>
+                <p className="flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-2 mt-6 text-[13px]">
+                  <Hash className="w-3.5 h-3.5 text-primary flex-shrink-0" aria-hidden="true" />
+                  <span className="text-muted-foreground">Your reference</span>
+                  <strong className="font-bold text-foreground tabular-nums">
+                    {receipt.reference}
+                  </strong>
                 </p>
               )}
-              <Button
-                variant="outline"
-                onClick={() => setReceipt(null)}
-                className="mt-7 min-h-11 rounded-full px-6 font-semibold cursor-pointer"
-              >
-                Submit another application
-              </Button>
+
+              <div className="w-full h-px bg-border mt-7 mb-6" />
+
+              {/*
+                Two ways on, the pair both /advertise and /gym-demo end on. The second is
+                the FAQ rather than the home page: someone who has just applied is waiting
+                two days, and eleven answers on the terms they applied under is the more
+                useful place to send them.
+              */}
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => setReceipt(null)}
+                  className="flex-1 min-h-11 rounded-full px-6 font-semibold cursor-pointer"
+                >
+                  Submit another application
+                </Button>
+                <Button
+                  asChild
+                  className="flex-1 min-h-11 rounded-full px-6 font-bold bg-primary-fill text-white hover:bg-primary-fill/90 border-0 cursor-pointer transition-colors"
+                >
+                  <a href="#faq">
+                    Read the FAQ
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                  </a>
+                </Button>
+              </div>
             </div>
           ) : (
             <Form {...form}>
