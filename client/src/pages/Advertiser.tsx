@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Monitor, Users, TrendingUp, BarChart2, Zap, Target, ArrowRight, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { MACHINE_SPEC } from "@shared/machine/spec";
 
 const perks = [
   {
@@ -103,7 +104,7 @@ export default function Advertiser() {
             <span className="text-white/75">at the moment of impact</span>
           </h1>
           <p className="text-white/80 text-lg leading-relaxed max-w-2xl mx-auto mb-10">
-            Display your brand on our high-definition 32&quot; screens while users wait for their shake.
+            Display your brand on our high-definition {MACHINE_SPEC.displayInches}&quot; screens while users wait for their shake.
             The perfect captive audience for fitness, health, and lifestyle brands.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -356,7 +357,7 @@ export default function Advertiser() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                 <div className="absolute bottom-8 left-8 right-8">
                   <p className="text-white font-display font-black text-2xl uppercase leading-tight mb-1">
-                    32&quot; HD screens.<br />
+                    {MACHINE_SPEC.displayInches}&quot; HD screens.<br />
                     <span className="text-primary">Zero distractions.</span>
                   </p>
                   <p className="text-white/70 text-sm">

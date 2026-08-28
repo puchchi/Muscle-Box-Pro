@@ -29,6 +29,7 @@ vi.mock("@/lib/franchiseApi", () => ({
 import Franchise from "@/pages/Franchise";
 import {
   FRANCHISE,
+  MACHINE_UPKEEP,
   formatInr,
   formatLakh,
   franchiseTier,
@@ -91,6 +92,25 @@ describe("Franchise page", () => {
     render(<Franchise />);
     expect(screen.getByRole("heading", { name: /you operate them\. we own them\./i })).toBeInTheDocument();
     expect(screen.getByText(/is not a purchase of the machines/i)).toBeInTheDocument();
+  });
+
+  /*
+   * The obligation a prospect is most likely to assume away, because /gym-partnership
+   * promises the gym it never touches stock. It does not follow that nobody local does.
+   * Asserts the rule and the every-machine checklist it applies to, not the wording.
+   */
+  it("says stocking the machines is the franchisee's job and cannot be handed to the gym", () => {
+    render(<Franchise />);
+    expect(
+      screen.getByRole("heading", { name: /keeping machines stocked/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/you cannot hand this over/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/cannot pass them to the gym, its staff or anyone else/i),
+    ).toBeInTheDocument();
+    for (const duty of MACHINE_UPKEEP) {
+      expect(screen.getByText(duty)).toBeInTheDocument();
+    }
   });
 
   /*

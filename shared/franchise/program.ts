@@ -221,26 +221,43 @@ export const MACHINE_RIGHTS = {
 /** §9, §24, §26, §27, §28. Who does what, once the machines land. */
 export const RESPONSIBILITIES = {
   mbp: [
-    "Machine procurement, OEM coordination and delivery",
-    "The central protein supply pipeline, delivered to your warehouse",
-    "Technology platform, machine software and updates",
-    "Centralised payment collection and settlement",
-    "Product formulations, specifications and consumer pricing",
-    "Gym leads and the standard gym commercial framework",
-    "Technical support, remote diagnostics and warranty coordination",
-    "Final approval of every gym location",
+    "The machines, built and delivered",
+    "Protein, brought to your warehouse",
+    "Software and updates",
+    "Payment collection and payouts",
+    "Recipes and shake prices",
+    "Gym leads and the standard gym deal",
+    "Repairs, diagnostics and warranty",
+    "Final say on every gym",
   ],
   franchisee: [
-    "Warehouse and local storage, under appropriate conditions",
-    "Local transportation and machine movement",
-    "Inventory management after delivery",
-    "Identifying and approaching gyms in the territory",
-    "Day-to-day gym coordination and local relationships",
-    "Local manpower and deployment activity",
-    "Meeting deployment and performance requirements",
-    "Protecting the brand and following operating procedures",
+    "A warehouse, kept in the right conditions",
+    "Local transport and machine moves",
+    "Stock, once it reaches you",
+    "Finding and pitching gyms",
+    "Day-to-day gym relationships",
+    "Your own team on the ground",
+    "Meeting your targets",
+    "Following the brand and operating rules",
   ],
 } as const;
+
+/**
+ * §38. The upkeep loop at each machine, once deployed.
+ *
+ * Everything here is downstream of the warehouse. Storage conditions, local transport
+ * and gym coordination are stated in `RESPONSIBILITIES.franchisee` and must not be
+ * repeated here, or the page says the same duty twice in two voices.
+ */
+export const MACHINE_UPKEEP = [
+  "Check each machine is working",
+  "Top up protein before it runs out",
+  "Refill cups and other approved supplies",
+  "Pull anything past its expiry date",
+  "Keep the machine and its area clean",
+  "Act on alerts from the platform",
+  "Tell us about faults quickly",
+] as const;
 
 /** §22. What the franchise dashboard shows. */
 export const DASHBOARD_VISIBILITY = [

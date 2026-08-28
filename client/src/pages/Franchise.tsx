@@ -107,6 +107,7 @@ import {
   MapPin,
   Megaphone,
   Monitor,
+  PackageCheck,
   ShieldCheck,
   Warehouse,
   Wifi,
@@ -124,6 +125,7 @@ import {
   FRANCHISE,
   FRANCHISE_TIERS,
   MACHINE_RIGHTS,
+  MACHINE_UPKEEP,
   PERFORMANCE_REQUIREMENTS,
   RESERVED_ACCOUNTS,
   RESPONSIBILITIES,
@@ -1087,7 +1089,7 @@ export default function Franchise() {
           <SectionHeading
             eyebrow="Who does what"
             title="We supply. You operate."
-            blurb="The line between the two sides is your warehouse. We run everything upstream of it."
+            blurb="Your warehouse is the dividing line. Everything before it is ours. Everything after it is yours."
           />
 
           {/*
@@ -1130,18 +1132,79 @@ export default function Franchise() {
           <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 max-w-3xl flex items-start gap-2">
             <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span>
-              Consumer pricing, the gym profit-sharing model and dispute resolution stay
-              central to MuscleBox Pro, whoever found the gym.
+              Shake prices, the gym profit split and any disputes stay with MuscleBox Pro,
+              even at gyms you found.
             </span>
           </p>
+
+          {/*
+            The diagram above stops at the warehouse, which is where the split between
+            the two sides is. This is the leg after it, and it is the one thing a
+            prospective franchisee most often assumes the gym does.
+          */}
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
+            <CardHeading icon={PackageCheck} className="mb-2.5">
+              Keeping machines stocked
+            </CardHeading>
+            <p className="text-muted-foreground text-[14px] leading-relaxed mb-6 max-w-2xl">
+              Every machine has to be working and stocked whenever the gym is open. That is
+              the job, day to day.
+            </p>
+
+            {/*
+              Across the card rather than in a column beside the notes. Seven short lines
+              stacked next to two paragraphs left the bottom-left corner of the card empty,
+              which read as something failing to load.
+            */}
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2.5">
+              {MACHINE_UPKEEP.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-[14px]">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-[7px]"
+                    aria-hidden="true"
+                  />
+                  <span className="leading-snug">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <ul className="grid sm:grid-cols-2 gap-3 mt-7 pt-7 border-t border-border">
+              <li className="rounded-xl bg-muted/40 border border-border p-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                  You cannot hand this over
+                </p>
+                <p className="text-[14px] leading-relaxed">
+                  Stocking and daily running stay with you. You cannot pass them to the gym,
+                  its staff or anyone else without our written approval. A gym gives you
+                  access, nothing more. Any exception we approve covers that one gym only.
+                </p>
+              </li>
+              <li className="rounded-xl bg-muted/40 border border-border p-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                  If machines sit empty
+                </p>
+                <p className="text-[14px] leading-relaxed">
+                  Empty or broken machines count against the{" "}
+                  <a
+                    href="#growth"
+                    className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    targets
+                  </a>{" "}
+                  your exclusivity depends on. Exact service levels are set in the franchise
+                  agreement.
+                </p>
+              </li>
+            </ul>
+          </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5 max-w-3xl">
             <CardSubheading icon={LayoutDashboard} className="mb-2.5">
               Your dashboard
             </CardSubheading>
             <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
-              Machine level, not territory level. Every figure your share is calculated from is
-              visible to you.
+              Machine by machine, not one territory total. Every number your share is worked
+              out from is there.
             </p>
             <ul className="flex flex-wrap gap-2">
               {DASHBOARD_VISIBILITY.map((item) => (
@@ -1453,16 +1516,23 @@ function ResponsibilityColumn({
       <CardHeading icon={Icon} tone={you ? "primary" : "neutral"} className="mb-4">
         {title}
       </CardHeading>
-      <ul className="space-y-2.5">
+      {/*
+        Chips, not a ticked list. Both columns are duties, and per the note at the top of
+        this file a tick beside "Warehouse" reads as a benefit rather than a cost. Chips
+        also wrap, so eight items are four rows instead of eight and the two sides can be
+        compared without scrolling one against the other.
+      */}
+      <ul className="flex flex-wrap gap-2">
         {items.map((item) => (
-          <li key={item} className="flex items-start gap-2 text-[14px]">
-            <CheckCircle2
-              className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
-                you ? "text-primary" : "text-muted-foreground"
-              }`}
-              aria-hidden="true"
-            />
-            <span className="leading-snug">{item}</span>
+          <li
+            key={item}
+            className={`rounded-full border px-3 py-1.5 text-[13px] leading-snug ${
+              you
+                ? "border-primary/25 bg-primary/[0.06]"
+                : "border-border bg-muted/50 text-muted-foreground"
+            }`}
+          >
+            {item}
           </li>
         ))}
       </ul>

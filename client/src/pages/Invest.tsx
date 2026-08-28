@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import { MACHINE_SPEC } from "@shared/machine/spec";
 import {
   TrendingUp,
   IndianRupee,
@@ -49,7 +50,7 @@ const revenueStreams = [
     iconBg: "bg-accent/10",
     iconColor: "text-accent",
     title: "Advertising Display Revenue",
-    desc: "Every machine includes a 32\" HD display. Fitness brands, sports nutrition companies, and local businesses pay to advertise to this captive, health-focused audience.",
+    desc: `Every machine includes a ${MACHINE_SPEC.displayInches}" HD display. Fitness brands, sports nutrition companies, and local businesses pay to advertise to this captive, health-focused audience.`,
     metrics: ["Captive 45-second ad exposure per shake", "92% reported brand recall rate", "3× higher conversion vs standard digital ads"],
     highlight: "Incremental revenue per placement",
   },
