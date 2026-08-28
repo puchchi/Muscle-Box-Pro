@@ -31,7 +31,10 @@
  */
 
 import * as z from "zod";
+import { toParse, type AdminParse } from "./parse";
 import type { AdminGymList, AdminGymView } from "./gyms";
+
+export type { AdminParse };
 
 // ── Primitives ──────────────────────────────────────────────────────────────
 
@@ -392,27 +395,6 @@ export const adminGymViewSchema = z.object({
  */
 export const _listTypeCheck = adminGymListSchema satisfies z.ZodType<AdminGymList>;
 export const _viewTypeCheck = adminGymViewSchema satisfies z.ZodType<AdminGymView>;
-
-export type AdminParse<T> = { ok: true; data: T } | { ok: false; issues: string[] };
-
-/**
- * Turn a `safeParse` result into an `AdminParse`.
- *
- * `issues` are `path: message` strings for a developer-facing detail line. Unlike the gym
- * dashboard, the audience here *is* a developer or an operator, so the panel shows them
- * rather than hiding them behind "unavailable" — a field path is the fastest possible answer
- * to "what changed on the backend?".
- */
-function toParse<T>(result: z.SafeParseReturnType<unknown, T>): AdminParse<T> {
-  if (result.success) return { ok: true, data: result.data };
-  return {
-    ok: false,
-    issues: result.error.issues.map((issue) => {
-      const path = issue.path.join(".");
-      return path ? `${path}: ${issue.message}` : issue.message;
-    }),
-  };
-}
 
 export function parseAdminGymList(value: unknown): AdminParse<AdminGymList> {
   return toParse(adminGymListSchema.safeParse(value));

@@ -41,20 +41,36 @@ export function AdminShell({
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
+        {/*
+          `flex-wrap` on both rows, because four tabs plus the brand and the sign-out button no longer
+          fit a 390px viewport: without it the right-hand group lands off-screen and the whole document
+          scrolls sideways.
+        */}
+        <div className="max-w-6xl mx-auto px-6 py-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
             <Link
               href="/admin"
               className="font-display font-black text-sm uppercase tracking-tight text-foreground"
             >
               MBP admin
             </Link>
-            <nav className="flex items-center gap-1 text-sm">
+            <nav className="flex flex-wrap items-center gap-1 text-sm">
               <NavLink href="/admin" pathname={pathname} testId="link-overview" exact>
                 Overview
               </NavLink>
               <NavLink href="/admin/gyms" pathname={pathname} testId="link-gyms">
                 Gyms
+              </NavLink>
+              {/*
+                Two links rather than two sections of the overview, and that is the whole of the
+                lazy-loading design: `/admin/inbox` opens an IMAP connection and `/admin/leads` reaches
+                Supabase, so both stay unpaid for until somebody clicks.
+              */}
+              <NavLink href="/admin/inbox" pathname={pathname} testId="link-inbox">
+                Inbox
+              </NavLink>
+              <NavLink href="/admin/leads" pathname={pathname} testId="link-leads">
+                Enquiries
               </NavLink>
             </nav>
           </div>

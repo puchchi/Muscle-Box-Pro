@@ -86,6 +86,31 @@ routes with no admin UI in front of them yet:
       the sandbox walk).
 - [ ] **Set-password link** — `POST /admin/gyms/{gymId}/set-password-link`. §9.2.
 
+## Parked — the panel is cheap, the API's metrics are not
+
+Raised 2026-08-28 while costing the panel. Recorded here rather than fixed, because the fix is a
+one-line change in `mbp-backend` whose consequence is losing per-method latency and 4xx/5xx graphs,
+and that is a decision rather than a patch.
+
+**The pages are not the expense.** Loading `/admin` is two requests — `GET /admin/me` plus one
+`GET /admin/gyms` — because the paging loop in `AdminHome.tsx` returns as soon as `nextCursor` is
+null; `MAX_PAGES = 5` is a bound for a thousand gyms, not observed behaviour. At API Gateway and
+on-demand DynamoDB prices that is roughly 2.5 paise per thousand page loads. Nothing on the admin
+side is worth optimising for cost.
+
+**The expense is `metricsEnabled: true`** on the REST API stage
+(`infra/lib/stacks/onboarding-stack.ts`, the `deployOptions` block). It turns on API Gateway
+*detailed* CloudWatch metrics, which are billed as custom metrics **per method** — around 330 to 460
+billable metrics across the API's methods, at \$0.30 each, so on the order of \$100–140 a month, and
+it is charged whether or not a single request arrives. It is very likely the largest line item in the
+stack: there is no NAT gateway, DynamoDB is on-demand, secrets are in SSM Parameter Store rather than
+Secrets Manager, `dataTraceEnabled` is false, X-Ray is off and there is no API cache.
+
+This was not confirmed against a real bill — check Cost Explorer grouped by service, then by usage
+type, before acting. If it is confirmed, the options are: turn detailed metrics off and rely on the
+per-function `Errors` alarms that already exist, or keep them and accept the cost as the price of
+per-method visibility. Do not change it as a side effect of some other piece of work.
+
 ## Worth considering
 
 - [ ] **A malformed page hides every gym on it, not just the bad row.** `parseAdminGymList`
