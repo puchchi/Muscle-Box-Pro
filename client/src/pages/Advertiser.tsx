@@ -7,12 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Monitor, Users, TrendingUp, BarChart2, Zap, Target, ArrowRight, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { MACHINE_SPEC } from "@shared/machine/spec";
 
 const perks = [
   {
     icon: Users,
     title: "Captive Audience",
-    desc: "Users stare at the screen for 45 seconds while their shake blends — guaranteed eyes on your brand.",
+    desc: "Users stare at the screen for 45 seconds while their shake blends. Guaranteed eyes on your brand.",
     color: "text-blue-600",
     bg: "bg-blue-50",
   },
@@ -26,7 +27,7 @@ const perks = [
   {
     icon: TrendingUp,
     title: "High Conversion",
-    desc: "Target health-conscious individuals right after their workout — peak purchase intent.",
+    desc: "Target health-conscious individuals right after their workout, at peak purchase intent.",
     color: "text-accent",
     bg: "bg-accent/10",
   },
@@ -90,40 +91,23 @@ export default function Advertiser() {
           <div className="absolute top-0 left-0 w-96 h-96 rounded-full bg-white -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-white translate-x-1/3 translate-y-1/3" />
         </div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <motion.span
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-block px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold tracking-[0.25em] uppercase mb-6"
-          >
+        <div className="max-w-4xl mx-auto text-center relative z-10 hero-rise">
+          <span className="inline-block px-4 py-1.5 rounded-full bg-white/20 border border-white/30 text-white text-xs font-bold tracking-[0.25em] uppercase mb-6">
             Advertise with Us
-          </motion.span>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display font-black text-white uppercase leading-none mb-6"
+          </span>
+          <h1
+            className="font-display font-black text-white uppercase leading-none mb-6 text-balance"
             style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)" }}
           >
-            Reach active users<br />
+            Reach active users{" "}
+            <br className="hidden sm:inline" />
             <span className="text-white/75">at the moment of impact</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-white/80 text-lg leading-relaxed max-w-2xl mx-auto mb-10"
-          >
-            Display your brand on our high-definition 32&quot; screens while users wait for their shake.
+          </h1>
+          <p className="text-white/80 text-lg leading-relaxed max-w-2xl mx-auto mb-10">
+            Display your brand on our high-definition {MACHINE_SPEC.displayInches}&quot; screens while users wait for their shake.
             The perfect captive audience for fitness, health, and lifestyle brands.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-            className="flex flex-wrap items-center justify-center gap-4"
-          >
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <a href="#campaign-form">
               <Button
                 size="lg"
@@ -132,7 +116,7 @@ export default function Advertiser() {
                 Start a Campaign <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </a>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -373,7 +357,7 @@ export default function Advertiser() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                 <div className="absolute bottom-8 left-8 right-8">
                   <p className="text-white font-display font-black text-2xl uppercase leading-tight mb-1">
-                    32&quot; HD screens.<br />
+                    {MACHINE_SPEC.displayInches}&quot; HD screens.<br />
                     <span className="text-primary">Zero distractions.</span>
                   </p>
                   <p className="text-white/70 text-sm">

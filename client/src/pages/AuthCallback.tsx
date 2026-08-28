@@ -17,7 +17,7 @@ export default function AuthCallback() {
           title: "Authentication failed",
           description: "No session returned from provider.",
         });
-        router.push("/login");
+        router.push("/gym/login");
         return;
       }
 
@@ -25,7 +25,7 @@ export default function AuthCallback() {
         title: "Signed in successfully",
         description: "Your account is now connected.",
       });
-      router.push("/account");
+      router.push("/gym/dashboard");
     });
   }, [router, toast]);
 

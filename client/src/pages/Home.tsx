@@ -183,6 +183,17 @@ export default function Home() {
                     Request a demo machine
                   </Button>
                 </Link>
+
+                <p className="text-muted-foreground text-sm text-center mt-4">
+                  Or read the{" "}
+                  <Link
+                    href="/gym-partnership"
+                    className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    full partnership terms
+                  </Link>{" "}
+                  first. Every figure is published.
+                </p>
               </motion.div>
 
               {/* Right: Feature rows */}

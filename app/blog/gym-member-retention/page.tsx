@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/blog/gym-member-retention",
     title: "Gym Member Retention: The Role of On-Site Nutrition | MuscleBoxPro",
     description: "Discover how on-site protein nutrition reduces gym member churn in India. Data-backed strategies to improve retention through post-workout convenience.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "Gym member retention strategies with on-site nutrition" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "Gym member retention strategies with on-site nutrition" }],
   },
 };
 

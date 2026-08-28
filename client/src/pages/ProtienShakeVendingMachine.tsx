@@ -133,20 +133,16 @@ export default function ProteinShakeVendingMachine() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:gap-14">
 
             {/* Text */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7 }}
-              className="flex-1"
-            >
+            <div className="flex-1 hero-rise">
               <span className="inline-block px-4 py-1.5 rounded-full border border-white/20 text-white/70 text-xs font-bold tracking-[0.25em] uppercase mb-6">
                 The Future of Gym Revenue
               </span>
               <h1
-                className="font-display font-black text-white uppercase leading-none mb-5"
+                className="font-display font-black text-white uppercase leading-none mb-5 text-balance"
                 style={{ fontSize: "clamp(2.2rem, 5vw, 3.8rem)" }}
               >
-                Protein Shake<br />
+                Protein Shake{" "}
+                <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                   Vending Machine
                 </span>
@@ -173,15 +169,10 @@ export default function ProteinShakeVendingMachine() {
                   </Button>
                 </Link>
               </div>
-            </motion.div>
+            </div>
 
             {/* Machine image */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.15 }}
-              className="mt-10 lg:mt-0 lg:w-[340px] flex-shrink-0"
-            >
+            <div className="mt-10 lg:mt-0 lg:w-[340px] flex-shrink-0 hero-rise">
               <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
                 <img
                   src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
@@ -190,7 +181,7 @@ export default function ProteinShakeVendingMachine() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />
               </div>
-            </motion.div>
+            </div>
 
           </div>
         </div>
@@ -279,7 +270,7 @@ export default function ProteinShakeVendingMachine() {
                 How a Protein Shake Vending Machine Boosts Gym Revenue
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                For gym owners across India, providing on-site nutrition is one of the highest-ROI decisions you can make. Running a manned juice bar requires hiring staff, managing perishable inventory, and absorbing significant overhead — often ₹25,000–₹60,000 per month in operational costs before a single rupee of profit. A <strong>protein shake vending machine</strong> or <strong>automated supplement kiosk</strong> solves all of these problems by providing 24/7 access to premium post-workout nutrition with zero staff involvement.
+                For gym owners across India, providing on-site nutrition is one of the highest-ROI decisions you can make. Running a manned juice bar requires hiring staff, managing perishable inventory, and absorbing significant overhead, often ₹25,000–₹60,000 per month in operational costs before a single rupee of profit. A <strong>protein shake vending machine</strong> or <strong>automated supplement kiosk</strong> solves all of these problems by providing 24/7 access to premium post-workout nutrition with zero staff involvement.
               </p>
 
               <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
@@ -295,21 +286,21 @@ export default function ProteinShakeVendingMachine() {
                   <div>
                     <p className="font-black text-gray-900 text-lg mb-1">₹15,000–₹70,000+ per month</p>
                     <p className="text-gray-600 text-sm leading-relaxed">
-                      MuscleBoxPro partner gyms generate this in total machine revenue depending on daily footfall. Under our revenue-sharing model, gym owners receive <strong>₹3,000–₹12,000/month</strong> passive income — with zero upfront investment and zero maintenance cost.
+                      MuscleBoxPro partner gyms generate this in total machine revenue depending on daily footfall. Under our revenue-sharing model, gym owners receive <strong>₹3,000–₹12,000/month</strong> passive income, with zero upfront investment and zero maintenance cost.
                     </p>
                   </div>
                 </div>
               </div>
 
               <p className="text-gray-600 leading-relaxed">
-                Selling price per shake averages ₹100–₹150, while ingredient costs per serve range from ₹45–₹70, delivering gross margins of 45–55%+ on each transaction. At 20–30 shakes per day, a gym in a mid-tier Indian city can expect consistent, compounding shake revenue that grows alongside membership — without adding a single operational task to the owner's plate.
+                Selling price per shake averages ₹100–₹150, while ingredient costs per serve range from ₹45–₹70, delivering gross margins of 45–55%+ on each transaction. At 20–30 shakes per day, a gym in a mid-tier Indian city can expect consistent, compounding shake revenue that grows alongside membership, without adding a single operational task to the owner's plate.
               </p>
 
               <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
                 The Ultimate Post-Workout Convenience
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                The anabolic window — the critical 30–45 minutes after a workout — is when muscles are most primed to absorb protein for recovery and growth. Most gym members want to capitalise on this window but find shaker bottles, powders, and warm water inconvenient. By placing an{" "}
+                The anabolic window, the critical 30–45 minutes after a workout, is when muscles are most primed to absorb protein for recovery and growth. Most gym members want to capitalise on this window but find shaker bottles, powders, and warm water inconvenient. By placing an{" "}
                 <Link href="/gym-protein-shake-machine" className="text-primary hover:underline font-medium">
                   automated shake dispenser
                 </Link>{" "}
@@ -318,7 +309,7 @@ export default function ProteinShakeVendingMachine() {
 
               <ul className="space-y-3 pt-2">
                 {[
-                  { label: "Cashless Payments", text: "UPI, cards, and digital wallet — no cash handling required." },
+                  { label: "Cashless Payments", text: "UPI, cards, and digital wallet. No cash handling required." },
                   { label: "12 Protein Blends", text: "Whey isolate, plant-based vegan, pre-workout, and BCAA options." },
                   { label: "Smart Telemetry", text: "Real-time inventory tracking, sales analytics, and remote diagnostics." },
                   { label: "Self-Cleaning Cycles", text: "Automated hygiene cycles maintain food-safety standards without staff." },
@@ -335,21 +326,21 @@ export default function ProteinShakeVendingMachine() {
                 Member Retention Impact
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                On-site nutrition is one of the strongest retention levers available to gym owners. Members who consume protein within 45 minutes of training see measurably faster results — and members who see results stay. MuscleBoxPro partner gyms report that members who use the vending machine regularly visit 18–22% more frequently than non-users, creating a compounding retention effect that reduces churn and stabilises monthly membership revenue. Retaining one additional member per month in a gym charging ₹2,000/month membership is worth ₹24,000/year — far exceeding the passive income from shake sales alone.
+                On-site nutrition is one of the strongest retention levers available to gym owners. Members who consume protein within 45 minutes of training see measurably faster results, and members who see results stay. MuscleBoxPro partner gyms report that members who use the vending machine regularly visit 18–22% more frequently than non-users, creating a compounding retention effect that reduces churn and stabilises monthly membership revenue. Retaining one additional member per month in a gym charging ₹2,000/month membership is worth ₹24,000/year, far exceeding the passive income from shake sales alone.
               </p>
 
               <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
                 Dual Revenue: Shakes + Advertising
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                MuscleBoxPro <strong>whey protein vending machines</strong> include high-resolution digital displays that brands can use to advertise directly to gym members — one of the most targeted fitness audiences in India. This captive audience model creates a second passive income stream for the gym beyond shake revenue. Brands in sports nutrition, fitness apparel, and health supplements actively seek premium gym placements; MuscleBoxPro manages these brand relationships and shares advertising revenue with partner gyms, further compounding total returns without adding any work for the owner.
+                MuscleBoxPro <strong>whey protein vending machines</strong> include high-resolution digital displays that brands can use to advertise directly to gym members, one of the most targeted fitness audiences in India. This captive audience model creates a second passive income stream for the gym beyond shake revenue. Brands in sports nutrition, fitness apparel, and health supplements actively seek premium gym placements; MuscleBoxPro manages these brand relationships and shares advertising revenue with partner gyms, further compounding total returns without adding any work for the owner.
               </p>
 
               <h3 className="font-display font-black text-foreground uppercase text-xl pt-4">
                 Zero-Risk Installation
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Unlike a juice bar (₹2–5 lakh upfront) or a supplement counter (₹50,000–₹1,50,000 in working capital), the MuscleBoxPro machine requires <strong>zero capital investment</strong> from the gym owner. MuscleBoxPro handles the full installation, ingredient stocking, technical maintenance, and restocking on an ongoing basis. The gym earns a revenue share from day one with no financial risk — making it the only gym revenue idea on our{" "}
+                Unlike a juice bar (₹2–5 lakh upfront) or a supplement counter (₹50,000–₹1,50,000 in working capital), the MuscleBoxPro machine requires <strong>zero capital investment</strong> from the gym owner. MuscleBoxPro handles the full installation, ingredient stocking, technical maintenance, and restocking on an ongoing basis. The gym earns a revenue share from day one with no financial risk, making it the only gym revenue idea on our{" "}
                 <Link href="/alternatives/gym-revenue-ideas" className="text-primary hover:underline font-medium">
                   passive income ranked list
                 </Link>{" "}

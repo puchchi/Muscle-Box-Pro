@@ -21,7 +21,7 @@ const sections = [
 const faqs = [
   { q: "What personal information does MuscleBoxPro collect?", a: "MuscleBoxPro may collect your name, email address, mobile number, payment transaction details, and machine usage data when you register, place an order, or interact with the platform." },
   { q: "How is my payment information secured?", a: "Payments are processed through third-party providers such as PhonePe. MuscleBoxPro does not store your card or UPI credentials." },
-  { q: "Can I request deletion of my personal data?", a: "Yes. You may request access, correction, or deletion of your personal information by contacting our team at contact@muscleboxpro.com or +91-8687247670." },
+  { q: "Can I request deletion of my personal data?", a: "Yes. You may request access, correction, or deletion of your personal information by contacting our team at contact@muscleboxpro.com." },
   { q: "Does MuscleBoxPro share my data with third parties?", a: "Personal data may be shared with trusted service providers only when necessary to process payments or operate services. It is never sold to third parties." },
   { q: "How long is my data retained?", a: "Personal data is retained only as long as necessary for business operations or as required by applicable law." },
 ];
@@ -35,11 +35,7 @@ export default function PrivacyPolicy() {
       <section className="bg-gray-950 pt-32 pb-16 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[220px] bg-gradient-to-r from-accent/15 to-primary/15 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-3xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="hero-rise">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Legal
             </span>
@@ -53,7 +49,7 @@ export default function PrivacyPolicy() {
               </span>
             </h1>
             <p className="text-white/40 text-sm italic">Last Updated: February 26, 2026</p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -111,10 +107,6 @@ export default function PrivacyPolicy() {
               If you have any questions or concerns about our privacy practices, please contact our data protection team at{" "}
               <a href="mailto:contact@muscleboxpro.com" className="text-primary hover:underline font-medium">
                 contact@muscleboxpro.com
-              </a>{" "}
-              or call us at{" "}
-              <a href="tel:+918687247670" className="text-primary hover:underline font-medium">
-                +91-8687247670
               </a>.
             </p>
             <a

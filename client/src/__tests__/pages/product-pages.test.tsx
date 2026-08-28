@@ -16,22 +16,7 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
-vi.mock("framer-motion", () => ({
-  motion: {
-    div: ({ children, ...p }: React.ComponentProps<"div">) => <div {...p}>{children}</div>,
-    section: ({ children, ...p }: React.ComponentProps<"section">) => <section {...p}>{children}</section>,
-    h1: ({ children, ...p }: React.ComponentProps<"h1">) => <h1 {...p}>{children}</h1>,
-    h2: ({ children, ...p }: React.ComponentProps<"h2">) => <h2 {...p}>{children}</h2>,
-    p: ({ children, ...p }: React.ComponentProps<"p">) => <p {...p}>{children}</p>,
-    span: ({ children, ...p }: React.ComponentProps<"span">) => <span {...p}>{children}</span>,
-    li: ({ children, ...p }: React.ComponentProps<"li">) => <li {...p}>{children}</li>,
-    img: ({ ...p }: React.ComponentProps<"img">) => <img {...p} />,
-  },
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useInView: vi.fn(() => true),
-}));
-
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
 import GymProteinShakeMachine from "@/pages/GymProtienShakeMachine";

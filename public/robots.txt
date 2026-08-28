@@ -1,10 +1,9 @@
 User-agent: *
 Allow: /
-Disallow: /login
-Disallow: /signup
-Disallow: /forgot-password
-Disallow: /account
+Disallow: /gym/
+Disallow: /onboarding/
 Disallow: /auth/
+Disallow: /admin/
 
 # Google
 User-agent: Googlebot
@@ -18,7 +17,7 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 
-# AI crawlers — allow for brand visibility in AI search
+# AI crawlers: allow for brand visibility in AI search
 User-agent: GPTBot
 Allow: /
 

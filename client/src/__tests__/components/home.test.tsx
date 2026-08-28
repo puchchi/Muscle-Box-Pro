@@ -17,20 +17,7 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
-vi.mock("framer-motion", () => ({
-  motion: {
-    div: ({ children, ...p }: React.ComponentProps<"div">) => <div {...p}>{children}</div>,
-    section: ({ children, ...p }: React.ComponentProps<"section">) => <section {...p}>{children}</section>,
-    h1: ({ children, ...p }: React.ComponentProps<"h1">) => <h1 {...p}>{children}</h1>,
-    h2: ({ children, ...p }: React.ComponentProps<"h2">) => <h2 {...p}>{children}</h2>,
-    p: ({ children, ...p }: React.ComponentProps<"p">) => <p {...p}>{children}</p>,
-    span: ({ children, ...p }: React.ComponentProps<"span">) => <span {...p}>{children}</span>,
-  },
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useInView: vi.fn(() => true),
-}));
-
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
 // ─── Components ───────────────────────────────────────────────────────────────
 import Hero from "@/components/home/Hero";
@@ -43,27 +30,27 @@ describe("Hero component", () => {
     render(<Hero />);
   });
 
-  it("shows FUEL YOUR GAINS INSTANTLY heading", () => {
+  // Matched on the h1 rather than on the text, because the headline is split across
+  // an element boundary for the gradient on its second line.
+  it("leads with the machine being in the gym, not with the product", () => {
     render(<Hero />);
-    expect(screen.getByText(/fuel your/i)).toBeInTheDocument();
-    expect(screen.getByText(/gains instantly/i)).toBeInTheDocument();
+    const headline = screen.getByRole("heading", { level: 1 });
+    expect(headline).toHaveTextContent(/protein shakes\./i);
+    expect(headline).toHaveTextContent(/right in your gym\./i);
   });
 
-  it("shows REQUEST DEMO link pointing to /gym-demo", () => {
+  it("shows the Request a Demo link pointing to /gym-demo", () => {
     render(<Hero />);
-    const link = screen.getByRole("link", { name: /request demo/i });
+    const link = screen.getByRole("link", { name: /request a demo/i });
     expect(link).toHaveAttribute("href", "/gym-demo");
   });
 
-  it("shows USER LOGIN link pointing to /login", () => {
-    render(<Hero />);
-    const link = screen.getByRole("link", { name: /user login/i });
-    expect(link).toHaveAttribute("href", "/login");
-  });
+  // The consumer USER LOGIN CTA was removed with consumer auth — there are no
+  // member accounts. See docs/gym-onboarding.md §10.
 
-  it("shows 'The Future of Fuel' tagline", () => {
+  it("states the blend count and the blend time under the headline", () => {
     render(<Hero />);
-    expect(screen.getByText(/the future of fuel/i)).toBeInTheDocument();
+    expect(screen.getByText(/12 fresh protein blends blended in 60 seconds/i)).toBeInTheDocument();
   });
 });
 
@@ -78,19 +65,11 @@ describe("Features component", () => {
     expect(screen.getByText(/premium nutrition/i)).toBeInTheDocument();
   });
 
-  it("shows Instant Recovery feature", () => {
+  it("shows all three feature cards", () => {
     render(<Features />);
-    expect(screen.getByText(/instant recovery/i)).toBeInTheDocument();
-  });
-
-  it("shows Real Ingredients feature", () => {
-    render(<Features />);
-    expect(screen.getByText(/real ingredients/i)).toBeInTheDocument();
-  });
-
-  it("shows Smart Profile feature", () => {
-    render(<Features />);
-    expect(screen.getByText(/smart profile/i)).toBeInTheDocument();
+    expect(screen.getByText(/ready in 60 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(/real ingredients only/i)).toBeInTheDocument();
+    expect(screen.getByText(/smart & cashless/i)).toBeInTheDocument();
   });
 });
 
@@ -100,9 +79,10 @@ describe("ShakeVariants component — no limit (all 12)", () => {
     render(<ShakeVariants />);
   });
 
-  it("shows THE MENU badge", () => {
+  it("shows the section eyebrow and the full-menu heading", () => {
     render(<ShakeVariants />);
-    expect(screen.getByText(/the menu/i)).toBeInTheDocument();
+    expect(screen.getByText(/our menu/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /all 12 blends/i })).toBeInTheDocument();
   });
 
   it("renders all 12 shakes when no limit is given", () => {
@@ -111,11 +91,16 @@ describe("ShakeVariants component — no limit (all 12)", () => {
     expect(screen.getByText("Chocolate Creamy Date")).toBeInTheDocument();
   });
 
+  /**
+   * By role, not by text. The filters are title-case in the DOM and uppercased by CSS,
+   * so the old `getByText("CLASSIC")` could never match — and "Premium" is both a
+   * filter and a card badge, which makes a bare text query ambiguous anyway.
+   */
   it("shows category filter buttons when no limit is given", () => {
     render(<ShakeVariants />);
-    expect(screen.getByText("CLASSIC")).toBeInTheDocument();
-    expect(screen.getByText("POPULAR")).toBeInTheDocument();
-    expect(screen.getByText("MILK-BASED")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Classic" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Popular" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Milk-Based" })).toBeInTheDocument();
   });
 });
 
@@ -129,9 +114,11 @@ describe("ShakeVariants component — with limit prop", () => {
     expect(screen.queryByText("Chocolate Pure")).not.toBeInTheDocument();
   });
 
+  // Was asserting the absence of "CLASSIC", a string the component never renders in
+  // any state, so it passed whether the filters were hidden or not.
   it("does not show category filter buttons when limit is given", () => {
     render(<ShakeVariants limit={3} />);
-    expect(screen.queryByText("CLASSIC")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Classic" })).not.toBeInTheDocument();
   });
 
   it("shows BESTSELLER badge on Banana Blend", () => {

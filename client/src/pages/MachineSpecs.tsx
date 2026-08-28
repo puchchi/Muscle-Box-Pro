@@ -9,12 +9,19 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { MACHINE_SPEC, dimensionsCm } from "@shared/machine/spec";
 
+// Sourced from the shared spec so this page and onboarding step 2 cannot describe
+// two different machines. See shared/machine/spec.ts.
 const keyStats = [
-  { value: "76×60×180", label: "Size (cm)", sub: "W × D × H" },
-  { value: "27\"", label: "HD Touch Display", sub: "Smart Interface" },
-  { value: "28L", label: "Total Capacity", sub: "7 Canisters" },
-  { value: "4G + WiFi", label: "Connectivity", sub: "Always Online" },
+  { value: dimensionsCm(), label: "Size (cm)", sub: "W × D × H" },
+  { value: `${MACHINE_SPEC.displayInches}"`, label: "HD Touch Display", sub: "Smart Interface" },
+  {
+    value: `${MACHINE_SPEC.capacityLitres}L`,
+    label: "Total Capacity",
+    sub: `${MACHINE_SPEC.canisters} Canisters`,
+  },
+  { value: MACHINE_SPEC.connectivity, label: "Connectivity", sub: "Always Online" },
 ];
 
 const specs = [
@@ -275,6 +282,13 @@ export default function MachineSpecs() {
                 Request a Demo <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
+            <p className="text-muted-foreground text-sm mt-6">
+              Or read the{" "}
+              <Link href="/gym-partnership" className="text-primary font-semibold hover:underline">
+                full partnership terms
+              </Link>{" "}
+              first: what it costs, how the profit share works, and who pays for what.
+            </p>
           </div>
         </section>
 

@@ -44,7 +44,7 @@ interface ComparisonRow {
 const rows: ComparisonRow[] = [
   {
     dimension: "Capital Required to Start",
-    mbp: { mark: "yes", note: "₹0 — machine, installation, and maintenance all covered by MuscleBoxPro" },
+    mbp: { mark: "yes", note: "₹0: machine, installation, and maintenance all covered by MuscleBoxPro" },
     counter: { mark: "no", note: "₹1.5–4 L initial inventory + display fixtures, shelving (est. Q1 2026)" },
   },
   {
@@ -59,7 +59,7 @@ const rows: ComparisonRow[] = [
   },
   {
     dimension: "Staff Overhead",
-    mbp: { mark: "yes", note: "Fully automated — no dedicated counter staff needed" },
+    mbp: { mark: "yes", note: "Fully automated: no dedicated counter staff needed" },
     counter: { mark: "no", note: "Front-desk staff diverted to sales; specialist supplement knowledge expected" },
   },
   {
@@ -74,22 +74,22 @@ const rows: ComparisonRow[] = [
   },
   {
     dimension: "Average Transaction Value",
-    mbp: { mark: "partial", note: "₹75–₹140 per shake — lower ticket but extremely high frequency" },
-    counter: { mark: "yes", note: "₹1,500–₹5,000 per tub — high ticket but low conversion rate; member usually shops online" },
+    mbp: { mark: "partial", note: "₹75–₹140 per shake: lower ticket but extremely high frequency" },
+    counter: { mark: "yes", note: "₹1,500–₹5,000 per tub: high ticket but low conversion rate; member usually shops online" },
   },
   {
     dimension: "Monthly Revenue Predictability",
     mbp: { mark: "yes", note: "High daily transaction frequency smooths revenue; ad display adds a second income stream" },
-    counter: { mark: "no", note: "Lumpy — one or two tub sales per day in a typical mid-size gym; vulnerable to Amazon price pressure" },
+    counter: { mark: "no", note: "Lumpy: one or two tub sales per day in a typical mid-size gym; vulnerable to Amazon price pressure" },
   },
   {
     dimension: "Hygiene & Compliance",
-    mbp: { mark: "yes", note: "Automated cleaning; every serve is freshly blended — no open tubs or cross-contamination risk" },
+    mbp: { mark: "yes", note: "Automated cleaning; every serve is freshly blended: no open tubs or cross-contamination risk" },
     counter: { mark: "partial", note: "Pre-packaged products are safe, but open testers or scoop sharing raises hygiene questions" },
   },
   {
     dimension: "Digital Advertising Revenue",
-    mbp: { mark: "yes", note: "HD 4K display lets brands advertise to gym members — generating ad income alongside shake sales" },
+    mbp: { mark: "yes", note: "HD 4K display lets brands advertise to gym members, generating ad income alongside shake sales" },
     counter: { mark: "no", note: "No equivalent advertising capability from a retail shelf" },
   },
 ];
@@ -112,7 +112,7 @@ const roiTable = [
 const faqs = [
   {
     q: "Can I run both a supplement counter and a MuscleBoxPro machine in the same gym?",
-    a: "Yes, and many gyms do. The counter serves members looking to buy bulk supplements, while the machine captures post-workout impulse purchases. The products don't directly compete — a shake is a consumed service, a tub is a retail product.",
+    a: "Yes, and many gyms do. The counter serves members looking to buy bulk supplements, while the machine captures post-workout impulse purchases. The products don't directly compete. A shake is a consumed service, a tub is a retail product.",
   },
   {
     q: "Why do gyms struggle to sell supplements at the counter when big brands like Amazon dominate online?",
@@ -120,7 +120,7 @@ const faqs = [
   },
   {
     q: "What is shrinkage and why does it matter for supplement counters?",
-    a: "Shrinkage refers to inventory losses from theft, damage, or accounting errors. Open retail supplement shelving at a gym can see 1–3% shrinkage. At ₹30,000 GMV/month, that's ₹300–₹900 per month in direct losses — on top of tight margins.",
+    a: "Shrinkage refers to inventory losses from theft, damage, or accounting errors. Open retail supplement shelving at a gym can see 1–3% shrinkage. At ₹30,000 GMV/month, that's ₹300–₹900 per month in direct losses, on top of tight margins.",
   },
   {
     q: "Does MuscleBoxPro handle restocking and ingredient supply?",
@@ -128,7 +128,7 @@ const faqs = [
   },
   {
     q: "How does the MuscleBoxPro advertising display generate revenue for gyms?",
-    a: "The machine's HD display shows brand advertisements to gym members. Brands pay MuscleBoxPro for this captive audience placement, and the gym earns a share of that advertising income — creating a second passive revenue stream alongside shake sales.",
+    a: "The machine's HD display shows brand advertisements to gym members. Brands pay MuscleBoxPro for this captive audience placement, and the gym earns a share of that advertising income, creating a second passive revenue stream alongside shake sales.",
   },
 ];
 
@@ -197,55 +197,40 @@ export default function VsSupplementCounter() {
             <span className="text-white/50">Vending Machine vs. Supplement Counter</span>
           </nav>
 
-          <motion.span
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-block px-4 py-1.5 rounded-full border border-white/20 text-white/70 text-xs font-bold tracking-[0.25em] uppercase mb-6"
-          >
-            ROI Analysis · Q1 2026
-          </motion.span>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="font-display font-black text-white uppercase leading-none mb-5"
-            style={{ fontSize: "clamp(1.9rem, 4.5vw, 3.4rem)" }}
-          >
-            Vending Machine vs.{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-              Supplement Counter
+          <div className="hero-rise">
+            <span className="inline-block px-4 py-1.5 rounded-full border border-white/20 text-white/70 text-xs font-bold tracking-[0.25em] uppercase mb-6">
+              ROI Analysis · Q1 2026
             </span>
-          </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            className="text-white/65 text-base leading-relaxed max-w-2xl mx-auto mb-8"
-          >
-            An honest ROI analysis for Indian gym owners: is a traditional front-desk supplement
-            retail counter generating the returns you expect — or is an automated protein shake
-            machine a smarter use of that floor space?
-          </motion.p>
+            <h1
+              className="font-display font-black text-white uppercase leading-none mb-5 text-balance"
+              style={{ fontSize: "clamp(1.9rem, 4.5vw, 3.4rem)" }}
+            >
+              Vending Machine vs.{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                Supplement Counter
+              </span>
+            </h1>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35 }}
-            className="flex flex-col sm:flex-row gap-3 justify-center"
-          >
-            <Link href="/gym-demo">
-              <Button size="lg" className="h-12 px-7 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 shadow-lg shadow-primary/25 cursor-pointer">
-                Request Free Demo <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </Link>
-            <Link href="/protein-shake-vending-machine">
-              <Button size="lg" variant="outline" className="h-12 px-7 rounded-full font-semibold border-white/20 text-white/80 hover:bg-white/8 cursor-pointer">
-                How It Works
-              </Button>
-            </Link>
-          </motion.div>
+            <p className="text-white/65 text-base leading-relaxed max-w-2xl mx-auto mb-8">
+              An honest ROI analysis for Indian gym owners. Is a traditional front-desk supplement
+              retail counter generating the returns you expect, or is an automated protein shake
+              machine a smarter use of that floor space?
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/gym-demo">
+                <Button size="lg" className="h-12 px-7 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 shadow-lg shadow-primary/25 cursor-pointer">
+                  Request Free Demo <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </Link>
+              <Link href="/protein-shake-vending-machine">
+                <Button size="lg" variant="outline" className="h-12 px-7 rounded-full font-semibold border-white/20 text-white/80 hover:bg-white/8 cursor-pointer">
+                  How It Works
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -407,32 +392,32 @@ export default function VsSupplementCounter() {
                 icon: Package, iconBg: "bg-red-50", iconColor: "text-red-500",
                 title: "The Hidden Cost of Inventory Risk",
                 body: [
-                  <>A supplement counter looks profitable on paper — whey tubs retail at <strong>₹2,500–₹5,000</strong> with a 30–40% margin. But the unit economics rarely hold in practice. Most gym members price-shop online and use the counter primarily for information, not purchase. Platforms like Amazon, Flipkart, and health supplement D2C brands consistently undercut gym counter pricing by 15–30%, and offer subscription discounts the gym simply cannot match.</>,
-                  <>The result: counters in mid-size Indian gyms typically move <strong>3–8 tubs per month</strong> — generating ₹3,000–₹16,000 in gross revenue before accounting for the staff time spent answering questions, ordering stock, managing expiry dates, and handling returns. Add 1–3% shrinkage from open shelving and the actual net income from a supplement counter is often surprisingly low.</>,
+                  <>A supplement counter looks profitable on paper. Whey tubs retail at <strong>₹2,500–₹5,000</strong> with a 30–40% margin. But the unit economics rarely hold in practice. Most gym members price-shop online and use the counter primarily for information, not purchase. Platforms like Amazon, Flipkart, and health supplement D2C brands consistently undercut gym counter pricing by 15–30%, and offer subscription discounts the gym simply cannot match.</>,
+                  <>The result: counters in mid-size Indian gyms typically move <strong>3–8 tubs per month</strong>, generating ₹3,000–₹16,000 in gross revenue before accounting for the staff time spent answering questions, ordering stock, managing expiry dates, and handling returns. Add 1–3% shrinkage from open shelving and the actual net income from a supplement counter is often surprisingly low.</>,
                 ],
               },
               {
                 icon: Zap, iconBg: "bg-primary/10", iconColor: "text-primary",
                 title: "Impulse Purchases vs. Considered Purchases",
                 body: [
-                  <>The fundamental difference between a vending machine and a supplement counter is <strong>purchase psychology</strong>. Buying a ₹3,500 tub of whey is a considered decision — members compare prices, read reviews, and typically shop online. Buying a ₹110 post-workout shake after 45 minutes of lifting is an impulse driven by immediate biological need.</>,
-                  <>MuscleBoxPro machines are placed directly on the gym floor, where members are at peak motivation and lowest price sensitivity. A 60-second blend and cashless UPI payment removes all friction from that impulse. The result is high daily transaction frequency — the engine of consistent passive income for the gym owner.</>,
+                  <>The fundamental difference between a vending machine and a supplement counter is <strong>purchase psychology</strong>. Buying a ₹3,500 tub of whey is a considered decision. Members compare prices, read reviews, and typically shop online. Buying a ₹110 post-workout shake after 45 minutes of lifting is an impulse driven by immediate biological need.</>,
+                  <>MuscleBoxPro machines are placed directly on the gym floor, where members are at peak motivation and lowest price sensitivity. A 60-second blend and cashless UPI payment removes all friction from that impulse. The result is high daily transaction frequency, the engine of consistent passive income for the gym owner.</>,
                 ],
               },
               {
                 icon: ShieldCheck, iconBg: "bg-emerald-50", iconColor: "text-emerald-600",
                 title: "Theft & Shrinkage: A Genuine Problem",
                 body: [
-                  <>Open retail shelving in a high-traffic gym environment is susceptible to product theft — both by members and occasionally by staff. Pre-packaged supplements are small, high-value, and easy to conceal. Industry estimates for gym retail shrinkage run at <strong>1–3% of GMV</strong>, which on ₹30,000 of monthly counter sales represents ₹300–₹900 in direct losses per month.</>,
-                  <>MuscleBoxPro machines eliminate this entirely. The electromagnetic automatic door only opens during an active dispensing cycle. Every transaction is logged digitally and reconciled against inventory. Cash handling is removed from the equation entirely through UPI and card payments — meaning there is no cash till to skim. For more on machine security, see the <Link href="/specs" className="text-primary hover:underline font-medium">full machine specifications</Link>.</>,
+                  <>Open retail shelving in a high-traffic gym environment is susceptible to product theft, both by members and occasionally by staff. Pre-packaged supplements are small, high-value, and easy to conceal. Industry estimates for gym retail shrinkage run at <strong>1–3% of GMV</strong>, which on ₹30,000 of monthly counter sales represents ₹300–₹900 in direct losses per month.</>,
+                  <>MuscleBoxPro machines eliminate this entirely. The electromagnetic automatic door only opens during an active dispensing cycle. Every transaction is logged digitally and reconciled against inventory. Cash handling is removed from the equation entirely through UPI and card payments. There is no cash till to skim. For more on machine security, see the <Link href="/specs" className="text-primary hover:underline font-medium">full machine specifications</Link>.</>,
                 ],
               },
               {
                 icon: BarChart3, iconBg: "bg-purple-50", iconColor: "text-purple-600",
                 title: "Dual Revenue: Shakes + Advertising",
                 body: [
-                  <>A supplement counter generates exactly one revenue stream: margin on products sold. MuscleBoxPro machines generate two: shake revenue share and income from the <strong>HD 4K advertising display</strong>. Fitness brands, sports nutrition companies, and local businesses pay to advertise directly to your gym's members — a captive, highly targeted audience that most brands are willing to pay a premium to reach.</>,
-                  <>This second stream means the machine generates income even during slow shake-purchase periods — early mornings, weekday afternoons — when screen impressions still have value. See how the <Link href="/advertise" className="text-primary hover:underline font-medium">advertising model works for gym partners</Link> or read more about <Link href="/protein-shake-vending-machine" className="text-primary hover:underline font-medium">how MuscleBoxPro's vending machines work</Link>.</>,
+                  <>A supplement counter generates exactly one revenue stream: margin on products sold. MuscleBoxPro machines generate two: shake revenue share and income from the <strong>HD 4K advertising display</strong>. Fitness brands, sports nutrition companies, and local businesses pay to advertise directly to your gym's members, a captive and highly targeted audience that most brands are willing to pay a premium to reach.</>,
+                  <>This second stream means the machine generates income even during slow shake-purchase periods such as early mornings and weekday afternoons, when screen impressions still have value. See how the <Link href="/advertise" className="text-primary hover:underline font-medium">advertising model works for gym partners</Link> or read more about <Link href="/protein-shake-vending-machine" className="text-primary hover:underline font-medium">how MuscleBoxPro's vending machines work</Link>.</>,
                 ],
               },
               {

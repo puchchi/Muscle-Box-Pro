@@ -20,7 +20,7 @@ const faqs = [
   {
     category: "Payments & Wallet",
     items: [
-      { q: "How do I add funds to my wallet?", a: "Login to your account, tap 'Add Funds', select or enter an amount, and choose your preferred payment method — UPI, Card, or QR scan." },
+      { q: "How do I add funds to my wallet?", a: "Login to your account, tap 'Add Funds', select or enter an amount, and choose your preferred payment method: UPI, Card, or QR scan." },
       { q: "Which payment methods are accepted?", a: "We accept all major UPI apps (GPay, PhonePe, Paytm), debit/credit cards, and net banking. You can also preload the MuscleBoxPro wallet for faster checkouts at the machine." },
       { q: "Can I get a refund if a transaction fails?", a: "Yes. Failed transactions are automatically refunded to your original payment method within 3–5 business days. If not received, contact our support team with the order ID." },
     ],
@@ -28,7 +28,7 @@ const faqs = [
   {
     category: "Shakes & Menu",
     items: [
-      { q: "Are the shakes freshly mixed?", a: "Yes! Every shake is mixed on-demand using our independent mechanical stirring system to ensure perfect consistency and freshness — no pre-mixed or stored batches." },
+      { q: "Are the shakes freshly mixed?", a: "Yes! Every shake is mixed on-demand using our independent mechanical stirring system to ensure perfect consistency and freshness. There are no pre-mixed or stored batches." },
       { q: "How long does a shake take to prepare?", a: "Most shakes are ready in under 60 seconds. The exact time depends on the blend selected, but the machine will show a live countdown on screen." },
     ],
   },
@@ -49,9 +49,9 @@ const faqs = [
   {
     category: "Gym Owners",
     items: [
-      { q: "How can I get a MuscleBoxPro machine for my gym?", a: "Visit our Gym Demo page and fill out the request form. Our team will contact you within 24 hours to schedule a free demo and discuss installation — with zero upfront cost." },
+      { q: "How can I get a MuscleBoxPro machine for my gym?", a: "Visit our Gym Demo page and fill out the request form. Our team will contact you within 24 hours to schedule a free demo and discuss installation, with zero upfront cost." },
       { q: "Who handles maintenance and restocking?", a: "We do. MuscleBoxPro handles all stocking, cleaning, technical maintenance, and software updates. You simply collect your revenue share each month." },
-      { q: "How does the revenue share model work?", a: "Gym owners earn a percentage of every shake sold from their machine. Exact percentages depend on your location and member volume — our team will walk you through the numbers during your demo." },
+      { q: "How does the revenue share model work?", a: "Gym owners earn a percentage of every shake sold from their machine. Exact percentages depend on your location and member volume. Our team will walk you through the numbers during your demo." },
     ],
   },
 ];
@@ -65,11 +65,7 @@ export default function HelpCenter() {
       <section className="bg-gray-950 pt-32 pb-16 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[260px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-2xl mx-auto text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="hero-rise">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Support
             </span>
@@ -91,7 +87,7 @@ export default function HelpCenter() {
                 placeholder="Search for answers..."
               />
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 

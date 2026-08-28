@@ -4,25 +4,49 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { hasAccessTokenSync } from "@/lib/auth";
 
+/**
+ * The marketing site's nav bar.
+ *
+ * **It does not know whether anyone is signed in, and it must not try to find out.** The
+ * partner button used to read the Supabase session out of `localStorage` during render and
+ * say "DASHBOARD" to a signed-in gym. The portal's session is an `HttpOnly` cookie now, which
+ * script cannot read by design, so there is no synchronous answer left to give.
+ *
+ * The two ways to get one back are both worse than the label being plain. A session probe
+ * here runs on every marketing page view — the home page, every city landing page, every blog
+ * post — spending a request per visitor to change one word for the small fraction who are
+ * partners. A mirrored non-`HttpOnly` cookie is a second copy of the truth that goes stale in
+ * the one case that matters, a session revoked server-side.
+ *
+ * So the button always reads "GYM LOGIN" and always points at `/gym/login`, which forwards an
+ * existing session straight to the dashboard. A signed-in gym gets one extra hop and lands
+ * where the old label promised; the destination is right even though the wording is
+ * conservative. **That forwarding effect in `GymLogin` is what makes this correct** — remove
+ * it and this button starts sending partners to a login form they do not need.
+ */
 export default function Navbar() {
   const location = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => {
-    setIsLoggedIn(hasAccessTokenSync());
-  }, []);
-
+  /**
+   * Partnership sits next to Franchise because they are the two halves of the same
+   * question — host a machine, or buy a territory — and it is the one for the larger
+   * audience. It had been footer-only while Franchise had a nav slot.
+   *
+   * Six labels plus the login button overflow a 768px bar, which is why the desktop
+   * strip below is `lg:` and tablets get the sheet. Adding a seventh needs the same
+   * arithmetic done again, not just another array entry.
+   */
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Gym Demo", path: "/gym-demo" },
+    { name: "Partnership", path: "/gym-partnership" },
+    { name: "Franchise", path: "/franchise" },
     { name: "Specs", path: "/specs" },
-    { name: "My Account", path: "/account" },
     { name: "Advertise", path: "/advertise" },
   ];
 
@@ -47,7 +71,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link key={link.path} href={link.path}>
                 <span
@@ -59,17 +83,15 @@ export default function Navbar() {
                 </span>
               </Link>
             ))}
-            {!isLoggedIn && (
-              <Link href="/login">
-                <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
-                  LOGIN
-                </Button>
-              </Link>
-            )}
+            <Link href="/gym/login">
+              <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
+                GYM LOGIN
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Nav */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-gray-700">
@@ -90,6 +112,16 @@ export default function Navbar() {
                       </span>
                     </Link>
                   ))}
+                  {/* The desktop bar carries this as a button; the sheet only
+                      renders navLinks, so it needs its own entry. */}
+                  <Link href="/gym/login">
+                    <span
+                      className="text-lg font-display tracking-wider text-primary transition-colors hover:text-primary/80 cursor-pointer block"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      GYM LOGIN
+                    </span>
+                  </Link>
                 </div>
               </SheetContent>
             </Sheet>

@@ -59,9 +59,9 @@ const ideas: RevenueIdea[] = [
     title: "Protein Shake Vending Machine (MuscleBoxPro)",
     subtitle: "Highest ROI · Truly Passive · Zero Upfront Cost",
     description:
-      "A smart automated protein shake vending machine installed on your gym floor generates passive income 24 hours a day, 7 days a week — without any staff, capital, or operational effort from the gym owner. MuscleBoxPro (operated by BlendBox Innovations LLP) supplies, installs, and maintains the machine entirely at its own cost. The gym earns a revenue share on every shake sold and a second stream from the machine's HD advertising display. With 12+ shake variants prepared in 60 seconds, cashless UPI payments, and a placement right where post-workout impulse is highest, the machine converts at a rate few other passive revenue tools can match. Available across 11 Indian cities: Delhi, Mumbai, Bangalore, Chennai, Hyderabad, Pune, Kolkata, Ahmedabad, Jaipur, Noida, and Gurugram.",
+      "A smart automated protein shake vending machine installed on your gym floor generates passive income 24 hours a day, 7 days a week. It needs no staff, capital, or operational effort from the gym owner. MuscleBoxPro (operated by BlendBox Innovations LLP) supplies, installs, and maintains the machine entirely at its own cost. The gym earns a revenue share on every shake sold and a second stream from the machine's HD advertising display. With 12+ shake variants prepared in 60 seconds, cashless UPI payments, and a placement right where post-workout impulse is highest, the machine converts at a rate few other passive revenue tools can match. Available across 11 Indian cities: Delhi, Mumbai, Bangalore, Chennai, Hyderabad, Pune, Kolkata, Ahmedabad, Jaipur, Noida, and Gurugram.",
     pros: [
-      "Zero capital investment — machine installed free of charge",
+      "Zero capital investment: machine installed free of charge",
       "Fully passive: no staff, no ordering, no operations for gym owner",
       "Dual revenue: shake sales share + advertising display income",
       "24/7 operation, including early mornings and late nights",
@@ -70,7 +70,7 @@ const ideas: RevenueIdea[] = [
     ],
     cons: [
       "Gym earns a revenue share rather than 100% of margin",
-      "Revenue depends on machine uptime — any mechanical issue halts income until resolved",
+      "Revenue depends on machine uptime: any mechanical issue halts income until resolved",
       "Menu is curated by MuscleBoxPro; gym cannot add arbitrary items",
     ],
     investment: "₹0 upfront (revenue-share model; machine, installation, and maintenance covered by MuscleBoxPro)",
@@ -86,10 +86,10 @@ const ideas: RevenueIdea[] = [
     title: "Branded Merchandise Sales",
     subtitle: "Steady Secondary Revenue · Brand Building Benefit",
     description:
-      "Selling branded gym merchandise — T-shirts, water bottles, resistance bands, gym bags, and shakers bearing your gym's logo — creates a secondary revenue stream while turning paying members into walking brand ambassadors. The key to merchandise profitability is inventory discipline: start with three to five fast-moving SKUs, order in small batches of 20–30 units, and avoid overstocking seasonal items. Gyms that build strong community identity (challenge programmes, transformation contests) see the best merchandise sell-through rates. Pricing merchandise at 2.5–3x landed cost delivers healthy margins. The downside is that this requires active management: ordering, display, restocking, and occasional markdowns on slow sellers.",
+      "Branded gym merchandise (T-shirts, water bottles, resistance bands, gym bags, and shakers bearing your gym's logo) creates a secondary revenue stream while turning paying members into walking brand ambassadors. The key to merchandise profitability is inventory discipline: start with three to five fast-moving SKUs, order in small batches of 20–30 units, and avoid overstocking seasonal items. Gyms that build strong community identity (challenge programmes, transformation contests) see the best merchandise sell-through rates. Pricing merchandise at 2.5–3x landed cost delivers healthy margins. The downside is that this requires active management: ordering, display, restocking, and occasional markdowns on slow sellers.",
     pros: [
       "Doubles as free advertising every time a member wears your branded gear",
-      "Members associate quality merchandise with gym prestige — supports premium pricing",
+      "Members associate quality merchandise with gym prestige: supports premium pricing",
       "Accessories (resistance bands, straps) are consumable and drive repeat purchases",
       "No FSSAI or food hygiene compliance requirements",
     ],
@@ -111,17 +111,17 @@ const ideas: RevenueIdea[] = [
     title: "Personal Training Upsells & Specialised Programmes",
     subtitle: "High Margin · Requires Trainer Quality Investment",
     description:
-      "Personal training is one of the highest-margin revenue streams available to a gym — but it is fundamentally active income that scales only as fast as you can hire and retain quality trainers. The real passive leverage comes from structured group PT programmes, transformation challenges, and online coaching add-ons that a single trainer can run for 10–20 clients simultaneously. Gyms in metro India that offer specialised programmes (posture correction, sports conditioning, bridal fitness) command premium pricing that commodity PT at ₹500/session cannot. The risk is trainer retention: losing a popular trainer to a competing gym or independent practice can wipe out this revenue stream overnight.",
+      "Personal training is one of the highest-margin revenue streams available to a gym. But it is fundamentally active income that scales only as fast as you can hire and retain quality trainers. The real passive leverage comes from structured group PT programmes, transformation challenges, and online coaching add-ons that a single trainer can run for 10–20 clients simultaneously. Gyms in metro India that offer specialised programmes (posture correction, sports conditioning, bridal fitness) command premium pricing that commodity PT at ₹500/session cannot. The risk is trainer retention: losing a popular trainer to a competing gym or independent practice can wipe out this revenue stream overnight.",
     pros: [
-      "Very high gross margins — trainer cost is the primary variable",
+      "Very high gross margins: trainer cost is the primary variable",
       "Group programmes and challenges scale one trainer across many clients",
       "Builds member loyalty and reduces churn compared to members on standard memberships",
       "Online coaching components can extend reach beyond the physical gym",
     ],
     cons: [
-      "Dependent on retaining quality trainers — high churn risk",
+      "Dependent on retaining quality trainers: high churn risk",
       "Requires ongoing trainer education and certification investment",
-      "Active income, not passive — revenue stops if trainer leaves",
+      "Active income, not passive: revenue stops if trainer leaves",
       "Hard to standardise quality across multiple trainers at scale",
     ],
     investment: "₹0–₹50,000 for certification support, programme materials, and marketing (est. Q1 2026)",
@@ -136,9 +136,9 @@ const ideas: RevenueIdea[] = [
     title: "Locker Rentals",
     subtitle: "Genuinely Passive · Low Management Overhead",
     description:
-      "Monthly or annual locker rentals are one of the most genuinely passive revenue streams available to gym owners. Members who rent lockers develop a stronger attachment to the gym — their belongings are there, creating a psychological switching cost that reduces churn. Locker rental pricing in metro India typically runs ₹300–₹600/month, and lockers require almost no ongoing management once installed. The key metrics are utilisation rate and the cost of the locker installation amortised over time. A bank of 30 lockers at 80% utilisation at ₹400/month generates ₹9,600/month in near-pure passive income. Maintenance requirements are minimal — occasional lock replacement, a quarterly inspection — and the revenue is highly predictable.",
+      "Monthly or annual locker rentals are one of the most genuinely passive revenue streams available to gym owners. Members who rent lockers develop a stronger attachment to the gym. Their belongings are there, creating a psychological switching cost that reduces churn. Locker rental pricing in metro India typically runs ₹300–₹600/month, and lockers require almost no ongoing management once installed. The key metrics are utilisation rate and the cost of the locker installation amortised over time. A bank of 30 lockers at 80% utilisation at ₹400/month generates ₹9,600/month in near-pure passive income. Maintenance requirements are minimal: occasional lock replacement and a quarterly inspection. The revenue is highly predictable.",
     pros: [
-      "Genuinely passive after installation — no ongoing staff involvement",
+      "Genuinely passive after installation: no ongoing staff involvement",
       "Reduces member churn by creating switching cost",
       "Predictable monthly revenue with low volatility",
       "Requires minimal floor space relative to revenue generated",
@@ -172,7 +172,7 @@ const ideas: RevenueIdea[] = [
       "High capital requirement (₹3–15 L for sauna/steam installation)",
       "Significant ongoing utility costs (electricity, water, heating)",
       "Requires specialist maintenance and periodic compliance checks",
-      "Underutilised during off-peak hours — fixed costs don't scale down",
+      "Underutilised during off-peak hours: fixed costs don't scale down",
     ],
     investment: "₹3,00,000–₹15,00,000 depending on facility size and specification (est. Q1 2026)",
     monthlyRevenue: "₹20,000–₹80,000 for a mid-size facility with strong utilisation (estimate as of Q1 2026)",
@@ -186,10 +186,10 @@ const ideas: RevenueIdea[] = [
     title: "Parking Fees",
     subtitle: "Location-Dependent · Passive When Systemised",
     description:
-      "Gyms with dedicated parking — particularly in dense metro neighbourhoods where parking is scarce — can generate meaningful passive income by charging for parking on a per-visit or monthly basis. This model works best in markets like Bangalore, Mumbai, and Delhi where parking pressure is severe and members expect to pay. Monthly parking passes at ₹500–₹1,500/month effectively cross-subsidise the gym membership and create another layer of member stickiness. The revenue is genuinely passive once a barrier system or attendant rotation is in place. The obvious limitation: this only applies to gyms that have parking under their control, which excludes the majority of gym operators in high-rise commercial buildings.",
+      "Gyms with dedicated parking, particularly in dense metro neighbourhoods where parking is scarce, can generate meaningful passive income by charging for parking on a per-visit or monthly basis. This model works best in markets like Bangalore, Mumbai, and Delhi where parking pressure is severe and members expect to pay. Monthly parking passes at ₹500–₹1,500/month effectively cross-subsidise the gym membership and create another layer of member stickiness. The revenue is genuinely passive once a barrier system or attendant rotation is in place. The obvious limitation: this only applies to gyms that have parking under their control, which excludes the majority of gym operators in high-rise commercial buildings.",
     pros: [
       "Near-passive revenue once a management system is in place",
-      "Adds member stickiness — members prefer gyms where parking is easy",
+      "Adds member stickiness: members prefer gyms where parking is easy",
       "Particularly valuable in high-density markets where parking is scarce",
       "Monthly parking passes are another recurring revenue line item",
     ],
@@ -211,7 +211,7 @@ const ideas: RevenueIdea[] = [
     title: "Brand Sponsorships & In-Gym Advertising",
     subtitle: "High Upside · Requires Audience Scale",
     description:
-      "Gyms with strong footfall and an engaged membership base can sell advertising and sponsorship rights to brands looking to reach health-conscious Indian consumers. This includes wall branding, event sponsorships, flyer distribution, email list placements, and social media collaborations. Supplement brands, sports footwear companies, health food brands, and even non-fitness brands targeting active urban Indians are willing to pay for this access. The challenge is that this only generates meaningful income once the gym has achieved significant scale — typically 300+ active members and a recognisable brand in its market. Small gyms often find that the time spent negotiating deals is not proportional to the revenue generated.",
+      "Gyms with strong footfall and an engaged membership base can sell advertising and sponsorship rights to brands looking to reach health-conscious Indian consumers. This includes wall branding, event sponsorships, flyer distribution, email list placements, and social media collaborations. Supplement brands, sports footwear companies, health food brands, and even non-fitness brands targeting active urban Indians are willing to pay for this access. The challenge is that this only generates meaningful income once the gym has achieved significant scale, typically 300+ active members and a recognisable brand in its market. Small gyms often find that the time spent negotiating deals is not proportional to the revenue generated.",
     pros: [
       "Can generate substantial income at scale with minimal operational overhead",
       "Builds relationships with premium brands that elevate gym prestige",
@@ -220,9 +220,9 @@ const ideas: RevenueIdea[] = [
     ],
     cons: [
       "Requires significant scale (300+ members) before brands take notice",
-      "Time-intensive to manage — deal negotiation, activation, and renewal",
+      "Time-intensive to manage: deal negotiation, activation, and renewal",
       "Over-commercialisation risks member experience and brand dilution",
-      "Seasonal — sports brands often concentrate spend in Q4 and post-New Year",
+      "Seasonal: sports brands often concentrate spend in Q4 and post-New Year",
     ],
     investment: "₹0 cash; primary cost is time and relationship-building",
     monthlyRevenue: "₹5,000–₹50,000+ for well-established gyms with 400+ members; minimal for smaller operators (estimate as of Q1 2026)",
@@ -260,51 +260,36 @@ export default function GymRevenueIdeas() {
             <span className="text-white/50">Passive Revenue Ideas for Indian Gyms</span>
           </nav>
 
-          <motion.span
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6"
-          >
-            Revenue Guide · Q1 2026
-          </motion.span>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="font-display font-black text-white uppercase leading-none mb-5"
-            style={{ fontSize: "clamp(1.9rem, 4.5vw, 3.4rem)" }}
-          >
-            7 Ways Indian Gyms Generate{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
-              Passive Revenue
+          <div className="hero-rise">
+            <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
+              Revenue Guide · Q1 2026
             </span>
-            <br />Ranked by ROI
-          </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25 }}
-            className="text-white/55 text-base leading-relaxed max-w-2xl mx-auto mb-8"
-          >
-            A no-fluff breakdown of every meaningful passive income stream available to gym owners
-            in India in 2026 — ranked by realistic ROI, with honest pros, cons, and investment
-            figures for each.
-          </motion.p>
+            <h1
+              className="font-display font-black text-white uppercase leading-none mb-5 text-balance"
+              style={{ fontSize: "clamp(1.9rem, 4.5vw, 3.4rem)" }}
+            >
+              7 Ways Indian Gyms Generate{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
+                Passive Revenue
+              </span>{" "}
+              <br className="hidden sm:inline" />Ranked by ROI
+            </h1>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35 }}
-            className="flex flex-col sm:flex-row gap-3 justify-center"
-          >
-            <Link href="/gym-demo">
-              <Button size="lg" className="h-12 px-7 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 shadow-lg shadow-primary/25">
-                Add the #1 Revenue Stream Free <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </Link>
-          </motion.div>
+            <p className="text-white/55 text-base leading-relaxed max-w-2xl mx-auto mb-8">
+              A no-fluff breakdown of every meaningful passive income stream available to gym owners
+              in India in 2026. Ranked by realistic ROI, with honest pros, cons, and investment
+              figures for each.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/gym-demo">
+                <Button size="lg" className="h-12 px-7 rounded-full font-bold bg-primary text-white hover:bg-primary/90 border-0 shadow-lg shadow-primary/25">
+                  Add the #1 Revenue Stream Free <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -443,6 +428,11 @@ export default function GymRevenueIdeas() {
                           View Machine Specs
                         </Button>
                       </Link>
+                      <Link href="/gym-partnership">
+                        <Button size="sm" variant="outline" className="h-9 px-5 rounded-full font-semibold border-primary/30 text-primary hover:bg-primary/5">
+                          Read the Revenue Share Terms
+                        </Button>
+                      </Link>
                       <Link href="/vs/protein-shake-bar">
                         <Button size="sm" variant="ghost" className="h-9 px-5 rounded-full font-semibold text-gray-500 hover:text-gray-900">
                           Compare vs. Shake Bar
@@ -550,7 +540,7 @@ export default function GymRevenueIdeas() {
               ))}
             </ul>
             <p className="text-gray-500 text-sm mt-5 leading-relaxed">
-              Personal training ranks #3 (not #2) despite potentially the highest monthly revenue ceiling because it is fundamentally active income — it requires the gym to maintain, train, and retain quality trainers. Merchandise ranks #2 because while the income is modest, it builds brand equity that compounds over time.
+              Personal training ranks #3 (not #2) despite potentially the highest monthly revenue ceiling because it is fundamentally active income. It requires the gym to maintain, train, and retain quality trainers. Merchandise ranks #2 because while the income is modest, it builds brand equity that compounds over time.
             </p>
           </div>
         </section>
@@ -566,7 +556,7 @@ export default function GymRevenueIdeas() {
                 { label: "How MuscleBoxPro Works", href: "/protein-shake-vending-machine" },
                 { label: "Machine Specifications", href: "/specs" },
                 { label: "Request a Demo", href: "/gym-demo" },
-                { label: "Protein Vending Machine — City Guide", href: "/protein-vending-machine-india" },
+                { label: "Protein Vending Machine: City Guide", href: "/protein-vending-machine-india" },
               ].map((l, i) => (
                 <Link
                   key={i}
@@ -589,7 +579,7 @@ export default function GymRevenueIdeas() {
             className="max-w-2xl mx-auto text-center relative z-10"
           >
             <h2 className="font-display font-black text-white uppercase leading-none mb-4" style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)" }}>
-              Start with the #1 ranked method — today
+              Start with the #1 ranked method today
             </h2>
             <p className="text-white/80 text-sm mb-8 leading-relaxed">
               A MuscleBoxPro machine is the only revenue stream on this list that costs nothing to start, requires zero staff, and generates two income streams from day one. Available across 11 Indian cities.

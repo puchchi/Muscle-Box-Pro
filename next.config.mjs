@@ -3,15 +3,103 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Every origin the browser is allowed to open a connection to.
+ *
+ * Named and listed one per line because this is an allowlist that fails **in production
+ * only** — `next dev` does not apply these headers the same way, so a missing host is
+ * invisible until deploy. This repo has been bitten by exactly that.
+ *
+ * **`https://api.muscleboxpro.com` is a specific host, not a stand-in for "the API".** The
+ * onboarding and reporting endpoints are called straight from the browser, and the custom
+ * domain is what makes that safe rather than merely tidy: `www.muscleboxpro.com` and
+ * `api.muscleboxpro.com` share one registrable domain, so the session cookies are
+ * same-*site* and `SameSite=Lax` keeps its CSRF protection. Behind an
+ * `execute-api.<region>.amazonaws.com` URL the requests are cross-site, the cookies would
+ * need `SameSite=None`, and that protection is gone. So an `amazonaws.com` entry appearing
+ * in this list is not routine housekeeping — it means something bypassed the domain that is
+ * doing the security work. See `mbp-backend` docs/gym-onboarding-api-design.md §4.2.
+ *
+ * An earlier version of this comment said the browser would never connect to AWS at all,
+ * because the design of the day put a Supabase edge function in front as a BFF. That design
+ * is gone: there is no service secret to hide any more — the browser sends a cookie the API
+ * issued, and the API resolves the gym from it — so the hop bought a second trust boundary
+ * and nothing else.
+ */
+const PRODUCTION_API_ORIGIN = "https://api.muscleboxpro.com";
+
+/**
+ * A non-production API origin to allow, or `null` — which is what production returns.
+ *
+ * The sandbox stack answers on `https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox`
+ * and a browser has to reach it to test the integration at all. Rather than adding that host
+ * to the list above — where it would ship to production and quietly widen the CSP for every
+ * real visitor — it is **derived from the API origin this build was configured with.** So the
+ * entry exists exactly where the requests do:
+ *
+ *   - Env unset, or set to the production host → `null`. Production's `connect-src` contains
+ *     no `amazonaws.com` entry, which is the property `securityHeaders.test.ts` pins.
+ *   - Env set to the sandbox → that origin, and nothing else, is allowed.
+ *
+ * `NEXT_PUBLIC_*` is read at build time, so this is decided when the bundle is built and
+ * cannot be flipped by a runtime variable. It is the same rule as `BEARER_SESSION_ALLOWED`
+ * in `client/src/lib/apiClient.ts`, restated because a `.mjs` config cannot import from TS —
+ * and tied to it by the test that asserts this list contains `MBP_API_BASE_URL`'s origin.
+ *
+ * Loosening the CSP is not the dangerous part of pointing a build at `execute-api`; losing
+ * `SameSite=Lax` is, and that is why the bearer hatch is confined to the same condition.
+ */
+function nonProductionApiOrigin() {
+  const configured = process.env.NEXT_PUBLIC_MBP_API_URL;
+  if (!configured) return null;
+  try {
+    const origin = new URL(configured).origin;
+    return origin === PRODUCTION_API_ORIGIN ? null : origin;
+  } catch {
+    // Unparseable is a misconfiguration, and the safe reading of one is "allow nothing extra".
+    return null;
+  }
+}
+
+const NON_PRODUCTION_API_ORIGIN = nonProductionApiOrigin();
+
+const CONNECT_SRC = [
+  "'self'",
+  "https://va.vercel-insights.com",
+  "https://vitals.vercel-insights.com",
+  "https://api.indexnow.org",
+  // The onboarding wizard and the gym dashboard. Cookie-authenticated, same-site, and the
+  // reason `NEXT_PUBLIC_MBP_API_URL` should stay on this host in production — see above.
+  PRODUCTION_API_ORIGIN,
+  // Supabase auth, still carrying the gym login until it moves onto the cookie sessions
+  // above (TODO A2). Nothing else in the app depends on this origin any more.
+  "https://esyfzbcoufjcnakloahc.supabase.co",
+  ...(NON_PRODUCTION_API_ORIGIN ? [NON_PRODUCTION_API_ORIGIN] : []),
+];
+
 const INDEXNOW_KEY = "a3f7b2e8d4c1f9a6b5e0d7c3f2a8b1e4";
+
+/*
+ * Must stay in step with `PAGE_CHANGED_ON` and `CITY_SLUGS` in shared/seo/pages.ts, which
+ * is what `app/sitemap.ts` publishes. It cannot import them: this is a `.mjs` config, so
+ * a TypeScript module is not loadable from here, and that is why the two lists are
+ * hand-kept. Seven URLs had already drifted out of this one, including /franchise.
+ *
+ * A page missing here still gets crawled. It just does not get the push, so Bing and
+ * Yandex find the change whenever they next come round instead of on deploy.
+ */
 const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/",
   "https://www.muscleboxpro.com/gym-demo",
+  "https://www.muscleboxpro.com/gym-partnership",
+  "https://www.muscleboxpro.com/franchise",
+  "https://www.muscleboxpro.com/invest",
   "https://www.muscleboxpro.com/specs",
   "https://www.muscleboxpro.com/advertise",
   "https://www.muscleboxpro.com/menu",
   "https://www.muscleboxpro.com/about",
   "https://www.muscleboxpro.com/contact",
+  "https://www.muscleboxpro.com/help",
   "https://www.muscleboxpro.com/protein-shake-vending-machine",
   "https://www.muscleboxpro.com/gym-protein-shake-machine",
   "https://www.muscleboxpro.com/protein-vending-machine-india",
@@ -30,10 +118,14 @@ const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/blog/best-protein-shake-after-workout",
   "https://www.muscleboxpro.com/blog/protein-for-diabetes",
   "https://www.muscleboxpro.com/blog/gym-member-retention",
+  "https://www.muscleboxpro.com/blog/how-i-fixed-my-hba1c",
   "https://www.muscleboxpro.com/blog",
   "https://www.muscleboxpro.com/vs/protein-shake-bar",
   "https://www.muscleboxpro.com/vs/supplement-counter",
   "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
+  "https://www.muscleboxpro.com/terms",
+  "https://www.muscleboxpro.com/privacy",
+  "https://www.muscleboxpro.com/refund-cancellation",
 ];
 
 class IndexNowPlugin {
@@ -76,6 +168,23 @@ const nextConfig = {
         destination: "/protein-vending-machine-:city",
         permanent: true,
       },
+      // Consumer auth was removed in favour of the gym partner portal.
+      // See docs/gym-onboarding.md §9. There is no gym signup: portal accounts
+      // are created by the onboarding flow, so /signup goes to lead capture.
+      { source: "/login", destination: "/gym/login", permanent: true },
+      { source: "/account", destination: "/gym/dashboard", permanent: true },
+      { source: "/forgot-password", destination: "/gym/forgot-password", permanent: true },
+      { source: "/signup", destination: "/gym-demo", permanent: true },
+      // The onboarding link moved under `/gym/` and gained a name segment, so that the URL
+      // a gym owner receives reads as theirs and so that robots.txt's existing `/gym/`
+      // rule covers it. `permanent: false`: no invite was ever minted at the old shape, so
+      // this is a courtesy for a pasted dev link rather than a URL with history to
+      // preserve, and a 308 cached in a browser would outlive the reason for it.
+      {
+        source: "/onboarding/:handle",
+        destination: "/gym/onboarding/link/:handle",
+        permanent: false,
+      },
     ];
   },
   async rewrites() {
@@ -99,7 +208,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://va.vercel-insights.com https://vitals.vercel-insights.com https://api.indexnow.org https://esyfzbcoufjcnakloahc.supabase.co",
+              `connect-src ${CONNECT_SRC.join(" ")}`,
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",
@@ -113,6 +222,28 @@ const nextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         ],
+      },
+      // The two routes that carry a live credential in the URL, so they get the strictest
+      // referrer policy we have. The global `strict-origin-when-cross-origin` above already
+      // strips the path — and therefore the handle — before it reaches Razorpay in step 4 of
+      // onboarding, which is why `mbp-backend` §4.3 records that leak as closed rather than
+      // open. `no-referrer` here is the belt-and-braces version: it also withholds the bare
+      // origin, and it survives a future relaxation of the global default by someone who has
+      // not read this comment.
+      //
+      // Listed after the `/(.*)` block on purpose. Next applies every matching rule in order
+      // and a later `Referrer-Policy` wins, so moving these above it silently disables them.
+      {
+        source: "/gym/onboarding/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        // A relayed set-password link. Single-use, so a referrer leak here is worse than the
+        // onboarding one in a specific way: whoever receives it can spend the link before the
+        // gym owner does, and the gym owner then sees "already used" on a link they never got
+        // to click.
+        source: "/gym/set-password/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
     ];
   },

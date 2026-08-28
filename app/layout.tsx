@@ -11,6 +11,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Providers from "@/components/Providers";
+import { COMPANY, postalAddressSchema } from "@shared/company";
 import "@/index.css";
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s",
   },
   description:
-    "MuscleBoxPro is a smart protein shake vending machine for gyms. Install a Muscle Box Pro at your fitness centre — serve fresh protein blends in 60 seconds and generate passive revenue with zero staff or maintenance.",
+    "MuscleBoxPro is a smart protein shake vending machine for gyms. Install a Muscle Box Pro at your fitness centre. Serve fresh protein blends in 60 seconds and generate passive revenue with zero staff or maintenance.",
   keywords: [
     "protein shake vending machine",
     "gym vending machine",
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.jpg",
         alt: "MuscleBoxPro smart protein shake vending machine in a gym",
       },
     ],
@@ -49,7 +50,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.jpg",
         alt: "MuscleBoxPro smart protein shake vending machine in a gym",
       },
     ],
@@ -79,8 +80,14 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               "@id": "https://www.muscleboxpro.com/#organization",
-              name: "MuscleBoxPro",
-              legalName: "BlendBox Innovations LLP",
+              name: COMPANY.brandName,
+              /*
+               * /franchise and the franchise program data spell the brand with a space.
+               * Without this, an engine reading both spellings has two entities and each
+               * one's signals count for half.
+               */
+              alternateName: COMPANY.alternateName,
+              legalName: COMPANY.legalName,
               url: "https://www.muscleboxpro.com",
               logo: {
                 "@type": "ImageObject",
@@ -90,21 +97,12 @@ export default function RootLayout({
               },
               description:
                 "Smart protein shake vending machines for gyms with zero-maintenance operations and recurring revenue. Operating across India.",
-              email: "contact@muscleboxpro.com",
-              telephone: "+91-8687247670",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "Sector 75",
-                addressLocality: "Noida",
-                postalCode: "201301",
-                addressRegion: "Uttar Pradesh",
-                addressCountry: "IN",
-              },
+              email: COMPANY.email,
+              address: postalAddressSchema(),
               contactPoint: {
                 "@type": "ContactPoint",
                 contactType: "customer service",
-                email: "contact@muscleboxpro.com",
-                telephone: "+91-8687247670",
+                email: COMPANY.email,
                 availableLanguage: ["English", "Hindi"],
               },
               sameAs: [
@@ -122,22 +120,15 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "ProfessionalService",
               "@id": "https://www.muscleboxpro.com/#localbusiness",
-              name: "MuscleBoxPro",
+              name: COMPANY.brandName,
+              alternateName: COMPANY.alternateName,
               description:
                 "Automated protein shake vending machines installed in gyms and fitness centers across India.",
               url: "https://www.muscleboxpro.com",
-              telephone: "+91-8687247670",
-              email: "contact@muscleboxpro.com",
-              image: "https://www.muscleboxpro.com/og-image.png",
+              email: COMPANY.email,
+              image: "https://www.muscleboxpro.com/og-image.jpg",
               priceRange: "₹₹",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "Sector 75",
-                addressLocality: "Noida",
-                postalCode: "201301",
-                addressRegion: "Uttar Pradesh",
-                addressCountry: "IN",
-              },
+              address: postalAddressSchema(),
               areaServed: [
                 "Delhi", "Mumbai", "Bangalore", "Hyderabad",
                 "Pune", "Chennai", "Ahmedabad", "Kolkata",
@@ -157,7 +148,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               "@id": "https://www.muscleboxpro.com/#website",
-              name: "MuscleBoxPro",
+              name: COMPANY.brandName,
               url: "https://www.muscleboxpro.com",
             }),
           }}

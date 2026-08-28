@@ -36,12 +36,7 @@ export default function BlogGymRetention() {
       <section className="bg-gray-950 pt-32 pb-0 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[240px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-3xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center pb-10"
-          >
+          <div className="hero-rise text-center pb-10">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Retention Strategy
             </span>
@@ -59,7 +54,7 @@ export default function BlogGymRetention() {
               <span>·</span>
               <span>7 min read</span>
             </div>
-          </motion.div>
+          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -192,7 +187,7 @@ export default function BlogGymRetention() {
             Acquiring a new gym member in India costs between ₹800–₹2,500 in marketing and promotional spend, depending on the city and channel. Retaining an existing member for an additional six months has a marginal cost close to zero  but generates the same (or higher) revenue as the acquisition. The maths is straightforward: a 10% improvement in retention is worth more than a 10% increase in new sign-ups.
           </p>
           <p className="text-gray-600 leading-relaxed mb-8">
-            An automated protein machine from MuscleBoxPro costs the gym nothing to install or maintain. It generates passive shake revenue — typically ₹3,000–₹12,000 per month as the gym's revenue share (total machine revenue ranges from ₹15,000–₹70,000+ depending on footfall and shake volume) — while simultaneously nudging members toward faster results and stronger attendance habits. The return on investment is not just financial  it is compounded through the retention it drives.
+            An automated protein machine from MuscleBoxPro costs the gym nothing to install or maintain. It generates passive shake revenue, typically ₹3,000–₹12,000 per month as the gym's revenue share (total machine revenue ranges from ₹15,000–₹70,000+ depending on footfall and shake volume), while simultaneously nudging members toward faster results and stronger attendance habits. The return on investment is not just financial. It is compounded through the retention it drives.
           </p>
 
           {/* Revenue callout */}

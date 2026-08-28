@@ -44,6 +44,8 @@ export default function Footer() {
               <Link href="/about"><li className="hover:text-primary cursor-pointer transition-colors block">About Us</li></Link>
               <Link href="/invest"><li className="hover:text-primary cursor-pointer transition-colors block">Invest in Us</li></Link>
               <Link href="/specs"><li className="hover:text-primary cursor-pointer transition-colors block">Our Machine</li></Link>
+              <Link href="/gym-partnership"><li className="hover:text-primary cursor-pointer transition-colors block">Gym Partnership Terms</li></Link>
+              <Link href="/franchise"><li className="hover:text-primary cursor-pointer transition-colors block">Franchise Program</li></Link>
               <Link href="/protein-shake-vending-machine"><li className="hover:text-primary cursor-pointer transition-colors block">Vending Machine Business</li></Link>
               <Link href="/gym-protein-shake-machine"><li className="hover:text-primary cursor-pointer transition-colors block">Gym Shake Machine</li></Link>
               <Link href="/protein-vending-machine-india"><li className="hover:text-primary cursor-pointer transition-colors block">Vending Machine in India</li></Link>

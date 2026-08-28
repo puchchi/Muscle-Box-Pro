@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/specs",
     title: "Machine Specifications | MuscleBoxPro",
     description: "Explore the technical specifications and capabilities of MuscleBoxPro smart protein shake vending machines for modern gyms.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "MuscleBoxPro smart protein shake vending machine" }],
   },
 };
 
@@ -30,7 +30,7 @@ const productSchema = {
   "@id": "https://www.muscleboxpro.com/specs#product",
   name: "MuscleBoxPro Protein Shake Vending Machine",
   description:
-    "Technical specifications of the MuscleBoxPro automated protein shake vending machine for gyms — 60s blend time, UPI payments, HD 4K display, self-cleaning system, under 10 sq ft footprint.",
+    "Technical specifications of the MuscleBoxPro automated protein shake vending machine for gyms: 60s blend time, UPI payments, HD 4K display, self-cleaning system, under 10 sq ft footprint.",
   brand: { "@type": "Brand", name: "MuscleBoxPro" },
   manufacturer: { "@type": "Organization", name: "BlendBox Innovations LLP" },
   image: "https://www.muscleboxpro.com/images/futuristic_protein_shake_vending_machine_specs.png",

@@ -10,7 +10,7 @@ import GymRevenueIdeas from "@/pages/GymRevenueIdeas";
 export const metadata: Metadata = {
   title: "7 Ways Indian Gyms Generate Passive Revenue, Ranked by ROI (2026) | MuscleBoxPro",
   description:
-    "Gym passive income India: 7 revenue ideas for Indian gym owners ranked by ROI. Protein vending machines, merchandise, locker rentals, PT upsells, spa, parking, and sponsorships — with honest investment and monthly revenue estimates.",
+    "Gym passive income India: 7 revenue ideas for Indian gym owners ranked by ROI. Protein vending machines, merchandise, locker rentals, PT upsells, spa, parking, and sponsorships, with honest investment and monthly revenue estimates.",
   alternates: { canonical: "/alternatives/gym-revenue-ideas" },
   openGraph: {
     type: "article",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: "7 Ways Indian Gyms Generate Passive Revenue, Ranked by ROI (2026)",
     description:
       "Complete guide to passive and semi-passive revenue streams for Indian gym owners in 2026. Each method rated by ROI, with pros, cons, investment required, and realistic monthly income ranges.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800 }],
   },
   keywords: [
     "gym passive income india",
@@ -71,7 +71,7 @@ const articleSchema = {
   datePublished: "2026-01-15",
   dateModified: "2026-03-29",
   url: "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
-  image: "https://www.muscleboxpro.com/og-image.png",
+  image: "https://www.muscleboxpro.com/og-image.jpg",
   inLanguage: "en-IN",
   mainEntityOfPage: {
     "@type": "WebPage",
@@ -88,7 +88,7 @@ const articleSchema = {
 const itemListSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "7 Ways Indian Gyms Generate Passive Revenue (Ranked by ROI) — 2026",
+  name: "7 Ways Indian Gyms Generate Passive Revenue in 2026 (Ranked by ROI)",
   description: "Ranked list of passive and semi-passive revenue ideas for gym owners in India, evaluated by capital efficiency, passivity, reliability, and scalability.",
   url: "https://www.muscleboxpro.com/alternatives/gym-revenue-ideas",
   numberOfItems: 7,
@@ -132,7 +132,7 @@ const itemListSchema = {
         "@type": "Thing",
         name: "Locker Rentals",
         description:
-          "Monthly or annual locker rentals — genuinely passive after installation with predictable recurring revenue.",
+          "Monthly or annual locker rentals: genuinely passive after installation with predictable recurring revenue.",
       },
     },
     {
@@ -152,7 +152,7 @@ const itemListSchema = {
         "@type": "Thing",
         name: "Parking Fees",
         description:
-          "Charging for controlled gym parking — particularly effective in high-density metro markets.",
+          "Charging for controlled gym parking, particularly effective in high-density metro markets.",
       },
     },
     {

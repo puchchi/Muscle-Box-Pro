@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     url: "/blog/protein-for-diabetes",
     title: "Why Protein Is Important for Diabetes Management | MuscleBoxPro",
     description: "Discover how protein helps control blood sugar, the best protein sources for diabetes, and why it's a crucial part of diabetes management.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "Protein importance for diabetes management" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "Protein importance for diabetes management" }],
   },
 };
 

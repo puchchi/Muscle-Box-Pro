@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Wrench, TrendingUp, Palette, ArrowRight, Star, AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
@@ -74,12 +75,7 @@ export default function GymDemo() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12">
 
               {/* Machine image */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7 }}
-                className="lg:w-[420px] flex-shrink-0"
-              >
+              <div className="lg:w-[420px] flex-shrink-0 hero-rise">
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
                   <img
                     src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
@@ -97,54 +93,54 @@ export default function GymDemo() {
                     ))}
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Headline + benefits */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7, delay: 0.15 }}
-                className="mt-8 lg:mt-0 flex-1"
-              >
+              <div className="mt-8 lg:mt-0 flex-1 hero-rise">
                 <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
                   Free Demo
                 </span>
                 <h1
-                  className="font-display font-black text-white uppercase leading-none mb-4"
+                  className="font-display font-black text-white uppercase leading-none mb-4 text-balance"
                   style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
                 >
-                  Get a machine<br />
+                  Get a machine{" "}
+                  <br className="hidden sm:inline" />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                     for your gym.
                   </span>
                 </h1>
-                <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm">
+                <p className="text-white/50 text-sm leading-relaxed mb-4 max-w-sm">
                   Increase member satisfaction and generate passive revenue. We handle stocking, cleaning, and service.
+                </p>
+
+                {/* Some gyms want the commercials before they want a call. */}
+                <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-sm">
+                  Want the numbers first?{" "}
+                  <Link
+                    href="/gym-partnership"
+                    className="text-primary font-semibold hover:underline"
+                  >
+                    Read the full partnership terms
+                  </Link>
+                  .
                 </p>
 
                 <div className="grid grid-cols-2 gap-2.5">
                   {benefits.map((b, i) => (
-                    <motion.div
+                    <div
                       key={i}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.35 + i * 0.07 }}
                       className="flex items-center gap-2.5 bg-white/5 border border-white/8 rounded-xl p-3"
                     >
                       <div className={`w-7 h-7 ${b.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
                         <b.icon className={`w-3.5 h-3.5 ${b.color}`} />
                       </div>
                       <span className="text-white/80 text-xs font-medium">{b.text}</span>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
 
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.75 }}
-                  className="mt-5 flex items-center gap-2"
-                >
+                <div className="mt-5 flex items-center gap-2">
                   <div className="flex -space-x-1">
                     {[...Array(3)].map((_, i) => (
                       <div key={i} className="w-6 h-6 rounded-full bg-gradient-to-br from-accent to-primary border-2 border-gray-950 flex items-center justify-center">
@@ -153,8 +149,8 @@ export default function GymDemo() {
                     ))}
                   </div>
                   <p className="text-white/40 text-xs">Trusted by gyms across India</p>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             </div>
           </div>
         </section>

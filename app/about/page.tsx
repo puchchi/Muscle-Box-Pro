@@ -4,14 +4,14 @@ import AboutUs from "@/pages/AboutUs";
 export const metadata: Metadata = {
   title: "About Us | MuscleBoxPro",
   description:
-    "Learn about MuscleBoxPro — the company behind the Muscle Box Pro smart vending machine. Our mission: on-demand post-workout nutrition for every gym in India.",
+    "Learn about MuscleBoxPro, the company behind the Muscle Box Pro smart vending machine. Our mission: on-demand post-workout nutrition for every gym in India.",
   alternates: { canonical: "/about" },
   openGraph: {
     type: "website",
     url: "/about",
     title: "About Us | MuscleBoxPro",
     description: "Learn about MuscleBoxPro and our mission to deliver on-demand post-workout nutrition through smart gym vending technology.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "MuscleBoxPro smart protein shake vending machine" }],
   },
 };
 
@@ -31,7 +31,7 @@ const aboutPageSchema = {
   name: "About MuscleBoxPro",
   url: "https://www.muscleboxpro.com/about",
   description:
-    "Learn about MuscleBoxPro — the company behind the Muscle Box Pro smart vending machine. Our mission: on-demand post-workout nutrition for every gym in India.",
+    "Learn about MuscleBoxPro, the company behind the Muscle Box Pro smart vending machine. Our mission: on-demand post-workout nutrition for every gym in India.",
   inLanguage: "en-IN",
   isPartOf: { "@id": "https://www.muscleboxpro.com/#website" },
   about: { "@id": "https://www.muscleboxpro.com/#organization" },

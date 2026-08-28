@@ -1,5 +1,20 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { supabase } from "./supabase";
+
+/**
+ * The Supabase client, loaded on first use rather than at module scope.
+ *
+ * `queryClient` below is constructed by `Providers`, which wraps every route — so a
+ * static import put `@supabase/supabase-js` and its auth bundle into the first-load JS
+ * of the whole marketing site. Nothing on `/`, `/gym-partnership` or a blog post calls
+ * any of the three functions here; only the gym and admin portals do.
+ *
+ * `./supabase` also throws at module scope when its env vars are missing, so deferring
+ * the import moves that failure onto the request that actually needed a session instead
+ * of onto every page render.
+ */
+async function getSupabase() {
+  return (await import("./supabase")).supabase;
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -39,6 +54,7 @@ export async function invokeEdgeFunction(
   functionName: string,
   data?: unknown,
 ): Promise<{ data: unknown; error: unknown }> {
+  const supabase = await getSupabase();
   const { data: responseData, error } = await supabase.functions.invoke(
     functionName,
     {
@@ -54,6 +70,7 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const supabase = await getSupabase();
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
 
@@ -80,6 +97,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const supabase = await getSupabase();
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     const headers: Record<string, string> = {};

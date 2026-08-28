@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: "/privacy",
     title: "Privacy Policy | MuscleBoxPro",
     description: "Review how MuscleBoxPro collects, uses, and protects your personal information.",
-    images: [{ url: "https://www.muscleboxpro.com/og-image.png", width: 1200, height: 630, alt: "MuscleBoxPro smart protein shake vending machine" }],
+    images: [{ url: "https://www.muscleboxpro.com/og-image.jpg", width: 1200, height: 800, alt: "MuscleBoxPro smart protein shake vending machine" }],
   },
 };
 

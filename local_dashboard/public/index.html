@@ -248,7 +248,73 @@
     /* Skeleton */
     .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--muted) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 8px; }
     @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ── Tunnel banner ── */
+    .tunnel-banner { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 12px; flex-shrink: 0; min-height: 36px; }
+    .tunnel-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .tunnel-dot-on { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,.5); }
+    .tunnel-dot-off { background: var(--muted); }
+    .tunnel-label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-2); flex-shrink: 0; }
+    .tunnel-url { font-family: monospace; font-size: 12px; color: #22c55e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .tunnel-copy-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-3); width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .15s; }
+    .tunnel-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Machine Endpoints ── */
+    .machine-layout { display: flex; flex: 1; min-height: 0; }
+
+    .endpoint-list { width: 256px; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+    .endpoint-list-header { padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); font-weight: 700; }
+    .endpoint-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s; border-left: 3px solid transparent; }
+    .endpoint-item:hover { background: var(--surface); border-left-color: var(--muted); }
+    .endpoint-item.ep-active { background: rgba(59,130,246,.1); border-left-color: #3b82f6; }
+    .method-badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: .5px; margin-bottom: 4px; }
+    .method-post { background: rgba(34,197,94,.15); color: #22c55e; }
+    .endpoint-path { font-size: 12px; font-weight: 600; color: var(--text); font-family: monospace; }
+    .endpoint-item.ep-active .endpoint-path { color: #60a5fa; }
+    .endpoint-desc { font-size: 11px; color: var(--text-3); margin-top: 3px; line-height: 1.4; }
+
+    .endpoint-detail { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+    .endpoint-url-bar { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; background: var(--surface); }
+    .url-method-badge { background: rgba(34,197,94,.15); color: #22c55e; font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 7px; flex-shrink: 0; }
+    .url-path-display { font-family: monospace; font-size: 13px; color: var(--text-2); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; flex: 1; }
+    .send-endpoint-btn { background: linear-gradient(90deg, #2563eb, #3b82f6); border: none; border-radius: 8px; color: #fff; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .2s; flex-shrink: 0; }
+    .send-endpoint-btn:hover { opacity: .85; }
+    .send-endpoint-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .endpoint-sections { display: flex; flex-direction: column; gap: 18px; padding: 18px 20px; overflow-y: auto; }
+    .ep-section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-3); font-weight: 700; margin-bottom: 10px; }
+
+    .field-grid { display: flex; flex-direction: column; gap: 8px; }
+    .field-row { display: grid; grid-template-columns: 180px 1fr; gap: 10px; align-items: start; }
+    .field-label-wrap { display: flex; flex-direction: column; gap: 3px; padding-top: 8px; }
+    .field-name { font-size: 12px; font-weight: 600; color: var(--text); font-family: monospace; }
+    .field-badges { display: flex; gap: 4px; align-items: center; }
+    .field-badge { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+    .field-required { background: rgba(239,68,68,.15); color: #ef4444; }
+    .field-optional { background: rgba(113,113,122,.15); color: var(--text-3); }
+    .field-type-tag { font-size: 10px; color: var(--text-3); }
+    .field-input { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text); font-size: 12px; outline: none; font-family: monospace; transition: border-color .2s; width: 100%; }
+    .field-input:focus { border-color: #3b82f6; }
+
+    .response-area { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .response-header { padding: 9px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .response-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-idle { background: var(--muted); }
+    .dot-success { background: var(--green); }
+    .dot-error { background: var(--red); }
+    .response-status-text { font-size: 11px; font-weight: 600; color: var(--text-2); }
+    .response-body { padding: 14px; font-family: monospace; font-size: 12px; color: #7dd3fc; line-height: 1.75; white-space: pre; overflow-x: auto; min-height: 80px; }
+    .response-placeholder { color: var(--text-3); font-style: italic; font-family: inherit; }
+
+    .qr-section { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
+    .qr-canvas-wrap { background: #fff; padding: 10px; border-radius: 8px; }
+    .qr-url-label { font-size: 10px; color: var(--text-3); text-align: center; word-break: break-all; max-width: 320px; font-family: monospace; }
+    .action-buttons-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .action-btn { padding: 8px 16px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: all .15s; }
+    .action-btn:hover { background: rgba(59,130,246,.15); border-color: #3b82f6; color: #60a5fa; }
+    .action-btn:disabled { opacity: .5; cursor: not-allowed; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -293,6 +359,9 @@
       <button class="sidebar-btn" id="nav-stats" onclick="switchTab('stats')" title="Database">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       </button>
+      <button class="sidebar-btn" id="nav-machine" onclick="switchTab('machine')" title="Machine Endpoints">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+      </button>
     </nav>
 
     <!-- Inbox panel -->
@@ -323,6 +392,24 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Machine Endpoints panel -->
+    <div class="panel" id="panel-machine">
+      <div class="panel-header">
+        <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        <h2>Machine Endpoints</h2>
+      </div>
+      <div class="tunnel-banner" id="tunnel-banner"></div>
+      <div class="machine-layout">
+        <div class="endpoint-list" id="endpoint-list"></div>
+        <div class="endpoint-detail" id="endpoint-detail">
+          <div class="empty-state" style="height:100%">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <span>Select an endpoint to test</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -469,11 +556,12 @@
   // ── Tabs ───────────────────────────────────────────────────────────────────
 
   function switchTab(tab) {
-    ['inbox', 'stats'].forEach(t => {
+    ['inbox', 'stats', 'machine'].forEach(t => {
       document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
       document.getElementById(`nav-${t}`).classList.toggle('active', t === tab);
     });
     if (tab === 'stats') loadStats();
+    if (tab === 'machine') initMachinePanel();
   }
 
   // ── Toast ──────────────────────────────────────────────────────────────────
@@ -1112,6 +1200,339 @@
     if (!e || e.target === document.getElementById('modal-overlay')) {
       document.getElementById('modal-overlay').classList.remove('open');
     }
+  }
+
+  // ── Machine Endpoints ──────────────────────────────────────────────────────
+
+  const MACHINE_ENDPOINTS = [
+    {
+      id: 'order-create',
+      name: 'Order Create',
+      method: 'POST',
+      path: '/qr',
+      desc: 'Create a new payment order and get a QR code link',
+      fields: [
+        { key: 'orderNo',      type: 'String',  required: true,  default: () => 'ORD' + Date.now() },
+        { key: 'objectId',     type: 'String',  required: false, default: () => 'OBJ001' },
+        { key: 'subject',      type: 'String',  required: true,  default: () => 'Protein Shake Order' },
+        { key: 'attach',       type: 'String',  required: false, default: () => 'deviceNo=E00375&deviceId=7678242eba' },
+        { key: 'totalAmount',  type: 'String',  required: true,  default: () => '10.00' },
+        { key: 'notifyUrl',    type: 'String',  required: true,  default: () => 'https://example.com/notify' },
+      ],
+    },
+    {
+      id: 'order-query',
+      name: 'Order Query',
+      method: 'POST',
+      path: '/status',
+      desc: 'Query the payment status of an existing order',
+      fields: [
+        { key: 'orderNo',      type: 'String',  required: true,  default: () => '' },
+        { key: 'thirdOrderNo', type: 'String',  required: true,  default: () => '' },
+      ],
+    },
+    {
+      id: 'order-refund',
+      name: 'Order Refund',
+      method: 'POST',
+      path: '/refund',
+      desc: 'Initiate a refund for a completed order',
+      fields: [
+        { key: 'refundNo',       type: 'String',  required: true,  default: () => 'REF' + Date.now() },
+        { key: 'orderNo',        type: 'String',  required: true,  default: () => '' },
+        { key: 'thirdOrderNo',   type: 'String',  required: true,  default: () => '' },
+        { key: 'refundAmount',   type: 'String',  required: true,  default: () => '10.00' },
+        { key: 'refundReason',   type: 'String',  required: false, default: () => 'Customer request' },
+        { key: 'refundNotifyUrl',type: 'String',  required: false, default: () => 'https://example.com/refund-notify' },
+      ],
+    },
+    {
+      id: 'order-complete',
+      name: 'Order Complete',
+      method: 'POST',
+      path: '/complete',
+      desc: 'Notify third party upon completion of beverage preparation',
+      fields: [
+        { key: 'orderNo',        type: 'String',  required: true,  default: () => '' },
+        { key: 'thirdOrderNo',   type: 'String',  required: true,  default: () => '' },
+        { key: 'success',        type: 'Boolean', required: true,  default: () => 'true' },
+        { key: 'orderStatus',    type: 'String',  required: true,  default: () => '2' },
+        { key: 'outStockStatus', type: 'String',  required: true,  default: () => '2' },
+        { key: 'outStockTime',   type: 'String',  required: false, default: () => new Date().toISOString().replace('T', ' ').slice(0, 19) },
+      ],
+    },
+    {
+      id: 'order-cancel',
+      name: 'Order Cancel',
+      method: 'POST',
+      path: '/cancel',
+      desc: 'Notify third party upon cancellation of payment',
+      fields: [
+        { key: 'orderNo',      type: 'String',  required: true,  default: () => '' },
+        { key: 'thirdOrderNo', type: 'String',  required: true,  default: () => '' },
+        { key: 'orderStatus',  type: 'String',  required: true,  default: () => '0' },
+        { key: 'remark',       type: 'String',  required: false, default: () => 'Customer cancelled' },
+        { key: 'cancelTime',   type: 'String',  required: true,  default: () => new Date().toISOString().replace('T', ' ').slice(0, 19) },
+      ],
+    },
+  ];
+
+  let activeEndpointId = null;
+  let tunnelUrl = null;
+  const epResponses = {};
+  const actionResponses = {};
+
+  async function loadTunnelUrl() {
+    try {
+      const res = await api('/api/tunnel-url');
+      const data = await res.json();
+      tunnelUrl = data.url || null;
+    } catch {
+      tunnelUrl = null;
+    }
+    renderTunnelBanner();
+    if (activeEndpointId) renderEndpointDetail();
+  }
+
+  function renderTunnelBanner() {
+    const el = document.getElementById('tunnel-banner');
+    if (!el) return;
+    if (tunnelUrl) {
+      el.innerHTML = `
+        <div class="tunnel-dot tunnel-dot-on"></div>
+        <span class="tunnel-label">Public URL</span>
+        <span class="tunnel-url" id="tunnel-url-text">${tunnelUrl}</span>
+        <button class="tunnel-copy-btn" onclick="copyTunnelUrl()" title="Copy">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="tunnel-dot tunnel-dot-off"></div>
+        <span class="tunnel-label" style="color:var(--text-3)">No tunnel active</span>
+        <span style="font-size:11px;color:var(--text-3)">— add <code style="background:var(--bg);padding:1px 5px;border-radius:4px;font-size:11px;">NGROK_AUTHTOKEN</code> to .env and restart</span>
+        <button class="tunnel-copy-btn" onclick="loadTunnelUrl()" title="Refresh" style="margin-left:auto;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        </button>
+      `;
+    }
+  }
+
+  function copyTunnelUrl() {
+    if (!tunnelUrl) return;
+    navigator.clipboard.writeText(tunnelUrl).then(() => showToast('Tunnel URL copied!', 'success'));
+  }
+
+  function initMachinePanel() {
+    const list = document.getElementById('endpoint-list');
+    list.innerHTML = `
+      <div class="endpoint-list-header">5 Endpoints</div>
+      ${MACHINE_ENDPOINTS.map(ep => `
+        <div class="endpoint-item ${activeEndpointId === ep.id ? 'ep-active' : ''}" onclick="selectEndpoint('${ep.id}')">
+          <span class="method-badge method-post">${ep.method}</span>
+          <div class="endpoint-path">/order${ep.path}</div>
+          <div class="endpoint-desc">${ep.desc}</div>
+        </div>
+      `).join('')}
+    `;
+    if (activeEndpointId) renderEndpointDetail();
+    loadTunnelUrl();
+  }
+
+  function selectEndpoint(id) {
+    activeEndpointId = id;
+    initMachinePanel();
+    renderEndpointDetail();
+  }
+
+  function renderEndpointDetail() {
+    const ep = MACHINE_ENDPOINTS.find(e => e.id === activeEndpointId);
+    const el = document.getElementById('endpoint-detail');
+    if (!ep) return;
+    const resp = epResponses[ep.id];
+    const localUrl = `http://localhost:${window.location.port || 4000}/order${ep.path}`;
+    const publicUrl = tunnelUrl ? `${tunnelUrl}/order${ep.path}` : null;
+
+    el.innerHTML = `
+      <div class="endpoint-url-bar">
+        <span class="url-method-badge">${ep.method}</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;">
+          <div class="url-path-display">${localUrl}</div>
+          ${publicUrl ? `
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:#22c55e;font-weight:700;flex-shrink:0;">PUBLIC</span>
+              <div class="url-path-display" style="font-size:12px;color:#22c55e;border-color:rgba(34,197,94,.3);">${publicUrl}</div>
+              <button class="tunnel-copy-btn" onclick="navigator.clipboard.writeText('${publicUrl}').then(()=>showToast('Copied!','success'))" title="Copy public URL">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
+            </div>
+          ` : ''}
+        </div>
+        <button class="send-endpoint-btn" id="send-ep-btn" onclick="sendEndpointRequest()">Send</button>
+      </div>
+      <div class="endpoint-sections">
+        <div>
+          <div class="ep-section-title">Request Body</div>
+          <div class="field-grid">
+            ${ep.fields.map(f => `
+              <div class="field-row">
+                <div class="field-label-wrap">
+                  <span class="field-name">${f.key}</span>
+                  <div class="field-badges">
+                    <span class="field-badge ${f.required ? 'field-required' : 'field-optional'}">${f.required ? 'required' : 'optional'}</span>
+                    <span class="field-type-tag">${f.type}</span>
+                  </div>
+                </div>
+                <input class="field-input" id="ep-${f.key}" type="text" value="${f.default()}" placeholder="${f.key}" />
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="ep-section-title">Response</div>
+          <div class="response-area">
+            <div class="response-header">
+              <div class="response-status-dot ${resp ? (resp.ok ? 'dot-success' : 'dot-error') : 'dot-idle'}"></div>
+              <span class="response-status-text">${resp ? (resp.ok ? `${resp.status} OK` : `${resp.status} Error`) : 'No request sent yet'}</span>
+            </div>
+            <div class="response-body">${resp
+              ? JSON.stringify(resp.data, null, 2)
+              : '<span class="response-placeholder">Hit Send to see the response...</span>'
+            }</div>
+          </div>
+        </div>
+        ${ep.id === 'order-create' ? renderQrSection(resp) : ''}
+        ${ep.id === 'order-create' ? renderOrderActions() : ''}
+      </div>
+    `;
+    initQrCode();
+  }
+
+  async function sendEndpointRequest() {
+    const ep = MACHINE_ENDPOINTS.find(e => e.id === activeEndpointId);
+    if (!ep) return;
+    const btn = document.getElementById('send-ep-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+    const body = {};
+    ep.fields.forEach(f => {
+      const val = (document.getElementById(`ep-${f.key}`) || {}).value || '';
+      if (val !== '') {
+        body[f.key] = f.type === 'Boolean' ? val === 'true' : val;
+      }
+    });
+
+    try {
+      const res = await fetch(`/order${ep.path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      epResponses[ep.id] = { ok: res.ok, status: res.status, data, req: body };
+      if (ep.id === 'order-create') Object.keys(actionResponses).forEach(k => delete actionResponses[k]);
+      showToast(res.ok ? 'Request successful' : `Error ${res.status}`, res.ok ? 'success' : 'error');
+    } catch (err) {
+      epResponses[ep.id] = { ok: false, status: 0, data: { error: err.message } };
+      showToast('Request failed: ' + err.message, 'error');
+    }
+
+    renderEndpointDetail();
+  }
+
+  function renderQrSection(resp) {
+    if (!resp?.ok || !resp.data?.data?.qrUrl) return '';
+    return `
+      <div>
+        <div class="ep-section-title">QR Code</div>
+        <div class="qr-section">
+          <div class="qr-canvas-wrap" id="qr-canvas-wrap"></div>
+          <div class="qr-url-label">${resp.data.data.qrUrl}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function initQrCode() {
+    if (activeEndpointId !== 'order-create') return;
+    const resp = epResponses['order-create'];
+    if (!resp?.ok || !resp.data?.data?.qrUrl) return;
+    const wrap = document.getElementById('qr-canvas-wrap');
+    if (!wrap || wrap.childElementCount > 0) return;
+    new QRCode(wrap, { text: resp.data.data.qrUrl, width: 200, height: 200 });
+  }
+
+  function renderOrderActions() {
+    const resp = epResponses['order-create'];
+    if (!resp?.ok || !resp.data?.data) return '';
+    const actions = [
+      { key: 'status',   label: 'Check Status' },
+      { key: 'complete', label: 'Complete' },
+      { key: 'refund',   label: 'Refund' },
+      { key: 'cancel',   label: 'Cancel' },
+    ];
+    return `
+      <div>
+        <div class="ep-section-title">Order Actions</div>
+        <div class="action-buttons-row">
+          ${actions.map(a => `<button class="action-btn" id="act-${a.key}-btn" onclick="doOrderAction('${a.key}')">${a.label}</button>`).join('')}
+        </div>
+        ${actions.filter(a => actionResponses[a.key]).map(a => `
+          <div style="margin-top:12px;">
+            <div class="ep-section-title">${a.label} Response</div>
+            <div class="response-area">
+              <div class="response-header">
+                <div class="response-status-dot ${actionResponses[a.key] ? (actionResponses[a.key].ok ? 'dot-success' : 'dot-error') : 'dot-idle'}"></div>
+                <span class="response-status-text">${actionResponses[a.key].ok ? actionResponses[a.key].status + ' OK' : actionResponses[a.key].status + ' Error'}</span>
+              </div>
+              <div class="response-body">${JSON.stringify(actionResponses[a.key].data, null, 2)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  async function doOrderAction(action) {
+    const resp = epResponses['order-create'];
+    if (!resp?.data?.data) return;
+    const d = resp.data.data;
+    const orderNo = resp.req?.orderNo || '';
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+    let path, body;
+    if (action === 'status') {
+      path = '/order/status';
+      body = { orderNo, thirdOrderNo: d.thirdOrderNo };
+    } else if (action === 'complete') {
+      path = '/order/complete';
+      body = { orderNo, thirdOrderNo: d.thirdOrderNo, success: true, orderStatus: '2', outStockStatus: '2', outStockTime: now };
+    } else if (action === 'refund') {
+      path = '/order/refund';
+      body = { refundNo: 'REF' + Date.now(), orderNo, thirdOrderNo: d.thirdOrderNo, refundAmount: resp.req?.totalAmount || '10.00' };
+    } else if (action === 'cancel') {
+      path = '/order/cancel';
+      body = { orderNo, thirdOrderNo: d.thirdOrderNo, orderStatus: '0', cancelTime: now };
+    }
+
+    const btn = document.getElementById(`act-${action}-btn`);
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      actionResponses[action] = { ok: res.ok, status: res.status, data };
+      showToast(res.ok ? `${action} successful` : `${action} failed`, res.ok ? 'success' : 'error');
+    } catch (err) {
+      actionResponses[action] = { ok: false, status: 0, data: { error: err.message } };
+      showToast(`${action} failed: ` + err.message, 'error');
+    }
+
+    renderEndpointDetail();
   }
 </script>
 </body>

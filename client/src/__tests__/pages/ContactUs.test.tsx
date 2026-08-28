@@ -14,13 +14,7 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
-vi.mock("framer-motion", () => ({
-  motion: {
-    div: ({ children, ...p }: React.ComponentProps<"div">) => <div {...p}>{children}</div>,
-  },
-}));
-
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
 const { mockFunctionsInvoke } = vi.hoisted(() => ({
   mockFunctionsInvoke: vi.fn(),
@@ -52,9 +46,11 @@ describe("ContactUs page", () => {
     expect(screen.getByText(/contact@muscleboxpro\.com/i)).toBeInTheDocument();
   });
 
+  // Not a bare /noida/i: the footer links a Noida landing page, so that matched twice.
   it("shows address / location info", () => {
     render(<ContactUs />);
-    expect(screen.getByText(/noida/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /our office/i })).toBeInTheDocument();
+    expect(screen.getByText(/sector 75, noida/i)).toBeInTheDocument();
   });
 
   it("renders Send a Message form with Name, Email and Message fields", () => {
@@ -111,7 +107,12 @@ describe("ContactUs page", () => {
     });
   });
 
-  it("clears the form after successful submission", async () => {
+  /**
+   * Success unmounts the form, so holding a reference to an input and asking whether it
+   * is empty tests a detached node. "Send Another Message" is where the clearing
+   * becomes visible — and where leaving it uncleared would send us a duplicate.
+   */
+  it("returns to an empty form when asked to send another message", async () => {
     mockFunctionsInvoke.mockResolvedValue({
       data: { message: "Done." },
       error: null,
@@ -119,15 +120,19 @@ describe("ContactUs page", () => {
     render(<ContactUs />);
     const user = userEvent.setup();
 
-    const nameInput = screen.getByPlaceholderText(/your name/i);
-    await user.type(nameInput, "Alice");
+    await user.type(screen.getByPlaceholderText(/your name/i), "Alice");
     await user.type(screen.getByPlaceholderText(/you@example\.com/i), "alice@example.com");
     await user.type(screen.getByPlaceholderText(/how can we help/i), "Hello!");
     await user.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() => {
-      expect(nameInput).toHaveValue("");
+      expect(screen.getByRole("button", { name: /send another message/i })).toBeInTheDocument();
     });
+    await user.click(screen.getByRole("button", { name: /send another message/i }));
+
+    expect(screen.getByPlaceholderText(/your name/i)).toHaveValue("");
+    expect(screen.getByPlaceholderText(/you@example\.com/i)).toHaveValue("");
+    expect(screen.getByPlaceholderText(/how can we help/i)).toHaveValue("");
   });
 
   it("shows error notice when the edge function returns an error", async () => {

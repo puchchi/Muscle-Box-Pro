@@ -137,7 +137,7 @@ export default function Features() {
               </h3>
               <p className="text-white/70 text-sm leading-relaxed max-w-xs">
                 We partner with local suppliers to ensure fresh fruit is
-                restocked daily — no preservatives, no shortcuts.
+                restocked daily. No preservatives, no shortcuts.
               </p>
             </div>
           </div>

@@ -1,5 +1,14 @@
 import "@testing-library/jest-dom";
+import { configure } from "@testing-library/react";
 import { vi, beforeEach, afterEach } from "vitest";
+
+// ─── Async util timeout ──────────────────────────────────────────────────────
+// Testing Library defaults `waitFor` to 1000ms. The contact and advertiser form
+// flows type into three fields with userEvent before they wait, which already costs
+// ~1.2s of that budget on an idle machine, so under load a `waitFor` could lose the
+// race and fail a test that had nothing wrong with it. Raised rather than left to
+// chance: a real hang still fails, four seconds later.
+configure({ asyncUtilTimeout: 5000 });
 
 // ─── Environment Variables ───────────────────────────────────────────────────
 process.env.NEXT_PUBLIC_SUPABASE_URL = "https://testproject.supabase.co";
@@ -55,5 +64,9 @@ Object.defineProperty(window, "localStorage", { value: localStorageMock });
 // ─── Reset mocks between tests ───────────────────────────────────────────────
 beforeEach(() => {
   localStorageMock.clear();
+  // happy-dom's own, not the mock above. Step 4's payment round trip keeps its way back in
+  // here, and a leftover from one test is a step 4 that opens believing it has just come
+  // back from a payment gateway.
+  window.sessionStorage.clear();
   vi.clearAllMocks();
 });

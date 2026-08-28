@@ -65,20 +65,16 @@ export default function GymProteinShakeMachine() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:gap-14">
 
             {/* Text */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7 }}
-              className="flex-1"
-            >
+            <div className="flex-1 hero-rise">
               <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
                 Automated Shake Dispenser
               </span>
               <h1
-                className="font-display font-black text-white uppercase leading-none mb-5"
+                className="font-display font-black text-white uppercase leading-none mb-5 text-balance"
                 style={{ fontSize: "clamp(2.2rem, 5vw, 3.8rem)" }}
               >
-                The ultimate<br />
+                The ultimate{" "}
+                <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                   gym protein shake machine
                 </span>
@@ -105,15 +101,10 @@ export default function GymProteinShakeMachine() {
                   </Button>
                 </Link>
               </div>
-            </motion.div>
+            </div>
 
             {/* Machine image */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.15 }}
-              className="mt-10 lg:mt-0 lg:w-[380px] flex-shrink-0"
-            >
+            <div className="mt-10 lg:mt-0 lg:w-[380px] flex-shrink-0 hero-rise">
               <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
                 <img
                   src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
@@ -122,7 +113,7 @@ export default function GymProteinShakeMachine() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />
               </div>
-            </motion.div>
+            </div>
 
           </div>
         </div>
@@ -220,7 +211,7 @@ export default function GymProteinShakeMachine() {
                 The Future of Vending Automation
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Modern fitness centers require modern solutions. Our <strong>gym protein shake machine</strong> isn't just a dispenser — it's a smart <strong>whey protein kiosk</strong>. Equipped with remote telemetry, you can track inventory, monitor sales, and run digital advertising campaigns from the machine's high-definition display.
+                Modern fitness centers require modern solutions. Our <strong>gym protein shake machine</strong> isn't just a dispenser. It's a smart <strong>whey protein kiosk</strong>. Equipped with remote telemetry, you can track inventory, monitor sales, and run digital advertising campaigns from the machine's high-definition display.
               </p>
             </motion.div>
           </div>

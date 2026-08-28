@@ -32,12 +32,7 @@ export default function BlogWhyGymVending() {
       <section className="bg-gray-950 pt-32 pb-0 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[240px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-3xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center pb-10"
-          >
+          <div className="hero-rise text-center pb-10">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Gym Owner Guide
             </span>
@@ -55,7 +50,7 @@ export default function BlogWhyGymVending() {
               <span>·</span>
               <span>5 min read</span>
             </div>
-          </motion.div>
+          </div>
 
           {/* Featured image spanning into white section */}
           <motion.div
@@ -119,7 +114,7 @@ export default function BlogWhyGymVending() {
               <div>
                 <p className="font-bold text-gray-900 mb-1">Revenue Insight</p>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Based on MuscleBoxPro partner data, gyms using automated protein dispensers generate higher shake revenue than those relying on manual front-desk supplement sales — driven by 24/7 availability, frictionless UPI payments, and impulse-purchase positioning on the gym floor.
+                  Based on MuscleBoxPro partner data, gyms using automated protein dispensers generate higher shake revenue than those relying on manual front-desk supplement sales, driven by 24/7 availability, frictionless UPI payments, and impulse-purchase positioning on the gym floor.
                 </p>
               </div>
             </div>

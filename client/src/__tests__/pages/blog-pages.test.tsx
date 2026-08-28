@@ -16,7 +16,7 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
-vi.mock("@/lib/auth", () => ({ hasAccessTokenSync: vi.fn(() => false) }));
+vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
 import BlogBestProteinShake from "@/pages/BlogBestProteinShake";

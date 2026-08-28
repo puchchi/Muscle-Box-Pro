@@ -23,12 +23,7 @@ export default function BlogBestProteinShake() {
       <section className="bg-gray-950 pt-32 pb-0 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[240px] bg-gradient-to-r from-accent/20 to-primary/20 blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-3xl mx-auto relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center pb-10"
-          >
+          <div className="hero-rise text-center pb-10">
             <span className="inline-block px-4 py-1.5 rounded-full border border-white/15 text-white/50 text-xs font-bold tracking-[0.25em] uppercase mb-6">
               Nutrition Science
             </span>
@@ -46,7 +41,7 @@ export default function BlogBestProteinShake() {
               <span>·</span>
               <span>6 min read</span>
             </div>
-          </motion.div>
+          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
