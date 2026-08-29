@@ -230,3 +230,46 @@ export async function setPortalPassword(
   // check that the new password is the one they think they typed.
   return { ok: true, data: undefined };
 }
+
+/**
+ * Whether the portal may offer a self-service reset.
+ *
+ * Two conditions, and the second one is the point. `POST /gym/password-reset` is the only
+ * route in this module that does not exist yet: it needs a lookup from email to account,
+ * which the deployed admin API cannot do — `GET /admin/gyms` has no server-side search and
+ * its rows carry `noticesEmail`, the formal-notice address, not the portal login. So the
+ * lookup belongs in `mbp-backend` next to the account index, and until it ships this flag
+ * is off and [GymForgotPassword](../pages/gym/GymForgotPassword.tsx) stays prose.
+ *
+ * **Do not turn this on to "test the UI".** A form that accepts an address and answers "if
+ * an account exists, a link has been sent" is the exact page §9.2 removed for lying, and the
+ * failure it caused was a locked-out gym owner waiting instead of calling us.
+ */
+export const SELF_SERVE_RESET_ENABLED =
+  USE_LIVE_API && process.env.NEXT_PUBLIC_MBP_SELF_SERVE_RESET === "on";
+
+/**
+ * Ask for a set-password link by email.
+ *
+ * Mints the same single-use handle an admin issues by hand and mails it, so the link lands on
+ * [/gym/set-password/[handle]](../../../app/gym/set-password/[handle]/page.tsx) and
+ * `setPortalPassword` above spends it. One landing page for both routes in, because from the
+ * server's side a relayed handle and a mailed one are the same credential.
+ *
+ * **A success here means the request was accepted, not that an account exists.** The server
+ * answers the same way either way, and this function must not gain a signal that
+ * distinguishes them — the caller would then be an oracle for which gyms are customers.
+ *
+ * There is no `rate_limited` in `OnboardingErrorCode`, so a 429 arrives as `network`, whose
+ * message reads as "try again" — the opposite of what a throttled caller should do. The
+ * route should answer a refusal it wants read as 400 until that code exists.
+ */
+export async function requestPortalPasswordReset(
+  email: string,
+): Promise<OnboardingResult<void>> {
+  const result = await apiRequest<unknown>("POST", "/gym/password-reset", {
+    body: { email },
+  });
+  if (!result.ok) return result;
+  return { ok: true, data: undefined };
+}
