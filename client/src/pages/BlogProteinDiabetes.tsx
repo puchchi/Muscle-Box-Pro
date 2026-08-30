@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
+import PreferredSourceButton from "@/components/seo/PreferredSourceButton";
 import Link from "next/link";
 import Image from "next/image";
 import { CheckCircle2, Activity, Heart, ShieldAlert } from "lucide-react";
@@ -305,6 +306,8 @@ export default function BlogProteinDiabetes() {
               </Link>
             </div>
           </div>
+
+          <PreferredSourceButton className="mt-8" />
 
         </article>
       </main>

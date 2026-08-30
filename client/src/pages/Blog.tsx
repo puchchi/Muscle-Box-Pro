@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
+import PreferredSourceButton from "@/components/seo/PreferredSourceButton";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -247,6 +248,8 @@ export default function Blog() {
               </Link>
             </div>
           </motion.div>
+
+          <PreferredSourceButton className="mt-8" />
 
         </div>
       </main>

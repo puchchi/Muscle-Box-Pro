@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
+import PreferredSourceButton from "@/components/seo/PreferredSourceButton";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -270,6 +271,8 @@ export default function BlogWhyGymVending() {
               </Button>
             </div>
           </div>
+
+          <PreferredSourceButton className="mt-8" />
 
         </article>
       </main>
