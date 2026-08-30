@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, ShieldCheck, Zap, Activity, Droplets, ArrowRight } from "lucide-react";
 
@@ -106,10 +107,14 @@ export default function GymProteinShakeMachine() {
             {/* Machine image */}
             <div className="mt-10 lg:mt-0 lg:w-[380px] flex-shrink-0 hero-rise">
               <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
-                <img
-                  src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+                <Image
+                  src="/assets/machine/machine_gym_bg2.png"
                   alt="MuscleBoxPro gym protein shake machine"
-                  className="w-full aspect-video object-cover"
+                  width={1122}
+                  height={1402}
+                  priority
+                  sizes="(min-width: 1024px) 380px, 100vw"
+                  className="w-full aspect-[4/5] object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />
               </div>

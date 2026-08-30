@@ -3,6 +3,7 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Clock, Tag } from "lucide-react";
 
@@ -16,7 +17,8 @@ const posts = [
       "Protein shake vending machines are becoming the most profitable and member-retaining asset for modern gyms. Here's the data behind the trend.",
     readTime: "6 min read",
     date: "Jan 15, 2026",
-    image: "/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
+    image: "/assets/machine/machine_gym_bg2.png",
+    imageClass: "object-top",
     featured: true,
   },
   {
@@ -52,7 +54,8 @@ const posts = [
       "50% of Indian gym members cancel within 90 days. Here's how on-site post-workout nutrition closes the habit loop and keeps members renewing.",
     readTime: "7 min read",
     date: "Mar 25, 2026",
-    image: "/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
+    image: "/assets/machine/machine_gym_bg2.png",
+    imageClass: "object-top",
     featured: false,
   },
   {
@@ -119,11 +122,14 @@ export default function Blog() {
               href={featuredPost.href}
               className="group bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 flex flex-col lg:flex-row cursor-pointer"
             >
-              <div className="lg:w-1/2 aspect-video lg:aspect-auto overflow-hidden bg-gray-100">
-                <img
+              <div className="relative lg:w-1/2 aspect-video lg:aspect-auto overflow-hidden bg-gray-100">
+                <Image
                   src={featuredPost.image}
                   alt={featuredPost.title}
-                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                  fill
+                  sizes="(min-width: 1024px) 480px, 100vw"
+                  priority
+                  className={`object-cover group-hover:scale-[1.02] transition-transform duration-500 ${featuredPost.imageClass ?? ""}`}
                 />
               </div>
               <div className="lg:w-1/2 p-8 lg:p-10 flex flex-col justify-center">
@@ -173,11 +179,13 @@ export default function Blog() {
                     href={post.href}
                     className="group bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 flex flex-col h-full cursor-pointer"
                   >
-                    <div className="aspect-video overflow-hidden bg-gray-100">
-                      <img
+                    <div className="relative aspect-video overflow-hidden bg-gray-100">
+                      <Image
                         src={post.image}
                         alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                        fill
+                        sizes="(min-width: 640px) 456px, 100vw"
+                        className={`object-cover group-hover:scale-[1.03] transition-transform duration-500 ${post.imageClass ?? ""}`}
                       />
                     </div>
                     <div className="p-6 flex flex-col flex-1">

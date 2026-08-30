@@ -993,14 +993,19 @@ export default function Franchise() {
           */}
           <figure className="mt-10">
             <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-              <Image
-                src={MACHINE_SPEC.imageSrc}
-                alt={`The ${MACHINE_SPEC.model} protein shake vending machine, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and ${MACHINE_SPEC.canisters} ingredient canisters`}
-                width={1536}
-                height={1024}
-                sizes="(min-width: 1024px) 1024px, 100vw"
-                className="w-full aspect-[3/2] object-cover bg-muted"
-              />
+              {/* The render is a portrait tower on a light studio backdrop, so it is capped
+                  rather than spanning the card. The wrapper carries `bg-muted` so the gutters
+                  either side read as matting instead of a seam against the white card. */}
+              <div className="bg-muted">
+                <Image
+                  src={MACHINE_SPEC.imageSrc}
+                  alt={`The ${MACHINE_SPEC.model} protein shake vending machine, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and ${MACHINE_SPEC.canisters} ingredient canisters`}
+                  width={1024}
+                  height={1535}
+                  sizes="(min-width: 1024px) 512px, 100vw"
+                  className="w-full max-w-sm mx-auto aspect-[3/4] object-cover"
+                />
+              </div>
               <dl className="grid grid-cols-2 sm:grid-cols-4 border-t border-border divide-x divide-y sm:divide-y-0 divide-border">
                 {machineFacts.map((fact) => (
                   <div key={fact.label} className="p-4 sm:p-5">

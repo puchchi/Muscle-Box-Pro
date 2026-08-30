@@ -2,6 +2,7 @@
 import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, MapPin, IndianRupee, Zap, Shield, MousePointerClick, RotateCw, CupSoda, ArrowRight } from "lucide-react";
 import Footer from "@/components/footer";
@@ -80,14 +81,26 @@ export default function ProteinVendingMachineIndia({
       {/* ── Machine Image ── */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-5xl mx-auto">
-          <div className="relative aspect-[21/9] rounded-3xl overflow-hidden shadow-[0_32px_80px_-12px_rgba(0,0,0,0.25),0_8px_24px_-4px_rgba(0,0,0,0.15)] border border-gray-100 group">
-            <img
-              src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
-              alt={`protein vending machine for gyms in ${locationLabel}`}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-            <div className="absolute bottom-8 left-8">
+          {/*
+            A split card rather than the wide banner this used to be. The render is a portrait
+            tower, and a 21:9 crop of it kept a horizontal slice of the machine's middle —
+            losing both the header panel and the branding at its base, which is the whole
+            reason the picture is on the page.
+          */}
+          <div className="grid sm:grid-cols-2 items-stretch rounded-3xl overflow-hidden shadow-[0_32px_80px_-12px_rgba(0,0,0,0.25),0_8px_24px_-4px_rgba(0,0,0,0.15)] border border-gray-100 bg-gray-900 group">
+            {/* The ratio is pinned rather than left to the image: a `fill` image has no
+                intrinsic height, so with `aspect-auto` the grid row would collapse to the
+                height of the caption column beside it. */}
+            <div className="relative aspect-[4/5] overflow-hidden">
+              <Image
+                src="/assets/machine/machine_gym_bg2.png"
+                alt={`protein vending machine for gyms in ${locationLabel}`}
+                fill
+                sizes="(min-width: 640px) 512px, 100vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+            </div>
+            <div className="flex flex-col justify-end p-8">
               <p className="text-white font-display font-black text-2xl uppercase tracking-tight">
                 MuscleBoxPro · {locationLabel}
               </p>

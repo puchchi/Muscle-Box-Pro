@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -174,9 +175,13 @@ export default function ProteinShakeVendingMachine() {
             {/* Machine image */}
             <div className="mt-10 lg:mt-0 lg:w-[340px] flex-shrink-0 hero-rise">
               <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
-                <img
-                  src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+                <Image
+                  src="/assets/machine/machine_gym_bg2.png"
                   alt="MuscleBoxPro protein shake vending machine in a modern gym"
+                  width={1122}
+                  height={1402}
+                  priority
+                  sizes="(min-width: 1024px) 340px, 100vw"
                   className="w-full aspect-[4/5] object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent" />

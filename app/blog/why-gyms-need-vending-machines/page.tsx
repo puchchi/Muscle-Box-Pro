@@ -34,7 +34,7 @@ const blogPostingSchema = {
   url: "https://www.muscleboxpro.com/blog/why-gyms-need-vending-machines",
   datePublished: "2026-01-15",
   dateModified: "2026-03-29",
-  image: "https://www.muscleboxpro.com/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png",
+  image: "https://www.muscleboxpro.com/assets/machine/machine_gym_bg2.png",
   inLanguage: "en-IN",
   author: {
     "@type": "Person",

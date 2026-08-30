@@ -3,6 +3,7 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import {
   Cpu, Wifi, Droplets, Layers, Maximize, Thermometer,
   ShieldCheck, CreditCard, QrCode, Smartphone, ArrowRight
@@ -32,7 +33,7 @@ const specs = [
     iconColor: "text-blue-600",
     items: [
       { icon: Cpu, label: "OS", value: "Android System & Smart Cloud Management" },
-      { icon: Maximize, label: "Display", value: "27-inch HD Touch Screen Interface" },
+      { icon: Maximize, label: "Display", value: `${MACHINE_SPEC.displayInches}-inch HD Touch Screen Interface` },
       { icon: Wifi, label: "Connectivity", value: "WiFi & 4G High-Speed Mode" },
       { icon: Droplets, label: "Maintenance", value: "Automated Pipe Cleaning System" },
     ],
@@ -139,11 +140,17 @@ export default function MachineSpecs() {
               transition={{ duration: 0.8 }}
               className="sticky top-24"
             >
-              <div className="relative aspect-[3/4] max-w-md mx-auto rounded-3xl overflow-hidden shadow-[0_32px_80px_-12px_rgba(0,0,0,0.25),0_8px_24px_-4px_rgba(0,0,0,0.15)] border border-gray-100">
-                <img
-                  src="/assets/machine-specs.png"
-                  alt="MuscleBoxPro Technical View"
-                  className="w-full h-full object-cover"
+              {/* Capped at 36rem rather than filling the column: `aspect-[3/4]` turns any
+                  extra width into extra height, and past this the card is taller than the
+                  viewport it is meant to stay pinned inside. */}
+              <div className="relative aspect-[3/4] max-w-xl mx-auto rounded-3xl overflow-hidden shadow-[0_32px_80px_-12px_rgba(0,0,0,0.25),0_8px_24px_-4px_rgba(0,0,0,0.15)] border border-gray-100">
+                <Image
+                  src={MACHINE_SPEC.imageSrc}
+                  alt={`The ${MACHINE_SPEC.model} protein shake vending machine, front three-quarter view`}
+                  fill
+                  sizes="(min-width: 1024px) 576px, 100vw"
+                  priority
+                  className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-8 left-6 right-6">
@@ -197,6 +204,52 @@ export default function MachineSpecs() {
                 </motion.div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── Exploded View ── */}
+        <section className="py-20 px-4 bg-background">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
+                Inside the machine
+              </span>
+              <h2
+                className="font-display font-black text-foreground uppercase mb-3"
+                style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)" }}
+              >
+                Every part, labelled.
+              </h2>
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                A cutaway of the {MACHINE_SPEC.model}, from the ventilation unit down to the
+                water supply. Illustration only. Fitted components vary by unit.
+              </p>
+            </div>
+
+            {/*
+              The callout labels are baked into the render, so they shrink with the picture
+              instead of reflowing, and on a phone they need a pinch to read. That is still
+              better than the alternatives here: the diagram is portrait, so a nested
+              horizontal scroll would buy almost no extra type size while trapping the swipe
+              that scrolls the page. The `alt` therefore carries the full parts list, which is
+              what a screen reader and a crawler get either way.
+            */}
+            <motion.figure
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7 }}
+              className="max-w-2xl mx-auto rounded-3xl overflow-hidden border border-gray-100 shadow-[0_32px_80px_-12px_rgba(0,0,0,0.25),0_8px_24px_-4px_rgba(0,0,0,0.15)]"
+            >
+              <Image
+                src={MACHINE_SPEC.explodedImageSrc}
+                alt={`Exploded view of the ${MACHINE_SPEC.model}, labelling the ventilation fan unit, ${MACHINE_SPEC.displayInches}" touch screen, ${MACHINE_SPEC.canisters} ingredient containers, electronic control module, weighing sensor, drip tray, shake dispensing gate, LED lighting, automatic cup drop, lockable door and the 20-litre water supply`}
+                width={1122}
+                height={1402}
+                sizes="(min-width: 768px) 672px, 100vw"
+                className="w-full block"
+              />
+            </motion.figure>
           </div>
         </section>
 

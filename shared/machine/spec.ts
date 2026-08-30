@@ -25,8 +25,11 @@ export const MACHINE_SPEC = {
   cupMl: 400,
   connectivity: "4G + WiFi",
 
-  /** Product render, used on `/specs` and in onboarding step 2. */
-  imageSrc: "/assets/machine-specs.png",
+  /** Product render, used on `/specs` and in onboarding step 2. Portrait, 1024×1535. */
+  imageSrc: "/assets/machine/machine_with_plane_bg.png",
+
+  /** Labelled cutaway of the same machine, used on `/specs`. Portrait, 1122×1402. */
+  explodedImageSrc: "/assets/machine/machine_explode.png",
 } as const;
 
 /** "76×60×180" — the compact form the spec sheet and the key-stats grid use. */

@@ -358,18 +358,18 @@ export default function GymPartnership() {
               <div className="lg:col-span-5 hero-rise">
                 {/*
                   Capped and centred below `lg`, where the column becomes the full width
-                  of the page. A square image at 704px is 704px tall, which pushed the
-                  headline commercials a screen and a half down on a tablet.
+                  of the page. Uncapped at 704px wide the 4:5 crop is 880px tall, which
+                  pushes the headline commercials a screen and a half down on a tablet.
                 */}
                 <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden border border-white/10 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.85)]">
                   <Image
-                    src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+                    src="/assets/machine/machine_gym_bg2.png"
                     alt={`A ${MACHINE_SPEC.model} protein shake machine installed against the wall of a modern gym, members training behind it`}
-                    width={1024}
-                    height={1024}
+                    width={1122}
+                    height={1402}
                     priority
                     sizes="(min-width: 640px) 448px, 100vw"
-                    className="w-full aspect-square object-cover"
+                    className="w-full aspect-[4/5] object-cover"
                   />
                   <div
                     className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/25 to-transparent"
@@ -457,8 +457,10 @@ export default function GymPartnership() {
             Same asset as `/specs` and onboarding step 2, through `MACHINE_SPEC.imageSrc`, so
             a new render replaces all three at once. `width`/`height` are the source's
             intrinsic pixels rather than the display size — they are what reserves the box and
-            keeps this section out of CLS — and `sizes` is what stops Next serving the 1536px
-            candidate to a phone rendering it at 358.
+            keeps this section out of CLS — and `sizes` is what stops Next serving the 1024px
+            candidate to a phone rendering it at 358. The render is a portrait tower, so the
+            box is capped and centred rather than spanning the card: full-width it would be
+            over 500px tall and push the specs grid below it off the fold.
           */}
           {/*
             The render and the numbers a gym owner checks it against, in one bordered
@@ -467,14 +469,16 @@ export default function GymPartnership() {
           */}
           <figure className="mt-9">
             <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-              <Image
-                src={MACHINE_SPEC.imageSrc}
-                alt={`The ${MACHINE_SPEC.model} protein shake vending machine on a gym floor, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and a cup in the dispenser`}
-                width={1536}
-                height={1024}
-                sizes="(min-width: 1024px) 1024px, 100vw"
-                className="w-full aspect-[3/2] object-cover bg-muted"
-              />
+              <div className="bg-muted">
+                <Image
+                  src={MACHINE_SPEC.imageSrc}
+                  alt={`The ${MACHINE_SPEC.model} protein shake vending machine on a gym floor, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and a cup in the dispenser`}
+                  width={1024}
+                  height={1535}
+                  sizes="(min-width: 1024px) 512px, 100vw"
+                  className="w-full max-w-sm mx-auto aspect-[3/4] object-cover"
+                />
+              </div>
               <dl className="grid grid-cols-2 sm:grid-cols-4 border-t border-border divide-x divide-y sm:divide-y-0 divide-border">
                 {machineFacts.map((fact) => (
                   <div key={fact.label} className="p-4 sm:p-5">

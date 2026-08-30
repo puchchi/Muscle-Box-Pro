@@ -25,7 +25,10 @@ export default function Hero() {
       <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gray-50 hidden lg:block pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-16">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        {/* Not `lg:grid-cols-2`: an even split leaves the machine 576px. Widening the copy
+            column past what the headline needs is what shrinks the render, so this pair of
+            numbers is the size control for the machine. 512 here puts it at 640. */}
+        <div className="grid lg:grid-cols-[minmax(0,512px)_minmax(0,1fr)] gap-12 lg:gap-16 items-center">
 
           {/* Left: Copy */}
           <m.div
@@ -106,14 +109,18 @@ export default function Hero() {
             transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
             className="relative flex items-center justify-center"
           >
+            {/* Square render, so width is also height. The grid column sizes it and
+                `maxHeight` is the only guard on a short viewport, so there is deliberately
+                no `max-w-*` here: adding one stops it filling the column. */}
             <Image
-              src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
-              alt="Protein shake vending machine for gyms"
-              width={800}
-              height={600}
+              src="/assets/machine/machine_home_2.png"
+              alt="A MuscleBoxPro protein shake vending machine installed in a modern gym"
+              width={1254}
+              height={1254}
               priority
-              className="w-full rounded-2xl object-cover shadow-2xl shadow-gray-300/60"
-              style={{ maxHeight: "78vh", objectPosition: "center" }}
+              sizes="(min-width: 1024px) 640px, 100vw"
+              className="w-full mx-auto rounded-2xl object-cover shadow-2xl shadow-gray-300/60"
+              style={{ maxHeight: "82vh" }}
             />
 
             {/* Floating chip: blend time */}
