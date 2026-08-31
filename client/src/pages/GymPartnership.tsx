@@ -358,18 +358,18 @@ export default function GymPartnership() {
               <div className="lg:col-span-5 hero-rise">
                 {/*
                   Capped and centred below `lg`, where the column becomes the full width
-                  of the page. A square image at 704px is 704px tall, which pushed the
-                  headline commercials a screen and a half down on a tablet.
+                  of the page. Uncapped at 704px wide the 4:5 crop is 880px tall, which
+                  pushes the headline commercials a screen and a half down on a tablet.
                 */}
                 <div className="relative mx-auto max-w-md lg:max-w-none rounded-3xl overflow-hidden border border-white/10 shadow-[0_24px_70px_-20px_rgba(0,0,0,0.85)]">
                   <Image
-                    src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+                    src="/assets/machine/machine_gym_bg2.png"
                     alt={`A ${MACHINE_SPEC.model} protein shake machine installed against the wall of a modern gym, members training behind it`}
-                    width={1024}
-                    height={1024}
+                    width={1122}
+                    height={1402}
                     priority
                     sizes="(min-width: 640px) 448px, 100vw"
-                    className="w-full aspect-square object-cover"
+                    className="w-full aspect-[4/5] object-cover"
                   />
                   <div
                     className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/25 to-transparent"
@@ -455,50 +455,62 @@ export default function GymPartnership() {
             meant a gym owner read six bullet points about a machine they could not see.
 
             Same asset as `/specs` and onboarding step 2, through `MACHINE_SPEC.imageSrc`, so
-            a new render replaces all three at once. `width`/`height` are the source's
-            intrinsic pixels rather than the display size — they are what reserves the box and
-            keeps this section out of CLS — and `sizes` is what stops Next serving the 1536px
-            candidate to a phone rendering it at 358.
-          */}
-          {/*
-            The render and the numbers a gym owner checks it against, in one bordered
-            block. Loose, the image was a photograph with a caption and the specs were a
-            link off the page, so "will this work on my floor" took a navigation.
+            a new render replaces all three at once. `sizes` is what stops Next serving the
+            1024px candidate to a phone rendering it at 358.
+
+            The render is a portrait tower, which is why it sits in its own column beside the
+            details rather than above them: spanning the card it would be over 500px tall, and
+            capped and centred it left two blank slabs either side of a narrow strip. The
+            image cell carries the aspect ratio so it, not the prose, sets the row height, and
+            `fill` lets it cover the cell when the prose is the taller of the two instead.
           */}
           <figure className="mt-9">
-            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-              <Image
-                src={MACHINE_SPEC.imageSrc}
-                alt={`The ${MACHINE_SPEC.model} protein shake vending machine on a gym floor, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and a cup in the dispenser`}
-                width={1536}
-                height={1024}
-                sizes="(min-width: 1024px) 1024px, 100vw"
-                className="w-full aspect-[3/2] object-cover bg-muted"
-              />
-              <dl className="grid grid-cols-2 sm:grid-cols-4 border-t border-border divide-x divide-y sm:divide-y-0 divide-border">
-                {machineFacts.map((fact) => (
-                  <div key={fact.label} className="p-4 sm:p-5">
-                    <fact.icon className="w-4 h-4 text-primary mb-2.5" aria-hidden="true" />
-                    <div className="flex flex-col-reverse gap-1">
-                      <dt className="text-muted-foreground text-xs leading-snug">{fact.label}</dt>
-                      <dd className="font-display font-black text-base sm:text-lg leading-none tabular-nums">
-                        {fact.value}
-                      </dd>
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm grid sm:grid-cols-[minmax(0,38%)_minmax(0,1fr)] lg:grid-cols-[minmax(0,28%)_minmax(0,1fr)]">
+              <div className="relative aspect-[3/4] bg-muted">
+                <Image
+                  src={MACHINE_SPEC.imageSrc}
+                  alt={`The ${MACHINE_SPEC.model} protein shake vending machine, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and a cup in the dispenser`}
+                  fill
+                  sizes="(min-width: 1024px) 400px, (min-width: 640px) 38vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+
+              <figcaption className="flex flex-col justify-center p-5 sm:p-7 lg:p-9 border-t sm:border-t-0 sm:border-l border-border">
+                <p className="font-display font-black text-lg sm:text-xl leading-tight">
+                  The {MACHINE_SPEC.model}
+                </p>
+                <p className="text-muted-foreground text-[15px] leading-relaxed mt-2">
+                  {dimensionsSpelled()}, on a standard power point. No plumbing and no drainage
+                  are required.
+                </p>
+
+                <dl className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 mt-7">
+                  {machineFacts.map((fact) => (
+                    <div key={fact.label}>
+                      <fact.icon className="w-4 h-4 text-primary mb-2.5" aria-hidden="true" />
+                      <div className="flex flex-col-reverse gap-1">
+                        <dt className="text-muted-foreground text-xs leading-snug">
+                          {fact.label}
+                        </dt>
+                        <dd className="font-display font-black text-base sm:text-lg leading-none tabular-nums">
+                          {fact.value}
+                        </dd>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </dl>
+                  ))}
+                </dl>
+
+                <p className="text-[13px] leading-relaxed mt-7">
+                  <Link
+                    href="/specs"
+                    className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    Full specifications
+                  </Link>
+                </p>
+              </figcaption>
             </div>
-            <figcaption className="text-muted-foreground text-[13px] leading-relaxed mt-3">
-              The {MACHINE_SPEC.model}. {dimensionsSpelled()}, on a standard power point.{" "}
-              <Link
-                href="/specs"
-                className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                Full specifications
-              </Link>
-              .
-            </figcaption>
           </figure>
 
           <div className="grid md:grid-cols-2 gap-5 mt-5">

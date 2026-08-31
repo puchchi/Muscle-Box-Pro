@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Wrench, TrendingUp, Palette, ArrowRight, Star, AlertCircle, Clock } from "lucide-react";
@@ -77,10 +78,16 @@ export default function GymDemo() {
               {/* Machine image */}
               <div className="lg:w-[420px] flex-shrink-0 hero-rise">
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)]">
-                  <img
-                    src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+                  {/* 2:3 is the render's own ratio. The machine fills the frame edge to edge,
+                      so any other aspect crops either the top or the wheels. */}
+                  <Image
+                    src="/assets/machine/machine_gym_bg1.png"
                     alt="MuscleBoxPro machine in a modern gym"
-                    className="w-full aspect-video object-cover"
+                    width={1024}
+                    height={1535}
+                    priority
+                    sizes="(min-width: 1024px) 420px, 100vw"
+                    className="w-full aspect-[2/3] object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-950/70 via-transparent to-transparent" />
                   {/* Quick stats overlay */}

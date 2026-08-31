@@ -982,8 +982,7 @@ export default function Franchise() {
 
           {/*
             The only picture on a page about deploying five to ten of these. `sizes` stops
-            a phone pulling the 1536px candidate, and the intrinsic dimensions are the
-            file's own so the space is reserved before it loads.
+            a phone pulling the 1536px candidate.
           */}
           {/*
             The render and the hardware figures in one bordered block, the way /advertise
@@ -991,43 +990,60 @@ export default function Franchise() {
             away. Loose, this was a picture with a caption and the specifications were off
             the page, so "what am I actually deploying" took a navigation.
           */}
+          {/* The render is a portrait tower, which is why it takes its own column beside the
+              figures rather than sitting above them: capped and centred over a full-width card
+              it left two blank slabs either side of a narrow strip. The image cell carries the
+              aspect ratio so it, not the prose, sets the row height, and `fill` lets it cover
+              the cell when the prose is the taller of the two instead. */}
           <figure className="mt-10">
-            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-              <Image
-                src={MACHINE_SPEC.imageSrc}
-                alt={`The ${MACHINE_SPEC.model} protein shake vending machine, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and ${MACHINE_SPEC.canisters} ingredient canisters`}
-                width={1536}
-                height={1024}
-                sizes="(min-width: 1024px) 1024px, 100vw"
-                className="w-full aspect-[3/2] object-cover bg-muted"
-              />
-              <dl className="grid grid-cols-2 sm:grid-cols-4 border-t border-border divide-x divide-y sm:divide-y-0 divide-border">
-                {machineFacts.map((fact) => (
-                  <div key={fact.label} className="p-4 sm:p-5">
-                    <fact.icon className="w-4 h-4 text-primary mb-2.5" aria-hidden="true" />
-                    {/* Reversed so the figure reads first visually while `dt` still
-                        precedes its `dd` in the DOM. */}
-                    <div className="flex flex-col-reverse gap-1">
-                      <dt className="text-muted-foreground text-xs leading-snug">{fact.label}</dt>
-                      <dd className="font-display font-black text-base sm:text-lg leading-none tabular-nums">
-                        {fact.value}
-                      </dd>
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm grid sm:grid-cols-[minmax(0,38%)_minmax(0,1fr)] lg:grid-cols-[minmax(0,40%)_minmax(0,1fr)]">
+              <div className="relative aspect-[3/4] bg-muted">
+                <Image
+                  src={MACHINE_SPEC.imageSrc}
+                  alt={`The ${MACHINE_SPEC.model} protein shake vending machine, with a ${MACHINE_SPEC.displayInches}-inch touchscreen and ${MACHINE_SPEC.canisters} ingredient canisters`}
+                  fill
+                  sizes="(min-width: 1024px) 416px, (min-width: 640px) 38vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+
+              <figcaption className="flex flex-col justify-center p-5 sm:p-7 lg:p-9 border-t sm:border-t-0 sm:border-l border-border">
+                <p className="font-display font-black text-lg sm:text-xl leading-tight">
+                  The {MACHINE_SPEC.model}
+                </p>
+                <p className="text-muted-foreground text-[15px] leading-relaxed mt-2">
+                  The machine every franchise deploys. {dimensionsSpelled()}, on a standard power
+                  point.
+                </p>
+
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-6 mt-7">
+                  {machineFacts.map((fact) => (
+                    <div key={fact.label}>
+                      <fact.icon className="w-4 h-4 text-primary mb-2.5" aria-hidden="true" />
+                      {/* Reversed so the figure reads first visually while `dt` still
+                          precedes its `dd` in the DOM. */}
+                      <div className="flex flex-col-reverse gap-1">
+                        <dt className="text-muted-foreground text-xs leading-snug">
+                          {fact.label}
+                        </dt>
+                        <dd className="font-display font-black text-base sm:text-lg leading-none tabular-nums">
+                          {fact.value}
+                        </dd>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </dl>
+                  ))}
+                </dl>
+
+                <p className="text-[13px] leading-relaxed mt-7">
+                  <Link
+                    href="/specs"
+                    className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    Full specifications
+                  </Link>
+                </p>
+              </figcaption>
             </div>
-            <figcaption className="text-muted-foreground text-[13px] leading-relaxed mt-3">
-              The {MACHINE_SPEC.model}, the machine every franchise deploys.{" "}
-              {dimensionsSpelled()}, on a standard power point.{" "}
-              <Link
-                href="/specs"
-                className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                Full specifications
-              </Link>
-              .
-            </figcaption>
           </figure>
 
           {/*

@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
+import PreferredSourceButton from "@/components/seo/PreferredSourceButton";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -60,13 +61,14 @@ export default function BlogGymRetention() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="relative rounded-2xl overflow-hidden aspect-video border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]"
+            className="relative rounded-2xl overflow-hidden aspect-[4/3] border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]"
           >
             <Image
-              src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+              src="/assets/machine/machine_gym_bg2.png"
               alt="Gym Member Retention: The Role of On-Site Nutrition"
               fill
-              className="object-cover"
+              sizes="(min-width: 1024px) 768px, 100vw"
+              className="object-cover object-top"
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-gray-950/50 via-transparent to-transparent" />
@@ -260,6 +262,8 @@ export default function BlogGymRetention() {
               </Button>
             </div>
           </div>
+
+          <PreferredSourceButton className="mt-8" />
 
         </article>
       </main>

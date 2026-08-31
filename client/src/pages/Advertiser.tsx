@@ -3,6 +3,7 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Monitor, Users, TrendingUp, BarChart2, Zap, Target, ArrowRight, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
@@ -348,11 +349,13 @@ export default function Advertiser() {
               </div>
 
               {/* Image side */}
-              <div className="relative min-h-72 lg:min-h-0">
-                <img
-                  src="/images/futuristic_protein_shake_vending_machine_in_a_modern_gym..png"
+              <div className="relative min-h-[28rem] lg:min-h-0">
+                <Image
+                  src="/assets/machine/machine_gym_bg2.png"
                   alt="MuscleBoxPro machine in a modern gym"
-                  className="absolute inset-0 w-full h-full object-cover"
+                  fill
+                  sizes="(min-width: 1024px) 576px, 100vw"
+                  className="object-cover object-top"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                 <div className="absolute bottom-8 left-8 right-8">

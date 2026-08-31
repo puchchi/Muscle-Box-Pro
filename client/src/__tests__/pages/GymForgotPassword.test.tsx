@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 vi.mock("next/navigation", () => ({
@@ -17,8 +18,31 @@ vi.mock("next/link", () => ({
 // "Element type is invalid" — which is how this suite was silently broken.
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
 
+/*
+  `SELF_SERVE_RESET_ENABLED` is a build-time const, so a getter is what lets one suite
+  render both halves of the page. Reading it through `flag` rather than capturing it keeps
+  the switch itself under test — the page decides which half to render on every render.
+*/
+const flag = vi.hoisted(() => ({ selfServe: false }));
+const requestPortalPasswordReset = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/gymSession", () => ({
+  get SELF_SERVE_RESET_ENABLED() {
+    return flag.selfServe;
+  },
+  requestPortalPasswordReset,
+}));
+
 import GymForgotPassword from "@/pages/gym/GymForgotPassword";
 import { MBP_NOTICES } from "@shared/onboarding/agreementFields";
+
+beforeEach(() => {
+  requestPortalPasswordReset.mockReset();
+});
+
+afterEach(() => {
+  flag.selfServe = false;
+});
 
 /**
  * This suite used to assert the page's old behaviour, which was the bug.
@@ -30,10 +54,10 @@ import { MBP_NOTICES } from "@shared/onboarding/agreementFields";
  * confidently told a locked-out gym owner to go and wait for nothing, and passing was what
  * kept it there.
  *
- * What is asserted now is the absence of the form, because that is the thing a future
- * well-meaning change is most likely to put back.
+ * Both halves are asserted now, and the split matters: the shipped half must not grow a form,
+ * and the gated half must not grow a claim that an account exists.
  */
-describe("GymForgotPassword", () => {
+describe("GymForgotPassword, with no self-service route deployed", () => {
   it("shows the RESET PASSWORD heading", () => {
     render(<GymForgotPassword />);
     expect(screen.getByRole("heading", { name: /reset password/i })).toBeInTheDocument();
@@ -43,7 +67,7 @@ describe("GymForgotPassword", () => {
     render(<GymForgotPassword />);
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(document.querySelector("input")).toBeNull();
-    expect(screen.queryByRole("button", { name: /send recovery link/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /send/i })).toBeNull();
   });
 
   /*
@@ -66,15 +90,165 @@ describe("GymForgotPassword", () => {
     expect(mailto).toHaveAttribute("href", expect.stringContaining(`mailto:${MBP_NOTICES.email}`));
   });
 
-  it("offers a second route to reach us", () => {
-    render(<GymForgotPassword />);
-    const hrefs = screen.getAllByRole("link").map((el) => el.getAttribute("href"));
-    expect(hrefs).toContain("/contact");
-  });
-
   it("shows a Back to Sign In link pointing at the gym login route", () => {
     render(<GymForgotPassword />);
     const link = screen.getByRole("link", { name: /back to sign in/i });
     expect(link).toHaveAttribute("href", "/gym/login");
+  });
+});
+
+describe("GymForgotPassword, once the route is deployed and sending", () => {
+  beforeEach(() => {
+    flag.selfServe = true;
+  });
+
+  it("asks for the email address and nothing else", () => {
+    render(<GymForgotPassword />);
+    expect(screen.getByTestId("input-email")).toBeInTheDocument();
+    expect(screen.getByTestId("button-send-reset")).toBeInTheDocument();
+    // No password fields. The link's landing page sets the password; this page only asks
+    // for one to be sent, and the old version's two password inputs changed the password of
+    // whatever session the browser already had.
+    expect(document.querySelectorAll('input[type="password"]')).toHaveLength(0);
+  });
+
+  it("offers the human route before the form is submitted too", () => {
+    render(<GymForgotPassword />);
+    expect(screen.getByTestId("link-reset-email")).toHaveAttribute(
+      "href",
+      expect.stringContaining(`mailto:${MBP_NOTICES.email}`),
+    );
+  });
+
+  /*
+    The instruction that outlived its field. "Enter your email" above a screen with no email
+    field is the page asking for something it has already taken, and it read as if the submit
+    had not happened.
+  */
+  it("stops telling you to enter an email once there is no email field", async () => {
+    requestPortalPasswordReset.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    expect(screen.getByText(/enter your account email/i)).toBeInTheDocument();
+
+    await user.type(screen.getByTestId("input-email"), "owner@ironhouse.in");
+    await user.click(screen.getByTestId("button-send-reset"));
+
+    await screen.findByTestId("reset-requested");
+    expect(screen.queryByText(/enter your account email/i)).toBeNull();
+    expect(screen.queryByTestId("input-email")).toBeNull();
+  });
+
+  it("breaks what happens next into separate lines", async () => {
+    requestPortalPasswordReset.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    await user.type(screen.getByTestId("input-email"), "owner@ironhouse.in");
+    await user.click(screen.getByTestId("button-send-reset"));
+
+    const items = (await screen.findByTestId("reset-requested")).querySelectorAll("li");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent(/works once/i);
+    expect(items[1]).toHaveTextContent(/won't sign you in/i);
+  });
+
+  it("does not send a malformed address to the reset route", async () => {
+    // The outcome, not the layer that produced it: `type="email"` means native constraint
+    // validation refuses the submit before react-hook-form runs, so the zod message never
+    // renders. Same reasoning as the equivalent test in `AdminLogin.test.tsx`. What matters
+    // is that a typo does not spend one of the route's per-email attempts.
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    await user.type(screen.getByTestId("input-email"), "not-an-email");
+    await user.click(screen.getByTestId("button-send-reset"));
+    await waitFor(() => expect(requestPortalPasswordReset).not.toHaveBeenCalled());
+    expect(screen.queryByTestId("reset-requested")).toBeNull();
+  });
+
+  it("sends the address to the reset route", async () => {
+    requestPortalPasswordReset.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    await user.type(screen.getByTestId("input-email"), "owner@ironhouse.in");
+    await user.click(screen.getByTestId("button-send-reset"));
+    await waitFor(() =>
+      expect(requestPortalPasswordReset).toHaveBeenCalledWith("owner@ironhouse.in"),
+    );
+  });
+
+  /*
+    The invariant, asserted rather than trusted to review. A confirmation that differs
+    between an address we know and one we do not turns this page into a list of which gyms
+    are customers, and the tempting copy edit ("we've emailed you") is exactly that leak.
+  */
+  it("confirms without saying whether the account exists", async () => {
+    requestPortalPasswordReset.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    await user.type(screen.getByTestId("input-email"), "stranger@example.com");
+    await user.click(screen.getByTestId("button-send-reset"));
+
+    const panel = await screen.findByTestId("reset-requested");
+    expect(panel).toHaveTextContent(/if we have an account for that address/i);
+    expect(panel).not.toHaveTextContent(/we have (emailed|sent)/i);
+    expect(panel).not.toHaveTextContent(/no account/i);
+    expect(panel).not.toHaveTextContent(/stranger@example\.com/);
+  });
+
+  it("lets a mistyped address be corrected without leaving the page", async () => {
+    requestPortalPasswordReset.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    await user.type(screen.getByTestId("input-email"), "owner@ironhuose.in");
+    await user.click(screen.getByTestId("button-send-reset"));
+
+    await screen.findByTestId("reset-requested");
+    await user.click(screen.getByTestId("button-try-again"));
+    expect(screen.getByTestId("input-email")).toBeInTheDocument();
+    expect(screen.queryByTestId("reset-requested")).toBeNull();
+  });
+
+  it("puts no expiry figure on the link", async () => {
+    requestPortalPasswordReset.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    await user.type(screen.getByTestId("input-email"), "owner@ironhouse.in");
+    await user.click(screen.getByTestId("button-send-reset"));
+
+    const panel = await screen.findByTestId("reset-requested");
+    expect(panel.textContent).not.toMatch(/\d+\s*(hour|minute|day)/i);
+  });
+
+  it("keeps the human route available when the confirmation is showing", async () => {
+    requestPortalPasswordReset.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    await user.type(screen.getByTestId("input-email"), "owner@ironhouse.in");
+    await user.click(screen.getByTestId("button-send-reset"));
+
+    await screen.findByTestId("reset-requested");
+    expect(screen.getByTestId("link-reset-email")).toHaveAttribute(
+      "href",
+      expect.stringContaining(`mailto:${MBP_NOTICES.email}`),
+    );
+  });
+
+  it("shows the failure and leaves the form there to retry", async () => {
+    requestPortalPasswordReset.mockResolvedValue({
+      ok: false,
+      error: { code: "network", message: "Check your connection and try again." },
+    });
+    const user = userEvent.setup();
+    render(<GymForgotPassword />);
+    await user.type(screen.getByTestId("input-email"), "owner@ironhouse.in");
+    await user.click(screen.getByTestId("button-send-reset"));
+
+    const notice = await screen.findByTestId("reset-notice");
+    expect(notice).toHaveTextContent(/check your connection/i);
+    // Announced, not just coloured red. The failure arrives without a page change, so a
+    // screen reader is told nothing at all unless the container says so.
+    expect(notice).toHaveAttribute("role", "alert");
+    expect(screen.queryByTestId("reset-requested")).toBeNull();
+    expect(screen.getByTestId("input-email")).toHaveValue("owner@ironhouse.in");
   });
 });

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/footer/index";
+import PreferredSourceButton from "@/components/seo/PreferredSourceButton";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -682,6 +683,8 @@ export default function BlogHba1c() {
               </Link>
             </div>
           </div>
+
+          <PreferredSourceButton className="mt-8" />
 
         </article>
       </main>

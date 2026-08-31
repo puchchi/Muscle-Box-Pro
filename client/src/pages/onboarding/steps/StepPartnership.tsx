@@ -266,50 +266,29 @@ export default function StepPartnership({
         <div className="flex flex-col sm:flex-row gap-4">
           {/*
             `next/image`, not a raw `<img>`. The asset behind `MACHINE_SPEC.imageSrc` is a
-            1.9 MB 1536×1024 PNG, and this renders it at 144px wide on a desktop and about
-            343px on a phone — so the plain tag spent the better part of two megabytes of a
-            gym owner's mobile data on a thumbnail. `sizes` is what makes the srcset useful
-            rather than decorative: it tells the browser the real display width, so it
-            fetches a ~144px AVIF here instead of picking off the top of the list.
+            ~1.8 MB PNG rendered here at 144px wide, so a plain tag spent the better part of
+            two megabytes of a gym owner's mobile data on a thumbnail. `sizes` is what makes
+            the srcset useful rather than decorative: it tells the browser the real display
+            width, so it fetches a ~144px AVIF instead of picking off the top of the list.
             `formats: ["image/avif", "image/webp"]` in next.config.mjs is already set.
 
             Intrinsic dimensions stay, for the reason they were added: without them the
-            whole panel below jumped when the image decoded. `next/image` lazy-loads and
-            decodes async by default, so those two attributes are gone rather than changed.
+            whole panel below jumped when the image decoded.
 
-            ── Why an aspect ratio and a crop, and not `h-40 object-contain` ──
-
-            This is a flex row, so its default `align-items: stretch` gave the image box the
-            full height of the paragraphs beside it — about 300px — and `sm:h-auto` cannot
-            win against stretch, because stretch resolves a definite cross-size. So a 3:2
-            photo sat `object-contain`ed inside a 144×300 box: an 96px-tall strip of picture
-            with ~100px of `bg-gray-50` above and below it, which is the grey slab that made
-            this panel look broken rather than photographed. `self-stretch sm:self-start` is
-            the half of the fix that stops the stretching — and it has to be written per
-            breakpoint, because on a phone this is a flex *column*, where the cross axis is
-            horizontal and a bare `self-start` would collapse the image to its content width
-            instead of spanning the card.
-
-            The other half is the crop. The machine occupies the middle ~45% of a wide, dark
-            frame — a blurred gym to the left of it and empty floor to the right — so a
-            landscape thumbnail spends more than half its pixels on background. Centre of
-            the machine is x≈730 against an image centre of 768, near enough that the default
-            `object-center` needs no nudging: `aspect-[3/4] object-cover` keeps the full
-            height of the machine and throws away the room around it, which is how the
-            product ends up roughly twice the size in the same corner of the card.
-
-            The phone keeps the photo's own 3:2 and crops nothing. Portrait at `w-full` would
-            be 457px tall on a 375px screen — the machine would push the specs that explain
-            it off the fold, and this panel's job is the sentence about whether it fits
-            against a wall.
+            `self-start` at both breakpoints, because this is a flex row whose default
+            `align-items: stretch` resolves a definite cross-size — it gave the image box the
+            full height of the paragraphs beside it, and `h-auto` cannot win against that.
+            The render is a portrait tower on a plain backdrop, so it stays portrait at every
+            width and is capped rather than spanning the card: `w-full` would be 457px tall on
+            a 375px screen and push the specs that explain the machine off the fold.
           */}
           <Image
             src={MACHINE_SPEC.imageSrc}
             alt={`${machine.model} protein shake machine`}
-            width={1536}
-            height={1024}
-            sizes="(min-width: 640px) 144px, 100vw"
-            className="w-full sm:w-36 aspect-[3/2] sm:aspect-[3/4] object-cover rounded-xl bg-gray-50 flex-shrink-0 self-stretch sm:self-start"
+            width={1024}
+            height={1535}
+            sizes="(min-width: 640px) 144px, 128px"
+            className="w-32 sm:w-36 aspect-[3/4] object-cover rounded-xl bg-gray-50 flex-shrink-0 self-start"
           />
           <div className="min-w-0">
             {/* `font-semibold`, like every other labelled thing inside a panel on this step —

@@ -3622,3 +3622,98 @@ development double-mount produced, which is the second pending request in the re
 
 `npx tsc --noEmit` clean, `npx vitest run` **57 files, 1,068 tests passing** (five new: two on the
 dashboard for the cached and the cold path, three on the login page for the handoff and the button).
+
+## 43. A self-service reset, and the one route it is waiting on (2026-08-29)
+
+> what is this forget password? rather than this, we should have forget password workflow
+>
+> i want to have a proper forgot password workflow, which send the link to email and using that
+> user can set the password
+
+§9.2 removed the form because it lied (§18). What was left is prose: email us, a person confirms
+you hold the account, and mints you a link by hand. That is honest and it is also a phone call
+standing in for a route, so the workflow is now built end to end on this side, behind a flag,
+with the one missing piece specified rather than faked.
+
+### What already existed
+
+| Piece | State |
+|---|---|
+| Mint a single-use handle — `POST /admin/gyms/{gymId}/set-password-link` | Deployed. No admin UI yet (`admin-panel-todo.md`) |
+| Spend it — `POST /gym/account` | Deployed, wired through `setPortalPassword` |
+| Where the link lands — `/gym/set-password/[handle]` | Built. Sets a password, opens no session |
+| The email body — `getPasswordResetEmailTemplate` | Written, in the frozen Supabase functions |
+| Email → account → mint → send, from the public side | **Missing. This is the whole gap** |
+
+So the workflow needs one route, and it cannot be assembled from the client or from a Vercel
+handler acting as an admin proxy. There is no email lookup to do it with: `GET /admin/gyms` has no
+server-side filter or search — a documented scale bound, not a gap to work around by fetching
+every page — and the `noticesEmail` on its rows is the §41 formal-notices address, not the portal
+login. Probing `POST /gym/login` to find out whether an address exists would build the
+enumeration oracle that route is deliberately built not to be. The lookup belongs in
+`mbp-backend`, next to the account index that already resolves an email at login.
+
+### `POST /gym/password-reset` — the contract this frontend is written against
+
+Unauthenticated. Body `{ email: string }`.
+
+1. **One response, always.** `200` with an empty body whether the address has an account, has
+   none, or is a syntactically valid address nobody has ever used. The status, the body and the
+   headers must not branch on the answer. Everything downstream of this page depends on it: a
+   distinguishable response makes `/gym/forgot-password` a public list of which gyms are
+   customers, which is commercially sensitive on its own and doubles as a target list.
+2. **Mint the handle the admin route already mints.** Same generator, same store, same
+   single-use semantics, so `POST /gym/account` spends it unchanged and the existing
+   `expired_token` / `revoked_token` answers keep meaning what they mean. Issuing a new one
+   revokes any outstanding reset handle for that account — the newest link wins, and a gym that
+   clicks twice gets the failure that says "already used" rather than two live credentials.
+3. **The link is `https://www.muscleboxpro.com/gym/set-password/{handle}`.** Path segment, not
+   `?handle=`: that route's `Referrer-Policy` and `noindex, nofollow` are already scoped to it,
+   and a credential in a query string is archived by every log it passes.
+4. **Send only to the account's own login address.** Never to `noticesEmail` because it was on
+   the gym record: those can differ, and mailing a set-password link to an address that is not
+   the login hands the account to a third party who did nothing wrong.
+5. **TTL is the server's, and it is not published.** The page deliberately puts no number on the
+   link. An earlier version promised an hour, which was both wrong and unfalsifiable from the
+   frontend.
+6. **Throttle per address and per IP, and answer a refusal as `400`.** Not `429`:
+   `codeForStatus` maps anything outside 400/401/403/409 to `network`, whose message is "check
+   your connection and try again" — the exact wrong instruction for a caller being throttled.
+   A `400` arrives as `validation` and renders the server's own message. When
+   `OnboardingErrorCode` gains `rate_limited`, this becomes a `429` and the two flip in that
+   order: backend to send it, frontend to understand it.
+7. **Consider ending other sessions when the password is set.** Not specified here because it is
+   `POST /gym/account`'s behaviour rather than this route's, but the reason someone resets is
+   often that they think somebody else is in — and a 12-hour non-refreshing session that
+   survives the reset is that somebody, for the rest of the day.
+
+Delivery is SES or the same SMTP transport, with `getPasswordResetEmailTemplate({ name,
+resetUrl })`. Note that template currently lives on the frozen Supabase side; the copy is
+reusable, the function is not the one to call from AWS.
+
+### What shipped here
+
+- `requestPortalPasswordReset(email)` in `gymSession.ts` — one `POST`, and a success that means
+  *accepted*, never *found*. It must not gain a return value that tells the two apart.
+- `SELF_SERVE_RESET_ENABLED = USE_LIVE_API && NEXT_PUBLIC_MBP_SELF_SERVE_RESET === "on"`. Off in
+  every environment today, which is what keeps the shipped page honest while the route is
+  missing. **Turning it on before the route sends recreates §9.2's harm exactly** — a confident
+  confirmation and a gym owner waiting instead of calling.
+- `GymForgotPassword` renders both halves. Off: today's prose, unchanged. On: an email field, and
+  on any accepted request a panel reading "if we have an account for that address, a link to set
+  a new password is on its way", plus the mailto as the fallback for when nothing arrives. No
+  password fields on this page in either state — the link's landing page is where a password gets
+  set, and the old version's two fields changed the password of whatever session the browser
+  already had.
+- The brand panel's three facts and its subhead switch with the flag, because "a person checks
+  you're the account holder" stops being true the moment the route mints without one.
+
+Both halves are in the file on purpose. Deleting the prose half and restoring it later is how the
+reasoning above gets lost, and the prose half is the honest one.
+
+### Verified
+
+`npx tsc --noEmit` clean. Screenshots of both states at 1440/768/390. The new suite covers the
+switch itself — a getter on the mocked flag, since a build-time const is otherwise untestable in
+both directions — and pins the invariant directly: the confirmation says "if we have an account",
+never "we have emailed you", never "no account", and never echoes the address back.
