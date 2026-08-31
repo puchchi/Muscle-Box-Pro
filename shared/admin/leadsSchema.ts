@@ -1,11 +1,11 @@
 /**
  * Runtime validation of `GET /admin/leads/{kind}`.
  *
- * The reason this exists at all is that the rows are not ours in the usual sense. They come from
- * Supabase through `providers/supabaseLeads.ts` in mbp-backend, which flattens three tables with three
- * different column layouts into one row shape by hand. A column renamed on one of those tables lands
- * here as `null`, and `null` is a legitimate value for six of the nine fields, so the failure this file
- * catches is the coarser one: a row that is not a row.
+ * The reason this exists at all is that the rows are assembled by hand on the other side. Two mappings
+ * in mbp-backend flatten differently-shaped records into this one row: `providers/supabaseLeads.ts` for
+ * `demo` and `campaign`, and `domain/leads.ts` for `investor` since it moved to DynamoDB. A field
+ * renamed in either lands here as `null`, and `null` is a legitimate value for seven of the ten fields,
+ * so the failure this file catches is the coarser one: a row that is not a row.
  *
  * `id` and `email` are the two fields required to be non-empty. `id` is the React key, and a list with
  * duplicate empty keys silently renders the wrong rows; `email` is the only field the panel exists to
@@ -38,6 +38,17 @@ const lead = z.object({
   location: z.string().nullable(),
   investorType: z.string().nullable(),
   message: z.string().nullable(),
+  /**
+   * Required-but-nullable rather than optional, which means **mbp-backend deploys before this app does.**
+   *
+   * Both Supabase kinds send an explicit `null`, so every backend that has this field sends it for all
+   * three kinds, and an API older than this schema fails every tab rather than just the investor one.
+   * That is the deliberate half of the trade: `.optional()` would survive the skew but would also make a
+   * later rename of `reference` show blank forever, which is the silent drift this whole file exists to
+   * catch. The loud version is diagnosable — `ErrorPanel` prints the field path — and the same backend
+   * commit carries `POST /investor/enquiries`, so a skew breaks the public form either way.
+   */
+  reference: z.string().nullable(),
 });
 
 export const leadPageSchema = z.object({

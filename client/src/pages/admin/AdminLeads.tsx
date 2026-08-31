@@ -14,9 +14,11 @@ import { formatIstDateTime } from "./adminFormat";
 /**
  * The Enquiries tab — demo requests, campaign enquiries and investor enquiries, read-only.
  *
- * These three tables are the last thing in the product still living in Supabase, which is frozen: no
- * migration will run against it and nothing new will be added. So this panel is a window onto rows that
- * only get written by the public forms, and there is deliberately nothing here that writes.
+ * Demo and campaign are the last two things in the product still living in Supabase, which is frozen: no
+ * migration will run against it and nothing new will be added. Investor enquiries moved to DynamoDB on
+ * 2026-08-31 and are the only kind that carries a reference. All three arrive through the same route and
+ * the same row shape, so which store answers is not something this file knows or should. There is
+ * deliberately nothing here that writes.
  *
  * ## It fetches when you open it, and only for the tab you open
  *
@@ -27,10 +29,10 @@ import { formatIstDateTime } from "./adminFormat";
  *
  * ## One table for three shapes
  *
- * The three Supabase tables have different columns, flattened server-side into one row where a column a
- * table does not have is `null`. Rendering that as five columns with blanks in them, rather than three
- * per-kind layouts, is a deliberate trade: an investor enquiry has no phone number, and a blank cell
- * under a heading is easier to read correctly than a table that changes shape under you.
+ * The three sources have different fields, flattened server-side into one row where a field a source does
+ * not have is `null`. Rendering that as five columns with blanks in them, rather than three per-kind
+ * layouts, is a deliberate trade: an investor enquiry has no phone number, and a blank cell under a
+ * heading is easier to read correctly than a table that changes shape under you.
  */
 
 const KIND_LABEL: Record<LeadKind, string> = {
@@ -43,7 +45,8 @@ const KIND_LABEL: Record<LeadKind, string> = {
 const KIND_NOTE: Record<LeadKind, string> = {
   demo: "Gym name and location, as typed into the demo form.",
   campaign: "Brand name. This form asks for nothing else, so the other columns are blank by design.",
-  investor: "Firm and investor type. This form asks for no phone number.",
+  investor:
+    "Firm and investor type. This form asks for no phone number. The MBP-IN reference under each name is the one the enquirer was emailed, so it is searchable above.",
 };
 
 const KINDS: LeadKind[] = ["demo", "campaign", "investor"];
@@ -181,7 +184,7 @@ export default function AdminLeads() {
             <Input
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
-              placeholder="Filter by name, email or place"
+              placeholder="Filter by name, email, place or reference"
               aria-label="Filter loaded enquiries"
               className="bg-white border-gray-200 h-10 rounded-xl pl-9"
               data-testid="input-filter-leads"
@@ -225,6 +228,18 @@ export default function AdminLeads() {
                   <tr key={lead.id} className="align-top" data-testid={`row-lead-${lead.id}`}>
                     <td className="px-4 py-2.5">
                       <p className="font-semibold text-foreground">{lead.name || "Not given"}</p>
+                      {/*
+                        Under the name rather than in a sixth column: only investor leads have one, and an
+                        empty column on two of the three tabs costs every row width it would explain.
+                      */}
+                      {lead.reference && (
+                        <p
+                          className="text-xs text-muted-foreground tabular-nums"
+                          data-testid={`lead-reference-${lead.id}`}
+                        >
+                          {lead.reference}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-2.5">
                       {/*
@@ -315,10 +330,20 @@ export default function AdminLeads() {
   );
 }
 
+/**
+ * `reference` is in here because pasting the `MBP-IN-…` out of an investor's reply is the one lookup this
+ * screen is asked for by something other than a name, and it is the only field they were given.
+ */
 function matches(lead: Lead, needle: string): boolean {
-  return [lead.name, lead.email, lead.phone, lead.organisation, lead.location, lead.investorType].some(
-    (value) => (value ?? "").toLowerCase().includes(needle),
-  );
+  return [
+    lead.name,
+    lead.email,
+    lead.phone,
+    lead.organisation,
+    lead.location,
+    lead.investorType,
+    lead.reference,
+  ].some((value) => (value ?? "").toLowerCase().includes(needle));
 }
 
 /**

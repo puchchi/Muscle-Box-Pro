@@ -8,8 +8,9 @@
  * franchise enquiry is a ₹25–50 lakh lead, and the alternative, resolving as success
  * against a mock, would drop those leads silently and look identical to working.
  *
- * Not a Supabase edge function, unlike the older marketing forms (`investor-request`,
- * `demo-request`). New backend work goes to the AWS API, and it goes through
+ * Not a Supabase edge function, unlike `demo-request` (`investor-request` went the same way as
+ * this one on 2026-08-31, see [investorApi.ts](./investorApi.ts)). New backend work goes to the
+ * AWS API, and it goes through
  * [apiClient.ts](./apiClient.ts) so the credentials, content-type and error-mapping
  * rules stay in the one place that documents them.
  *

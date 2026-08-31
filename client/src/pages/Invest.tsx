@@ -6,8 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { FunctionsHttpError } from "@supabase/supabase-js";
+import {
+  INVESTOR_ENQUIRY_FIELDS,
+  submitInvestorEnquiry,
+  type InvestorEnquiryField,
+  type InvestorEnquiryReceipt,
+} from "@/lib/investorApi";
 import { MACHINE_SPEC } from "@shared/machine/spec";
 import {
   TrendingUp,
@@ -21,6 +25,7 @@ import {
   Clock,
   AlertCircle,
   Award,
+  Hash,
 } from "lucide-react";
 
 const marketStats = [
@@ -64,8 +69,11 @@ const whyNow = [
   { num: "05", text: "Zero-capex model accelerates gym partner acquisition" },
 ];
 
+/** Mirrored in `domain/investorEnquiry.ts` as `INVESTOR_TYPES`, which recognises but never rejects. */
 const investorTypes = ["Angel Investor", "Venture Capital", "Family Office", "Strategic Partner", "Other"];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type FieldErrors = Partial<Record<InvestorEnquiryField, string>>;
 
 export default function Invest() {
   const [name, setName] = useState("");
@@ -73,13 +81,13 @@ export default function Invest() {
   const [firm, setFirm] = useState("");
   const [investorType, setInvestorType] = useState("");
   const [message, setMessage] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [receipt, setReceipt] = useState<InvestorEnquiryReceipt | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const validate = () => {
-    const errs: { name?: string; email?: string } = {};
+    const errs: FieldErrors = {};
     if (!name.trim() || name.trim().length < 2) errs.name = "Please enter your name.";
     if (!EMAIL_RE.test(email.trim())) errs.email = "Please enter a valid email address.";
     setFieldErrors(errs);
@@ -89,25 +97,36 @@ export default function Invest() {
   const handleSubmit = async () => {
     if (!validate()) return;
     setError(null);
-    try {
-      setIsSubmitting(true);
-      const { error: invokeError } = await supabase.functions.invoke("investor-request", {
-        body: { name, email, firm: firm || undefined, investorType: investorType || undefined, message: message || undefined },
-      });
-      if (invokeError) {
-        if (invokeError instanceof FunctionsHttpError) {
-          const body = await invokeError.context.json().catch(() => null);
-          throw new Error(body?.message ?? "Something went wrong. Please try again.");
+    setIsSubmitting(true);
+    const result = await submitInvestorEnquiry({
+      name,
+      email,
+      // Omitted rather than sent blank, so "left it alone" is absent rather than empty.
+      ...(firm.trim() ? { firm } : {}),
+      ...(investorType ? { investorType } : {}),
+      ...(message.trim() ? { message } : {}),
+    });
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      // The endpoint marks any of the five fields, including the three this form never
+      // validates itself, so a 400 about the message length lands under the textarea
+      // instead of only in the banner.
+      const returned = result.error.fieldErrors;
+      if (returned) {
+        const marked: FieldErrors = {};
+        for (const field of INVESTOR_ENQUIRY_FIELDS) {
+          const problem = returned[field];
+          if (problem) marked[field] = problem;
         }
-        throw invokeError;
+        setFieldErrors(marked);
       }
-      setSubmitted(true);
-      setName(""); setEmail(""); setFirm(""); setInvestorType(""); setMessage(""); setFieldErrors({});
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+      setError(result.error.message);
+      return;
     }
+
+    setReceipt(result.data ?? {});
+    setName(""); setEmail(""); setFirm(""); setInvestorType(""); setMessage(""); setFieldErrors({});
   };
 
   return (
@@ -319,14 +338,14 @@ export default function Invest() {
                       Request the pitch deck
                     </h2>
                     <p className="text-white/60 text-sm leading-relaxed mb-8">
-                      We're raising to accelerate machine deployment across India's top gym chains. Reach out and we'll send the deck within 24 hours.
+                      We're raising to accelerate machine deployment across India's top gym chains. Fill this in and the deck arrives in your inbox straight away.
                     </p>
                     <div className="space-y-3.5">
                       {[
                         { icon: BarChart3, text: "Full financials & unit economics" },
                         { icon: MapPin, text: "Expansion roadmap by city" },
                         { icon: TrendingUp, text: "Revenue projections & milestones" },
-                        { icon: Clock, text: "Response within 24 hours" },
+                        { icon: Clock, text: "Emailed the moment you submit" },
                       ].map(({ icon: Icon, text }, i) => (
                         <div key={i} className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
@@ -342,27 +361,57 @@ export default function Invest() {
                 {/* Right: Form */}
                 <div className="p-10 lg:p-14">
                   <AnimatePresence mode="wait">
-                    {submitted ? (
+                    {receipt ? (
                       <motion.div
                         key="success"
                         initial={{ opacity: 0, scale: 0.96 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0 }}
                         className="flex flex-col items-center text-center h-full justify-center py-8"
+                        data-testid="investor-receipt"
                       >
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent/10 to-primary/10 flex items-center justify-center mb-6">
                           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg shadow-primary/30">
                             <CheckCircle2 className="w-7 h-7 text-white" strokeWidth={2.5} />
                           </div>
                         </div>
-                        <h3 className="font-display font-black text-gray-900 uppercase text-xl mb-2">Request Received</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-6">
-                          We'll send the pitch deck to your email within 24 hours. Looking forward to connecting.
-                        </p>
+                        {/*
+                          Two outcomes, because the deck is attached to the acknowledgement the
+                          endpoint sends rather than posted by hand later. Promising an inbox we
+                          know nothing arrived in is the one thing this state must not do, so
+                          `emailed === false` gets its own copy. A duplicate submission carries no
+                          `emailed` key at all and reads as the first branch, which is correct: the
+                          mail went out ten minutes ago.
+                        */}
+                        {receipt.emailed === false ? (
+                          <>
+                            <h3 className="font-display font-black text-gray-900 uppercase text-xl mb-2">Request Received</h3>
+                            <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-6">
+                              We have your enquiry, but the confirmation email did not go out. Our team will send the deck by hand within one working day.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <h3 className="font-display font-black text-gray-900 uppercase text-xl mb-2">Deck On Its Way</h3>
+                            <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-6">
+                              We have emailed you the pitch deck. It should land in a minute or two. If you cannot see it, check your spam folder.
+                            </p>
+                          </>
+                        )}
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-4 py-2">
                           <Clock className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                          <span className="text-gray-600 text-xs font-medium">Deck sent within 24 hours</span>
+                          <span className="text-gray-600 text-xs font-medium">
+                            {receipt.emailed === false ? "A human will follow up" : "Sent to your inbox"}
+                          </span>
                         </div>
+                        {/* The string they will quote back at us, so it is a chip rather than prose. */}
+                        {receipt.reference && (
+                          <p className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-4 py-2 mt-3 text-xs">
+                            <Hash className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                            <span className="text-gray-500">Your reference</span>
+                            <strong className="font-bold text-gray-900 tabular-nums">{receipt.reference}</strong>
+                          </p>
+                        )}
                       </motion.div>
                     ) : (
                       <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -417,25 +466,27 @@ export default function Invest() {
                               Firm / Organisation <span className="text-gray-400 font-normal">(optional)</span>
                             </label>
                             <input
-                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors"
+                              className={`w-full bg-gray-50 border rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:bg-white focus:outline-none transition-colors ${fieldErrors.firm ? "border-red-400 focus:border-red-400" : "border-gray-200 focus:border-primary"}`}
                               placeholder="Sequoia, AngelList, etc."
                               value={firm}
-                              onChange={(e) => setFirm(e.target.value)}
+                              onChange={(e) => { setFirm(e.target.value); setFieldErrors((f) => ({ ...f, firm: undefined })); }}
                             />
+                            {fieldErrors.firm && <p className="text-xs text-red-500 mt-1">{fieldErrors.firm}</p>}
                           </div>
 
                           <div>
                             <label className="text-gray-700 text-sm font-semibold mb-1.5 block">Investor Type</label>
                             <select
-                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm focus:border-primary focus:bg-white focus:outline-none transition-colors cursor-pointer"
+                              className={`w-full bg-gray-50 border rounded-xl px-4 py-2.5 text-foreground text-sm focus:bg-white focus:outline-none transition-colors cursor-pointer ${fieldErrors.investorType ? "border-red-400 focus:border-red-400" : "border-gray-200 focus:border-primary"}`}
                               value={investorType}
-                              onChange={(e) => setInvestorType(e.target.value)}
+                              onChange={(e) => { setInvestorType(e.target.value); setFieldErrors((f) => ({ ...f, investorType: undefined })); }}
                             >
                               <option value="">Select type...</option>
                               {investorTypes.map((t) => (
                                 <option key={t} value={t}>{t}</option>
                               ))}
                             </select>
+                            {fieldErrors.investorType && <p className="text-xs text-red-500 mt-1">{fieldErrors.investorType}</p>}
                           </div>
 
                           <div>
@@ -444,11 +495,12 @@ export default function Invest() {
                             </label>
                             <textarea
                               rows={3}
-                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:border-primary focus:bg-white focus:outline-none transition-colors resize-none"
+                              className={`w-full bg-gray-50 border rounded-xl px-4 py-2.5 text-foreground text-sm placeholder:text-gray-400 focus:bg-white focus:outline-none transition-colors resize-none ${fieldErrors.message ? "border-red-400 focus:border-red-400" : "border-gray-200 focus:border-primary"}`}
                               placeholder="Tell us about your investment thesis or what you'd like to know..."
                               value={message}
-                              onChange={(e) => setMessage(e.target.value)}
+                              onChange={(e) => { setMessage(e.target.value); setFieldErrors((f) => ({ ...f, message: undefined })); }}
                             />
+                            {fieldErrors.message && <p className="text-xs text-red-500 mt-1">{fieldErrors.message}</p>}
                           </div>
 
                           <Button
@@ -456,6 +508,7 @@ export default function Invest() {
                             className="w-full h-12 bg-gradient-to-r from-accent to-primary text-white font-bold hover:opacity-90 transition-opacity rounded-xl cursor-pointer shadow-md shadow-primary/20"
                             onClick={handleSubmit}
                             disabled={isSubmitting || !name || !email}
+                            data-testid="button-submit-investor-enquiry"
                           >
                             {isSubmitting ? "Sending..." : "Request Pitch Deck"}
                             {!isSubmitting && <ArrowRight className="ml-2 w-4 h-4" />}
