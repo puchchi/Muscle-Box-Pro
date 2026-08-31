@@ -2,10 +2,9 @@
  * Submitting an investor enquiry from /invest.
  *
  * `POST /investor/enquiries` on the AWS API, which took over from the `investor-request`
- * Supabase edge function on 2026-08-31 (mbp-backend `f08a35c`, design §12). That function is
- * still deployed and nothing calls it any more: Supabase is frozen, so it is left in place
- * rather than removed. The 19 rows it wrote were copied into DynamoDB, not moved, which is
- * why `/admin/leads/investor` still shows enquiries made before the cutover.
+ * Supabase edge function on 2026-08-31 (mbp-backend `f08a35c`, design §12). That function stays
+ * deployed until this client ships and stops calling it; the rows it already wrote are copied
+ * into DynamoDB rather than moved, so nothing here depends on that having happened.
  *
  * Goes through [apiClient.ts](./apiClient.ts) for the reasons that file documents, the same
  * as [franchiseApi.ts](./franchiseApi.ts).
