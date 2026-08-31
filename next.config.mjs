@@ -223,7 +223,7 @@ const nextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         ],
       },
-      // The two routes that carry a live credential in the URL, so they get the strictest
+      // The routes that carry a live credential in the URL, so they get the strictest
       // referrer policy we have. The global `strict-origin-when-cross-origin` above already
       // strips the path — and therefore the handle — before it reaches Razorpay in step 4 of
       // onboarding, which is why `mbp-backend` §4.3 records that leak as closed rather than
@@ -243,6 +243,20 @@ const nextConfig = {
         // gym owner does, and the gym owner then sees "already used" on a link they never got
         // to click.
         source: "/gym/set-password/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        // Franchise onboarding, whose step 7 leaves for Digio. The handle in this path is the
+        // credential for a flow that signs a ₹25 lakh term sheet, and the thing it would leak to
+        // is a signing session in a named person's identity.
+        source: "/franchise/onboarding/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        // Digio's return path. It carries no handle by design, but it does carry Digio's own
+        // request identifiers, and it is the one page in this flow whose next navigation is
+        // back into a credential-bearing URL.
+        source: "/franchise/esign-return",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
     ];

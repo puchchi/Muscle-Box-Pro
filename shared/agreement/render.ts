@@ -15,6 +15,14 @@
  * the server that later verifies it.
  *
  * See docs/gym-onboarding.md §12.
+ *
+ * Every function that substitutes values is generic over its field record, defaulting to
+ * the gym `AgreementFields`, so the franchise term sheet (docs/franchise-onboarding.md §5)
+ * renders through this same module with its own fields. The type parameter is wrapped in
+ * `NoInfer` deliberately: if it were inferred from the argument, an object literal with a
+ * misspelled field name would infer *itself* as the record and the excess-property check
+ * that catches the typo today would silently stop firing. Callers with non-gym fields pass
+ * the type argument explicitly.
  */
 
 import type { Agreement, AgreementFields, Block, Blocker, Section } from "./types";
@@ -42,14 +50,14 @@ export class MissingAgreementFieldError extends Error {
   constructor(readonly token: string) {
     super(
       `Agreement template references {{${token}}} but no such value was supplied. ` +
-        `Add it to AgreementFields, or fix the token.`,
+        `Add it to the document's field record, or fix the token.`,
     );
     this.name = "MissingAgreementFieldError";
   }
 }
 
 /** Resolves a dotted path against `fields`. Returns undefined for anything non-scalar. */
-function lookup(fields: Partial<AgreementFields>, path: string): string | undefined {
+function lookup(fields: object, path: string): string | undefined {
   const value = path
     .split(".")
     .reduce<unknown>(
@@ -63,9 +71,9 @@ function lookup(fields: Partial<AgreementFields>, path: string): string | undefi
 }
 
 /** `"Term: {{termMonths}} months"` → `"Term: 24 months"`. */
-export function renderText(
+export function renderText<F extends object = AgreementFields>(
   template: string,
-  fields: Partial<AgreementFields>,
+  fields: Partial<NoInfer<F>>,
   options: RenderOptions = {},
 ): string {
   const { onMissing = "throw", placeholder = "__________" } = options;
@@ -94,9 +102,9 @@ export function collectTokens(agreement: Agreement): string[] {
  * Call this before issuing, not after. It is the check that catches a newly added clause
  * whose token nobody wired into `AgreementFields`.
  */
-export function findUnresolvedTokens(
+export function findUnresolvedTokens<F extends object = AgreementFields>(
   agreement: Agreement,
-  fields: Partial<AgreementFields>,
+  fields: Partial<NoInfer<F>>,
 ): string[] {
   return collectTokens(agreement).filter((token) => lookup(fields, token) === undefined);
 }
@@ -153,9 +161,12 @@ export type IssueCheck =
  *
  * Callers must treat `ok: false` as a hard stop in production, not a warning.
  */
-export function canIssue(agreement: Agreement, fields: Partial<AgreementFields>): IssueCheck {
+export function canIssue<F extends object = AgreementFields>(
+  agreement: Agreement,
+  fields: Partial<NoInfer<F>>,
+): IssueCheck {
   const blockers = collectBlockers(agreement).filter((b) => b.severity === "blocks-send");
-  const unresolvedTokens = findUnresolvedTokens(agreement, fields);
+  const unresolvedTokens = findUnresolvedTokens<F>(agreement, fields);
   if (blockers.length === 0 && unresolvedTokens.length === 0) return { ok: true };
 
   const reasons = [
@@ -216,8 +227,12 @@ function* allStrings(agreement: Agreement): Generator<string> {
   }
 }
 
-function blockToLines(block: Block, fields: Partial<AgreementFields>, opts: RenderOptions): string[] {
-  const r = (s: string) => renderText(s, fields, opts);
+function blockToLines<F extends object>(
+  block: Block,
+  fields: Partial<F>,
+  opts: RenderOptions,
+): string[] {
+  const r = (s: string) => renderText<F>(s, fields, opts);
   switch (block.kind) {
     case "paragraph":
       return [r(block.text)];
@@ -253,14 +268,14 @@ function blockToLines(block: Block, fields: Partial<AgreementFields>, opts: Rend
   }
 }
 
-function sectionToLines(
+function sectionToLines<F extends object>(
   section: Section,
-  fields: Partial<AgreementFields>,
+  fields: Partial<F>,
   opts: RenderOptions,
 ): string[] {
   return [
-    `${section.number}. ${renderText(section.heading, fields, opts)}`,
-    ...section.blocks.flatMap((b) => blockToLines(b, fields, opts)),
+    `${section.number}. ${renderText<F>(section.heading, fields, opts)}`,
+    ...section.blocks.flatMap((b) => blockToLines<F>(b, fields, opts)),
   ];
 }
 
@@ -275,18 +290,18 @@ function sectionToLines(
  * the agreement content itself. If a format change is ever unavoidable, version
  * the renderer alongside the agreement and store which one produced each hash.
  */
-export function renderPlainText(
+export function renderPlainText<F extends object = AgreementFields>(
   agreement: Agreement,
-  fields: Partial<AgreementFields>,
+  fields: Partial<NoInfer<F>>,
   options: RenderOptions = {},
 ): string {
   const lines = [
     agreement.subtitle,
     agreement.title,
     `Version ${agreement.version}`,
-    ...agreement.cover.flatMap((b) => blockToLines(b, fields, options)),
-    ...agreement.sections.flatMap((s) => sectionToLines(s, fields, options)),
-    ...agreement.schedules.flatMap((s) => sectionToLines(s, fields, options)),
+    ...agreement.cover.flatMap((b) => blockToLines<F>(b, fields, options)),
+    ...agreement.sections.flatMap((s) => sectionToLines<F>(s, fields, options)),
+    ...agreement.schedules.flatMap((s) => sectionToLines<F>(s, fields, options)),
   ];
   // Single trailing newline, no blank-line separators, so whitespace tinkering in
   // the source data cannot move the hash.
@@ -323,10 +338,10 @@ export type AgreementFingerprint = {
  * Throws if any token is unfilled — a fingerprint of a half-substituted contract
  * would be worse than useless, because it would look like valid evidence.
  */
-export async function fingerprint(
+export async function fingerprint<F extends object = AgreementFields>(
   agreement: Agreement,
-  fields: AgreementFields,
+  fields: NoInfer<F>,
 ): Promise<AgreementFingerprint> {
-  const text = renderPlainText(agreement, fields, { onMissing: "throw" });
+  const text = renderPlainText<F>(agreement, fields, { onMissing: "throw" });
   return { version: agreement.version, contentHash: await sha256Hex(text), length: text.length };
 }

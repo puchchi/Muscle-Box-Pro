@@ -10,10 +10,16 @@
  *      Read it from here.
  *   2. This describes the *proposed* program. It is not an offer and it is not the
  *      definitive franchise agreement, which is what binds. The disclaimer the page
- *      renders (§55 of docs/FranchiseOnboardingPlan.md) is load-bearing and must stay
- *      visible.
+ *      renders (§56 of docs/MuscleBox_Pro_Franchise_Program.md) is load-bearing and must
+ *      stay visible.
  *
- * Section references are to docs/FranchiseOnboardingPlan.md.
+ * Section references are to docs/MuscleBox_Pro_Franchise_Program.md.
+ *
+ * They used to point at `docs/FranchiseOnboardingPlan.md`, which was an earlier copy of the
+ * same document under a name suggesting it was a plan. It has been deleted. The two had
+ * diverged: the current document inserts §28, Franchisee Operational Responsibilities, so
+ * every reference above 27 shifted by one when they were repointed. If a reference here ever
+ * looks off by one against the document, that is the reason.
  */
 
 import { formatInr } from "../partnership/summary";
@@ -148,7 +154,7 @@ export const FRANCHISE = {
   proteinProfitSharePct: { duringRecovery: 100, afterRecovery: 50 },
 
   /**
-   * §18, §41. Advertising is permanent and it never counts toward capital recovery.
+   * §18, §42. Advertising is permanent and it never counts toward capital recovery.
    * That separation is the single most misread term in the program, so it is stated
    * on the split itself rather than only in prose.
    */
@@ -218,7 +224,7 @@ export const MACHINE_RIGHTS = {
   ],
 } as const;
 
-/** §9, §24, §26, §27, §28. Who does what, once the machines land. */
+/** §9, §24, §26, §27, §29. Who does what, once the machines land. */
 export const RESPONSIBILITIES = {
   mbp: [
     "The machines, built and delivered",
@@ -243,7 +249,7 @@ export const RESPONSIBILITIES = {
 } as const;
 
 /**
- * §38. The upkeep loop at each machine, once deployed.
+ * §28. The upkeep loop at each machine, once deployed.
  *
  * Everything here is downstream of the warehouse. Storage conditions, local transport
  * and gym coordination are stated in `RESPONSIBILITIES.franchisee` and must not be
@@ -272,7 +278,7 @@ export const DASHBOARD_VISIBILITY = [
   "Machine status and operational alerts",
 ] as const;
 
-/** §30. What territorial exclusivity is conditional on (§4). */
+/** §31. What territorial exclusivity is conditional on (§4). */
 export const PERFORMANCE_REQUIREMENTS = [
   "Minimum number of machines deployed",
   "Deployment deadlines",
@@ -292,7 +298,7 @@ export const RESERVED_ACCOUNTS = [
 ] as const;
 
 /**
- * §51. Application through to the long-term partnership.
+ * §52. Application through to the long-term partnership.
  *
  * `phase` groups the eleven steps into the four stages of `JOURNEY_PHASES`. Eleven
  * equally-weighted steps read as a list to get through; four stages read as a process,
@@ -367,7 +373,7 @@ export const JOURNEY_PHASES: readonly { id: FranchiseJourneyPhaseId; title: stri
 
 /**
  * The journey grouped for rendering, with each step keeping its position in the full
- * eleven so the numbering on the page matches the order in §51.
+ * eleven so the numbering on the page matches the order in §52.
  */
 export function journeyByPhase() {
   return JOURNEY_PHASES.map((phase) => ({

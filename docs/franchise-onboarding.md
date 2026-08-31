@@ -1,6 +1,7 @@
 # Franchise Onboarding
 
-Status: **plan, not built.** Written 2026-08-31. Nothing in this document exists in code yet.
+Status: **being built.** Written 2026-08-31. Phases 1 to 3 of §11 are done: the renderer is generic,
+and the Franchise Term Sheet exists with its bytes pinned. Everything else here is still a plan.
 
 Scope: an invite-only franchise onboarding flow on the web surface, plus the backend that serves it.
 The commercial substance is `docs/MuscleBox_Pro_Franchise_Program.md`, which is the program
@@ -74,13 +75,18 @@ exactly that job for demo requests (backend design §2.7). The franchise equival
 §8 builds it first: without it there is no way to *start* an onboarding, and the wizard would be a
 flow nobody can be invited into.
 
-**`docs/FranchiseOnboardingPlan.md` is not a plan.** It is an earlier copy of the program document
-under a misleading name, and it is the file `shared/franchise/program.ts` cites in its section
-references. It is missing §28 (Franchisee Operational Responsibilities) and several later edits, so
-the two disagree on what a franchisee is obliged to do. Rename it to
-`MuscleBox_Pro_Franchise_Program_v1.md` or delete it, and repoint `program.ts`'s references at
-`MuscleBox_Pro_Franchise_Program.md`. Doing that as part of this work is cheap; discovering the
-divergence while drafting term sheet clauses out of the wrong file is not.
+**`docs/FranchiseOnboardingPlan.md` was not a plan — deleted 2026-08-31.** It was an earlier copy of
+the program document under a name suggesting otherwise, and it was the file
+`shared/franchise/program.ts` cited in its section references. It was missing §28 (Franchisee
+Operational Responsibilities), so **every section number above 27 was off by one** in `program.ts`
+and `Franchise.tsx` — including the disclaimer reference, which pointed at §55 (Commercial
+Principles) rather than §56 (Important Commercial Notice), the one clause rule 2 of `program.ts`
+calls load-bearing.
+
+Both files now cite `MuscleBox_Pro_Franchise_Program.md` and the numbers were shifted with it. One
+reference improved rather than moved: `MACHINE_UPKEEP` cited §38, Franchisee Responsibilities, when
+its list is verbatim the §28 that was missing — the section written for exactly that list. It cites
+§28 now.
 
 ---
 
@@ -634,6 +640,21 @@ Plus a cold-start assertion that a sandbox `client_id` is not in prod — the sa
 `lib/runtime.ts` already makes on the Razorpay key prefix, and for the same reason: a sandbox
 credential in prod signs nothing legally and says nothing about it.
 
+**One stack does not fit, and this is the blocker (found 2026-08-31).** The argument above is about
+identity and secrets, and it still holds. The resource budget defeats it anyway. `services/onboarding`
+synthesizes 484 resources in sandbox and 482 in prod against CloudFormation's hard limit of 500; the
+first five admin routes cost 47. `aws-cdk-lib` throws `TooManyResourcesInStack` at synth, so this is
+not a deploy that gets rejected, it is a stack that cannot be built. Measured alternatives: moving the
+Lambdas to a nested stack still leaves 22 in the parent, one Lambda behind all five methods is 27, and
+`stackResourceLimit` is a CDK knob rather than a CloudFormation one, so raising it converts a synth
+error into a rollback. The routes need their **own `RestApi`**, which collides with the admin cookie
+being host-scoped with no `Domain` attribute (`src/auth/cookie.ts`), and a base-path mapping that
+exists only in prod. Open question 10.
+
+The table, its three GSIs and the documents bucket are in the stack and synthesize. Only the five
+admin routes are unroutable, and `UNROUTED_HANDLERS` names them so a sixth added silently fails the
+suite.
+
 ### 8.2 Items
 
 | pk | sk | Holds |
@@ -842,23 +863,109 @@ Also confirm `app/sitemap.ts` does not enumerate anything under `/franchise/onbo
 
 Each phase leaves the repo green and shippable.
 
-**1. Housekeeping.** Rename or delete `docs/FranchiseOnboardingPlan.md` and repoint
-`shared/franchise/program.ts`'s section references at the current program document (§2).
+**1. Housekeeping — done 2026-08-31.** `docs/FranchiseOnboardingPlan.md` deleted, and the section
+references in `shared/franchise/program.ts` and `client/src/pages/Franchise.tsx` repointed at the
+current program document with the off-by-one corrected (§2).
 
-**2. The renderer refactor.** Make `shared/agreement/render.ts` generic over its field record (§5).
-Nothing else changes. The gym golden vector staying green is the acceptance criterion.
+**2. The renderer refactor — done 2026-08-31.** `render.ts` is generic over its field record, and
+`goldenVector.ts` with it, so both documents pin their bytes through one `verifyGoldenVector`. The
+type parameter is wrapped in `NoInfer` on purpose: inferred from the argument, an object literal
+with a misspelled field would infer *itself* as the record and the excess-property check that
+catches the typo today would stop firing. Gym call sites are unchanged; the term sheet passes its
+type argument explicitly. The gym golden vector held.
 
-**3. The term sheet.** `shared/franchise/termsheet/*` with its own golden vector. Reviewable as a
-document by someone who is not a programmer, which is the point of the `Agreement` tree being data.
-Anything the program document defers gets a `todo` block with `blocks-send`, so an incomplete term
-sheet cannot be issued rather than being issued incomplete.
+**3. The term sheet — done 2026-08-31.** `shared/franchise/termsheet/{types,v1,goldenVector}.ts`,
+version 1.0, twenty sections and two schedules, pinned at 20,818 characters. 37 tests, which check
+the figures in the vector against `shared/franchise/program.ts` so the document and the published
+program cannot drift apart quietly. `fields.ts` moved to phase 4: it maps
+`FranchiseOnboardingState` to the field record, and that type does not exist yet.
 
-**4. The contract and the mock.** `shared/franchise/onboarding/*`. The mock is the specification for
-phase 6 and should be tested like one — the gym mock has 31 tests and gym doc §4 calls them "really
-the spec for item 9".
+Two things about it differ from what this section said before it was built.
 
-**5. The wizard.** Nine steps against the mock, walkable end to end in preview, with the e-sign step
-stubbed at the seam and the payment step showing the wait.
+*Deferred terms are not `todo` markers.* They are not holes in a term sheet, they are what a term
+sheet defers, and §17 of the document lists them so a reader is not left to notice by absence. The
+mechanism that stops an *incomplete* one being issued is a different one and needs no marker: a
+missing field is an unresolved token and `canIssue()` refuses on one. A City franchise whose payment
+schedule and recovery threshold an admin has not set therefore cannot reach a signature.
+
+*There is one `blocks-send` marker, and it is about the money.* Clause 5.6 states what happens to
+the first instalment if the definitive agreement is never executed: applied against the investment,
+non-refundable on the franchisee's default or on failure of due diligence, refunded without interest
+less committed OEM procurement cost where we do not proceed for any other reason. The program
+document nowhere addresses it, and a franchisee pays ₹12,50,000 under this instrument, so it could
+not be left out. It was drafted in-house and nobody has approved it, hence `blocks-send`: **no term
+sheet can be issued until that marker is deleted, and deleting it is the sign-off.** The preview
+still walks, because the gym flow's precedent (`StepReviewSign`) shows the blocker list only under
+the mock flag and does not gate signing in preview. This is open question 9.
+
+One consequence outside this repo: `mbp-backend` holds a **verbatim copy** of `shared/agreement/`,
+and `render.ts` and `goldenVector.ts` have both moved. That copy has to be re-taken along with the
+new `shared/franchise/termsheet/` before the backend computes a `contentHash`, and the golden vector
+tests on both sides are what will say so.
+
+**4. The contract and the mock — done 2026-08-31.** `shared/franchise/onboarding/{types,steps,status,
+schema,mockApi}.ts` and `shared/franchise/termsheet/{fields,issued}.ts`. 70 tests, which are the
+specification phase 7 has to satisfy: `client/src/__tests__/shared/franchise-onboarding-mock.test.ts`
+should keep passing against the HTTP implementation with only its constructor line changed. `GSTIN`
+and `PHONE` are now exported from `shared/onboarding/schema.ts` and imported rather than re-declared.
+
+Four things about it differ from what this document said before it was built.
+
+*The wizard has its own four phases.* §3 said the rail groups the nine steps by `JOURNEY_PHASES`.
+Applied literally that gives a 7-then-2 rail — steps 1 to 7 all fall inside `approve` and only 8 and
+9 inside `fund` — which is exactly the long-ladder reading the grouping exists to prevent. So
+`FRANCHISE_PHASES` in `steps.ts` is Apply / Approval / Agree / Fund, and each one names the journey
+phase it sits inside, so the public vocabulary on `/franchise` is still the vocabulary in the wizard.
+
+*Three steps complete on read, not two.* §7.4 named 4 and 8. Step 7 belongs with them for the same
+reason: a signature is written by the Digio webhook, so completing it from a franchisee's call would
+be us asserting something we have not been told. `COMPLETED_ON_READ_STEPS` is `[4, 7, 8]`, and
+`franchiseeCommits` is what a submission path checks — `commit()` throws rather than storing one.
+
+*A hold reopens steps 1 to 3, and step 3 freezes with step 1.* §4 gave `kycSubmittedAt` as a freeze
+point for step 1. Two corrections. It has to close step 3 as well, or the PAN card can be swapped
+after the PAN it evidences is locked. And both have to reopen while `status === "on_hold"`, or a hold
+asking for a correction is a dead end the flow refuses to accept — so `freezeReason` returns null for
+the approval-stage freezes during a hold. The signature freeze is not reopened by anything.
+
+*Open question 3 is answered: 45 days.* `TERM_SHEET_VALIDITY_DAYS`, which is what the golden vector's
+`01 September 2026` → `16 October 2026` already assumed. Long enough for counsel to read it and a
+bank transfer to clear, short enough that a territory is not held by somebody who stopped replying.
+
+One deliberate divergence between the mock and the live flow, commented in both places:
+`refreshEsignStatus` in the mock confirms a signature after two polls, standing in for the webhook's
+travel time, because a mock that confirms instantly hides the state the return-trip screen exists
+for. `refreshPaymentStatus` does **not** do the same, and that is the point of §7.5 — verification is
+a person reading a bank statement, so a poll that eventually succeeded would teach the screen to
+expect something that really takes working hours.
+
+**5. The wizard — done 2026-08-31.** Nine steps against the mock, walked end to end in a browser:
+`client/src/pages/franchise/onboarding/` (the shell, the rail, the intro, the preview controls, the
+form kit, the two hooks, the term sheet reader and nine steps), `client/src/pages/franchise/
+EsignReturn.tsx`, `client/src/lib/esignReturn.ts`, and the two routes in §10. `robots.txt` and the
+scoped `Referrer-Policy` block in `next.config.mjs` cover both new paths; `app/sitemap.ts` needed
+nothing, because it enumerates `PAGE_CHANGED_ON` and no credential-bearing path is in it.
+
+Four things about it differ from what this document said before it was built.
+
+*One reader serves both documents.* `AgreementReader` was generalised rather than copied: it takes
+its field record as a type parameter and its `RenderOptions` as a prop. The options stay a separate
+constant per document on purpose, so one document's placeholder cannot move the other's hash. Every
+gym call site and its tests are unchanged.
+
+*Step 7 cannot use `readOnly`.* `isReadOnly` is `!franchiseeCommits(viewStep) || frozen`, and step 7
+completes on read, so `franchiseeCommits(7)` is false and `readOnly` is *always* true there. It
+branches on `state.isSigned` and `state.esign.status` instead. Same for steps 4 and 8. Anyone
+reaching for `readOnly` on one of those three steps has found this trap, not a bug.
+
+*The signing URL is never stored.* `esignReturn.ts` is `depositReturn.ts` minus that one value. A
+deposit link is forwardable by design; a signing link authorises an eSign in a named person's
+identity, and `requestEsign` is idempotent and returns a fresh URL, so resuming re-asks the server.
+
+*Money is converted in the control, not the handler.* `paymentClaimSchema` validates integer paise
+and nobody types paise, so `Field` gained a `rupees` mode. Converting in the submit handler instead
+would have renamed the field and broken both the server's `amountPaise` error key and the draft
+shape.
 
 **6. The admin queue.** `GET /admin/franchise-applications` and `POST /admin/franchises`. This is the
 first backend work and it is deliberately first: it unblocks minting a real invite, and it is the gap
@@ -895,8 +1002,8 @@ Named rather than left implied, per gym doc §17.
 1. **Does the term sheet need stamping?** Counsel. §6.6 makes the seam carry it either way.
 2. **Does a shortfall on the first instalment block step 8?** §7.3 makes it visible and does not
    decide it.
-3. **What is the term sheet's own validity period?** An offer with no expiry is an offer forever, and
-   territory availability moves.
+3. ~~**What is the term sheet's own validity period?**~~ Answered: 45 days,
+   `TERM_SHEET_VALIDITY_DAYS` in `shared/franchise/termsheet/fields.ts`. §11, phase 4.
 4. **Can a declined applicant reapply, and through what?** §3 makes the screen silent on it, which is
    safe and is not an answer.
 5. **DPDP retention for KYC documents of declined applicants.** §9. Needed before prod.
@@ -907,3 +1014,18 @@ Named rather than left implied, per gym doc §17.
    signed and we have not.
 8. **Second instalment and procurement tracking.** Deliberately out of scope; §7.6 keeps the record
    shaped for it.
+9. **Is clause 5.6 of the term sheet the right refund position?** Drafted in-house because a
+   ₹12,50,000 instalment paid under a term sheet cannot leave the question unanswered, and the
+   program document does not answer it. It carries the only `blocks-send` marker in the document, so
+   nothing can be issued until it is approved. §11, phase 3.
+10. **Where do the franchise admin routes live, given the 500-resource ceiling?** §8.1. Their own
+    `RestApi` is the only option that fits, and it needs the admin cookie to carry a `Domain`
+    attribute, which is an auth change affecting the gym dashboard. Blocks any franchise deploy.
+11. **Rupees or paise on the admin wire?** `POST /admin/gyms` takes `securityDepositInr` and
+    multiplies by 100; `POST /admin/franchises` takes `investmentPaise` directly. Two forms in one
+    dashboard with two conventions is where a factor of 100 gets entered. The franchise side is the
+    one that matches this repo's integer-paise rule, so the gym side is the one that is wrong, and
+    changing it touches a deployed route.
+12. **Is there a franchise invite email, or does an admin copy the link?** The create route returns
+    `emailed: false` always. Gym onboarding sends one. §8.4 assumed a resend route, which implies a
+    first send that does not exist.

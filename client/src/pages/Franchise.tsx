@@ -13,11 +13,11 @@
  *   2. **The disclaimer stays visible and stays above the fold.** This describes a
  *      proposed program; it is not an offer, not a guarantee of returns and not the
  *      definitive franchise agreement, which is what binds
- *      (docs/FranchiseOnboardingPlan.md §55). It is the reason we can publish at all.
+ *      (docs/MuscleBox_Pro_Franchise_Program.md §56). It is the reason we can publish at all.
  *   3. **No projected earnings anywhere on the page.** The only worked figures are §20's
  *      capital-recovery illustration, which is arithmetic on a stated threshold rather
  *      than a forecast of what a machine will earn. A revenue calculator here would be a
- *      performance representation, which §55 exists to disclaim.
+ *      performance representation, which §56 exists to disclaim.
  *
  * It carries a lot of contract detail, and five presentation decisions keep that from
  * reading as a wall. They are what to preserve when editing:

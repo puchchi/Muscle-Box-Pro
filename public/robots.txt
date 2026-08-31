@@ -4,6 +4,8 @@ Disallow: /gym/
 Disallow: /onboarding/
 Disallow: /auth/
 Disallow: /admin/
+Disallow: /franchise/onboarding/
+Disallow: /franchise/esign-return
 
 # Google
 User-agent: Googlebot
