@@ -1,0 +1,909 @@
+# Franchise Onboarding
+
+Status: **plan, not built.** Written 2026-08-31. Nothing in this document exists in code yet.
+
+Scope: an invite-only franchise onboarding flow on the web surface, plus the backend that serves it.
+The commercial substance is `docs/MuscleBox_Pro_Franchise_Program.md`, which is the program
+description and says of itself that it is *not* the definitive franchise agreement (§56). What the
+flow captures, and what it does not, follows from that.
+
+**Read `docs/gym-onboarding.md` first.** This flow is deliberately the same machine as the gym
+wizard — server-owned step, one token, drafts on debounce, a hashed document, a webhook as the only
+thing that may mark money or a signature real — and the § references below point into it. Where this
+document says "gym doc §4" it means that file. Where it says "backend design §5" it means
+`~/github/mbp-backend/docs/gym-onboarding-api-design.md`.
+
+Four things were decided before this was written, and each one shapes a whole section:
+
+| Decision | Section |
+|---|---|
+| Signatures go through **Digio**, not a typed name in a box | §6 |
+| The first instalment is a **bank transfer we verify**, not a payment gateway | §7 |
+| What gets signed now is a **binding term sheet**, not the definitive agreement | §5 |
+| The flow also captures **KYC, territory and operations readiness** | §3 |
+
+---
+
+## 1. Why this is not the gym wizard with the nouns changed
+
+Four structural differences, and each one is a thing the gym flow has no code for.
+
+**1. There is an approval gate in the middle.** A gym gets invited because we already decided to
+place a machine. A franchisee gets invited to *apply*, and the program's own journey (§52) puts
+market evaluation and franchise approval between the application and the agreement. So the flow has
+a step the franchisee cannot complete, in the middle rather than at the end, and a real possibility
+of being **declined**. The gym flow's only non-franchisee step is step 6, Installation, and it sits
+after everything and cannot fail. Nothing in `OnboardingStatus` can express "we said no".
+
+**2. Two parties act on the same step.** The first instalment is submitted by the franchisee (a UTR)
+and verified by us (against a bank statement). That is neither the gym flow's franchisee-commits
+pattern nor its completed-on-read pattern. §7.4 names it and gives it rules.
+
+**3. The signature is affixed by someone else.** The gym signature is a typed name, two checkboxes
+and a hash we computed — the whole record is ours. A Digio signature is affixed to a PDF by Digio,
+after an Aadhaar OTP or a DSC, and the artifact that carries legal weight is a file we did not
+produce the last version of. That reverses the direction of the hash discipline and requires a PDF
+renderer this repo does not have. §6 is the longest section here for that reason.
+
+**4. The money is 25 to 50 times larger and the wizard must not touch it.** ₹12,50,000 is not a
+₹50,000 deposit with more zeros. Razorpay's fee on it is around ₹25,000, per instalment, and the
+reconciliation question changes from "did the webhook fire" to "did the amount in our bank match the
+amount claimed". §7 removes the gateway from this path entirely, which also removes every line of
+money-moving code from it.
+
+Everything else — the token, the drafts, the derived `currentStep`, the freeze on signing, the
+forward-only status ladder, the conditional write on the signing record — is copied deliberately,
+including the reasoning. Where this document is silent, gym doc §4 is the rule.
+
+---
+
+## 2. What already exists, and the one gap in it
+
+| Piece | State |
+|---|---|
+| `/franchise` public page, `client/src/pages/Franchise.tsx` | built, indexed, 2162 lines |
+| `shared/franchise/program.ts` | built — every figure the program publishes, as data |
+| `shared/franchise/faq.ts` | built |
+| `shared/validation/franchise.ts` + `client/src/lib/franchiseApi.ts` | built |
+| `POST /franchise/applications` | **live** on prod and sandbox — stores the enquiry, mails us and the applicant |
+| An admin surface for those applications | **missing** |
+
+That last row is the gap. Franchise enquiries have been landing in DynamoDB and in an inbox since
+2026-08-31 with no queue, no status, and no way to turn one into an invite. `POST /admin/gyms` does
+exactly that job for demo requests (backend design §2.7). The franchise equivalent does not exist, so
+§8 builds it first: without it there is no way to *start* an onboarding, and the wizard would be a
+flow nobody can be invited into.
+
+**`docs/FranchiseOnboardingPlan.md` is not a plan.** It is an earlier copy of the program document
+under a misleading name, and it is the file `shared/franchise/program.ts` cites in its section
+references. It is missing §28 (Franchisee Operational Responsibilities) and several later edits, so
+the two disagree on what a franchisee is obliged to do. Rename it to
+`MuscleBox_Pro_Franchise_Program_v1.md` or delete it, and repoint `program.ts`'s references at
+`MuscleBox_Pro_Franchise_Program.md`. Doing that as part of this work is cheap; discovering the
+divergence while drafting term sheet clauses out of the wrong file is not.
+
+---
+
+## 3. The flow
+
+Nine steps, grouped into four phases. The phases are `JOURNEY_PHASES` from
+`shared/franchise/program.ts`, so the rail a franchisee sees while onboarding uses the same names as
+the journey they read on the public page.
+
+| # | Step | Phase | Who completes it |
+|---:|---|---|---|
+| 1 | Your details | Apply | franchisee |
+| 2 | Your territory | Apply | franchisee (proposes) |
+| 3 | KYC and documents | Apply | franchisee |
+| 4 | Approval | Approval | **us** — completed on read |
+| 5 | Your franchise | Agree | franchisee (acknowledges) |
+| 6 | Operations readiness | Agree | franchisee |
+| 7 | Review and sign | Agree | franchisee, via Digio |
+| 8 | First instalment | Fund | **both** — franchisee claims, we verify |
+| 9 | You're set up | Fund | franchisee |
+
+Nine is more steps than the gym flow's six, and the rail is what stops that reading as a longer
+ladder. Grouped into four phases it reads as four things with a couple of parts each, and the phase
+a franchisee is in is the answer to "how far through am I" — which is the question the count was
+being asked to answer and answers badly at nine.
+
+### Step 1 — Your details
+
+The same shape as the gym flow's step 1, with the fields a ₹25 lakh counterparty needs and a gym
+does not.
+
+| Field | Note |
+|---|---|
+| `legalEntityName`, `entityType` | `EntityType` is reusable verbatim from `shared/onboarding/types.ts`, including `unregistered` |
+| `tradeName` | the name the territory trades under, and the source of the URL slug |
+| `pan` | **new.** Mandatory. A franchise agreement identifies its counterparty by PAN, and Digio needs it for a DSC path |
+| `gstin` | |
+| `cin` / `llpin` | **new**, conditional on `entityType` being `pvt_ltd` or `llp` |
+| `registeredAddress` | |
+| `signatoryName`, `signatoryDesignation` | |
+| `signatoryPan`, `signatoryAadhaarLast4` | **new.** §6.5 — Digio's Aadhaar eSign binds a signature to an identity, and we need to know which identity we asked it to bind |
+| `noticesEmail`, `noticesPhone` | the notices block, same role as the gym agreement's §41 |
+
+PAN is validated for shape (`[A-Z]{5}[0-9]{4}[A-Z]`) and the fourth character is checked against the
+entity type — `P` for an individual, `C` for a company, `F` for a firm, `H`, `A`, `T`. That check is
+worth having because it catches the single most common paste error, a personal PAN entered for a
+company, at the point where it is one field to fix rather than after a term sheet has been issued
+naming the wrong taxpayer.
+
+**Not collected: bank details.** The franchisee's payout account is a portal setting after
+activation, exactly as `GET /gym/payout-account` is for gyms, and there is nothing to pay out during
+onboarding. Asking for it here would put a bank account behind a URL-borne handle for no reason.
+
+### Step 2 — Your territory
+
+The franchisee names the market they want. This is the step the program document's §55 makes
+load-bearing: *"the exact territory will be mutually defined and documented before the franchise
+becomes operational"*, and exclusivity attaches to whatever this ends up saying.
+
+- `tier` — prefilled from the application, changeable here, constrained to `FRANCHISE_TIERS`
+- `proposedTerritory` — free text, and deliberately so. `shared/validation/franchise.ts` already
+  makes this argument for `targetMarket`: a territory need not match any city list we hold, and the
+  applicant is the one who knows where the gyms are
+- `proposedBoundary` — a longer description: which suburbs, which pin codes, where it stops
+- `existingRelationships` — gyms they already have a relationship with, which is the single most
+  useful input to a market evaluation and the one thing a franchisee volunteers freely
+
+**No map, and no polygon.** A drawn boundary looks precise and is not: it would have to be
+authoritative for exclusivity, which means a dispute two years out turns on whether a gym is inside
+a shape somebody dragged in a browser. Prose that a human approves is what the definitive agreement
+will carry anyway. If a map is added later it is a rendering of the approved text, not the record.
+
+**The approved territory is not the proposed one.** Step 2 stores what the franchisee asked for;
+`POST /admin/franchises/{id}/approval` stores what we granted, as a separate field. They are usually
+the same and must stay separately representable, because the case that matters is the one where we
+approve three suburbs of five, and a record that overwrote the request would lose the fact that
+anything was cut.
+
+### Step 3 — KYC and documents
+
+Uploads, and the metadata that says what each one is. See §9 for the storage rules, which are the
+substance of this step.
+
+| Document | Required |
+|---|---|
+| PAN card | yes |
+| Entity proof — incorporation certificate, LLP agreement, GST certificate, or partnership deed | yes, except `unregistered` |
+| Address proof for the registered address | yes |
+| Signatory photo ID | yes |
+| Net worth or bank statement evidence | optional, and asked for as optional on purpose |
+
+The last row is the `background` field's argument from `shared/validation/franchise.ts`, one step
+further along: financial evidence is the field a serious applicant supplies and a hesitant one
+abandons the form over. Making it optional here and asking for it by hand during evaluation loses
+nothing, because evaluation is a conversation regardless.
+
+### Step 4 — Approval
+
+Ours. Read-only for the franchisee, and the model is the gym flow's step 6: **no commit route, and
+it must not get one.** The server completes it on read from an `APPROVAL` item, the way
+`withInstallationComplete` completes step 6 from a machine's `installationDate` (backend design §5).
+
+Three outcomes, not one:
+
+| Outcome | What the franchisee sees | Where the flow goes |
+|---|---|---|
+| `approved` | the tier, the granted territory, the machine allocation | step 5 |
+| `on_hold` | what we still need, and who is in touch | stays on step 4 |
+| `declined` | that the application was not taken forward, and nothing else | terminal |
+
+`declined` is the outcome the gym flow cannot express and the one worth designing for. It is
+terminal: the handle stops authorising the wizard and the screen carries no retry, because "apply
+again" is a commercial conversation and a button that restarts a rejected application is a promise
+we did not make. It must not, however, look like an error — a `declined` franchisee reading
+"something went wrong" will email support, and the answer will be worse coming from support than
+from the screen.
+
+**What the decline screen does not say is why.** The reason is recorded on the `APPROVAL` item for us
+and is not sent to the client. A generated sentence explaining a commercial judgment is the kind of
+text that gets quoted back, and territory availability is often the real reason and is not ours to
+publish.
+
+### Step 5 — Your franchise
+
+The commercials, read-only, acknowledged by continuing — the gym flow's step 2 exactly, including
+that continuing *is* the evidence they were shown.
+
+Everything on it reads from that franchise's own terms record, never from
+`shared/franchise/program.ts`. This is gym doc's `OnboardingTerms` argument transplanted, and it
+matters more here: the program document leaves the City Franchise's capital recovery threshold and
+payment schedule to the definitive agreement (§21, §6), so a page that rendered the published figures
+would show a Territory number to a City franchisee. `program.ts` supplies the **defaults** a new
+franchise record starts from, the way `shared/partnership/summary.ts` does for `gym_terms`.
+
+What it shows: investment, machine allocation, the payment schedule, the capital recovery threshold
+and what counts toward it, the protein split before and after recovery, the advertising split, and
+the one paragraph the program document's §17 and §18 exist to make unmissable — that advertising
+income does not reduce the recovery balance. `recoveryExample()` already computes that illustration
+and is already tested; reuse it rather than restating the arithmetic.
+
+### Step 6 — Operations readiness
+
+§24, §27 and §28 of the program document make a specific set of things the franchisee's obligation,
+and the term sheet is going to reference them. So they get collected before it is issued rather than
+discovered after.
+
+- `warehouseAddress`, `warehouseAreaSqft`, `hasTemperatureControl`
+- `operationsContactName`, `operationsContactPhone` — the person who actually refills machines,
+  which is frequently not the signatory
+- `deploymentPlan` — how they intend to place their allocation, and by when
+- `logisticsArrangement` — own vehicle, contracted, or undecided
+
+**"Undecided" is an allowed answer and is not a blocker.** A franchisee who has not contracted
+logistics before signing is normal; one who cannot say where the protein will be stored is a §24
+problem. So the warehouse fields are required and the logistics field is not.
+
+### Step 7 — Review and sign
+
+The term sheet on screen, then off to Digio and back. §5 is the document and §6 is the mechanism.
+
+### Step 8 — First instalment
+
+Bank details, a payment reference, a UTR box, and a wait. §7.
+
+### Step 9 — You're set up
+
+The portal password, the signed term sheet, and what happens next — the gym flow's step 5, with one
+difference worth stating: **the "what happens next" list here runs for months, not a fortnight.** OEM
+procurement, machine readiness, the second instalment, delivery, deployment. Gym doc §33's rule
+applies with more force at this length: a schedule says *when*, and a list of five things with no
+dates against them is where a franchisee's expectation of the next quarter gets set wrong.
+
+The second instalment is **not a step in this flow** and the record is built to carry it anyway. §7.6.
+
+---
+
+## 4. State, and the two freeze points
+
+`FranchiseOnboardingState` mirrors `OnboardingState` field for field where it can. The parts that
+differ:
+
+```
+type FranchiseOnboardingStep = 1|2|3|4|5|6|7|8|9;
+
+type FranchiseOnboardingStatus =
+  | "invited" | "opened"
+  | "details_submitted" | "territory_submitted" | "kyc_submitted"
+  | "under_review"
+  | "approved" | "on_hold" | "declined"
+  | "franchise_ack" | "operations_submitted"
+  | "termsheet_viewed" | "esign_requested" | "signed"
+  | "payment_claimed" | "payment_verified"
+  | "active";
+```
+
+The ladder is forward-only, per backend design §3, with one deliberate exception: `on_hold` and
+`under_review` are mutually reachable in both directions, because a hold is a state we put an
+application into and take it out of. That is the only cycle, it is admin-only, and it is written down
+here so nobody generalises the ladder into something that permits a client-driven one.
+
+`declined` is terminal and absorbing. Nothing writes past it.
+
+**`currentStep` is derived, never incremented.** The lowest step not in `completedSteps`, exactly as
+the gym flow does it, and for the same reason: `+1` breaks the moment somebody re-submits an earlier
+step. Steps 4 and 8 are the two that are not simply "franchisee submitted", and both are handled by
+completing them on read (§7.4) rather than by making the derivation clever.
+
+### Two freeze points, not one
+
+The gym flow has one: `signedAt` freezes steps 1 and 2. This flow has two, and conflating them is
+the mistake that is easy to make.
+
+| Freeze | Set by | Freezes | Why |
+|---|---|---|---|
+| `approvedAt` | admin approval | step 2, the territory | Exclusivity attaches to the approved territory. A franchisee who could edit it after approval could silently widen what we granted |
+| `signedAt` | the Digio webhook | steps 1, 2, 3, 5, 6 | Every one of them supplies values rendered into the signed term sheet |
+
+Both enforced server-side. The UI mirrors the window so a field is read-only exactly when the server
+would refuse it — gym doc §4's `DETAILS_EDITABLE_FROM` reasoning, which exists because offering an
+edit that round-trips as a refusal is worse than not offering it.
+
+Step 1 stays editable until step 3 is submitted, on the same argument as the gym flow: the legal
+entity name is the field most likely to be wrong and the most expensive to fix once a document is
+hashed against it.
+
+---
+
+## 5. The document: a term sheet, and why not the agreement
+
+The program document says of itself that it does not constitute a franchise agreement (§56) and
+defers roughly a dozen substantive terms to the definitive agreement — the City recovery threshold,
+the contractual term, governing law and jurisdiction, the arbitration provisions, the performance
+SLAs, the deployment deadlines, the treatment of death and insolvency. Those are not gaps a renderer
+can fill.
+
+So the wizard issues and executes a **Franchise Term Sheet**, carrying only what the program document
+actually fixes, and the definitive agreement is a **second signing event on the same machinery**.
+That is not a workaround; it is precisely what gym doc §6 already established for Schedule A: *"make
+the signature component and the token flow generic enough to serve all three moments. Building it
+specific to the agreement means writing it twice."* This is the fourth moment, and the instruction
+was written for it.
+
+### What the term sheet binds
+
+Tier and investment. The approved territory, verbatim from the approval record. Machine allocation,
+and that the machines remain MuscleBox Pro property (§8 — the single most important thing for a
+franchisee to have signed, because it is the one most likely to be misremembered). The payment
+schedule. The capital recovery model and its threshold. The protein and advertising splits, before
+and after recovery. Product and pricing control. The operational responsibilities from §28,
+including that they cannot be delegated to the gym. Confidentiality. That the definitive agreement
+follows and prevails.
+
+### What it says about itself
+
+That it is binding as to the commercial terms it states, that it is subject to execution of the
+definitive franchise agreement, and that in any conflict the definitive agreement prevails. The
+program document's §56 already says the last part; the term sheet has to say it in the first person.
+
+### Reuse, and the one change to shared code
+
+`shared/agreement/types.ts` and `render.ts` are reused **unchanged in behaviour**: the `Block` model,
+the `{{token}}` substitution, the `todo` block with its `blocks-send` severity, `renderPlainText`,
+`sha256Hex`. That is a tested renderer with a pinned golden vector, and rebuilding it for a second
+document is how the two renderings drift.
+
+One change is needed. `lookup()` and `renderText()` are typed against `AgreementFields`, which is
+gym-shaped (`machineModel`, `securityDeposit`, `installationDate`). The term sheet's fields are a
+different set. Make the renderer generic over its field record:
+
+```ts
+export function renderText<F extends object>(
+  template: string, fields: Partial<F>, options?: RenderOptions
+): string
+```
+
+`lookup` already walks dotted paths against an unknown object and already returns only strings, so
+this is a signature change, not a logic change. The gym golden vector test is what makes it safe —
+if the refactor alters a single byte of v2.3's rendering, `agreement-v2-3.test.ts` fails on the
+pinned hash. Do the refactor first, watch that test stay green, then add the second document.
+
+New files, mirroring the gym set:
+
+| File | What it is |
+|---|---|
+| `shared/franchise/termsheet/types.ts` | `FranchiseTermSheetFields` |
+| `shared/franchise/termsheet/v1.ts` | the document, as `Agreement` data |
+| `shared/franchise/termsheet/fields.ts` | `FranchiseOnboardingState` → fields |
+| `shared/franchise/termsheet/goldenVector.ts` | fixed fields → pinned hash and length |
+
+**Rule 1 from `shared/agreement/types.ts` applies from the first commit: never edit a version that
+has signatures against it.** Add a version.
+
+---
+
+## 6. Signing through Digio
+
+This is the section with the most new machinery in it, and the reason is that a provider-affixed
+signature inverts the gym flow's central invariant.
+
+### 6.1 What the gym flow's hash discipline was protecting, and what changes
+
+The gym rule is: the server renders the plain text, hashes it, stores the hash at issuance, re-renders
+at signing and compares. The client never computes the hash that gets stored (`shared/onboarding/
+types.ts` on `IssuedAgreement` is emphatic about this, and gym doc §21 and §22 record two bugs that
+came from getting it wrong).
+
+Under Digio, the artifact that carries legal weight is a **PDF**, and the last version of it is
+produced by Digio, not by us. The plain-text hash no longer answers "what was signed". It still
+answers something worth keeping, so we end up with three hashes, each with one job:
+
+| Hash | Computed by | Answers |
+|---|---|---|
+| `contentHash` — SHA-256 of the plain-text rendering | us, at issuance | is the document on screen the document on the record? Catches a re-priced term sheet between reader load and sign, exactly as it does for gyms |
+| `pdfHash` — SHA-256 of the PDF bytes we hand Digio | us, at issuance | is the file Digio signed the file we generated? |
+| `signedPdfHash` — SHA-256 of the PDF Digio returns | us, on webhook | what exactly is in our custody as the executed document? |
+
+All three are stored. `pdfHash` is the one that makes the other two meaningful: without it there is
+no link between the text we rendered and the file that came back signed, and the chain from "these
+commercials" to "this executed PDF" has a gap in the middle where the interesting failure lives.
+
+### 6.2 We now need a PDF renderer, and we did not before
+
+Gym doc's §8 in the backend design lists "agreement PDF generation" as out of scope. It is in scope
+here — Digio signs a file, so a file must exist.
+
+Recommendation: **`pdf-lib`, in the Lambda, from the `Agreement` block tree.** Pure JavaScript, no
+native binaries, no headless browser, and it bundles into a Lambda without a layer. The alternative
+worth naming and rejecting is HTML-to-PDF via headless Chromium: better typography, and it puts a
+120 MB browser and a rendering engine whose output changes between versions inside the path of a
+document we are about to hash. A hash over bytes that shift when a font substitutes differently is a
+hash that stops verifying for reasons nobody can reproduce.
+
+One renderer, in the backend, per the same one-renderer-not-two rule as §2.9 of the backend design.
+The React reader in step 7 walks the same `Agreement` tree for display and does not generate a PDF.
+
+**The PDF must be deterministic.** No timestamp in the document metadata, no creation date, no
+producer string that carries a library version. `pdf-lib` writes a `CreationDate` by default; set it
+explicitly to the term sheet's `effectiveDate` and set `Producer` to a fixed string. Otherwise
+`pdfHash` changes every time the same document is generated and answers nothing. This is the single
+easiest thing on this list to get wrong and the hardest to notice, because everything works — the
+hashes just stop matching each other a week later.
+
+### 6.3 The provider seam
+
+`services/onboarding/src/providers/digio.ts`, over plain `fetch`, no SDK — the pattern
+`razorpayLinks.ts` already sets.
+
+```
+interface EsignProvider {
+  createRequest(input: { pdf: Uint8Array; signer: SignerIdentity; redirectUrl: string })
+    : Promise<{ providerDocumentId: string; signingUrl: string }>;
+  getStatus(providerDocumentId: string): Promise<EsignStatus>;
+  download(providerDocumentId: string): Promise<Uint8Array>;
+  parseWebhook(rawBody: string, headers: Headers): EsignEvent;
+}
+```
+
+An interface with one implementation, for the reason `OnboardingApi` was one before the backend
+existed: it is what makes a mock possible, and the mock is what lets the nine-step wizard be walked
+end to end by anyone without Digio credentials. It is also the thing that makes swapping to
+Leegality a one-file change if the stamping coverage turns out to matter.
+
+**The Digio specifics below are unverified.** `documentation.digio.in` renders client-side and did
+not yield to a fetch on 2026-08-31, so the shapes here are from prior knowledge and must be confirmed
+against Digio's sandbox before implementation. What is *not* uncertain is the set of capabilities we
+need, which is the list above.
+
+| Capability | Expected shape |
+|---|---|
+| Auth | HTTP Basic, `client_id:client_secret` |
+| Upload for signing | `POST /v2/client/document/upload`, JSON with base64 file content and a signers array |
+| Status | `GET /v2/client/document/{document_id}` |
+| Download signed | `GET /v2/client/document/download?document_id=…` |
+| Signing handoff | a gateway URL the signer is redirected to |
+| Sign types | `aadhaar` (Aadhaar eSign, OTP), `electronic`, DSC |
+| Webhook | configured in the Digio dashboard, verified by a shared secret |
+
+Confirm each against the sandbox and correct this table in place. A note in the provider module
+saying which fields were verified and on what date is worth more than this table is.
+
+### 6.4 The webhook is the only thing that may mark it signed
+
+Verbatim the deposit rule from gym doc §5, and it transfers without amendment: *"polls our own
+record, never a client callback."*
+
+- `POST /webhook/digio/esign` verifies the shared secret over the raw body before parsing anything
+- The write is **conditional on `signedAt is null`**, so a redelivered webhook cannot produce a
+  second signature record. Digio, like every webhook sender, will redeliver
+- Idempotency marker keyed on the provider's event id, the way `RZPPAY#<paymentId>` works
+- The return redirect from Digio sets **nothing**. It lands on `/franchise/esign-return`, which
+  re-reads our own record and shows what our record says
+
+`client/src/lib/depositReturn.ts` and gym doc §25 and §26 are the pattern for the return trip,
+including the part that took two attempts to get right for deposits: the tab comes back, polls, and
+shows an outcome without a button in between. The two-cadence poll — fast for a few seconds, slow as
+a safety net — is already written and already reasoned about. Reuse it.
+
+**One thing not to copy from the deposit flow:** the deposit link is forwardable by design, because
+the signatory frequently is not the payer. A signing link is the opposite. It authorises an Aadhaar
+eSign in a named person's identity, and it must not be treated as forwardable — the URL is generated
+per request, short-lived, and the screen must not invite anyone to send it on.
+
+### 6.5 Identity, and what we are entitled to store
+
+Aadhaar eSign binds a signature to an Aadhaar identity. We pass Digio the signer's name, email and
+PAN; Digio runs the OTP against UIDAI.
+
+**Store the last four digits of the Aadhaar number and nothing more.** Not the full number, not the
+XML, not the e-KYC response. The full number is a regulated identifier with storage obligations we
+have no reason to take on, the last four is enough to answer "which identity did we ask to sign", and
+Digio holds the audit trail that is the actual evidence. The audit trail is also downloadable and
+should be stored alongside the signed PDF, in the same bucket, under the same access rules (§9).
+
+`signatoryAadhaarLast4` in step 1 is therefore collected for reconciliation, not for verification. It
+never leaves our record.
+
+### 6.6 Stamp duty, named rather than assumed
+
+A definitive franchise agreement in India attracts state stamp duty, and Digio can e-stamp. A term
+sheet's position depends on the state and on how binding its language is, and it is a question for
+counsel, not for this document.
+
+What this section fixes is that **the seam carries it**: `createRequest` takes an optional stamp
+series and value, so turning stamping on is a config change and a provider call, not a redesign. And
+the note for whoever executes the definitive agreement: stamping is almost certainly required there,
+it must happen **before** signing, and the stamp becomes part of the PDF and therefore part of
+`pdfHash`.
+
+### 6.7 What does not change: the CSP
+
+Digio is a **redirect**, not an embedded widget. `next.config.mjs` sets `frame-src 'none'` site-wide,
+and gym doc §5's second reason for choosing Payment Links over an in-page checkout applies unaltered:
+a redirect needs no CSP change at all, and `form-action 'self'` does not restrict the trip back.
+
+Digio also ships a JS SDK that renders in an iframe or popup. **Do not use it.** It would require
+`frame-src` and `script-src` entries site-wide, on every page, for one screen in one flow — which is
+the exact trade gym doc §5 already refused once.
+
+---
+
+## 7. The first instalment
+
+### 7.1 No gateway on this path
+
+₹12,50,000 through Razorpay is roughly ₹25,000 in fees per instalment, twice per Territory franchise,
+and Payment Links are not built for that ticket — per-link caps need raising by hand and the
+franchisee's own bank will likely intervene. Franchise investments are paid by RTGS. So this flow
+shows bank details and verifies a transfer.
+
+The consequence worth stating plainly: **no code on this path moves money, and none of it can.** No
+gateway credentials, no webhook that can mark a payment received, no refund capability. That is the
+same property backend design §11.4 claims for offboarding, and it is the strongest thing that can be
+said about a screen handling ₹12.5 lakh.
+
+### 7.2 The payment reference is the whole mechanism
+
+The screen shows our account details and a **payment reference** derived deterministically from the
+franchise id — something like `MBPF-<8 chars>` — with the instruction to put it in the transfer
+narration.
+
+That reference is what turns reconciliation from a judgment into a lookup. Without it, a bank
+statement line reading `RTGS 1250000 SHARMA ENTERPRISES` has to be matched by name against a list of
+franchisees, and the failure mode is quiet: two similarly-named applicants, and a payment credited to
+the wrong franchise. Derived rather than random so it can be recomputed from the id and never needs
+its own row.
+
+### 7.3 What the franchisee submits, and what we record
+
+The franchisee submits a **claim**: UTR, amount, date, and optionally a screenshot of the transfer
+(§9's upload path). That claim is stored as a claim. It advances `status` to `payment_claimed` and it
+does **not** complete step 8.
+
+An admin verifies against the bank statement and records `receivedPaise` — **the amount in our
+account, not the amount the franchisee typed.** This is `RZPPAY#`'s discipline from backend design §5,
+where the webhook marker is the only record of what the gateway actually captured, applied to a human
+verifier.
+
+`expectedPaise` and `receivedPaise` are separate fields because under- and over-payment must be
+representable. A franchisee whose bank deducted charges sends ₹12,49,500, and a record that stored
+one number would either reject a real payment or record a full one. Whether a shortfall blocks
+progression is a commercial call per franchise; the record's job is to make the shortfall visible.
+
+Rejection is an outcome too — a UTR that does not exist, or a transfer that never arrived — and it
+returns the franchisee to the claim form with what we could not find. It does not move the status
+backwards; `payment_claimed` stays and a `verification` sub-state carries the refusal, because a
+ladder that can go backwards is a ladder a bug can walk down.
+
+### 7.4 Two-party steps, as a rule
+
+Step 8 is the flow's only step where both parties act, and it is worth stating as a general rule
+because step 4 is a degenerate case of it and a future procurement step will be another.
+
+> A step is complete when the **server's own record** says so. A franchisee's submission may set a
+> status and may store a claim. It may never complete a step whose completion is our assertion.
+
+Concretely: `completedSteps` gains 8 when a `PAYMENT#1` item has `verifiedAt`, computed on read the
+way `withInstallationComplete` computes step 6. There is no commit route that completes step 8, in
+the same way there is no commit route for step 4. If someone later adds one, this whole section stops
+being true.
+
+### 7.5 What the franchisee sees while waiting
+
+Bank verification is not instant and is not automated, so the screen has to be honest about a wait
+measured in working hours rather than seconds. It says the claim was received, quotes the UTR back,
+says what happens next and roughly when, and offers no refresh button that implies a poll would help.
+Gym doc §28's pending-card trimming is the precedent: a card about waiting should not be busy.
+
+### 7.6 The second instalment is out of scope, and the record is not
+
+The ₹12,50,000 due at OEM machine readiness is weeks or months after signing, and it is not a step in
+this flow. But the storage is `PAYMENT#<n>` from the first commit, not `PAYMENT#1`, and
+`paymentSchedule` in the terms record already carries both instalments as percentages
+(`shared/franchise/program.ts` stores them that way so a change to `investmentInr` cannot leave a
+stale instalment behind).
+
+So the second instalment, when it is built, is a step and a screen — not a migration. Same for
+procurement tracking. Writing `PAYMENT#1` today would guarantee a migration; the cost of the `<n>` is
+nothing.
+
+---
+
+## 8. Backend surface
+
+### 8.1 One stack, one new table
+
+**Extend `services/onboarding`. Do not create a fourth stack.**
+
+This trades against this repo's rule that one stack per service is deliberate, so here is the
+argument. That rule's stated purpose, quoted in backend design §1, is that *"a mistake in an admin
+login handler cannot take a vending machine offline"* — it separates **payments** from everything
+else, and it still does. Franchise onboarding shares the admin identity store, the admin session
+secret, the session and cookie modules, `lib/route.ts`, `providers/ses.ts` and the whole `auth/`
+directory with gym onboarding. A separate stack would need either its own admin table, meaning two
+places to create an admin, or a shared session secret across stacks, which is the coupling the rule
+exists to prevent. Splitting buys nothing and costs a shared secret.
+
+**A separate table, though.** `mbp-franchises-<env>`, composite `pk`/`sk`, matching the existing
+single-table design. A franchise bug cannot corrupt a gym's onboarding row, PITR and retention are
+set independently, and the GSI design does not have to accommodate two unrelated access patterns on
+one partition space.
+
+Separate SSM SecureStrings for the Digio credentials, per the §7.1 bounding-rotation argument:
+
+```
+/mbp/<env>/onboarding/digio/client-id
+/mbp/<env>/onboarding/digio/client-secret
+/mbp/<env>/onboarding/digio/webhook-secret
+```
+
+Plus a cold-start assertion that a sandbox `client_id` is not in prod — the same check
+`lib/runtime.ts` already makes on the Razorpay key prefix, and for the same reason: a sandbox
+credential in prod signs nothing legally and says nothing about it.
+
+### 8.2 Items
+
+| pk | sk | Holds |
+|---|---|---|
+| `FRANCHISE#<id>` | `PROFILE` | legal entity, entity type, PAN, GSTIN, CIN/LLPIN, `slug` (stored, not derived), addresses, signatory, notices, status |
+| `FRANCHISE#<id>` | `TERMS` | tier, `investmentPaise`, machine allocation, payment schedule, recovery threshold paise, protein and advertising splits |
+| `FRANCHISE#<id>` | `ONBOARDING` | derived step, `completedSteps`, `drafts`, status, one timestamp per transition, first-open IP and UA |
+| `FRANCHISE#<id>` | `TERRITORY` | proposed *and* approved, separately (§3) |
+| `FRANCHISE#<id>` | `APPROVAL` | decision, `approvedAt`, internal reason, who decided |
+| `FRANCHISE#<id>` | `OPERATIONS` | warehouse, contacts, deployment plan |
+| `FRANCHISE#<id>` | `DOCUMENT#<docId>` | doc type, S3 key, size, content type, `uploadedAt`, `sha256` |
+| `FRANCHISE#<id>` | `TERMSHEET#<version>` | field values, `effectiveDate`, `contentHash`, `length`, `pdfHash`, S3 key, pinned/viewed timestamps |
+| `FRANCHISE#<id>` | `ESIGN#<providerDocumentId>` | provider, sign type, requested/completed timestamps, signer identity, `signedPdfHash`, signed-PDF and audit-trail S3 keys |
+| `FRANCHISE#<id>` | `PAYMENT#<n>` | `expectedPaise`, the claim (UTR, amount, date), `receivedPaise`, `verifiedAt`, who verified, refusal |
+| `FRANCHISEUSER#<emailLower>` | `PROFILE` | scrypt hash, `franchiseId`, role, status |
+| `TOKEN#<sha256(handle)>` | `META` | keyed on the **hash**, never the handle. `franchiseId`, `typ`, `invitedByName`, revocation markers |
+| `DIGIOEVENT#<eventId>` | `META` | webhook idempotency marker |
+| `FRANCHISEAPP#<applicationId>` | `META` | the existing public applications, plus the status the queue in §8.4 needs |
+
+GSIs: a list index for the admin table (constant partition, `createdAt` sort — with the same
+explicitly-stated scale bound as `gsi4-gymlist`, and franchise counts are lower still), a sparse
+review-queue index carrying only applications and franchises awaiting a decision, and a sparse
+payment-verification-queue index whose keys are **removed** on verify so the index holds outstanding
+work rather than lifetime volume. `REMOVE`, never a stored `null` — writing null to an indexed key
+attribute fails the whole write.
+
+### 8.3 The wizard's routes
+
+Handle-authenticated. `auth/require.ts` gains `requireFranchiseHandle`, and the reason it is a new
+wrapper rather than a parameter on the existing one is backend design §6's: a handler that forgets
+its authorisation check should not compile, and it does not compile because the wrapper is what
+supplies the typed `franchiseId` the body needs. A `requireHandle` that could return either kind of
+id would compile in both directions.
+
+| Step | Route | Note |
+|---|---|---|
+| all | `GET /franchise/onboarding` | the whole state in one response. Records first open |
+| all | `PUT /franchise/onboarding/draft` | never touches `completedSteps` or `status` |
+| 1 | `POST /franchise/onboarding/details` | refused once step 3 is submitted |
+| 2 | `POST /franchise/onboarding/territory` | refused once approved |
+| 3 | `POST /franchise/onboarding/documents/upload-url` | presigned PUT, key chosen by us (§9) |
+| 3 | `POST /franchise/onboarding/kyc` | commits the metadata once uploads are in |
+| 4 | — | **no route.** Completed on read from `APPROVAL` |
+| 5 | `POST /franchise/onboarding/ack` | |
+| 6 | `POST /franchise/onboarding/operations` | |
+| 7a | `POST /franchise/onboarding/termsheet/view` | pins the version, renders text and PDF, stores `contentHash`, `length`, `pdfHash` |
+| 7b | `POST /franchise/onboarding/esign` | creates the Digio request, returns a signing URL. Idempotent — returns the live request if one exists |
+| 7b | `GET /franchise/onboarding/esign/status` | reads **our** record |
+| 8 | `GET /franchise/onboarding/payment` | bank details, reference, expected amount, state |
+| 8 | `POST /franchise/onboarding/payment/claim` | the UTR claim. Does not complete the step |
+| 9 | `POST /franchise/account` | creates the login, sets the session cookie |
+
+### 8.4 Admin routes
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/franchise-applications` | **the missing queue** (§2). Newest first, filterable by status |
+| `PATCH /admin/franchise-applications/{id}` | triage: mark reviewed, rejected, or converted |
+| `POST /admin/franchises` | create from an application and mint the onboarding link |
+| `GET /admin/franchises` | the list |
+| `GET /admin/franchises/{id}` | one in full: profile, terms, territory, KYC, term sheet, e-sign, payments |
+| `POST` / `DELETE /admin/franchises/{id}/invite` | resend, superseding the previous handle; and void |
+| `PATCH /admin/franchises/{id}/terms` | **refused once signed** |
+| `POST /admin/franchises/{id}/approval` | approve, hold or decline, and record the **granted** territory |
+| `POST /admin/franchises/{id}/payments/{n}/verify` | records `receivedPaise`. The write that completes step 8 |
+| `GET /admin/franchises/{id}/documents/{docId}/url` | short-lived presigned GET (§9) |
+| `POST /admin/franchises/{id}/activate` | `payment_verified` → `active`. The only route that ends onboarding |
+
+`onboardingBaseUrl` builds the invite URL, and the reason it is config rather than a request field is
+verbatim backend design §7's: a base URL from an admin's request body lets a compromised admin client
+mint a real handle pointing at a host we do not own.
+
+### 8.5 Modules
+
+```
+services/onboarding/src/
+  domain/
+    franchise/
+      termsheet/        the Agreement tree, renderer port, fields, golden vector (§5)
+      status.ts         the forward-only ladder, the on_hold cycle, derived step, reachability
+      details.ts        PAN shape + entity-type character, CIN/LLPIN, addresses → fieldErrors
+      territory.ts      what a territory submission must contain
+      approval.ts       the three outcomes, and what each permits next
+      payment.ts        the claim, the verification, expected vs received
+      documents.ts      allowed types, size bounds, key construction
+      pdf.ts            Agreement tree → deterministic PDF bytes (§6.2)
+  providers/
+    digio.ts            EsignProvider over fetch. One implementation, mockable (§6.3)
+  repo/
+    franchises.ts franchiseOnboarding.ts franchiseTermsheets.ts franchiseEsign.ts
+    franchisePayments.ts franchiseDocuments.ts franchiseUsers.ts
+  handlers/             one Lambda per route
+```
+
+`domain/` stays pure and takes `now` as a parameter. Every guard here is time-dependent — handle TTL,
+signing-request expiry, session expiry — and a test belongs on the boundary rather than sleeping
+through it.
+
+Five properties get their own tests because these are the ones that fail silently:
+
+1. the **term sheet golden vector** — fixed fields → pinned `contentHash` and `length`;
+2. **the PDF is byte-identical across two generations** from the same fields (§6.2);
+3. a franchise handle is refused by every gym verifier, and the reverse;
+4. `PUT /franchise/onboarding/draft` cannot advance `completedSteps` or `status`;
+5. neither `POST …/payment/claim` nor any franchisee route can complete step 4 or step 8.
+
+---
+
+## 9. Documents and the bucket
+
+New, and there is precedent in the stack: `InvestorAssetsBucket` is already there, private, blocked
+from public access, SSE, read by exactly one Lambda for exactly one key. This bucket is the opposite
+direction of traffic and needs stricter rules.
+
+`mbp-franchise-docs-<env>`: block all public access, SSE, **versioning on**, `RemovalPolicy.RETAIN`
+in prod, no lifecycle expiry. Key shape `franchise/<franchiseId>/<docType>/<uuid>.<ext>`.
+
+**The key is ours, never the client's.** `POST …/documents/upload-url` derives the whole key from the
+authenticated `franchiseId` and a server-generated uuid. A client-supplied key or filename component
+is a path-traversal write into another franchise's prefix.
+
+The presigned PUT is bounded on **content type and length** in the policy itself, not checked after
+the fact: PDF, JPEG or PNG, and a few megabytes. An unbounded presigned PUT is an open upload
+endpoint for as long as it is valid.
+
+### The franchisee can write but never read
+
+This is the rule worth arguing for. A franchisee uploads a PAN card and then sees "PAN card,
+uploaded, 2.1 MB, today" — a filename and a timestamp. **Not a link.**
+
+The onboarding handle travels in a URL. It is in browser history, in a forwarded email, in a
+screenshot, possibly in a support ticket. A handle that authorises reading someone's identity
+documents has a blast radius the same handle authorising a nine-step form does not. Nothing in the
+flow requires a franchisee to re-read what they uploaded; showing that it arrived is the whole
+requirement. Admin reads via `GET /admin/franchises/{id}/documents/{docId}/url`, behind the admin
+session, presigned for minutes.
+
+### Two gaps, named rather than left implied
+
+**No virus scanning.** Uploads are attacker-controlled files stored in our bucket and later opened on
+an admin's laptop. The fix is a scan on `ObjectCreated` with a quarantine prefix, and it is not in
+this plan. If it stays unbuilt, admins must be told the bucket is untrusted input.
+
+**No DPDP retention policy.** These are identity documents of identifiable people, and there is no
+answer here for how long we keep a declined applicant's PAN card. Versioning-on plus
+`RETAIN`-in-prod means the default is forever, which is the wrong default and is chosen here only
+because losing evidence during a live onboarding is the worse failure. It needs a real answer before
+prod, and the mechanism is a lifecycle rule keyed on the decline date.
+
+---
+
+## 10. Frontend
+
+Front end first, mock second, per gym doc §8. The contract is defined now and the wizard talks to
+nothing else.
+
+| File | What it is |
+|---|---|
+| `shared/franchise/onboarding/types.ts` | `FranchiseOnboardingState`, `FranchiseOnboardingApi`, error codes |
+| `shared/franchise/onboarding/steps.ts` | `STEP_META` with a `phase` per step, plus the phase list |
+| `shared/franchise/onboarding/schema.ts` | zod, shared by the forms, the mock and the handlers |
+| `shared/franchise/onboarding/mockApi.ts` | the state machine — the ladder, both freeze points, the approval gate, the payment claim, the conditional signing write |
+| `client/src/lib/franchiseOnboardingApi.ts` | **the single swap point.** Nothing under `pages/franchise/onboarding/` imports the mock |
+| `client/src/lib/httpFranchiseOnboardingApi.ts` | the live implementation, through `apiClient` |
+| `client/src/pages/franchise/onboarding/FranchiseOnboardingFlow.tsx` | the shell: chrome, rail, token-problem screens, step dispatch. No business logic |
+| `client/src/pages/franchise/onboarding/PhaseRail.tsx` | nine steps in four phases (§3) |
+| `client/src/pages/franchise/onboarding/steps/*` | one file per step |
+| `client/src/pages/franchise/onboarding/TermSheetReader.tsx` | walks the `Agreement` tree. Does **not** hash — gym doc §22 removed that from the browser |
+| `app/franchise/onboarding/[slug]/[handle]/page.tsx` | metadata-only shell, `noindex, nofollow` |
+| `app/franchise/esign-return/page.tsx` | the Digio return, registered as the redirect URL. Carries **no** handle |
+
+The mock needs the preview escape hatches the gym mock has, for the same reason
+`previewAdvanceInstallation` exists: two of the nine steps are completed by us, and a preview cannot
+wait for a human. `previewApprove`, `previewDecline`, `previewVerifyPayment` and
+`previewCompleteEsign` — each re-exported through `franchiseOnboardingApi.ts` rather than imported
+from the mock at the call site, and each behind `IS_MOCK_FRANCHISE_ONBOARDING`.
+
+Keep the mock's 300 ms of latency outside tests. Against an instant API the saving indicator never
+appears and the disabled-while-submitting states never get looked at, so both ship broken.
+
+### Routes and headers
+
+| Route | Note |
+|---|---|
+| `/franchise` | unchanged — public, indexed |
+| `/franchise/onboarding/[slug]/[handle]` | `noindex, nofollow`, `Referrer-Policy: no-referrer` |
+| `/franchise/esign-return` | `noindex, nofollow`. No handle in the URL |
+| `/franchise/login`, `/franchise/dashboard` | later, and out of this plan's scope |
+
+**Two things need editing that the gym flow got for free.**
+
+`public/robots.txt` disallows `/gym/`, `/onboarding/`, `/auth/` and `/admin/`. It does **not** cover
+`/franchise/onboarding/`, and `/franchise` is deliberately indexed, so the prefix cannot simply be
+disallowed. Add `Disallow: /franchise/onboarding/` and `Disallow: /franchise/esign-return`.
+
+`next.config.mjs` scopes `Referrer-Policy: no-referrer` to `/gym/onboarding/:path*` and
+`/gym/set-password/:path*`. Add the two franchise routes — and note the comment already in that file:
+these entries must stay **below** the global `strict-origin-when-cross-origin` block, because a later
+`Referrer-Policy` wins and moving them up silently disables them.
+
+Also confirm `app/sitemap.ts` does not enumerate anything under `/franchise/onboarding/`.
+
+---
+
+## 11. Build order
+
+Each phase leaves the repo green and shippable.
+
+**1. Housekeeping.** Rename or delete `docs/FranchiseOnboardingPlan.md` and repoint
+`shared/franchise/program.ts`'s section references at the current program document (§2).
+
+**2. The renderer refactor.** Make `shared/agreement/render.ts` generic over its field record (§5).
+Nothing else changes. The gym golden vector staying green is the acceptance criterion.
+
+**3. The term sheet.** `shared/franchise/termsheet/*` with its own golden vector. Reviewable as a
+document by someone who is not a programmer, which is the point of the `Agreement` tree being data.
+Anything the program document defers gets a `todo` block with `blocks-send`, so an incomplete term
+sheet cannot be issued rather than being issued incomplete.
+
+**4. The contract and the mock.** `shared/franchise/onboarding/*`. The mock is the specification for
+phase 6 and should be tested like one — the gym mock has 31 tests and gym doc §4 calls them "really
+the spec for item 9".
+
+**5. The wizard.** Nine steps against the mock, walkable end to end in preview, with the e-sign step
+stubbed at the seam and the payment step showing the wait.
+
+**6. The admin queue.** `GET /admin/franchise-applications` and `POST /admin/franchises`. This is the
+first backend work and it is deliberately first: it unblocks minting a real invite, and it is the gap
+that already exists in production today (§2).
+
+**7. The backend wizard.** The table, `requireFranchiseHandle`, the read, the drafts, the commits,
+the ladder, both freeze points. Flip `franchiseOnboardingApi.ts` to live behind the same
+`NEXT_PUBLIC_MBP_API_MODE` flag the gym flow uses — and note gym doc §8's warning about which
+direction the default should point once the endpoints exist.
+
+**8. PDF generation.** `domain/franchise/pdf.ts`, with the determinism test (§6.2) written before the
+renderer.
+
+**9. Digio.** The provider module, `POST /franchise/onboarding/esign`, the webhook, the return trip.
+Against Digio's sandbox first, and correct §6.3's table with what the sandbox actually answers.
+
+**10. Documents.** The bucket, the presigned PUT, the admin presigned GET. Could move earlier;
+placed here because step 3 can be built against the mock without a bucket and the bucket brings the
+two gaps in §9 with it.
+
+**11. Payments.** The claim, the verification route, the admin queue for it.
+
+**12. Activation, and the franchise portal.** Out of scope here beyond `POST /admin/franchises/{id}/
+activate` and `POST /franchise/account`. The franchise dashboard — the program document's §22 list,
+including capital recovery progress — is its own piece of work and needs the settlement model that
+backend design §9.4 says does not have data yet.
+
+---
+
+## 12. Open questions
+
+Named rather than left implied, per gym doc §17.
+
+1. **Does the term sheet need stamping?** Counsel. §6.6 makes the seam carry it either way.
+2. **Does a shortfall on the first instalment block step 8?** §7.3 makes it visible and does not
+   decide it.
+3. **What is the term sheet's own validity period?** An offer with no expiry is an offer forever, and
+   territory availability moves.
+4. **Can a declined applicant reapply, and through what?** §3 makes the screen silent on it, which is
+   safe and is not an answer.
+5. **DPDP retention for KYC documents of declined applicants.** §9. Needed before prod.
+6. **Virus scanning on uploads.** §9. Currently absent.
+7. **Who signs on our side, and is that a second Digio signer or a pre-signed counterpart?** The gym
+   agreement's execution block prints our signatory as text. An e-signed document usually has both
+   parties as signers, which makes the flow two-sided and adds a state where the franchisee has
+   signed and we have not.
+8. **Second instalment and procurement tracking.** Deliberately out of scope; §7.6 keeps the record
+   shaped for it.

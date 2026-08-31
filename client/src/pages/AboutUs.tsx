@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { Target, Users, Zap, Shield, ArrowRight, Award, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { INVESTOR_MARKET_STATS } from "@shared/investor/market";
+import { COMPANY } from "@shared/company";
 
 const values = [
   {
@@ -83,13 +85,13 @@ export default function AboutUs() {
                     </span>
                   </div>
                   <p className="text-white font-bold text-base leading-tight">
-                    Recognised Startup of Blendbox Innovations LLP
+                    Recognised Startup of {COMPANY.legalName}
                   </p>
                   <p className="text-white/55 text-xs mt-0.5">
                     Certificate No: DIPP252770 &nbsp;·&nbsp; Food &amp; Beverages / Food Processing &nbsp;·&nbsp; Valid until Feb 2036
                   </p>
                   <p className="text-white/35 text-xs mt-1">
-                    Blendbox Innovations LLP is the registered legal entity behind MuscleBoxPro.
+                    {COMPANY.legalName} is the registered legal entity behind {COMPANY.brandName}.
                   </p>
                 </div>
               </div>
@@ -187,6 +189,71 @@ export default function AboutUs() {
           </div>
         </section>
 
+        {/* ── For investors ── */}
+        <section className="py-20 px-4 bg-white border-t border-gray-100">
+          <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="text-xs font-bold tracking-[0.25em] text-primary uppercase mb-3 block">
+                For investors
+              </span>
+              <h2
+                className="font-display font-black text-foreground uppercase mb-4"
+                style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)" }}
+              >
+                Back the company, not a machine
+              </h2>
+              <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                A gym hosts a MuscleBoxPro machine at no cost to itself, which is what makes
+                partners straightforward to sign. It also means the network grows as fast as
+                machines can be funded and deployed, not as fast as demand arrives.
+              </p>
+              <p className="text-gray-600 text-sm leading-relaxed mb-8">
+                The investor page sets out the market, the unit economics of a single machine
+                and the two revenue streams each one carries. {COMPANY.legalName} is the entity
+                behind it.
+              </p>
+              <Link href="/invest">
+                <Button
+                  size="lg"
+                  className="h-12 px-8 rounded-full font-bold bg-gradient-to-r from-accent to-primary text-white hover:opacity-90 border-0 cursor-pointer shadow-lg shadow-primary/25 transition-opacity"
+                >
+                  Request the pitch deck <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </Link>
+            </motion.div>
+
+            <motion.dl
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100 bg-gray-50"
+            >
+              {INVESTOR_MARKET_STATS.map((stat) => (
+                <div key={stat.label} className="flex items-center justify-between gap-5 px-6 sm:px-7 py-6">
+                  <dt className="min-w-0">
+                    <span className="block text-gray-800 font-semibold text-sm">{stat.label}</span>
+                    <span className="block text-gray-400 text-xs mt-0.5">{stat.note}</span>
+                  </dt>
+                  <dd
+                    className="font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary leading-none flex-shrink-0"
+                    style={{ fontSize: "clamp(1.5rem, 2.4vw, 2rem)" }}
+                  >
+                    {stat.value}
+                  </dd>
+                </div>
+              ))}
+            </motion.dl>
+
+          </div>
+        </section>
+
         {/* ── CTA ── */}
         <section className="py-20 px-4 bg-gradient-to-r from-accent to-primary">
           <motion.div
@@ -213,6 +280,16 @@ export default function AboutUs() {
                 Request a Demo <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
+            <p className="text-white/70 text-xs leading-relaxed mt-6">
+              Looking to invest rather than host a machine?{" "}
+              <Link
+                href="/invest"
+                className="text-white font-semibold underline underline-offset-2 hover:text-white/80 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              >
+                See the investor page
+              </Link>
+              .
+            </p>
           </motion.div>
         </section>
 
