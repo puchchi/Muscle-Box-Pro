@@ -16,10 +16,16 @@
 import * as z from "zod";
 
 import { GSTIN, PHONE, entityTypeSchema } from "../../onboarding/schema";
-import type { EntityType } from "../../onboarding/types";
+import { INDIA_PINCODE, districtsOf, isKnownState } from "../../geo/india";
 import { FRANCHISE_TIERS } from "../program";
 
-/** Five letters, four digits, one letter. The fourth letter is the entity class — see below. */
+/**
+ * Five letters, four digits, one letter.
+ *
+ * Format only. The fourth character is the holder's class, and this deliberately does not check
+ * it against the entity type: an applicant who has not incorporated anything yet signs on their
+ * own PAN, and refusing it would stop the applications this programme most wants.
+ */
 const PAN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 
 /** 21 characters: listing status, industry, state, year, ownership, registration number. */
@@ -35,28 +41,6 @@ const LLPIN = /^[A-Z]{3}-[0-9]{4}$/;
  * looks like a bank reference rather than a sentence.
  */
 const UTR = /^[A-Z0-9]{12,22}$/;
-
-/**
- * The fourth character of a PAN is the holder's class, and checking it against the entity type
- * catches the single most common paste error: a personal PAN entered for a company.
- *
- * Worth having because it is one field to fix here, and a term sheet naming the wrong taxpayer
- * after it has been hashed and signed is not (§3). LLPs are issued firm PANs, so `llp` and
- * `partnership` share `F`.
- */
-const PAN_CLASS: Record<EntityType, string> = {
-  proprietorship: "P",
-  partnership: "F",
-  llp: "F",
-  pvt_ltd: "C",
-  unregistered: "P",
-};
-
-const PAN_CLASS_LABEL: Record<string, string> = {
-  P: "an individual",
-  F: "a firm or LLP",
-  C: "a company",
-};
 
 const tierIdSchema = z.enum(
   FRANCHISE_TIERS.map((t) => t.id) as [string, ...string[]],
@@ -125,23 +109,9 @@ export const franchiseDetailsSchema = z
     noticesPhone: z.string().trim().regex(PHONE, "A valid phone number is required"),
   })
   .superRefine((value, ctx) => {
-    const expected = PAN_CLASS[value.entityType];
-    if (PAN.test(value.pan) && value.pan[3] !== expected) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["pan"],
-        message: `This PAN belongs to ${PAN_CLASS_LABEL[value.pan[3]] ?? "another kind of holder"}. For this entity type we need ${PAN_CLASS_LABEL[expected]}'s PAN.`,
-      });
-    }
-    // Asked for only where one exists, so refusing a blank is refusing to skip a question
-    // that was put to them. A company with no CIN is not a company.
-    if (value.entityType === "pvt_ltd" && value.cin === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["cin"],
-        message: "A company's CIN is required",
-      });
-    }
+    // The CIN is deliberately not required of a company: it is an identifier we can look up
+    // from the legal entity name, and an applicant who does not have the certificate to hand
+    // should not be stopped on step 1 over it. A number that is typed is still format-checked.
     if (value.entityType === "llp" && value.llpin === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -151,20 +121,102 @@ export const franchiseDetailsSchema = z
     }
   });
 
-/** Step 2. Free text on purpose — see `TerritoryProposal`. */
-export const territoryProposalSchema = z.object({
-  tier: tierIdSchema,
-  proposedTerritory: z
-    .string()
-    .trim()
-    .min(3, "Which city, district or region do you want to develop?"),
-  proposedBoundary: z
-    .string()
-    .trim()
-    .min(20, "Describe where the territory starts and stops: suburbs, pin codes, landmarks")
-    .max(2000),
-  existingRelationships: z.string().trim().max(2000),
-});
+/**
+ * Step 2. Districts rather than prose — see `TerritoryProposal`.
+ *
+ * The district names are checked against `shared/geo/india.ts` and the state has to be one we
+ * hold, because the picker is the only thing that writes them and a name it could not have
+ * produced is a value nothing downstream can render. That is a different judgement from the PAN
+ * above: there, refusing meant refusing a real applicant, and here it means refusing a payload the
+ * form cannot have sent.
+ */
+export const territoryProposalSchema = z
+  .object({
+    tier: tierIdSchema,
+    proposedState: z
+      .string()
+      .trim()
+      .min(2, "Choose the state or union territory")
+      .refine(isKnownState, "Choose a state or union territory from the list"),
+    proposedDistricts: z
+      .array(z.string().trim().min(2))
+      .min(1, "Choose at least one district")
+      // Enough for a franchisee taking most of a small state, and short of a payload that pastes
+      // the whole country in.
+      .max(60, "That is more districts than one franchise can be granted"),
+    proposedPincodes: z
+      .array(z.string().trim().regex(INDIA_PINCODE, "A pin code is six digits"))
+      .max(300, "That is too many pin codes to list. Describe the area in the box below instead"),
+    proposedBoundary: z.string().trim().max(2000),
+    existingRelationships: z.string().trim().max(2000),
+  })
+  .superRefine((value, ctx) => {
+    // A district from the wrong state is the one wrong selection the form can produce on its own:
+    // switching state has to clear the districts, and this is what notices if it ever stops doing
+    // that.
+    const withinState = new Set(districtsOf(value.proposedState));
+    const strays = value.proposedDistricts.filter((d) => !withinState.has(d));
+    if (strays.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposedDistricts"],
+        message: `Not in ${value.proposedState}: ${strays.join(", ")}`,
+      });
+    }
+  });
+
+/**
+ * The one-line version, for a list, a heading, or the admin's grant field to start from.
+ *
+ * Every district named rather than "3 districts", because the reader is deciding whether to grant
+ * them and a count is not a decision. Long selections get long, which a territory covering
+ * twelve districts should.
+ */
+export function franchiseTerritoryLabel(proposal: {
+  proposedState: string;
+  proposedDistricts: readonly string[];
+}): string {
+  const districts = proposal.proposedDistricts.filter((d) => d.trim() !== "");
+  if (districts.length === 0) return proposal.proposedState;
+  const named =
+    districts.length === 1
+      ? districts[0]
+      : `${districts.slice(0, -1).join(", ")} and ${districts[districts.length - 1]}`;
+  return `${named}, ${proposal.proposedState}`;
+}
+
+/**
+ * The proposal turned into the prose an admin's `grantedBoundary` field starts from.
+ *
+ * A starting point and nothing more. `territory.ts` in the backend refuses to supply a
+ * proposal-to-grant function on purpose, because the convenience version of that is the one that
+ * silently grants a city to somebody who asked for a state. This is the frontend's paste button: an
+ * admin still has to read it, and is expected to cut it.
+ *
+ * The pin codes go in as a sentence rather than a list under a heading, because this text is
+ * rendered into the term sheet and hashed, and a sentence is what the definitive agreement will
+ * carry.
+ */
+export function franchiseTerritoryGrantDraft(proposal: {
+  proposedState: string;
+  proposedDistricts: readonly string[];
+  proposedPincodes: readonly string[];
+  proposedBoundary: string;
+}): string {
+  const districts = proposal.proposedDistricts.filter((d) => d.trim() !== "");
+  if (districts.length === 0) return proposal.proposedBoundary.trim();
+
+  const noun = districts.length === 1 ? "district" : "districts";
+  const parts = [
+    `The ${noun} of ${franchiseTerritoryLabel(proposal)}.`,
+  ];
+  if (proposal.proposedPincodes.length > 0) {
+    parts.push(`Limited to the pin codes ${proposal.proposedPincodes.join(", ")}.`);
+  }
+  const notes = proposal.proposedBoundary.trim();
+  if (notes !== "") parts.push(notes);
+  return parts.join(" ");
+}
 
 /** Step 6. */
 export const operationsReadinessSchema = z.object({

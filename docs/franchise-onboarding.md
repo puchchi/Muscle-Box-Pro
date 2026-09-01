@@ -130,11 +130,12 @@ does not.
 | `signatoryPan`, `signatoryAadhaarLast4` | **new.** §6.5 — Digio's Aadhaar eSign binds a signature to an identity, and we need to know which identity we asked it to bind |
 | `noticesEmail`, `noticesPhone` | the notices block, same role as the gym agreement's §41 |
 
-PAN is validated for shape (`[A-Z]{5}[0-9]{4}[A-Z]`) and the fourth character is checked against the
-entity type — `P` for an individual, `C` for a company, `F` for a firm, `H`, `A`, `T`. That check is
-worth having because it catches the single most common paste error, a personal PAN entered for a
-company, at the point where it is one field to fix rather than after a term sheet has been issued
-naming the wrong taxpayer.
+PAN is validated for shape (`[A-Z]{5}[0-9]{4}[A-Z]`) and no further. The fourth character is the
+holder's category — `P` for an individual, `C` for a company, `F` for a firm — and it is deliberately
+**not** checked against `entityType`: plenty of applicants apply on their own PAN because the company
+they will trade through does not exist yet, and refusing that is refusing the application. `cin` is
+optional for the same reason. The signatory's PAN is still required to be a `P`, because a signatory
+is a person and Digio cannot bind a company's number to an Aadhaar identity.
 
 **Not collected: bank details.** The franchisee's payout account is a portal setting after
 activation, exactly as `GET /gym/payout-account` is for gyms, and there is nothing to pay out during
@@ -147,12 +148,29 @@ load-bearing: *"the exact territory will be mutually defined and documented befo
 becomes operational"*, and exclusivity attaches to whatever this ends up saying.
 
 - `tier` — prefilled from the application, changeable here, constrained to `FRANCHISE_TIERS`
-- `proposedTerritory` — free text, and deliberately so. `shared/validation/franchise.ts` already
-  makes this argument for `targetMarket`: a territory need not match any city list we hold, and the
-  applicant is the one who knows where the gyms are
-- `proposedBoundary` — a longer description: which suburbs, which pin codes, where it stops
+- `proposedState` — one of the 36 names in `shared/geo/india.ts`
+- `proposedDistricts` — at least one, all within `proposedState`. Changing the state clears them
+- `proposedPincodes` — optional, six digits each, for somebody who wants half a metro rather than
+  all of it. Shape only: India Post is the authority on whether a pin code exists, and validating
+  against the real directory would mean shipping 150,000 rows to a browser
+- `proposedBoundary` — optional prose, for whatever the two lists above could not say
 - `existingRelationships` — gyms they already have a relationship with, which is the single most
   useful input to a market evaluation and the one thing a franchisee volunteers freely
+
+**Districts, not prose.** This step used to require a paragraph describing where the territory
+started and stopped, with a 20-character floor, and that was the wrong question. An applicant who
+answers "Bangalore" has told us everything they usefully can; the rest is a contract clause an admin
+writes at approval. Districts are the unit because they are official, enumerable and do not overlap,
+so two franchises cannot be granted the same ground by accident, and pin codes are the next official
+unit down. Selections are stored as **names, not codes**, so a district renamed or split three years
+from now does not change what an existing record says was asked for.
+
+**The list is a convenience, not an authority.** Nothing contractual is derived from it, and a
+missing district is not a blocked application: `proposedBoundary` is still there for the applicant
+the list fails, and an admin writes the boundary that counts. `shared/geo/india.ts` has the full
+argument, including why the vocabulary is checked in rather than fetched from a places API — a term
+sheet's territory is covered by a signature hash, and "North Bangalore" is not a place with a
+boundary in anybody's dataset.
 
 **No map, and no polygon.** A drawn boundary looks precise and is not: it would have to be
 authoritative for exclusivity, which means a dispute two years out turns on whether a gym is inside
@@ -163,7 +181,10 @@ will carry anyway. If a map is added later it is a rendering of the approved tex
 `POST /admin/franchises/{id}/approval` stores what we granted, as a separate field. They are usually
 the same and must stay separately representable, because the case that matters is the one where we
 approve three suburbs of five, and a record that overwrote the request would lose the fact that
-anything was cut.
+anything was cut. The grant stays free prose on the admin side for the same reason the proposal
+stopped being prose: an admin is writing the clause, not filling in a form.
+`franchiseTerritoryGrantDraft` in `shared/franchise/onboarding/schema.ts` turns the districts into
+the sentence the approve form offers behind a copy button, which is a decision rather than a default.
 
 ### Step 3 — KYC and documents
 

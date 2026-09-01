@@ -28,6 +28,7 @@ import {
 } from "@shared/admin/franchiseWrites";
 import type { AdminFranchisePayment, AdminFranchiseView } from "@shared/admin/franchises";
 import { FRANCHISE_TIERS } from "@shared/franchise/program";
+import { franchiseTerritoryGrantDraft } from "@shared/franchise/onboarding/schema";
 import {
   decideFranchise,
   refuseFranchisePayment,
@@ -124,8 +125,36 @@ export function FranchiseDecisionSection({
       {territory ? (
         <Fields>
           <Field label="Tier proposed" value={franchiseTierLabel(territory.tier)} />
-          <Field label="Territory proposed" value={territory.proposedTerritory} />
-          <Field label="Boundary as they described it" value={territory.proposedBoundary} />
+          {territory.proposedDistricts.length > 0 ? (
+            <>
+              <Field label="State proposed" value={territory.proposedState} />
+              <Field
+                label={
+                  territory.proposedDistricts.length === 1
+                    ? "District proposed"
+                    : "Districts proposed"
+                }
+                value={territory.proposedDistricts.join(", ")}
+                testId="territory-districts"
+              />
+            </>
+          ) : (
+            <Field label="Territory proposed" value={territory.proposedTerritory} />
+          )}
+          {territory.proposedPincodes.length > 0 && (
+            <Field
+              label="Pin codes"
+              hint="They want part of a district, not all of it"
+              value={territory.proposedPincodes.join(", ")}
+              mono
+              testId="territory-pincodes"
+            />
+          )}
+          <Field
+            label="Notes on the area"
+            hint="Whatever the districts left unsaid"
+            value={territory.proposedBoundary}
+          />
           <Field label="Existing relationships" value={territory.existingRelationships} />
           <Field label="Proposed" value={formatIstDateTime(territory.submittedAt)} />
         </Fields>
@@ -268,7 +297,10 @@ function ApproveForm({
   function copyProposal() {
     if (!proposal) return;
     form.setValue("grantedTerritory", proposal.proposedTerritory, { shouldValidate: true });
-    form.setValue("grantedBoundary", proposal.proposedBoundary, { shouldValidate: true });
+    // The districts written out as the sentence a grant needs. Still theirs to edit before saving.
+    form.setValue("grantedBoundary", franchiseTerritoryGrantDraft(proposal), {
+      shouldValidate: true,
+    });
   }
 
   async function onSubmit(values: AdminFranchiseApproveForm) {

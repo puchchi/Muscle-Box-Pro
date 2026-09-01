@@ -3,6 +3,7 @@
 import { ArrowRight, CheckCircle2, Clock, MapPin, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { franchiseTerritoryLabel } from "@shared/franchise/onboarding/schema";
 import { formatIstDate } from "../../../gym/istDates";
 import type { FranchiseStepViewProps } from "../types";
 
@@ -32,7 +33,7 @@ import type { FranchiseStepViewProps } from "../types";
  */
 export default function StepApproval({ state, goToStep }: FranchiseStepViewProps) {
   const approval = state.approval;
-  const requested = state.territory.proposedTerritory;
+  const requested = franchiseTerritoryLabel(state.territory);
 
   if (!approval) {
     return (

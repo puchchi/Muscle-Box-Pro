@@ -33,6 +33,10 @@ import type {
 } from "./franchises";
 import type { AdminFranchiseInviteBody, AdminFranchiseInviteResult } from "./franchiseInvite";
 import { FRANCHISE_REVIEW_STATUSES } from "./franchiseWrites";
+import {
+  franchiseTerritoryGrantDraft,
+  franchiseTerritoryLabel,
+} from "../franchise/onboarding/schema";
 import type {
   FranchiseOnboardingStatus,
   FranchiseOnboardingStep,
@@ -63,8 +67,12 @@ type Seed = {
   /** Six digits, the tail of the CIN or LLPIN this entity type implies. */
   regNo: string;
   city: string;
-  proposedTerritory: string;
-  proposedBoundary: string;
+  proposedState: string;
+  proposedDistricts: string[];
+  /** Only the seeds that want part of a district rather than all of it. */
+  proposedPincodes?: string[];
+  /** Only where the districts left something unsaid, which is most of the time nothing. */
+  proposedBoundary?: string;
   status: FranchiseOnboardingStatus;
   invitedDaysAgo: number;
   sourceApplicationId?: string;
@@ -94,7 +102,9 @@ const SEEDS: readonly Seed[] = [
     pan: "AABCH4521K",
     regNo: "104471",
     city: "Navi Mumbai, Maharashtra",
-    proposedTerritory: "Navi Mumbai",
+    proposedState: "Maharashtra",
+    // Navi Mumbai is not a district. It straddles two, which is the case the picker exists for.
+    proposedDistricts: ["Raigad", "Thane"],
     proposedBoundary: "Vashi to Kharghar along the Sion Panvel Highway.",
     status: "invited",
     invitedDaysAgo: 6,
@@ -111,8 +121,8 @@ const SEEDS: readonly Seed[] = [
     pan: "AAGFP7781M",
     regNo: "221904",
     city: "Coimbatore, Tamil Nadu",
-    proposedTerritory: "Coimbatore",
-    proposedBoundary: "Coimbatore Corporation limits and Saravanampatti.",
+    proposedState: "Tamil Nadu",
+    proposedDistricts: ["Coimbatore"],
     status: "opened",
     invitedDaysAgo: 4,
   },
@@ -128,7 +138,10 @@ const SEEDS: readonly Seed[] = [
     pan: "AAHFG2210J",
     regNo: "318822",
     city: "Kolkata, West Bengal",
-    proposedTerritory: "South Kolkata",
+    proposedState: "West Bengal",
+    proposedDistricts: ["Kolkata"],
+    // Half a city, which is the case the pin codes exist for.
+    proposedPincodes: ["700019", "700029", "700032", "700033", "700034"],
     proposedBoundary: "Ballygunge, Jadavpur, Tollygunge and Behala.",
     status: "territory_submitted",
     invitedDaysAgo: 9,
@@ -145,7 +158,8 @@ const SEEDS: readonly Seed[] = [
     pan: "AABCN1234C",
     regNo: "098765",
     city: "Noida, Uttar Pradesh",
-    proposedTerritory: "Noida and Greater Noida",
+    proposedState: "Uttar Pradesh",
+    proposedDistricts: ["Gautam Buddha Nagar"],
     proposedBoundary:
       "Sectors 1 to 168 of Noida, and Greater Noida West up to the Bisrakh Road boundary.",
     status: "under_review",
@@ -164,7 +178,8 @@ const SEEDS: readonly Seed[] = [
     pan: "AACCS9012D",
     regNo: "441209",
     city: "Pune, Maharashtra",
-    proposedTerritory: "Pune city",
+    proposedState: "Maharashtra",
+    proposedDistricts: ["Pune"],
     proposedBoundary: "Pune Municipal Corporation and Pimpri Chinchwad.",
     status: "kyc_submitted",
     invitedDaysAgo: 5,
@@ -181,8 +196,8 @@ const SEEDS: readonly Seed[] = [
     pan: "AJKPP5567F",
     regNo: "000000",
     city: "Kochi, Kerala",
-    proposedTerritory: "Kochi",
-    proposedBoundary: "Kochi Corporation, Kakkanad and Aluva.",
+    proposedState: "Kerala",
+    proposedDistricts: ["Ernakulam"],
     status: "on_hold",
     invitedDaysAgo: 21,
   },
@@ -198,8 +213,9 @@ const SEEDS: readonly Seed[] = [
     pan: "AAJFC3390B",
     regNo: "000000",
     city: "Hyderabad, Telangana",
-    proposedTerritory: "Hyderabad",
-    proposedBoundary: "GHMC limits, plus Shamshabad and Medchal.",
+    proposedState: "Telangana",
+    proposedDistricts: ["Hyderabad", "Medchal", "Rangareddy"],
+    proposedBoundary: "GHMC limits, plus Shamshabad.",
     status: "declined",
     invitedDaysAgo: 34,
     sourceApplicationId: "fa_mock_6120",
@@ -216,8 +232,8 @@ const SEEDS: readonly Seed[] = [
     pan: "AACCE1178G",
     regNo: "552031",
     city: "Guwahati, Assam",
-    proposedTerritory: "Guwahati",
-    proposedBoundary: "Guwahati Municipal Corporation and North Guwahati.",
+    proposedState: "Assam",
+    proposedDistricts: ["Kamrup", "Kamrup Metropolitan"],
     status: "operations_submitted",
     invitedDaysAgo: 18,
   },
@@ -233,8 +249,8 @@ const SEEDS: readonly Seed[] = [
     pan: "AAECS6642H",
     regNo: "667712",
     city: "Mysuru, Karnataka",
-    proposedTerritory: "Mysuru and Mandya",
-    proposedBoundary: "Mysuru city, Nanjangud, Srirangapatna and Mandya town.",
+    proposedState: "Karnataka",
+    proposedDistricts: ["Mandya", "Mysuru (Mysore)"],
     status: "payment_claimed",
     invitedDaysAgo: 26,
   },
@@ -250,8 +266,9 @@ const SEEDS: readonly Seed[] = [
     pan: "AAGFT4409N",
     regNo: "774102",
     city: "Dehradun, Uttarakhand",
-    proposedTerritory: "Dehradun and Rishikesh",
-    proposedBoundary: "Dehradun district, excluding Mussoorie.",
+    proposedState: "Uttarakhand",
+    proposedDistricts: ["Dehradun"],
+    proposedBoundary: "Excluding Mussoorie.",
     status: "active",
     invitedDaysAgo: 44,
     unmodelledRows: ["ESCALATION#2026-07-19"],
@@ -268,8 +285,8 @@ const SEEDS: readonly Seed[] = [
     pan: "AKQPF1102L",
     regNo: "000000",
     city: "Mangaluru, Karnataka",
-    proposedTerritory: "Mangaluru",
-    proposedBoundary: "Mangaluru city and Udupi.",
+    proposedState: "Karnataka",
+    proposedDistricts: ["Dakshina Kannada", "Udupi"],
     status: "invited",
     invitedDaysAgo: 38,
     inviteExpired: true,
@@ -277,6 +294,16 @@ const SEEDS: readonly Seed[] = [
 ];
 
 // ── Building a record ───────────────────────────────────────────────────────
+
+/** The seed's territory in the shape the two label helpers take. */
+function proposedArea(seed: Seed) {
+  return {
+    proposedState: seed.proposedState,
+    proposedDistricts: seed.proposedDistricts,
+    proposedPincodes: seed.proposedPincodes ?? [],
+    proposedBoundary: seed.proposedBoundary ?? "",
+  };
+}
 
 function firstInstalmentPaise(tier: FranchiseTierId): number {
   const published = franchiseTier(tier);
@@ -476,10 +503,14 @@ const LADDER: readonly Milestone[] = [
     status: "territory_submitted",
     step: 2,
     apply(view, at, seed) {
+      const area = proposedArea(seed);
       view.territory = {
         tier: seed.tier,
-        proposedTerritory: seed.proposedTerritory,
-        proposedBoundary: seed.proposedBoundary,
+        proposedTerritory: franchiseTerritoryLabel(area),
+        proposedState: area.proposedState,
+        proposedDistricts: area.proposedDistricts,
+        proposedPincodes: area.proposedPincodes,
+        proposedBoundary: area.proposedBoundary,
         existingRelationships: `Supplies four gyms in ${seed.city} on a wholesale basis.`,
         submittedAt: at,
         grantedTier: null,
@@ -520,10 +551,12 @@ const LADDER: readonly Milestone[] = [
     status: "approved",
     step: 4,
     apply(view, at, seed) {
+      const area = proposedArea(seed);
       if (view.territory) {
         view.territory.grantedTier = seed.tier;
-        view.territory.grantedTerritory = seed.proposedTerritory;
-        view.territory.grantedBoundary = seed.proposedBoundary;
+        // What an admin gets if they take the draft the screen offers and approve it unchanged.
+        view.territory.grantedTerritory = franchiseTerritoryLabel(area);
+        view.territory.grantedBoundary = franchiseTerritoryGrantDraft(area);
         view.territory.grantedExclusions = "";
         view.territory.grantedAt = at;
       }
@@ -531,7 +564,7 @@ const LADDER: readonly Milestone[] = [
         outcome: "approved",
         decidedAt: at,
         decidedByEmail: ADMIN_EMAIL,
-        internalReason: `Market check clear. ${seed.proposedTerritory} has no existing franchise and the applicant already supplies gyms there.`,
+        internalReason: `Market check clear. ${franchiseTerritoryLabel(area)} has no existing franchise and the applicant already supplies gyms there.`,
         approvedAt: at,
       };
       view.timestamps.approvedAt = at;
@@ -555,7 +588,7 @@ const LADDER: readonly Milestone[] = [
         temperatureControl: "yes",
         operationsContactName: `${seed.tradeName.split(" ")[0]} Operations`,
         operationsContactPhone: seed.phone,
-        deploymentPlan: `Two machines in the first month at partner gyms already supplied, the rest across ${seed.proposedTerritory} by month four.`,
+        deploymentPlan: `Two machines in the first month at partner gyms already supplied, the rest across ${franchiseTerritoryLabel(proposedArea(seed))} by month four.`,
         logisticsArrangement: "own_vehicle",
         submittedAt: at,
       };
@@ -663,7 +696,7 @@ const BRANCHES: Record<"on_hold" | "declined", Milestone> = {
         outcome: "declined",
         decidedAt: at,
         decidedByEmail: ADMIN_EMAIL,
-        internalReason: `${seed.proposedTerritory} is committed to an existing City franchise discussion at a later stage than this one.`,
+        internalReason: `${franchiseTerritoryLabel(proposedArea(seed))} is committed to an existing City franchise discussion at a later stage than this one.`,
         approvedAt: null,
       };
       view.timestamps.decidedAt = at;
@@ -913,8 +946,8 @@ export function createMockAdminFranchiseApi(options: MockAdminFranchiseOptions =
           pan: "",
           regNo: "000000",
           city: "",
-          proposedTerritory: "",
-          proposedBoundary: "",
+          proposedState: "",
+          proposedDistricts: [],
           status: "invited",
           invitedDaysAgo: 0,
           sourceApplicationId: body.sourceApplicationId ?? undefined,

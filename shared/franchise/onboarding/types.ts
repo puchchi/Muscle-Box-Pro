@@ -124,12 +124,30 @@ export type FranchiseDetails = {
  * because the case that matters is the one where we approve three suburbs of five and a
  * record that overwrote the request would lose the fact that anything was cut (§3).
  *
- * Free text, and no map. A drawn boundary looks precise and is not, and exclusivity would
- * then turn on whether a gym falls inside a shape somebody dragged in a browser.
+ * **Districts, not prose.** An earlier version asked for the boundary as required free text with a
+ * 20-character floor, which asked an applicant to draft a contract clause before they knew whether
+ * they were approved. Districts are official, enumerable and non-overlapping, so two franchises
+ * cannot be granted the same ground by accident, and `shared/geo/india.ts` says why they are
+ * checked in rather than fetched from a places API.
+ *
+ * Names rather than codes, so a district renamed or split later does not change what an existing
+ * record says was asked for.
+ *
+ * Still no map and no polygon. If one is ever added it renders `grantedPincodes`; it is not the
+ * record.
  */
 export type TerritoryProposal = {
   tier: FranchiseTierId;
-  proposedTerritory: string;
+  /** A state or union territory name from `INDIA_STATE_NAMES`. */
+  proposedState: string;
+  /** At least one, and every one of them within `proposedState`. */
+  proposedDistricts: string[];
+  /** Optional, for an applicant who wants part of a metro rather than all of it. */
+  proposedPincodes: string[];
+  /**
+   * Whatever the selection above could not say. Optional, where it used to be the whole answer:
+   * "excludes the airport side of Devanahalli" is worth having and is not worth blocking on.
+   */
   proposedBoundary: string;
   existingRelationships: string;
 };

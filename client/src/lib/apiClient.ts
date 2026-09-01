@@ -92,6 +92,27 @@ function hostnameOf(base: string): string {
 }
 
 /**
+ * Whether this build talks to the API that serves real gyms.
+ *
+ * Derived from the host and fail-closed for the reasons under `BEARER_SESSION_ALLOWED` below,
+ * which is now its inverse.
+ */
+export const IS_PRODUCTION_API = hostnameOf(MBP_API_BASE_URL) === PRODUCTION_API_HOSTNAME;
+
+/**
+ * Whether a screen may answer from a fixture instead of calling a route.
+ *
+ * The honest test for it, and the one the franchise seams read. A seam that asked
+ * `NEXT_PUBLIC_MBP_API_MODE` instead would let a mistyped env var put an in-memory store in front
+ * of an operator, or throw on load for a developer pointed at the sandbox.
+ *
+ * The second clause is the test runner, which sets no `NEXT_PUBLIC_MBP_API_URL` — vitest does not
+ * read `.env.local` — and so reads as production under the fail-closed rule above. Without it
+ * every mock seam would hand its own unit tests a "not deployed" error.
+ */
+export const FIXTURES_ALLOWED = !IS_PRODUCTION_API || process.env.NODE_ENV === "test";
+
+/**
  * Whether this build may fall back to a bearer session — **sandbox only.**
  *
  * The problem it solves is a browser one, not a convenience one. Against the sandbox's
@@ -116,7 +137,7 @@ function hostnameOf(base: string): string {
  *    work. A client that *required* the token would pass in sandbox and fail in prod —
  *    the worst order in which to find out.
  */
-export const BEARER_SESSION_ALLOWED = hostnameOf(MBP_API_BASE_URL) !== PRODUCTION_API_HOSTNAME;
+export const BEARER_SESSION_ALLOWED = !IS_PRODUCTION_API;
 
 /**
  * Where the sandbox session token is kept: `sessionStorage`, mirrored in memory.

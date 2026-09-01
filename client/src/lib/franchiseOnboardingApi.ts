@@ -6,11 +6,12 @@
  * `./apiClient` directly, or the swap stops being one file. See docs/franchise-onboarding.md
  * §10.
  *
- * There is only one implementation today. `httpFranchiseOnboardingApi.ts` arrives with the
- * routes in §11 phase 7, and lands here as a ternary on the same `NEXT_PUBLIC_MBP_API_MODE`
- * flag the gym flow reads.
+ * There is no HTTP implementation yet. `httpFranchiseOnboardingApi.ts` arrives with the routes
+ * in §11 phase 7 and replaces the refusal below; until then the two implementations here are the
+ * mock and a flat no.
  */
 
+import { FIXTURES_ALLOWED } from "./apiClient";
 import {
   FRANCHISE_DEMO_HANDLE,
   MOCK_FRANCHISE_HANDLES,
@@ -24,28 +25,67 @@ import {
 } from "@shared/franchise/onboarding/mockApi";
 import type { FranchiseOnboardingApi } from "@shared/franchise/onboarding/types";
 
-/**
- * A live build must fail rather than quietly serve the mock.
- *
- * The gym seam's docstring names the mistake this guards: a production bundle falling back to
- * an in-memory implementation would take a real franchisee's PAN and registered address, tell
- * them a ₹25 lakh term sheet was signed, and lose all of it on refresh. Thrown at module scope
- * so the failure is a build-and-load failure rather than something a franchisee discovers on
- * step 7. Delete this the moment the HTTP implementation exists.
- */
-if (process.env.NEXT_PUBLIC_MBP_API_MODE === "live") {
-  throw new Error(
-    "Franchise onboarding has no live implementation yet: httpFranchiseOnboardingApi.ts arrives with the routes in docs/franchise-onboarding.md §11 phase 7.",
-  );
-}
-
 const latencyMs = process.env.NODE_ENV === "test" ? 0 : 300;
 
-export const franchiseOnboardingApi: FranchiseOnboardingApi =
-  createMockFranchiseOnboardingApi({ latencyMs });
+/**
+ * So the UI can say so, rather than letting anyone mistake a demo for a real record.
+ *
+ * The production API must never reach the mock: an in-memory implementation would take a real
+ * franchisee's PAN and registered address, tell them a ₹25 lakh term sheet was signed, and lose
+ * all of it on refresh. That is what `FIXTURES_ALLOWED` is for, and being derived from the API
+ * host it cannot be turned off by a typo in an env var.
+ *
+ * It replaces a module-scope `throw` on `NEXT_PUBLIC_MBP_API_MODE === "live"`. The throw was
+ * aimed at the same mistake and caught the wrong people: `.env.local` reads `live` because the
+ * gym flow integrates against the sandbox, so a developer opening a franchise onboarding link
+ * locally got a 500 from the module rather than the wizard. A refusal that the wizard renders is
+ * the same guarantee without the crash.
+ */
+export const IS_MOCK_FRANCHISE_ONBOARDING = FIXTURES_ALLOWED;
 
-/** So the UI can say so, rather than letting anyone mistake a demo for a real record. */
-export const IS_MOCK_FRANCHISE_ONBOARDING = true;
+export const franchiseOnboardingApi: FranchiseOnboardingApi = IS_MOCK_FRANCHISE_ONBOARDING
+  ? createMockFranchiseOnboardingApi({ latencyMs })
+  : notDeployedApi();
+
+/**
+ * Every call refused, for the production API.
+ *
+ * Neither the mock nor HTTP, because there is no franchise onboarding backend to call yet. The
+ * only method that matters is `getState`: it fails before any form renders, and the wizard's
+ * `HandleProblem` screen turns `network` into "something went wrong, try again in a moment",
+ * which is what a franchisee should read. The rest are here because the interface has them.
+ *
+ * `message` is for a log rather than a screen. Delete this whole function in phase 7.
+ */
+function notDeployedApi(): FranchiseOnboardingApi {
+  const refuse = async () => ({
+    ok: false as const,
+    error: {
+      code: "network" as const,
+      message:
+        "Franchise onboarding has no live implementation yet: httpFranchiseOnboardingApi.ts arrives with the routes in docs/franchise-onboarding.md §11 phase 7.",
+    },
+  });
+
+  return {
+    getState: refuse,
+    saveDraft: refuse,
+    submitDetails: refuse,
+    submitTerritory: refuse,
+    uploadDocument: refuse,
+    removeDocument: refuse,
+    submitKyc: refuse,
+    ackFranchise: refuse,
+    submitOperations: refuse,
+    markTermSheetViewed: refuse,
+    requestEsign: refuse,
+    refreshEsignStatus: refuse,
+    getPaymentInstructions: refuse,
+    claimPayment: refuse,
+    refreshPaymentStatus: refuse,
+    createAccount: refuse,
+  };
+}
 
 export { FRANCHISE_DEMO_HANDLE, MOCK_FRANCHISE_HANDLES };
 

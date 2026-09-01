@@ -28,15 +28,13 @@ import type { FranchiseStepViewProps } from "../types";
  * for the same reason, so every screen after this one can address the franchisee by their own
  * name with their own terms.
  *
- * Two fields deserve care and get a preview or a check rather than a warning.
- *
  * *The legal entity name* is rendered into the term sheet and the signature hash covers that
  * rendering, so a typo caught here is free and the same typo caught after signing needs an
  * amendment. That is what the preview under the field is for.
  *
- * *The PAN* is checked against the entity type by the schema, because the fourth character is
- * the holder's class and a personal PAN pasted for a company is the single most common error on
- * this form. The message names both kinds of holder rather than saying "invalid".
+ * *The PAN* is format-checked and nothing more. An earlier version compared its fourth character
+ * (the holder's class) against the entity type and refused a personal PAN for a company; that
+ * refused applicants who have not incorporated yet, which is most of them.
  *
  * There is no installation address here, and no bank account. A franchisee's machines go to
  * gyms across a territory rather than to one address, the warehouse is step 6, and the payout
@@ -88,7 +86,7 @@ export default function StepDetails({
   useServerFieldErrors(form, fieldErrors, (field) => field in state.details);
 
   const entityType = form.watch("entityType");
-  const needsCin = entityType === "pvt_ltd";
+  const showsCin = entityType === "pvt_ltd";
   const needsLlpin = entityType === "llp";
 
   /*
@@ -99,9 +97,9 @@ export default function StepDetails({
   */
   useEffect(() => {
     if (readOnly) return;
-    if (!needsCin && form.getValues("cin")) form.setValue("cin", "", { shouldDirty: true });
+    if (!showsCin && form.getValues("cin")) form.setValue("cin", "", { shouldDirty: true });
     if (!needsLlpin && form.getValues("llpin")) form.setValue("llpin", "", { shouldDirty: true });
-  }, [needsCin, needsLlpin, readOnly, form]);
+  }, [showsCin, needsLlpin, readOnly, form]);
 
   async function onSubmit(details: FranchiseDetails) {
     // Flushed first, so a rejected submit still leaves the typing saved.
@@ -167,13 +165,14 @@ export default function StepDetails({
             disabled={readOnly}
           />
 
-          {needsCin && (
+          {showsCin && (
             <Field
               form={form}
               name="cin"
               label="CIN"
               placeholder="U74999DL2019PTC123456"
               description="21 characters, from your certificate of incorporation."
+              optional
               uppercase
               disabled={readOnly}
             />

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { FieldErrors, FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Search, X } from "lucide-react";
 
 import {
   Form,
@@ -297,6 +297,310 @@ export function SelectField<T extends FieldValues>({
           <FormMessage className={ERROR_TEXT} />
         </FormItem>
       )}
+    />
+  );
+}
+
+/**
+ * A searchable list of checkboxes, holding an array of the values that are ticked.
+ *
+ * For the district picker, where the list is 2 to 75 long depending on the state. A `<select multiple>`
+ * is the one native control for this and it is also the one nobody can operate: on a phone it is a
+ * scroll trap, and on a desktop ctrl-clicking to add a fourth district without losing the first three
+ * is a thing people get wrong and do not notice.
+ *
+ * The ticked values are repeated as removable chips above the list, because the list scrolls and a
+ * selection that has scrolled out of sight is a selection somebody submits without meaning to.
+ *
+ * No `FormControl`: it is a Radix `Slot` that clones one child to attach the id and `aria-invalid`,
+ * and there is no single control here to attach them to. `field.ref` goes on the search box instead,
+ * so `ErrorSummary`'s `setFocus` lands somewhere useful.
+ */
+export function CheckListField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  description,
+  options,
+  searchPlaceholder,
+  emptyHint,
+  optional,
+  disabled,
+}: BaseFieldProps<T> & {
+  options: readonly string[];
+  searchPlaceholder?: string;
+  emptyHint?: string;
+}) {
+  const labelId = useId();
+  const [query, setQuery] = useState("");
+
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field, fieldState }) => {
+        const selected: string[] = Array.isArray(field.value) ? field.value : [];
+        const needle = query.trim().toLowerCase();
+        const shown = needle === "" ? options : options.filter((o) => o.toLowerCase().includes(needle));
+
+        const toggle = (option: string) => {
+          field.onChange(
+            selected.includes(option)
+              ? selected.filter((s) => s !== option)
+              : [...selected, option].sort((a, b) => a.localeCompare(b)),
+          );
+          // `mode: "onBlur"` does not revalidate on change, and there is no blur in ticking a box.
+          // Without this, "choose at least one district" stays red over a list with two ticks in it.
+          // `mode: "onBlur"` does not revalidate on change, and there is no blur in ticking a box.
+          // Without this, "choose at least one district" stays red over a list with two ticks in it.
+          if (fieldState.error) void form.trigger(name);
+        };
+
+        return (
+          <FormItem>
+            <span
+              id={labelId}
+              className="text-gray-700 text-sm font-semibold flex items-baseline gap-2"
+            >
+              {label}
+              {optional && (
+                <span className="text-[11px] font-medium text-muted-foreground">Optional</span>
+              )}
+              {selected.length > 0 && (
+                <span className="text-[11px] font-medium text-muted-foreground tabular-nums">
+                  {selected.length} selected
+                </span>
+              )}
+            </span>
+
+            {selected.length > 0 && (
+              <ul className="flex flex-wrap gap-1.5" data-testid={`chips-${name}`}>
+                {selected.map((value) => (
+                  <li key={value}>
+                    <button
+                      type="button"
+                      onClick={() => toggle(value)}
+                      disabled={disabled}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-primary/20 disabled:cursor-not-allowed disabled:hover:bg-primary/10 cursor-pointer"
+                      data-testid={`chip-${name}-${value}`}
+                    >
+                      {value}
+                      {!disabled && <X className="w-3 h-3" aria-hidden="true" />}
+                      <span className="sr-only">Remove {value}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {options.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{emptyHint}</p>
+            ) : (
+              <>
+                <div className="relative">
+                  <Search
+                    className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                    aria-hidden="true"
+                  />
+                  <Input
+                    ref={field.ref}
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    onBlur={field.onBlur}
+                    type="search"
+                    placeholder={searchPlaceholder}
+                    aria-label={searchPlaceholder ?? `Search ${label}`}
+                    disabled={disabled}
+                    className={`${inputClass} pl-9`}
+                    data-testid={`search-${name}`}
+                  />
+                </div>
+
+                <div
+                  role="group"
+                  aria-labelledby={labelId}
+                  className={`max-h-60 overflow-y-auto rounded-xl border ${
+                    fieldState.error ? "border-red-400 bg-red-50" : "border-gray-200 bg-gray-50"
+                  }`}
+                  data-testid={`list-${name}`}
+                >
+                  {shown.length === 0 ? (
+                    <p className="px-3 py-3 text-xs text-muted-foreground">
+                      Nothing matches “{query.trim()}”.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-gray-200/70">
+                      {shown.map((option) => (
+                        <li key={option}>
+                          <label
+                            className={`flex items-center gap-3 px-3 py-2.5 text-sm ${
+                              disabled ? "cursor-not-allowed text-gray-700" : "cursor-pointer hover:bg-white"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected.includes(option)}
+                              onChange={() => toggle(option)}
+                              disabled={disabled}
+                              className="w-4 h-4 rounded border-gray-300 text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                              data-testid={`check-${name}-${option}`}
+                            />
+                            {option}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+
+            {description && <FormDescription className="text-xs">{description}</FormDescription>}
+            <FormMessage className={ERROR_TEXT} />
+          </FormItem>
+        );
+      }}
+    />
+  );
+}
+
+/**
+ * An array of short codes, typed or pasted, held as removable chips.
+ *
+ * For the pin codes. A picker would need India Post's directory, which is 150,000 rows for the
+ * benefit of somebody who already knows the six digits they mean.
+ *
+ * **A value that does not match `pattern` is refused at the point of typing and left in the box**,
+ * rather than being added and flagged afterwards. An array item's error has a path the field's own
+ * `FormMessage` never renders, so the alternative is a chip that is silently wrong until submit.
+ */
+export function CodeListField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  description,
+  placeholder,
+  pattern,
+  invalidMessage,
+  optional,
+  disabled,
+}: BaseFieldProps<T> & { pattern: RegExp; invalidMessage: string }) {
+  const labelId = useId();
+  const [draft, setDraft] = useState("");
+  const [rejected, setRejected] = useState<string | null>(null);
+
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field, fieldState }) => {
+        const values: string[] = Array.isArray(field.value) ? field.value : [];
+
+        /** Returns what could not be added, so the box keeps it for fixing. */
+        const commit = (raw: string): string => {
+          const tokens = raw.split(/[^0-9A-Za-z]+/).filter((t) => t !== "");
+          const good: string[] = [];
+          const bad: string[] = [];
+          for (const token of tokens) (pattern.test(token) ? good : bad).push(token);
+          if (good.length > 0) {
+            field.onChange([...new Set([...values, ...good])].sort());
+            // As in `CheckListField`: adding a chip is a change, and `mode: "onBlur"` ignores those.
+            if (fieldState.error) void form.trigger(name);
+          }
+          setRejected(bad[0] ?? null);
+          return bad.join(" ");
+        };
+
+        return (
+          <FormItem>
+            <span
+              id={labelId}
+              className="text-gray-700 text-sm font-semibold flex items-baseline gap-2"
+            >
+              {label}
+              {optional && (
+                <span className="text-[11px] font-medium text-muted-foreground">Optional</span>
+              )}
+              {values.length > 0 && (
+                <span className="text-[11px] font-medium text-muted-foreground tabular-nums">
+                  {values.length} added
+                </span>
+              )}
+            </span>
+
+            {values.length > 0 && (
+              <ul className="flex flex-wrap gap-1.5" data-testid={`chips-${name}`}>
+                {values.map((value) => (
+                  <li key={value}>
+                    <button
+                      type="button"
+                      onClick={() => field.onChange(values.filter((v) => v !== value))}
+                      disabled={disabled}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-semibold tabular-nums text-foreground hover:bg-primary/20 disabled:cursor-not-allowed disabled:hover:bg-primary/10 cursor-pointer"
+                      data-testid={`chip-${name}-${value}`}
+                    >
+                      {value}
+                      {!disabled && <X className="w-3 h-3" aria-hidden="true" />}
+                      <span className="sr-only">Remove {value}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <Input
+              ref={field.ref}
+              value={draft}
+              onChange={(event) => {
+                // A separator is how somebody says "that one is finished", whether they typed it
+                // or pasted a comma-separated list out of a spreadsheet.
+                if (/[^0-9A-Za-z]/.test(event.target.value)) setDraft(commit(event.target.value));
+                else {
+                  setDraft(event.target.value);
+                  setRejected(null);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  // Otherwise the first pin code submits the step.
+                  event.preventDefault();
+                  setDraft(commit(draft));
+                } else if (event.key === "Backspace" && draft === "" && values.length > 0) {
+                  field.onChange(values.slice(0, -1));
+                }
+              }}
+              onPaste={(event) => {
+                // A column copied out of a spreadsheet arrives newline-separated, and a single-line
+                // input keeps only the first line of it.
+                const pasted = event.clipboardData.getData("text");
+                if (!/[\r\n]/.test(pasted)) return;
+                event.preventDefault();
+                setDraft(commit(`${draft} ${pasted}`));
+              }}
+              onBlur={() => {
+                setDraft(commit(draft));
+                field.onBlur();
+              }}
+              inputMode="numeric"
+              aria-labelledby={labelId}
+              aria-invalid={!!fieldState.error || rejected !== null}
+              placeholder={placeholder}
+              disabled={disabled}
+              className={inputClass}
+              data-testid={`input-${name}`}
+            />
+
+            {rejected !== null && (
+              <p className={ERROR_TEXT} data-testid={`rejected-${name}`}>
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                {invalidMessage}
+              </p>
+            )}
+            {description && <FormDescription className="text-xs">{description}</FormDescription>}
+            <FormMessage className={ERROR_TEXT} />
+          </FormItem>
+        );
+      }}
     />
   );
 }

@@ -41,6 +41,8 @@ import {
   franchiseDetailsSchema,
   franchiseEmailSchema,
   franchisePasswordSchema,
+  franchiseTerritoryGrantDraft,
+  franchiseTerritoryLabel,
   operationsReadinessSchema,
   paymentClaimSchema,
   territoryProposalSchema,
@@ -85,6 +87,13 @@ export const FRANCHISE_DEMO_HANDLE = "demo";
  * Handles that exercise the failure screens without a backend. Each is a real state a
  * franchisee can land in, and each needs its own copy.
  *
+ * Only these three fail. **Any other handle opens a fresh application**, so a link minted on
+ * the admin invite screen can be walked: the two mocks are separate in-memory stores and a
+ * copied link lands in a new tab with a new store, so matching handles between them is not a
+ * thing that can work. `invalid` is reserved rather than being the default because "we couldn't
+ * find this link" is a screen a franchisee with a mangled URL really sees, and a fixture that
+ * accepts everything cannot show it.
+ *
  * There is no `declined` handle: `previewDecline` reaches that state from a live record, which
  * is the only way to see the screen with the franchisee's own details on it, and it exercises
  * the ladder rather than side-stepping it.
@@ -93,7 +102,7 @@ export const MOCK_FRANCHISE_HANDLES = {
   valid: FRANCHISE_DEMO_HANDLE,
   expired: "expired-demo",
   revoked: "revoked-demo",
-  /** Anything not listed here is treated as `invalid_handle`. */
+  invalid: "invalid-demo",
 } as const;
 
 /** How many polls the mock makes a franchisee wait before the stand-in webhook lands. */
@@ -180,9 +189,13 @@ function seedState(handle: string, now: string): FranchiseOnboardingState {
 
     details,
     territory: {
-      // Prefilled from the application's `tier` and `targetMarket`, both changeable here.
+      // `tier` is prefilled from the application and changeable here. The market is not: the
+      // application's `targetMarket` is free text, so there is nothing in it to preselect a
+      // district from.
       tier: "territory",
-      proposedTerritory: "Noida and Greater Noida",
+      proposedState: "",
+      proposedDistricts: [],
+      proposedPincodes: [],
       proposedBoundary: "",
       existingRelationships: "",
     },
@@ -401,9 +414,10 @@ export function createMockFranchiseOnboardingApi(
     if (handle === MOCK_FRANCHISE_HANDLES.revoked) {
       return fail("revoked_handle", "This link is no longer valid. A newer one was sent.");
     }
-    if (handle !== MOCK_FRANCHISE_HANDLES.valid) {
+    if (handle === MOCK_FRANCHISE_HANDLES.invalid) {
       return fail("invalid_handle", "We couldn't find this onboarding link.");
     }
+    // Every other handle seeds its own application. See `MOCK_FRANCHISE_HANDLES`.
     let record = store.get(handle);
     if (!record) {
       record = { state: seedState(handle, now()), committed: [], esignPolls: 0 };
@@ -964,8 +978,10 @@ export function previewApprove(
   state.approval = {
     outcome: "approved",
     decidedAt: nowIso,
-    territory: granted?.territory ?? state.territory.proposedTerritory,
-    territoryBoundary: granted?.territoryBoundary ?? state.territory.proposedBoundary,
+    // What an admin would see prefilled on the approval form, which is the label rather than the
+    // districts: the grant is prose because the definitive agreement is.
+    territory: granted?.territory ?? franchiseTerritoryLabel(state.territory),
+    territoryBoundary: granted?.territoryBoundary ?? franchiseTerritoryGrantDraft(state.territory),
   };
   state.timestamps.reviewStartedAt ??= nowIso;
   state.timestamps.approvedAt = nowIso;

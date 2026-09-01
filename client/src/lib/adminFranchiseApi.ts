@@ -29,6 +29,7 @@
  */
 
 import type { AdminReadResult } from "./adminApi";
+import { FIXTURES_ALLOWED } from "./apiClient";
 import {
   createMockAdminFranchiseApi,
   MOCK_ADMIN_FRANCHISE_TARGETS,
@@ -51,27 +52,38 @@ import type {
 } from "@shared/admin/franchiseInvite";
 import type { OnboardingError, OnboardingResult } from "@shared/onboarding/types";
 
-/**
- * A live build must fail rather than quietly serve fixtures.
- *
- * The wizard seam's reasoning applies with one difference that makes it worse, not better: the
- * audience here is us. An operator who approves a ₹25 lakh territory against an in-memory store
- * has recorded a decision that vanishes on refresh, and nothing on the screen would have said so.
- * Thrown at module scope so it is a load failure rather than a discovery. Delete this when the
- * routes are deployed.
- */
-if (process.env.NEXT_PUBLIC_MBP_API_MODE === "live") {
-  throw new Error(
-    "The admin franchise routes are not deployed: see docs/franchise-onboarding.md §8.1 and open question 10.",
-  );
-}
-
 const mock = createMockAdminFranchiseApi({
   latencyMs: process.env.NODE_ENV === "test" ? 0 : 300,
 });
 
-/** So every screen can say so, rather than letting anyone mistake a fixture for a record. */
-export const IS_MOCK_ADMIN_FRANCHISE = true;
+/**
+ * Whether these screens are reading fixtures — everywhere except the production API.
+ *
+ * Two things this must not do, and one it must.
+ *
+ * It must not put fixtures in front of an operator on `api.muscleboxpro.com`: approving a ₹25
+ * lakh territory against an in-memory store records a decision that vanishes on refresh. So the
+ * production host gets `NOT_DEPLOYED` from every function below and the pages render their
+ * ordinary error state, which says exactly that.
+ *
+ * It must not be `NEXT_PUBLIC_MBP_API_MODE`. An earlier version threw at module scope when that
+ * flag read `live`, which is how a developer running against the sandbox — the ordinary local
+ * setup, since the gym flow needs it — got a runtime error page from a nav link on every admin
+ * screen. The flag says which *gym* seam to use and says nothing about franchise routes that are
+ * not deployed under either value.
+ *
+ * And it must be visible: every screen shows a fixture notice while this is true.
+ *
+ * When the routes land, this becomes `false` and the six functions below take `apiRequest`.
+ */
+export const IS_MOCK_ADMIN_FRANCHISE = FIXTURES_ALLOWED;
+
+/** Not a network failure, but `code` is what the error panels understand. */
+const NOT_DEPLOYED: OnboardingError = {
+  code: "network",
+  message:
+    "The franchise admin routes are not deployed yet, so there is nothing here to read. See docs/franchise-onboarding.md §8.1 and open question 10.",
+};
 
 export { MOCK_ADMIN_FRANCHISE_TARGETS, resetMockAdminFranchises };
 
@@ -89,6 +101,8 @@ export type AdminFranchiseListQuery = {
 export async function fetchAdminFranchiseList(
   query: AdminFranchiseListQuery = {},
 ): Promise<AdminReadResult<AdminFranchiseList>> {
+  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
+
   const result = await mock.list(query);
   if (!result.ok) return { ok: false, error: result.error, issues: [] };
 
@@ -100,6 +114,8 @@ export async function fetchAdminFranchiseList(
 export async function fetchAdminFranchiseView(
   franchiseId: string,
 ): Promise<AdminReadResult<AdminFranchiseView>> {
+  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
+
   const result = await mock.get(franchiseId);
   if (!result.ok) return { ok: false, error: result.error, issues: [] };
 
@@ -119,6 +135,8 @@ export async function fetchAdminFranchiseView(
 export async function createFranchise(
   body: AdminFranchiseInviteBody,
 ): Promise<OnboardingResult<AdminFranchiseInviteResult>> {
+  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED };
+
   return mock.create(body);
 }
 
@@ -133,6 +151,8 @@ export async function decideFranchise(
   franchiseId: string,
   body: AdminFranchiseApprovalBody,
 ): Promise<AdminReadResult<AdminFranchiseView>> {
+  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
+
   return reparse(await mock.decide(franchiseId, body));
 }
 
@@ -148,6 +168,8 @@ export async function verifyFranchisePayment(
   instalmentNo: number,
   body: AdminFranchisePaymentVerifyBody,
 ): Promise<AdminReadResult<AdminFranchiseView>> {
+  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
+
   return reparse(await mock.verifyPayment(franchiseId, instalmentNo, body));
 }
 
@@ -163,6 +185,8 @@ export async function refuseFranchisePayment(
   instalmentNo: number,
   body: AdminFranchisePaymentRefuseBody,
 ): Promise<AdminReadResult<AdminFranchiseView>> {
+  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
+
   return reparse(await mock.refusePayment(franchiseId, instalmentNo, body));
 }
 

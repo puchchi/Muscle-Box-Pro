@@ -71,9 +71,10 @@ const VALID_DETAILS: FranchiseDetails = {
 
 const VALID_TERRITORY: TerritoryProposal = {
   tier: "territory",
-  proposedTerritory: "Noida and Greater Noida",
-  proposedBoundary:
-    "Sectors 1 to 168 of Noida plus Greater Noida West, bounded by the Yamuna in the west and the Hindon in the east.",
+  proposedState: "Karnataka",
+  proposedDistricts: ["Bengaluru (Bangalore) Urban", "Ramanagara"],
+  proposedPincodes: [],
+  proposedBoundary: "",
   existingRelationships: "",
 };
 
@@ -200,7 +201,21 @@ describe("handles", () => {
     expect((await expectError(api.getState(MOCK_FRANCHISE_HANDLES.revoked))).code).toBe(
       "revoked_handle",
     );
-    expect((await expectError(api.getState("nope"))).code).toBe("invalid_handle");
+    expect((await expectError(api.getState(MOCK_FRANCHISE_HANDLES.invalid))).code).toBe(
+      "invalid_handle",
+    );
+  });
+
+  it("opens an unreserved handle as its own fresh application", async () => {
+    const minted = "63aa562b4e5f40b2e4221abad9722275";
+    const state = await expectState(api.getState(minted));
+    expect(state.handleId).toBe(minted);
+    expect(state.currentStep).toBe(1);
+    expect(state.completedSteps).toEqual([]);
+
+    // Its own record, so walking one minted link cannot move another.
+    await expectState(api.submitDetails(minted, VALID_DETAILS));
+    expect((await expectState(api.getState(HANDLE))).completedSteps).toEqual([]);
   });
 
   it("records first open once", async () => {
@@ -288,16 +303,22 @@ describe("validation", () => {
     );
   });
 
-  it("catches a personal PAN entered for a company", async () => {
-    const error = await expectError(
+  // An applicant who has not incorporated anything signs on their own PAN, and the fourth
+  // character of a PAN is the holder's class. Refusing `P` against a company would refuse them.
+  it("accepts a personal PAN for a company", async () => {
+    const state = await expectState(
       api.submitDetails(HANDLE, { ...VALID_DETAILS, pan: "AAAPM1234A" }),
     );
-    const fieldErrors = (error as { fieldErrors?: Record<string, string> }).fieldErrors ?? {};
-    expect(fieldErrors.pan).toMatch(/individual/);
+    expect(state.details.pan).toBe("AAAPM1234A");
   });
 
-  it("requires a CIN from a company", async () => {
-    const error = await expectError(api.submitDetails(HANDLE, { ...VALID_DETAILS, cin: "" }));
+  it("does not require a CIN from a company", async () => {
+    const state = await expectState(api.submitDetails(HANDLE, { ...VALID_DETAILS, cin: "" }));
+    expect(state.details.cin).toBe("");
+  });
+
+  it("still refuses a CIN that is the wrong shape", async () => {
+    const error = await expectError(api.submitDetails(HANDLE, { ...VALID_DETAILS, cin: "U749" }));
     expect((error as { fieldErrors?: Record<string, string> }).fieldErrors).toHaveProperty("cin");
   });
 });
@@ -561,11 +582,14 @@ describe("freeze points", () => {
   it("keeps the granted territory separate from what was proposed", async () => {
     await throughKyc();
     const state = previewApprove(HANDLE, {
-      territory: "Noida only",
-      territoryBoundary: "Sectors 1 to 168 of Noida. Greater Noida West is not included.",
+      territory: "Bengaluru (Bangalore) Urban, Karnataka",
+      territoryBoundary: "Bengaluru Urban only. Ramanagara is not included.",
     })!;
-    expect(state.territory.proposedTerritory).toBe("Noida and Greater Noida");
-    expect(state.approval).toMatchObject({ territory: "Noida only" });
+    expect(state.territory.proposedDistricts).toEqual([
+      "Bengaluru (Bangalore) Urban",
+      "Ramanagara",
+    ]);
+    expect(state.approval).toMatchObject({ territory: "Bengaluru (Bangalore) Urban, Karnataka" });
   });
 
   it("freezes everything the term sheet renders once it is signed", async () => {

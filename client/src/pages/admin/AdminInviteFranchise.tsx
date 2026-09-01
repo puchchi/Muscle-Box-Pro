@@ -129,8 +129,10 @@ function InviteCreated({ result }: { result: AdminFranchiseInviteResult }) {
       {IS_MOCK_ADMIN_FRANCHISE && (
         <div className="mb-6">
           <Notice testId="franchise-invite-mock">
-            Nothing was created. The franchise routes are not deployed, so this link resolves to
-            nothing. To walk the wizard, use the demo handle at{" "}
+            Nothing was created. The franchise routes are not deployed, so no record of this
+            exists. The link does open, on a fixture that starts over on every reload and shows
+            the fixture's details rather than the ones you just typed. The seeded application is
+            at{" "}
             <Link href="/franchise/onboarding/demo/demo" className="underline">
               /franchise/onboarding/demo/demo
             </Link>

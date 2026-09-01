@@ -140,7 +140,17 @@ const franchiseTermsSchema = z.object({
 
 const adminFranchiseTerritorySchema = z.object({
   tier: tierId,
+  /**
+   * The label the route derives from the two fields below it, so a list has one string to show.
+   *
+   * Not the source of truth, and not validated against `shared/geo/india.ts` here: this screen
+   * renders whatever the record says was asked for, and a district renamed since submission is
+   * exactly the case where the stored words are the right ones.
+   */
   proposedTerritory: deferred,
+  proposedState: deferred,
+  proposedDistricts: z.array(label),
+  proposedPincodes: z.array(label),
   proposedBoundary: deferred,
   existingRelationships: deferred,
   submittedAt: instant,

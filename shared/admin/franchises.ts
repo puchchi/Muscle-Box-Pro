@@ -84,7 +84,13 @@ export type AdminFranchiseList = {
  */
 export type AdminFranchiseTerritory = {
   tier: FranchiseTierId;
+  /** Derived from `proposedState` and `proposedDistricts`, so a list has one string to show. */
   proposedTerritory: string;
+  proposedState: string;
+  proposedDistricts: string[];
+  /** Empty unless they wanted part of a district rather than all of it. */
+  proposedPincodes: string[];
+  /** Optional prose, for whatever the two lists above could not say. Often empty. */
   proposedBoundary: string;
   existingRelationships: string;
   submittedAt: string | null;

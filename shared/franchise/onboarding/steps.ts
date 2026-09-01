@@ -69,8 +69,8 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "apply",
     title: "Your territory",
     shortTitle: "Territory",
-    blurb: "The market you want to develop, in your own words.",
-    estimate: "5 minutes",
+    blurb: "The districts you want to develop, and the tier you want them on.",
+    estimate: "3 minutes",
   },
   {
     step: 3,
