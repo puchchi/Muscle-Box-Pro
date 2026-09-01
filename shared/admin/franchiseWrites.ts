@@ -8,11 +8,11 @@
  * `ConditionCheck`s on a stored row, and guessing at them here would produce a form that refuses
  * something the server would have allowed.
  *
- * One difference from the gym's writes, and it is the whole reason this file is separate rather than
- * three more exports there: **two of these routes do not exist yet.** `POST …/approval` and
- * `POST …/payments/{n}/verify` have no handler (docs/franchise-onboarding.md §8.1), so what is
- * written below is not a copy of a validator — it is the first statement of what these routes will
- * accept, and `franchisesMock.ts` was written against it.
+ * These schemas were written before the handlers were, and the handlers were then written to them.
+ * Two places where the two deliberately disagree, and in both the form is the stricter one, so the
+ * admin is told before a round trip rather than after: `internalReason` is capped at 500 here and at
+ * 4000 by `validateApprovalDecision`, and `receivedInr` is whole rupees here while the wire carries
+ * paise. `MIN_FRANCHISE_REASON` matches on both sides, and so does every field name.
  *
  * ## The granted territory is not prefilled from the proposal
  *
@@ -84,7 +84,10 @@ export const adminFranchiseApproveFormSchema = z.object({
   grantedBoundary: z
     .string()
     .trim()
-    .min(3, "Describe the boundary. It goes into the term sheet as written.")
+    // Twenty rather than three, matching `validateTerritoryGrant`: this is the text an exclusivity dispute
+    // is read against, and "Pune" is not something that can be argued from. Enforced here as well as there
+    // so the admin sees it before a round trip.
+    .min(20, "Describe the boundary in a sentence. It is what an exclusivity dispute is read against.")
     .max(2000, "At most 2000 characters."),
   /** Empty is a real answer: nothing is carved out. */
   grantedExclusions: z.string().trim().max(2000, "At most 2000 characters."),
@@ -109,6 +112,12 @@ export const adminFranchiseHoldFormSchema = z.object({
     .refine(
       (value) => splitOutstanding(value).length <= MAX_OUTSTANDING_ITEMS,
       `At most ${MAX_OUTSTANDING_ITEMS} items. More than that is a call rather than a list.`,
+    )
+    // Per line, not in total: the route caps each item at 300 and 2000 characters on one line would pass
+    // the length check above and come back as a field error on a textarea the admin has already left.
+    .refine(
+      (value) => splitOutstanding(value).every((item) => item.length <= 300),
+      "One of those lines is too long (at most 300 characters each).",
     ),
   contactName: z
     .string()

@@ -11,6 +11,7 @@ import {
 } from "@shared/franchise/onboarding/steps";
 import type { FranchisePhaseId } from "@shared/franchise/onboarding/steps";
 import type { FranchiseOnboardingStep } from "@shared/franchise/onboarding/types";
+import { SHELL } from "./shell";
 
 /**
  * The step indicator, grouped into four phases.
@@ -113,8 +114,12 @@ export default function PhaseRail({
                   aria-current={isActive ? "step" : undefined}
                   data-testid={`rail-phase-${phase.id}`}
                   className={[
-                    "w-full px-2 py-1.5 text-[11px] font-bold truncate transition-colors",
+                    // `min-h-11` rather than padding: these links arrive by email and are opened
+                    // on a phone, so the four pills are the flow's most-tapped control and were
+                    // 29px tall.
+                    "w-full min-h-11 px-2 flex items-center justify-center text-[11px] font-bold transition-colors",
                     FOCUS,
+                    target !== null && !isActive ? "cursor-pointer" : "cursor-default",
                     isActive
                       ? "bg-primary/10 text-primary-ink ring-2 ring-primary"
                       : isDone
@@ -122,7 +127,7 @@ export default function PhaseRail({
                         : "bg-gray-100 text-gray-500",
                   ].join(" ")}
                 >
-                  {phase.title}
+                  <span className="truncate">{phase.title}</span>
                 </button>
               </li>
             );
@@ -181,7 +186,7 @@ export default function PhaseRail({
 
       {/* ── Desktop ── */}
       <div
-        className="hidden sm:grid max-w-4xl mx-auto px-6 py-4 gap-x-4 gap-y-1"
+        className={`hidden sm:grid ${SHELL} py-4 gap-x-4 gap-y-1`}
         style={{ gridTemplateColumns: `repeat(${FRANCHISE_PHASES.length}, minmax(0, 1fr))` }}
         data-testid="phase-rail"
       >

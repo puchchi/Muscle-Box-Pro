@@ -55,6 +55,13 @@ import type {
   OnboardingResult,
   OnboardingStep,
 } from "@shared/onboarding/types";
+import { FRANCHISE_ONBOARDING_STEPS } from "@shared/franchise/onboarding/types";
+import type {
+  FranchiseOnboardingError,
+  FranchiseOnboardingErrorCode,
+  FranchiseOnboardingResult,
+  FranchiseOnboardingStep,
+} from "@shared/franchise/onboarding/types";
 
 /**
  * Where the API lives.
@@ -100,17 +107,69 @@ function hostnameOf(base: string): string {
 export const IS_PRODUCTION_API = hostnameOf(MBP_API_BASE_URL) === PRODUCTION_API_HOSTNAME;
 
 /**
- * Whether a screen may answer from a fixture instead of calling a route.
+ * The three APIs this app talks to, and why there are three rather than one.
  *
- * The honest test for it, and the one the franchise seams read. A seam that asked
- * `NEXT_PUBLIC_MBP_API_MODE` instead would let a mistyped env var put an in-memory store in front
- * of an operator, or throw on load for a developer pointed at the sandbox.
+ * One service, three CloudFormation stacks. `MbpOnboarding-<env>` reached 486 of CloudFormation's 500
+ * resources, so the franchise admin routes moved to `MbpFranchiseAdmin-<env>`; the wizard's fourteen
+ * routes then went to a third stack for a different reason — one of them can sign an upload into the
+ * bucket of identity documents and one can read the bank account a franchisee wires ₹12,50,000 to, and
+ * neither belongs in the blast radius of the admin routes that read those documents and verify that
+ * transfer. See `mbp-backend` `infra/lib/stacks/franchise-wizard-stack.ts`.
  *
- * The second clause is the test runner, which sets no `NEXT_PUBLIC_MBP_API_URL` — vitest does not
- * read `.env.local` — and so reads as production under the fail-closed rule above. Without it
- * every mock seam would hand its own unit tests a "not deployed" error.
+ * In production all three are one origin: API Gateway base path mappings put them on
+ * `api.muscleboxpro.com`, at `/`, `/franchise` and `/franchise-wizard`. That is the arrangement the
+ * session cookie needs and it is why the paths look doubled — `/franchise-wizard/franchise/onboarding`
+ * is the wizard's own route under the wizard stack's base path.
+ *
+ * In sandbox they are three different `execute-api` hosts, which cannot be derived from each other.
  */
-export const FIXTURES_ALLOWED = !IS_PRODUCTION_API || process.env.NODE_ENV === "test";
+export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard";
+
+/** The base path each stack is mapped onto where there is a custom domain to map onto. */
+const BASE_PATHS: Record<ApiTarget, string> = {
+  onboarding: "",
+  franchiseAdmin: "/franchise",
+  franchiseWizard: "/franchise-wizard",
+};
+
+/**
+ * Resolve one target's base URL, or `null` where this build cannot know it.
+ *
+ * Appending the base path is right on a custom domain and wrong everywhere else: the sandbox's three
+ * stacks are three unrelated `execute-api` hostnames, so `…amazonaws.com/sandbox/franchise` is not a
+ * longer path to the franchise API, it is a 403 from the onboarding one. So the explicit variable wins,
+ * derivation happens only against our own domain, and anything else resolves to `null` — which every
+ * caller turns into an error naming the variable to set.
+ *
+ * Failing loudly is the point. A silently wrong host is a developer watching a franchise screen 403 and
+ * concluding the routes are not deployed.
+ */
+function resolveBase(target: ApiTarget, explicit: string | undefined): string | null {
+  const configured = explicit?.replace(/\/+$/, "");
+  if (configured !== undefined && configured.length > 0) return configured;
+  if (hostnameOf(MBP_API_BASE_URL) !== PRODUCTION_API_HOSTNAME) return null;
+  return `${MBP_API_BASE_URL}${BASE_PATHS[target]}`;
+}
+
+const BASE_URLS: Record<ApiTarget, string | null> = {
+  onboarding: MBP_API_BASE_URL,
+  franchiseAdmin: resolveBase("franchiseAdmin", process.env.NEXT_PUBLIC_MBP_FRANCHISE_API_URL),
+  franchiseWizard: resolveBase(
+    "franchiseWizard",
+    process.env.NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL,
+  ),
+};
+
+/** The env var a caller is told to set when a target has no base URL. */
+const BASE_URL_VARS: Record<ApiTarget, string> = {
+  onboarding: "NEXT_PUBLIC_MBP_API_URL",
+  franchiseAdmin: "NEXT_PUBLIC_MBP_FRANCHISE_API_URL",
+  franchiseWizard: "NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL",
+};
+
+export function apiBaseUrl(target: ApiTarget): string | null {
+  return BASE_URLS[target];
+}
 
 /**
  * Whether this build may fall back to a bearer session — **sandbox only.**
@@ -311,20 +370,47 @@ export type ApiRequestOptions = {
    * an extra preflight for nothing.
    */
   body?: unknown;
+  /**
+   * Which of the three APIs this route belongs to. Defaults to the onboarding API, which is
+   * where every gym route lives.
+   *
+   * A parameter rather than a full URL for the reason `path` is a route: a caller that could
+   * pass a URL could point a credentialed request anywhere.
+   */
+  api?: ApiTarget;
 };
 
 /**
- * One request against the onboarding API.
+ * The transport, with no error vocabulary attached.
  *
- * `path` is a route, not a URL: `"/onboarding"`, `"/gym/portal"`. It is joined to
- * `MBP_API_BASE_URL` so no caller can accidentally point a credentialed request somewhere
- * else.
+ * Split out because there are two vocabularies and one set of transport rules. The gym flow answers
+ * `invalid_token` where the franchise flow answers `invalid_handle`; the frontend switches terminal
+ * screens on the exact string, so they cannot be merged, and the five rules at the top of this file
+ * must not be written twice to keep them apart. What comes back here is the raw outcome — the request
+ * did not complete, or it did and here is the status and body — and the two exported functions below
+ * are each one mapping of that onto one contract.
  */
-export async function apiRequest<T>(
+type RawOutcome =
+  | { kind: "ok"; data: unknown }
+  | { kind: "network" }
+  | { kind: "status"; status: number; body: unknown };
+
+async function rawRequest(
   method: ApiMethod,
   path: string,
-  options: ApiRequestOptions = {},
-): Promise<OnboardingResult<T>> {
+  options: ApiRequestOptions,
+): Promise<RawOutcome> {
+  const target = options.api ?? "onboarding";
+  const base = BASE_URLS[target];
+  // No host to call. Distinguished from every other failure only in the log: for the user it is the
+  // same "we could not reach us", and there is nothing they can do about a missing env var.
+  if (base === null) {
+    console.error(
+      `[apiClient] no base URL for the ${target} API. Set ${BASE_URL_VARS[target]} to the API's origin.`,
+    );
+    return { kind: "network" };
+  }
+
   const headers: Record<string, string> = {};
   // The handle wins. Both credentials travel in `Authorization`, and where a caller has
   // supplied a handle that route is handle-authenticated — `POST /gym/account` is the one
@@ -348,7 +434,7 @@ export async function apiRequest<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${MBP_API_BASE_URL}${path}`, {
+    response = await fetch(`${base}${path}`, {
       method,
       headers,
       body: sendsBody ? JSON.stringify(options.body ?? {}) : undefined,
@@ -363,7 +449,7 @@ export async function apiRequest<T>(
     // DNS, TLS, offline, CORS rejection, and the timeout above all land here, and fetch
     // deliberately tells us apart from none of them — a CORS failure is opaque by design.
     // They share one answer for the user, so they share one code.
-    return { ok: false, error: NETWORK_ERROR };
+    return { kind: "network" };
   }
 
   let body: unknown;
@@ -374,12 +460,12 @@ export async function apiRequest<T>(
     // A truncated or non-JSON body. On a 2xx there is nothing to render; on an error
     // status it is a gateway page rather than our envelope. Either way the request did
     // not usefully complete.
-    return { ok: false, error: NETWORK_ERROR };
+    return { kind: "network" };
   }
 
   if (response.ok) {
-    if (body === undefined) return { ok: false, error: NETWORK_ERROR };
-    return { ok: true, data: body as T };
+    if (body === undefined) return { kind: "network" };
+    return { kind: "ok", data: body };
   }
 
   // A bearer session the server has rejected is a dead one — expired, or minted by a stack
@@ -389,7 +475,49 @@ export async function apiRequest<T>(
   // authenticated by the token, so a 401 about an onboarding handle leaves it alone.
   if (response.status === 401 && usesBearerSession) forgetBearerSession();
 
-  return { ok: false, error: toOnboardingError(response.status, body) };
+  return { kind: "status", status: response.status, body };
+}
+
+/**
+ * One request against the onboarding API.
+ *
+ * `path` is a route, not a URL: `"/onboarding"`, `"/gym/portal"`. It is joined to
+ * `MBP_API_BASE_URL` so no caller can accidentally point a credentialed request somewhere
+ * else.
+ */
+export async function apiRequest<T>(
+  method: ApiMethod,
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<OnboardingResult<T>> {
+  const outcome = await rawRequest(method, path, options);
+  if (outcome.kind === "ok") return { ok: true, data: outcome.data as T };
+  if (outcome.kind === "network") return { ok: false, error: NETWORK_ERROR };
+  return { ok: false, error: toOnboardingError(outcome.status, outcome.body) };
+}
+
+/**
+ * One request against a franchise API, in the franchise flow's error vocabulary.
+ *
+ * The same transport and a different contract, which is the whole reason this is a second function
+ * rather than a generic parameter. `FranchiseOnboardingErrorCode` shares five spellings with the gym
+ * flow's and disagrees on the credential ones — `invalid_handle` where a gym route says
+ * `invalid_token` — and it has six codes the gym contract has no word for: `not_approved`,
+ * `declined`, `not_issuable`, `already_claimed`, `unsupported_document`, `document_too_large`.
+ * `mbp-backend` `services/onboarding/src/domain/errors.ts` calls them two vocabularies rather than a
+ * superset, and each of those six selects a screen. Mapping them through the gym allowlist would turn
+ * `declined` — which has its own non-error screen, because a declined franchisee reading "something
+ * went wrong" emails support — into a generic `network`.
+ */
+export async function franchiseApiRequest<T>(
+  method: ApiMethod,
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<FranchiseOnboardingResult<T>> {
+  const outcome = await rawRequest(method, path, { ...options, api: options.api ?? "franchiseWizard" });
+  if (outcome.kind === "ok") return { ok: true, data: outcome.data as T };
+  if (outcome.kind === "network") return { ok: false, error: FRANCHISE_NETWORK_ERROR };
+  return { ok: false, error: toFranchiseError(outcome.status, outcome.body) };
 }
 
 /**
@@ -495,4 +623,104 @@ function asFieldErrors(value: unknown): Record<string, string> | null {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// ── The franchise vocabulary ────────────────────────────────────────────────
+
+/**
+ * The franchise codes we are willing to take from a response body.
+ *
+ * An allowlist for the same reason the gym one is: `error.code` picks the screen, and an unrecognised
+ * value falls through to whichever branch a component wrote last. `network` is excluded for the same
+ * reason too — the server never emits it, and honouring a server-sent `network` would let a response
+ * that plainly arrived claim it had not.
+ *
+ * Checked against `mbp-backend`'s `EmittableFranchiseCode`, which is
+ * `Exclude<FranchiseOnboardingErrorCode, "network">` and so is exactly this set by construction on that
+ * side. Two shared codes are here because the franchise routes do raise them: `frozen` for either of
+ * the two freeze points, `content_mismatch` for an echoed hash that no longer matches.
+ */
+const RECOGNISED_FRANCHISE_CODES: ReadonlySet<string> = new Set<FranchiseOnboardingErrorCode>([
+  "invalid_handle",
+  "expired_handle",
+  "revoked_handle",
+  "wrong_step",
+  "frozen",
+  "not_approved",
+  "declined",
+  "not_issuable",
+  "already_signed",
+  "content_mismatch",
+  "already_claimed",
+  "unsupported_document",
+  "document_too_large",
+  "validation",
+]);
+
+const FRANCHISE_NETWORK_ERROR: FranchiseOnboardingError = {
+  code: "network",
+  message: "We couldn't reach us just now. Check your connection and try again.",
+};
+
+function toFranchiseError(status: number, body: unknown): FranchiseOnboardingError {
+  const envelope = isRecord(body) ? body : {};
+  const code =
+    typeof envelope.code === "string" && RECOGNISED_FRANCHISE_CODES.has(envelope.code)
+      ? (envelope.code as FranchiseOnboardingErrorCode)
+      : null;
+
+  if (code === null) {
+    // No usable envelope: a 502 from API Gateway, a WAF block page, a Lambda that threw. The message is
+    // ours rather than `envelope.message`, which at this point is a proxy's boilerplate.
+    return { code: franchiseCodeForStatus(status), message: franchiseMessageForStatus(status) };
+  }
+
+  const error: FranchiseOnboardingError = {
+    code,
+    message:
+      typeof envelope.message === "string" && envelope.message.trim().length > 0
+        ? envelope.message
+        : franchiseMessageForStatus(status),
+  };
+
+  const currentStep = asFranchiseStep(envelope.currentStep);
+  if (currentStep !== null) error.currentStep = currentStep;
+
+  const fieldErrors = asFieldErrors(envelope.fieldErrors);
+  if (fieldErrors) error.fieldErrors = fieldErrors;
+
+  return error;
+}
+
+/**
+ * 401 becomes `invalid_handle`, never `expired_handle` or `revoked_handle`.
+ *
+ * The same reasoning as `codeForStatus`: the three have distinct terminal screens, only the body can
+ * tell them apart, and the fallback must not be the one that claims a link was deliberately voided.
+ * 415 and 413 are mapped because the API answers them for a rejected upload, and S3 answers them for
+ * the same two facts if the browser ignores the presigned policy — so a `PUT` that fails without our
+ * envelope still reaches the right message.
+ */
+function franchiseCodeForStatus(status: number): FranchiseOnboardingErrorCode {
+  if (status === 400) return "validation";
+  if (status === 401 || status === 403) return "invalid_handle";
+  if (status === 409) return "wrong_step";
+  if (status === 413) return "document_too_large";
+  if (status === 415) return "unsupported_document";
+  return "network";
+}
+
+function franchiseMessageForStatus(status: number): string {
+  if (status === 400) return "Some details need fixing.";
+  if (status === 401 || status === 403) return "This link is no longer usable.";
+  if (status === 409) return "That step has already moved on. We've refreshed it for you.";
+  if (status === 413) return "Files are limited to 8 MB.";
+  if (status === 415) return "Upload a PDF, a JPEG or a PNG.";
+  return FRANCHISE_NETWORK_ERROR.message;
+}
+
+function asFranchiseStep(value: unknown): FranchiseOnboardingStep | null {
+  return FRANCHISE_ONBOARDING_STEPS.includes(value as FranchiseOnboardingStep)
+    ? (value as FranchiseOnboardingStep)
+    : null;
 }

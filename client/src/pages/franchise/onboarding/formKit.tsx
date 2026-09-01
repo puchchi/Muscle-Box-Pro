@@ -84,6 +84,18 @@ export function Section({
   );
 }
 
+/**
+ * Two short fields side by side from `sm:` up, one column on a phone.
+ *
+ * For the fields whose answers are shorter than their labels — a PAN, a designation, four digits
+ * of an Aadhaar. Given the shell's single column each of those was a full-width row, and step 1
+ * was fourteen of them stacked. Only ever two: three columns at 768px leaves no room for the
+ * descriptions, which are the part of these forms doing the work.
+ */
+export function Row({ children }: { children: React.ReactNode }) {
+  return <div className="grid gap-4 sm:grid-cols-2 sm:gap-x-5">{children}</div>;
+}
+
 function Label({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
     <FormLabel className="text-gray-700 text-sm font-semibold flex items-baseline gap-2">
@@ -349,8 +361,6 @@ export function CheckListField<T extends FieldValues>({
               ? selected.filter((s) => s !== option)
               : [...selected, option].sort((a, b) => a.localeCompare(b)),
           );
-          // `mode: "onBlur"` does not revalidate on change, and there is no blur in ticking a box.
-          // Without this, "choose at least one district" stays red over a list with two ticks in it.
           // `mode: "onBlur"` does not revalidate on change, and there is no blur in ticking a box.
           // Without this, "choose at least one district" stays red over a list with two ticks in it.
           if (fieldState.error) void form.trigger(name);
@@ -725,6 +735,11 @@ function SummaryMessage({ label, message }: { label: string; message?: string })
  * `onClick` makes it a plain button instead of a submit. Two of these steps have nothing to
  * validate client-side — a list of uploads, an acknowledgement — so they are not forms, and a
  * `type="submit"` button outside a form is a control that silently does nothing.
+ *
+ * Two shapes, because a band and a card mean different things. On a phone it spans the screen and
+ * a `border-t` reads as the bottom of the window. At the shell's measure it is 768px inside a
+ * wider viewport, where the same `border-t` reads as a rule drawn across the middle of the page,
+ * so from `sm:` up it lifts off the bottom and closes into a bordered card.
  */
 export function SubmitBar({
   nextHint,
@@ -744,7 +759,13 @@ export function SubmitBar({
   onClick?: () => void;
 }) {
   return (
-    <div className="sticky bottom-0 -mx-4 sm:-mx-6 px-4 sm:px-6 pt-3 pb-4 bg-gray-50/95 backdrop-blur border-t border-gray-200 space-y-2">
+    <div
+      className={[
+        "sticky bottom-0 -mx-4 px-4 pt-3 pb-4 border-t border-gray-200",
+        "sm:bottom-4 sm:mx-0 sm:px-5 sm:py-4 sm:rounded-2xl sm:border sm:shadow-lg",
+        "bg-gray-50/95 sm:bg-white/95 backdrop-blur space-y-2",
+      ].join(" ")}
+    >
       <p className="text-xs text-muted-foreground">{nextHint}</p>
       <div className="flex items-center justify-between gap-4">
         {draftStatus ? <DraftIndicator status={draftStatus} /> : <span />}

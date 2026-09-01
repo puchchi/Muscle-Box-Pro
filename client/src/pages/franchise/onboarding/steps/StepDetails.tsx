@@ -12,6 +12,7 @@ import {
   ErrorSummary,
   Field,
   Form,
+  Row,
   Section,
   SelectField,
   SubmitBar,
@@ -135,36 +136,56 @@ export default function StepDetails({
 
           <TermSheetPreview legalName={legalName} />
 
-          <SelectField
-            form={form}
-            name="entityType"
-            label="Entity type"
-            options={ENTITY_TYPE_OPTIONS}
-            disabled={readOnly}
-          />
+          <Row>
+            <SelectField
+              form={form}
+              name="entityType"
+              label="Entity type"
+              options={ENTITY_TYPE_OPTIONS}
+              disabled={readOnly}
+            />
 
-          <Field
-            form={form}
-            name="tradeName"
-            label="Trade name"
-            placeholder="Northline Ventures"
-            description="The name your territory trades under, if it differs."
-            optional
-            disabled={readOnly}
-          />
+            <Field
+              form={form}
+              name="tradeName"
+              label="Trade name"
+              placeholder="Northline Ventures"
+              description="The name your territory trades under, if it differs."
+              optional
+              disabled={readOnly}
+            />
+          </Row>
 
-          <Field
-            form={form}
-            name="pan"
-            label="PAN"
-            placeholder="AABCU9603R"
-            description="The term sheet identifies you by PAN, and the e-sign needs it."
-            // Typed in lowercase more often than not, and the schema uppercases on parse, so
-            // the box may as well show what will be stored.
-            uppercase
-            disabled={readOnly}
-          />
+          <Row>
+            <Field
+              form={form}
+              name="pan"
+              label="PAN"
+              placeholder="AABCU9603R"
+              description="The term sheet identifies you by PAN, and the e-sign needs it."
+              // Typed in lowercase more often than not, and the schema uppercases on parse, so
+              // the box may as well show what will be stored.
+              uppercase
+              disabled={readOnly}
+            />
 
+            {/* Optional, and for the gym flow's reason: it is an invoicing field rather than a
+                contractual one, so an applicant who is not registered or does not have the
+                certificate to hand should not be stopped here. A number that is typed is still
+                checked, because a transposed digit bills the wrong entity for the whole term. */}
+            <Field
+              form={form}
+              name="gstin"
+              label="GSTIN"
+              placeholder="29AABCU9603R1ZM"
+              uppercase
+              optional
+              disabled={readOnly}
+            />
+          </Row>
+
+          {/* Not paired into a `Row`: only one of the two ever shows, so half a row would be half
+              a row, and 21 characters of CIN wants the width. */}
           {showsCin && (
             <Field
               form={form}
@@ -190,20 +211,6 @@ export default function StepDetails({
             />
           )}
 
-          {/* Optional, and for the gym flow's reason: it is an invoicing field rather than a
-              contractual one, so an applicant who is not registered or does not have the
-              certificate to hand should not be stopped here. A number that is typed is still
-              checked, because a transposed digit bills the wrong entity for the whole term. */}
-          <Field
-            form={form}
-            name="gstin"
-            label="GSTIN"
-            placeholder="29AABCU9603R1ZM"
-            uppercase
-            optional
-            disabled={readOnly}
-          />
-
           <AreaField
             form={form}
             name="registeredAddress"
@@ -215,71 +222,77 @@ export default function StepDetails({
         </Section>
 
         <Section title="Who signs">
-          <Field
-            form={form}
-            name="signatoryName"
-            label="Signatory name"
-            placeholder="Rajesh Mehta"
-            description="Who signs the term sheet, and can bind the entity above."
-            autoComplete="name"
-            disabled={readOnly}
-          />
-          <Field
-            form={form}
-            name="signatoryDesignation"
-            label="Designation"
-            placeholder="Director"
-            description="Director, Partner, Proprietor: their title in the entity above."
-            autoComplete="organization-title"
-            disabled={readOnly}
-          />
-          <Field
-            form={form}
-            name="signatoryPan"
-            label="Signatory's PAN"
-            placeholder="AAAPM1234A"
-            description="Their own PAN, not the entity's. The e-sign is issued in their name."
-            uppercase
-            disabled={readOnly}
-          />
-          {/* Four digits and never more. Aadhaar eSign binds a signature to an Aadhaar
-              identity, and this is how we know which identity we asked Digio to bind. The full
-              number is a regulated identifier with storage obligations we have no reason to
-              take on, and Digio holds the audit trail that is the actual evidence (§6.5). */}
-          <Field
-            form={form}
-            name="signatoryAadhaarLast4"
-            label="Aadhaar last four digits"
-            placeholder="4321"
-            inputMode="numeric"
-            description="Only the last four. We never ask for the full number, and we don't store one."
-            optional
-            disabled={readOnly}
-          />
+          <Row>
+            <Field
+              form={form}
+              name="signatoryName"
+              label="Signatory name"
+              placeholder="Rajesh Mehta"
+              description="Who signs the term sheet, and can bind the entity above."
+              autoComplete="name"
+              disabled={readOnly}
+            />
+            <Field
+              form={form}
+              name="signatoryDesignation"
+              label="Designation"
+              placeholder="Director"
+              description="Director, Partner, Proprietor: their title in the entity above."
+              autoComplete="organization-title"
+              disabled={readOnly}
+            />
+          </Row>
+          <Row>
+            <Field
+              form={form}
+              name="signatoryPan"
+              label="Signatory's PAN"
+              placeholder="AAAPM1234A"
+              description="Their own PAN, not the entity's. The e-sign is issued in their name."
+              uppercase
+              disabled={readOnly}
+            />
+            {/* Four digits and never more. Aadhaar eSign binds a signature to an Aadhaar
+                identity, and this is how we know which identity we asked Digio to bind. The full
+                number is a regulated identifier with storage obligations we have no reason to
+                take on, and Digio holds the audit trail that is the actual evidence (§6.5). */}
+            <Field
+              form={form}
+              name="signatoryAadhaarLast4"
+              label="Aadhaar last four digits"
+              placeholder="4321"
+              inputMode="numeric"
+              description="Only the last four. We never ask for the full number, and we don't store one."
+              optional
+              disabled={readOnly}
+            />
+          </Row>
         </Section>
 
         <Section title="Where we write">
-          <Field
-            form={form}
-            name="noticesEmail"
-            label="Notices email"
-            type="email"
-            inputMode="email"
-            placeholder="r.mehta@northline.in"
-            description="Formal notices go here, and your portal login is created under it."
-            autoComplete="email"
-            disabled={readOnly}
-          />
-          <Field
-            form={form}
-            name="noticesPhone"
-            label="Notices phone"
-            type="tel"
-            inputMode="tel"
-            placeholder="+91 98450 12345"
-            autoComplete="tel"
-            disabled={readOnly}
-          />
+          <Row>
+            <Field
+              form={form}
+              name="noticesEmail"
+              label="Notices email"
+              type="email"
+              inputMode="email"
+              placeholder="r.mehta@northline.in"
+              description="Formal notices go here, and your portal login is created under it."
+              autoComplete="email"
+              disabled={readOnly}
+            />
+            <Field
+              form={form}
+              name="noticesPhone"
+              label="Notices phone"
+              type="tel"
+              inputMode="tel"
+              placeholder="+91 98450 12345"
+              autoComplete="tel"
+              disabled={readOnly}
+            />
+          </Row>
         </Section>
 
         {!readOnly && (

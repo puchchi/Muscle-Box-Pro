@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  AlertTriangle,
   CheckCircle2,
   Clock,
   ExternalLink,
@@ -12,12 +11,9 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { IS_MOCK_FRANCHISE_ONBOARDING } from "@/lib/franchiseOnboardingApi";
 import { rememberSigningAttempt, takeReturnedFromEsign } from "@/lib/esignReturn";
-import { ISSUED_TERM_SHEET, canIssueTermSheet } from "@shared/franchise/termsheet/issued";
-import type { Blocker } from "@shared/agreement/types";
+import { canIssueTermSheet } from "@shared/franchise/termsheet/issued";
 import type { EsignSignType } from "@shared/franchise/onboarding/types";
-import { sectionAnchor } from "../../../onboarding/AgreementReader";
 import { formatIstDate, formatIstDateTime } from "../../../gym/istDates";
 import TermSheetReader from "../TermSheetReader";
 import { useBackgroundPoll } from "../useBackgroundPoll";
@@ -151,12 +147,6 @@ export default function StepReviewSign({
       return;
     }
     rememberSigningAttempt(window.location.pathname);
-    if (IS_MOCK_FRANCHISE_ONBOARDING) {
-      // No Digio to leave for, so the round trip happens here: preview lands directly in the
-      // state the tab really comes back in, and the mock's own poll confirms the signature.
-      setCameBack(true);
-      return;
-    }
     // `https://` because this value is handed straight to a navigation from a page mid-flow,
     // where another scheme would be script execution.
     if (!handoff.signingUrl.startsWith("https://")) {
@@ -170,16 +160,11 @@ export default function StepReviewSign({
 
   return (
     <div className="space-y-6">
-      {IS_MOCK_FRANCHISE_ONBOARDING && blockers.length > 0 && (
-        <NotReadyNotice blockers={blockers} />
-      )}
-
       <ValidityLine effectiveDate={issued.effectiveDate} validUntil={issued.validUntil} />
 
       <TermSheetReader
         state={state}
         effectiveDate={issued.effectiveDate}
-        showInternalMarkers={IS_MOCK_FRANCHISE_ONBOARDING}
         onReachedEnd={onReachedEnd}
         onProgress={onProgress}
       />
@@ -216,7 +201,7 @@ export default function StepReviewSign({
           readPercent={readPercent}
           previousAttempt={esign.status === "expired" || esign.status === "declined" ? esign.status : null}
           blockedReason={
-            blockers.length === 0 || IS_MOCK_FRANCHISE_ONBOARDING
+            blockers.length === 0
               ? null
               : "There are unresolved items in this document that we have to close before anyone signs it. We're on it, we'll email you the moment your copy is ready, and nothing you've given us is lost."
           }
@@ -593,44 +578,5 @@ function SignedSummary({
         )}
       </div>
     </section>
-  );
-}
-
-/**
- * The internal blocker list.
- *
- * Preview only, because the whole point of a `todo` marker is that somebody sees it. In
- * production a franchisee gets the "can't be signed yet" panel and this detail belongs in an
- * internal alert. A franchisee must never read our drafting notes about their own term sheet.
- */
-function NotReadyNotice({ blockers }: { blockers: Blocker[] }) {
-  return (
-    <div
-      className="rounded-xl border border-amber-200 bg-amber-50 p-4"
-      data-testid="termsheet-not-issuable"
-    >
-      <p className="text-sm font-semibold text-amber-900 mb-1 flex items-center gap-2">
-        <AlertTriangle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-        This term sheet can't be issued yet
-      </p>
-      <p className="text-xs text-amber-800 leading-relaxed mb-3">
-        {blockers.length} unresolved item{blockers.length === 1 ? "" : "s"} in{" "}
-        {ISSUED_TERM_SHEET.version}. Internal view: a franchisee must never see this list. Signing
-        is enabled here only because this is a preview build.
-      </p>
-      <ul role="list" className="space-y-1.5">
-        {blockers.map((blocker) => (
-          <li key={blocker.id} className="text-[11px] text-amber-800 leading-relaxed">
-            <a
-              href={`#${sectionAnchor(blocker.location)}`}
-              className="font-bold underline decoration-amber-400"
-            >
-              {blocker.location}
-            </a>{" "}
-            : {blocker.problem}
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }

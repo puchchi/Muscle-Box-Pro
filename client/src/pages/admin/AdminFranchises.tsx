@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { fetchAdminFranchiseList, IS_MOCK_ADMIN_FRANCHISE } from "@/lib/adminFranchiseApi";
+import { fetchAdminFranchiseList } from "@/lib/adminFranchiseApi";
 import type { AdminFranchiseListRow } from "@shared/admin/franchises";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
@@ -170,16 +170,6 @@ export default function AdminFranchises() {
           </Link>
         </Button>
       </div>
-
-      {IS_MOCK_ADMIN_FRANCHISE && (
-        <div className="mb-5">
-          <Notice testId="admin-franchises-mock">
-            <strong className="font-semibold text-foreground">These are fixtures.</strong> The
-            franchise routes are built but not deployed, so this tab reads an in-memory store that
-            resets on reload. Approving or verifying here records nothing.
-          </Notice>
-        </div>
-      )}
 
       {problem && (
         <div className="mb-5">

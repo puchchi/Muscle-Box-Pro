@@ -50,8 +50,7 @@ import {
  * They are one file because they are one fact about this flow. Every other step is the franchisee's,
  * and these two are the reason a franchise can sit still for a week with nobody at fault — the
  * wizard cannot complete either, by design (`FranchiseOnboardingApi`: *"a franchisee cannot complete
- * a step whose completion is our assertion"*). Neither route is deployed, so `franchisesMock.ts`
- * stands in and every screen here says so.
+ * a step whose completion is our assertion"*).
  *
  * ## A button appears only when the server would accept it
  *

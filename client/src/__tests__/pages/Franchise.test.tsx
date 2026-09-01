@@ -220,10 +220,7 @@ describe("Franchise page", () => {
     expect(await screen.findByTestId("application-received")).toHaveTextContent("FR-1024");
   });
 
-  /*
-   * `POST /franchise/applications` is not deployed yet, so this is the path every real
-   * submission takes today. Without the mailto the enquiry is simply lost.
-   */
+  /* Without the mailto a ₹25 lakh enquiry that hits a network error is simply lost. */
   it("offers a prefilled mailto when the submission fails", async () => {
     submitFranchiseApplication.mockResolvedValue({
       ok: false,

@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { fetchAdminFranchiseView, IS_MOCK_ADMIN_FRANCHISE } from "@/lib/adminFranchiseApi";
-import type { AdminFranchiseView } from "@shared/admin/franchises";
+import { fetchAdminFranchiseView } from "@/lib/adminFranchiseApi";
+import type { AdminFranchiseTermSheet, AdminFranchiseView } from "@shared/admin/franchises";
 import type { FranchiseOnboardingStep } from "@shared/franchise/onboarding/types";
 import { franchiseStepMeta } from "@shared/franchise/onboarding/steps";
 import { useAdminGuard } from "./useAdminGuard";
@@ -14,7 +14,12 @@ import {
   FranchiseDecisionSection,
   FranchiseInstalmentsSection,
 } from "./AdminFranchiseActions";
-import { formatIstDateTime, formatPaiseAsInr, formatPaiseExact } from "./adminFormat";
+import {
+  formatCalendarDate,
+  formatIstDateTime,
+  formatPaiseAsInr,
+  formatPaiseExact,
+} from "./adminFormat";
 import {
   FRANCHISE_DOC_TYPE_LABEL,
   FRANCHISE_STATUS_CLASS,
@@ -39,9 +44,12 @@ import {
  * - **No document downloads.** `AdminFranchiseDocument` has no `s3Key` and that is not an omission
  *   (§9): these are identity documents, so reading one needs a short-lived presigned GET behind an
  *   admin session, and that route is not built. The card says so instead of rendering a dead link.
- * - **No term sheet and no e-sign record.** Both are `null` from the handler unconditionally,
- *   because nothing writes them yet. Typed as `null` rather than optional so that building them is
- *   a compile error here.
+ * - **No e-sign record.** `esign` is `null` from the handler unconditionally, because nothing writes
+ *   the row yet. Typed as `null` rather than optional so that building it is a compile error here,
+ *   which is how the term sheet card came to exist.
+ * - **No term sheet text.** The card carries the hash and the dates, not the document. It is
+ *   rendered from live state on the franchisee's side, so the only faithful way to read what they
+ *   are reading is their own step 7.
  * - **No editable terms.** `PATCH …/terms` exists for the gym and has no franchise equivalent, so
  *   the figures on this page are read-only even before signing.
  */
@@ -149,14 +157,6 @@ function FranchiseView({
           </span>
         </p>
       </div>
-
-      {IS_MOCK_ADMIN_FRANCHISE && (
-        <Notice testId="franchise-mock">
-          <strong className="font-semibold text-foreground">This is a fixture.</strong> The franchise
-          routes are not deployed, so this record lives in memory and resets on reload. Approving or
-          confirming here records nothing.
-        </Notice>
-      )}
 
       {/*
         At the top rather than only on its own card, because the two steps we owe are the two an
@@ -271,7 +271,11 @@ function FranchiseView({
               <tbody className="divide-y divide-gray-100">
                 {franchise.documents.map((document) => (
                   <tr key={document.docId}>
-                    <td className="px-4 sm:px-5 py-2.5 font-semibold whitespace-nowrap">
+                    <td
+                      className={`px-4 sm:px-5 py-2.5 whitespace-nowrap ${
+                        document.removedAt ? "text-muted-foreground" : "font-semibold"
+                      }`}
+                    >
                       {FRANCHISE_DOC_TYPE_LABEL[document.docType]}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground break-all">
@@ -281,7 +285,19 @@ function FranchiseView({
                       {formatBytes(document.bytes)}
                     </td>
                     <td className="px-4 py-2.5">
-                      {document.uploadState === "uploaded" ? (
+                      {document.removedAt ? (
+                        /* Withdrawal is orthogonal to `uploadState` rather than a third value of it,
+                           so both facts are shown. The franchisee's own view drops these rows, which
+                           makes this the only place a replaced document is visible at all. */
+                        <span className="text-muted-foreground">
+                          Withdrawn
+                          <span className="block text-xs">
+                            {document.uploadState === "uploaded"
+                              ? "after uploading"
+                              : "before the file arrived"}
+                          </span>
+                        </span>
+                      ) : document.uploadState === "uploaded" ? (
                         <span className="text-muted-foreground">Uploaded</span>
                       ) : (
                         /* A row that exists with no file behind it: the upload was started and
@@ -342,12 +358,49 @@ function FranchiseView({
         id="termsheet"
         title="Term sheet and signature"
         testId="card-termsheet"
-        note="Digio is the platform. Nothing writes either record yet."
+        note="The document they are reading at step 7, and its hash."
       >
-        <Empty testId="termsheet-none">
-          No term sheet issued and no signature. The handler returns both as empty unconditionally
-          because there is no writer for either, so this card will stay blank until step 7 is built.
-        </Empty>
+        {franchise.termSheet ? (
+          <Fields>
+            <Field label="Version" value={franchise.termSheet.version} />
+            <Field
+              label="Issued"
+              value={formatIstDateTime(franchise.termSheet.issuedAt)}
+              hint={issuanceHint(franchise.termSheet)}
+            />
+            <Field
+              label="First opened"
+              value={formatIstDateTime(franchise.timestamps.termsheetViewedAt)}
+            />
+            <Field
+              label="Effective"
+              value={formatCalendarDate(franchise.termSheet.effectiveDate)}
+            />
+            <Field label="Valid until" value={formatCalendarDate(franchise.termSheet.validUntil)} />
+            {/* The hash is what a signature is over, so it is the one field here worth copying out
+                of the page verbatim. `length` beside it is what makes a truncated render visible. */}
+            <Field label="Content hash" value={franchise.termSheet.contentHash} mono />
+            <Field
+              label="Length"
+              value={`${franchise.termSheet.length.toLocaleString("en-IN")} characters`}
+            />
+            <Field
+              label="PDF hash"
+              value={franchise.termSheet.pdfHash}
+              hint={franchise.termSheet.pdfHash ? undefined : "No PDF is rendered yet"}
+              mono
+            />
+          </Fields>
+        ) : (
+          <Empty testId="termsheet-none">
+            No term sheet issued. One is pinned the first time they open step 7, which needs the
+            approval on the decision card above.
+          </Empty>
+        )}
+        <p className="px-4 sm:px-5 py-3.5 text-xs text-muted-foreground leading-relaxed border-t border-gray-100">
+          No signature record. Digio is the platform and nothing writes an e-sign row yet, so this
+          stays empty even for a franchise the ladder has already moved past signing.
+        </p>
       </Card>
 
       <Card
@@ -586,6 +639,17 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Said only when there has been more than one issuance.
+ *
+ * A re-pin happens when the figures change while the franchise is still unsigned, so this is the answer to
+ * "why does their hash not match the one in my email" and there is nothing else on the page that hints at it.
+ */
+function issuanceHint(termSheet: AdminFranchiseTermSheet): string | undefined {
+  if (termSheet.issuedCount < 2) return undefined;
+  return `Re-issued after the terms changed. ${termSheet.issuedCount} in total, this is number ${termSheet.seq}.`;
 }
 
 /** Said in words beside the date, because "expired" is the answer to why a link stopped working. */

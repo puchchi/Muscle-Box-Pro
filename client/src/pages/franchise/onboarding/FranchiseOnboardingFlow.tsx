@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AlertCircle, ArrowLeft, Info, Lock, Pencil, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, Lock, Pencil, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { scrollIntoViewGently } from "@/lib/motion";
-import { IS_MOCK_FRANCHISE_ONBOARDING } from "@/lib/franchiseOnboardingApi";
 import { FRANCHISE_STEP_META, franchiseStepMeta } from "@shared/franchise/onboarding/steps";
 import {
   operationsReadinessSchema,
@@ -20,7 +19,6 @@ import type {
 } from "@shared/franchise/onboarding/types";
 import FranchiseOnboardingIntro from "./FranchiseOnboardingIntro";
 import PhaseRail from "./PhaseRail";
-import PreviewControls from "./PreviewControls";
 import { useFranchiseOnboarding } from "./useFranchiseOnboarding";
 import StepDetails from "./steps/StepDetails";
 import StepTerritory from "./steps/StepTerritory";
@@ -31,6 +29,7 @@ import StepOperations from "./steps/StepOperations";
 import StepReviewSign from "./steps/StepReviewSign";
 import StepInstalment from "./steps/StepInstalment";
 import StepDone from "./steps/StepDone";
+import { SHELL } from "./shell";
 import type { FranchiseStepViewProps } from "./types";
 
 /**
@@ -42,11 +41,7 @@ import type { FranchiseStepViewProps } from "./types";
  * sticky-chrome height published as a CSS variable, focus moved to the heading of each new
  * step, and one `SHELL` measure for the header, the rail and the body.
  *
- * Two differences worth naming.
- *
- * *Six of nine steps sit behind an approval, and three of them are ours.* So the shell has a
- * `PreviewControls` strip in mock mode. Without it the preview stops at step 4 and everything
- * after it is unreviewable.
+ * One difference worth naming.
  *
  * *A declined application is not an error screen.* It is step 4's content. `declined` comes
  * back from every mutating call, and rendering it as a red banner over a form would leave a
@@ -97,9 +92,6 @@ function stepMarksField(
   return false;
 }
 
-/** One measure for the header, the rail and the body. See `OnboardingFlow`. */
-const SHELL = "max-w-3xl mx-auto px-4 sm:px-6";
-
 export default function FranchiseOnboardingFlow({ handle }: { handle: string }) {
   const {
     state,
@@ -114,7 +106,6 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
     goToStep,
     isReadOnly,
     frozenReason,
-    reload,
     actions,
   } = useFranchiseOnboarding(handle);
 
@@ -165,17 +156,6 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
           canView={canView}
           onSelect={goToStep}
         />
-        {IS_MOCK_FRANCHISE_ONBOARDING && (
-          <>
-            <MockBanner />
-            <PreviewControls
-              handle={handle}
-              state={state}
-              viewStep={viewStep}
-              onChanged={reload}
-            />
-          </>
-        )}
       </div>
 
       {/* `tabIndex={-1}` is what makes the skip link skip in Safari, which is what emailed
@@ -329,23 +309,6 @@ function Footer() {
         </a>
       </div>
     </footer>
-  );
-}
-
-/*
- * Visible on purpose while the wizard runs on the in-memory mock. Anything that looks like a
- * real application but discards its data on reload has to say so, or someone will demo it to a
- * prospective franchisee and lose their details.
- */
-function MockBanner() {
-  return (
-    <div className="bg-amber-50 border-b border-amber-200 py-2">
-      <p className={`${SHELL} text-[11px] text-amber-900 flex items-center gap-1.5`}>
-        <Info className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-        Preview mode: nothing here is saved to the database yet, and reloading the page starts
-        over.
-      </p>
-    </div>
   );
 }
 

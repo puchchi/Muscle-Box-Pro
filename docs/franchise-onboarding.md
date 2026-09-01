@@ -230,6 +230,14 @@ and is not sent to the client. A generated sentence explaining a commercial judg
 text that gets quoted back, and territory availability is often the real reason and is not ours to
 publish.
 
+**Nobody lands on this step, so the granted-versus-requested comparison cannot live only here.**
+Completing on read is what does it: the moment an approval arrives, `completedStepsOnRead` adds 4,
+`deriveCurrentStep` returns 5, and a franchisee opening their link goes to the commercials. If we
+granted three districts of five, the screen that says so is one the reader reaches only by pressing
+back on the rail. So the comparison is `TerritoryCutNotice`, rendered by step 4 *and* step 5, which
+is the last screen before a signature that can carry it. It renders nothing when the grant matches
+the request, and step 5's copy of it offers a way back to the granted boundary.
+
 ### Step 5 — Your franchise
 
 The commercials, read-only, acknowledged by continuing — the gym flow's step 2 exactly, including
@@ -838,7 +846,7 @@ nothing else.
 | `shared/franchise/onboarding/steps.ts` | `STEP_META` with a `phase` per step, plus the phase list |
 | `shared/franchise/onboarding/schema.ts` | zod, shared by the forms, the mock and the handlers |
 | `shared/franchise/onboarding/mockApi.ts` | the state machine — the ladder, both freeze points, the approval gate, the payment claim, the conditional signing write |
-| `client/src/lib/franchiseOnboardingApi.ts` | **the single swap point.** Nothing under `pages/franchise/onboarding/` imports the mock |
+| `client/src/lib/franchiseOnboardingApi.ts` | **the single swap point.** Nothing under `pages/franchise/onboarding/` imports an API directly |
 | `client/src/lib/httpFranchiseOnboardingApi.ts` | the live implementation, through `apiClient` |
 | `client/src/pages/franchise/onboarding/FranchiseOnboardingFlow.tsx` | the shell: chrome, rail, token-problem screens, step dispatch. No business logic |
 | `client/src/pages/franchise/onboarding/PhaseRail.tsx` | nine steps in four phases (§3) |
@@ -847,14 +855,17 @@ nothing else.
 | `app/franchise/onboarding/[slug]/[handle]/page.tsx` | metadata-only shell, `noindex, nofollow` |
 | `app/franchise/esign-return/page.tsx` | the Digio return, registered as the redirect URL. Carries **no** handle |
 
-The mock needs the preview escape hatches the gym mock has, for the same reason
-`previewAdvanceInstallation` exists: two of the nine steps are completed by us, and a preview cannot
-wait for a human. `previewApprove`, `previewDecline`, `previewVerifyPayment` and
-`previewCompleteEsign` — each re-exported through `franchiseOnboardingApi.ts` rather than imported
-from the mock at the call site, and each behind `IS_MOCK_FRANCHISE_ONBOARDING`.
+**The mock is now a test double only.** `franchiseOnboardingApi.ts` re-exports
+`httpFranchiseOnboardingApi` unconditionally, and no build serves the mock to a browser. It survives
+because `client/src/__tests__/shared/franchise-onboarding-mock.test.ts` is where the ladder, both
+freeze points, the approval gate and the payment claim are pinned as a specification, and that suite
+imports it directly rather than through the swap point.
 
-Keep the mock's 300 ms of latency outside tests. Against an instant API the saving indicator never
-appears and the disabled-while-submitting states never get looked at, so both ship broken.
+The preview escape hatches (`previewApprove`, `previewHold`, `previewDecline`,
+`previewCompleteEsign`, `previewVerifyPayment`, `previewRefusePayment`) exist for the same reason:
+two of the nine steps are completed by us, and a test cannot wait for a human. Their in-browser
+counterpart, `PreviewControls`, is gone. The real way to move a franchise past step 4 and step 8 is
+the admin panel's two writes, §8.4.
 
 ### Routes and headers
 

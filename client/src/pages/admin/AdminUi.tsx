@@ -104,7 +104,10 @@ export function Field({
         {hint && <span className="block text-xs text-gray-400">{hint}</span>}
       </dt>
       <dd
-        className={`text-sm text-foreground text-right break-words ${mono ? "font-mono text-xs" : ""}`}
+        // `min-w-0` is what lets `break-words` do anything: without it a flex item is at least as
+        // wide as its longest unbreakable token, so a 64-character hash pushes off the right edge of
+        // a phone instead of wrapping.
+        className={`min-w-0 text-sm text-foreground text-right break-words ${mono ? "font-mono text-xs" : ""}`}
         data-testid={testId}
       >
         {shown}

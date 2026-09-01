@@ -14,13 +14,12 @@
  * question 11 in `docs/franchise-onboarding.md`; until it is settled, **every number in this file
  * is paise** and `formatPaiseAsInr` is what renders it.
  *
- * ## Two of these writes have no handler yet
+ * ## The three writes are the ones that unblock the wizard
  *
- * The backend has five franchise handlers — create, list, get, and the two application-triage
- * routes. `AdminFranchiseApprovalBody` and `AdminFranchisePaymentVerifyBody` describe routes
- * nobody has written. They are here because they are the two writes that unblock the wizard:
- * steps 4 and 8 are completed by us, so without them no franchise can reach step 9 outside the
- * mock's preview hatches. Defining the contract first is the same order §10 used for the wizard.
+ * `AdminFranchiseApprovalBody` and the two payment bodies were defined here before their handlers
+ * existed, and the handlers were then written to them. They matter more than they look: steps 4 and
+ * 8 are completed by **us**, so until an admin decides and confirms, no franchise can reach step 9
+ * at all.
  */
 
 import type {
@@ -149,6 +148,14 @@ export type AdminFranchiseDocument = {
   uploadState: "pending" | "uploaded";
   requestedAt: string | null;
   uploadedAt: string | null;
+  /**
+   * When the franchisee withdrew this upload, if they did.
+   *
+   * Not a third `uploadState`: it is orthogonal to one, since a `pending` row can be withdrawn and so can an
+   * `uploaded` one. The franchisee's own view drops a withdrawn row entirely; the admin view keeps it, because a
+   * document somebody sent us and then replaced is part of the history of what we were given.
+   */
+  removedAt: string | null;
 };
 
 export type AdminFranchisePayment = {
@@ -165,6 +172,35 @@ export type AdminFranchisePayment = {
   rejectedAt: string | null;
   /** On a rejection, the sentence the franchisee is shown. */
   reason: string | null;
+};
+
+/**
+ * The term sheet the server has pinned, as the admin view describes it.
+ *
+ * The **current** pin, which is the newest row rather than the first. A franchise's term sheet is re-pinned when
+ * the document drifts while it is still unsigned — an admin correcting a City-tier figure is the case that
+ * matters — so `seq` above 1, or an `issuedCount` above 1, is the visible trace of that having happened. Worth
+ * showing rather than hiding: "which document is this franchisee looking at" is the question this card answers,
+ * and a re-issue is the thing that makes the answer non-obvious.
+ *
+ * `fields` is not on the wire. The stored row keeps the exact fields that were hashed as evidence, and putting
+ * them here would give the screen a second source for text it renders from `terms` and `territory` anyway.
+ */
+export type AdminFranchiseTermSheet = {
+  /** 1-based issuance sequence, from the `TERMSHEET#<nnn>` sort key. */
+  seq: number;
+  /** How many have been issued, this one included. */
+  issuedCount: number;
+  /** The document's own version, e.g. `"1.0"`. Several issuances may share it. */
+  version: string;
+  effectiveDate: string;
+  validUntil: string;
+  contentHash: string;
+  length: number;
+  /** Null until a PDF renderer exists, and deliberately not a plausible-looking string before then. */
+  pdfHash: string | null;
+  /** When this issuance was pinned. The franchisee's *first* view is `timestamps.termsheetViewedAt`. */
+  issuedAt: string;
 };
 
 /**
@@ -222,9 +258,10 @@ export type AdminFranchiseInviteRecord = {
 /**
  * `GET /admin/franchises/{franchiseId}` — everything we hold about one franchise.
  *
- * `termSheet` and `esign` are `null` from the handler unconditionally: there is no writer for
- * either yet, so there is no shape to describe. Typed as `null` rather than as an optional object
- * so that adding them is a compile error here rather than a blank card on the page.
+ * `esign` is `null` from the handler unconditionally: nothing writes an `ESIGN#` row yet, and the fields a
+ * provider integration needs are named by the provider, so there is no shape to describe. Typed as `null`
+ * rather than as an optional object so that adding it is a compile error here rather than a blank card on the
+ * page. `termSheet` was the same until a writer landed, which is that device working as intended.
  */
 export type AdminFranchiseView = {
   franchiseId: string;
@@ -271,7 +308,7 @@ export type AdminFranchiseView = {
   documents: AdminFranchiseDocument[];
   payments: AdminFranchisePayment[];
 
-  termSheet: null;
+  termSheet: AdminFranchiseTermSheet | null;
   esign: null;
   /**
    * Rows in the partition this view has no model for.

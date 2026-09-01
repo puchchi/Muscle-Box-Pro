@@ -10,6 +10,7 @@ import {
   ErrorSummary,
   Field,
   Form,
+  Row,
   Section,
   SelectField,
   SubmitBar,
@@ -103,46 +104,50 @@ export default function StepOperations({
             description="Where we deliver protein consignments. It can be the registered address if that is where you'll hold stock."
             disabled={readOnly}
           />
-          <Field
-            form={form}
-            name="warehouseAreaSqft"
-            label="Warehouse area"
-            placeholder="1200"
-            numeric
-            description="In square feet, to the nearest foot."
-            disabled={readOnly}
-          />
-          <SelectField
-            form={form}
-            name="temperatureControl"
-            label="Temperature control"
-            placeholder="Choose one"
-            options={TEMPERATURE_OPTIONS}
-            description="Either answer is fine. It changes how we schedule deliveries and what we can send at once."
-            disabled={readOnly}
-          />
+          <Row>
+            <Field
+              form={form}
+              name="warehouseAreaSqft"
+              label="Warehouse area"
+              placeholder="1200"
+              numeric
+              description="In square feet, to the nearest foot."
+              disabled={readOnly}
+            />
+            <SelectField
+              form={form}
+              name="temperatureControl"
+              label="Temperature control"
+              placeholder="Choose one"
+              options={TEMPERATURE_OPTIONS}
+              description="Either answer is fine. It changes how we schedule deliveries and what we can send at once."
+              disabled={readOnly}
+            />
+          </Row>
         </Section>
 
         <Section title="Who runs the machines">
-          <Field
-            form={form}
-            name="operationsContactName"
-            label="Operations contact"
-            placeholder="Sunil Kumar"
-            description="Whoever actually refills machines and deals with a fault. Often not the signatory."
-            autoComplete="name"
-            disabled={readOnly}
-          />
-          <Field
-            form={form}
-            name="operationsContactPhone"
-            label="Operations phone"
-            type="tel"
-            inputMode="tel"
-            placeholder="+91 98450 12345"
-            autoComplete="tel"
-            disabled={readOnly}
-          />
+          <Row>
+            <Field
+              form={form}
+              name="operationsContactName"
+              label="Operations contact"
+              placeholder="Sunil Kumar"
+              description="Whoever actually refills machines and deals with a fault. Often not the signatory."
+              autoComplete="name"
+              disabled={readOnly}
+            />
+            <Field
+              form={form}
+              name="operationsContactPhone"
+              label="Operations phone"
+              type="tel"
+              inputMode="tel"
+              placeholder="+91 98450 12345"
+              autoComplete="tel"
+              disabled={readOnly}
+            />
+          </Row>
         </Section>
 
         <Section title="How you'll deploy">

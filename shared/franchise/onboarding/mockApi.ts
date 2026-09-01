@@ -934,9 +934,10 @@ export function createMockFranchiseOnboardingApi(
  * reading a bank statement — and a preview cannot wait for a person. These stand in, for the
  * same reason `advanceMockInstallation` exists in the gym mock.
  *
- * Each is reached through `client/src/lib/franchiseOnboardingApi.ts` rather than imported from
- * this module at the call site, and every caller has to be behind
- * `IS_MOCK_FRANCHISE_ONBOARDING` — against the live API there is no store to move.
+ * No browser build reaches these: the only caller is
+ * `client/src/__tests__/shared/franchise-onboarding-mock.test.ts`, which imports them from here
+ * directly. Against the live API there is no store to move, and step 4 and step 8 are the admin
+ * panel's two writes instead.
  *
  * They go through `advance`, so the ladder applies to them too: `previewDecline` after an
  * approval is refused, because withdrawing an approval is not a status write.

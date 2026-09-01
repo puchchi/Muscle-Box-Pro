@@ -5,6 +5,7 @@ import { Building2, Coins, Info, Megaphone, TrendingUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { MACHINE_RIGHTS, formatInr, franchiseTier } from "@shared/franchise/program";
+import TerritoryCutNotice from "../TerritoryCutNotice";
 import type { FranchiseStepViewProps } from "../types";
 
 /**
@@ -28,6 +29,10 @@ import type { FranchiseStepViewProps } from "../types";
  * A missing payment schedule or recovery threshold is not hidden here. It is exactly what stops
  * a term sheet being issued at step 7, so this screen names it as something we still have to set
  * rather than printing a blank.
+ *
+ * **This is where an approval lands, so it carries step 4's territory comparison.** Step 4
+ * completes on read, so a franchisee whose territory was cut opens their link on this screen and
+ * never sees the screen written to tell them. See `TerritoryCutNotice`.
  */
 /**
  * A sentence-leading trigger, continuing a sentence that started with the amount.
@@ -42,6 +47,7 @@ function continuing(text: string): string {
 export default function StepFranchise({
   state,
   isSubmitting,
+  goToStep,
   actions,
 }: FranchiseStepViewProps) {
   const { terms } = state;
@@ -65,6 +71,8 @@ export default function StepFranchise({
           {state.approval?.outcome === "approved" ? state.approval.territory : tier.marketRights.toLowerCase()}.
         </p>
       </section>
+
+      <TerritoryCutNotice state={state} onSeeBoundary={() => goToStep(4)} />
 
       <Block
         icon={<Coins className="w-4 h-4 text-primary-ink" aria-hidden="true" />}

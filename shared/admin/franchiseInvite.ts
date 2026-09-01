@@ -156,10 +156,11 @@ export function inviteDefaults(tier: FranchiseTierId): AdminFranchiseInviteFormI
 /**
  * What `POST /admin/franchises` answers with.
  *
- * `emailed` is on it and is **always `false`**: there is no franchise invite sender, so an admin
- * copies `onboardingUrl` by hand. It is on the type rather than assumed away because the day a
- * sender lands, the screen that says "send this link yourself" has to stop saying it, and a field
- * that is read is a field somebody will notice. Open question 12.
+ * `emailed` is either value. The route does mail the link to `noticesEmail` unless `sendInvite` is
+ * an explicit `false`, but `deliver` never throws, because nothing can reissue a handle this call
+ * has already consumed: a mail failure has to be reported next to a URL the admin can still copy,
+ * not turned into an error that loses it. So the screen shows `onboardingUrl` on both paths and
+ * reads `emailed` to decide whether to ask for a manual send.
  */
 export type AdminFranchiseInviteResult = {
   franchiseId: string;

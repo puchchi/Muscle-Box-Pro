@@ -1671,11 +1671,10 @@ const EMPTY_APPLICATION: FranchiseApplicationInput = {
 /**
  * The enquiry form, and the last section on the page.
  *
- * Its failure path is doing more work than usual, because
- * `POST /franchise/applications` is not deployed yet: on any failure it offers a mailto
- * carrying everything the applicant typed. A ₹25 lakh enquiry that hits a network error
- * and is told only "try again" is a lost enquiry, and this one is guaranteed to hit one
- * until the endpoint exists. See lib/franchiseApi.
+ * Its failure path is doing more work than usual, and keeps doing it now that
+ * `POST /franchise/applications` is live: on any failure it offers a mailto carrying
+ * everything the applicant typed. A ₹25 lakh enquiry that hits a network error and is told
+ * only "try again" is a lost enquiry. See lib/franchiseApi.
  */
 function ApplicationSection({
   ref,

@@ -2,24 +2,22 @@
  * The single binding between the admin panel's franchise screens and their backend.
  *
  * [adminApi.ts](./adminApi.ts) for the franchise half of the dashboard, and the same rule holds:
- * nothing under `pages/admin/` may import `@shared/admin/franchisesMock` directly, or the swap
- * stops being one file. When the routes are deployed, the six functions below lose their `mock.`
- * bodies and gain `apiRequest` calls; every caller stays as it is.
+ * nothing under `pages/admin/` talks to an API except through this file.
  *
- * ## Why this is a mock and the gym side is not
+ * ## Eight routes, on their own API
  *
- * `GET /admin/franchises`, `GET /admin/franchises/{id}` and `POST /admin/franchises` are written
- * and tested in `mbp-backend` but **unrouted**: the onboarding stack has 484 of CloudFormation's
- * 500 resources and these methods cost 47 (docs/franchise-onboarding.md §8.1, open question 10).
- * The approval and payment-verification routes do not exist at all, and `franchisesMock.ts` is the
- * first description of what they do.
+ * These live in `MbpFranchiseAdmin-<env>` rather than in the onboarding stack, which had 484 of
+ * CloudFormation's 500 resources when the franchise routes were written (docs/franchise-onboarding.md
+ * §8.1). In production it is a second base path on one host; in sandbox it is a different
+ * `execute-api` hostname, so `apiClient` needs `NEXT_PUBLIC_MBP_FRANCHISE_API_URL` to reach it and
+ * says so in a console error rather than guessing. Hence `api: "franchiseAdmin"` on every call
+ * below.
  *
- * ## The responses are still validated
+ * ## Every read is validated
  *
- * The mock answers `unknown` and every read here runs it through `franchisesSchema.ts`, exactly as
- * it will run a real body. Validating our own fixture sounds like theatre; it is the only way the
- * validator is exercised before the day it matters, which is the day the seam flips and nobody is
- * watching it.
+ * `franchisesSchema.ts` parses each body, and the reason to keep doing that against a real API is
+ * `parseAdminFranchiseView`'s own: the territory projection changed shape after the stack was last
+ * deployed, and a schema failure names the field while a silent `undefined` renders an empty panel.
  *
  * ## The writes return `AdminReadResult` too
  *
@@ -29,12 +27,7 @@
  */
 
 import type { AdminReadResult } from "./adminApi";
-import { FIXTURES_ALLOWED } from "./apiClient";
-import {
-  createMockAdminFranchiseApi,
-  MOCK_ADMIN_FRANCHISE_TARGETS,
-  resetMockAdminFranchises,
-} from "@shared/admin/franchisesMock";
+import { apiRequest } from "./apiClient";
 import {
   parseAdminFranchiseList,
   parseAdminFranchiseView,
@@ -52,40 +45,10 @@ import type {
 } from "@shared/admin/franchiseInvite";
 import type { OnboardingError, OnboardingResult } from "@shared/onboarding/types";
 
-const mock = createMockAdminFranchiseApi({
-  latencyMs: process.env.NODE_ENV === "test" ? 0 : 300,
-});
+/** Every route here is a second base path away from the gym routes. See the header. */
+const FRANCHISE_ADMIN = { api: "franchiseAdmin" } as const;
 
-/**
- * Whether these screens are reading fixtures — everywhere except the production API.
- *
- * Two things this must not do, and one it must.
- *
- * It must not put fixtures in front of an operator on `api.muscleboxpro.com`: approving a ₹25
- * lakh territory against an in-memory store records a decision that vanishes on refresh. So the
- * production host gets `NOT_DEPLOYED` from every function below and the pages render their
- * ordinary error state, which says exactly that.
- *
- * It must not be `NEXT_PUBLIC_MBP_API_MODE`. An earlier version threw at module scope when that
- * flag read `live`, which is how a developer running against the sandbox — the ordinary local
- * setup, since the gym flow needs it — got a runtime error page from a nav link on every admin
- * screen. The flag says which *gym* seam to use and says nothing about franchise routes that are
- * not deployed under either value.
- *
- * And it must be visible: every screen shows a fixture notice while this is true.
- *
- * When the routes land, this becomes `false` and the six functions below take `apiRequest`.
- */
-export const IS_MOCK_ADMIN_FRANCHISE = FIXTURES_ALLOWED;
-
-/** Not a network failure, but `code` is what the error panels understand. */
-const NOT_DEPLOYED: OnboardingError = {
-  code: "network",
-  message:
-    "The franchise admin routes are not deployed yet, so there is nothing here to read. See docs/franchise-onboarding.md §8.1 and open question 10.",
-};
-
-export { MOCK_ADMIN_FRANCHISE_TARGETS, resetMockAdminFranchises };
+const FRANCHISES = "/admin/franchises";
 
 export const ADMIN_FRANCHISES_QUERY_KEY = ["admin", "franchises"] as const;
 export const adminFranchiseQueryKey = (franchiseId: string) =>
@@ -101,9 +64,20 @@ export type AdminFranchiseListQuery = {
 export async function fetchAdminFranchiseList(
   query: AdminFranchiseListQuery = {},
 ): Promise<AdminReadResult<AdminFranchiseList>> {
-  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
+  const params = new URLSearchParams();
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  if (query.cursor) params.set("cursor", query.cursor);
+  // The handler reads `queue=review` and then ignores `cursor` — the sparse index is unpaged. Both
+  // are sent when both are given rather than resolved here, because which one wins is the server's
+  // rule and a second copy of it would be the copy that drifts.
+  if (query.queue) params.set("queue", query.queue);
+  const encoded = params.toString();
 
-  const result = await mock.list(query);
+  const result = await apiRequest<unknown>(
+    "GET",
+    `${FRANCHISES}${encoded.length > 0 ? `?${encoded}` : ""}`,
+    FRANCHISE_ADMIN,
+  );
   if (!result.ok) return { ok: false, error: result.error, issues: [] };
 
   const parsed = parseAdminFranchiseList(result.data);
@@ -114,9 +88,11 @@ export async function fetchAdminFranchiseList(
 export async function fetchAdminFranchiseView(
   franchiseId: string,
 ): Promise<AdminReadResult<AdminFranchiseView>> {
-  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
-
-  const result = await mock.get(franchiseId);
+  const result = await apiRequest<unknown>(
+    "GET",
+    `${FRANCHISES}/${encodeURIComponent(franchiseId)}`,
+    FRANCHISE_ADMIN,
+  );
   if (!result.ok) return { ok: false, error: result.error, issues: [] };
 
   const parsed = parseAdminFranchiseView(result.data);
@@ -128,16 +104,20 @@ export async function fetchAdminFranchiseView(
  * Create a franchise and mint its onboarding link.
  *
  * `createGym`'s division of labour: this trusts its caller to have run the form through
- * `adminFranchiseInviteFormSchema` and does not re-validate the input. What it does not share is
- * the delivery — `emailed` comes back `false` because there is no franchise invite sender, so the
- * screen has to hand the link to a human (open question 12).
+ * `adminFranchiseInviteFormSchema` and does not re-validate the input.
+ *
+ * The response is not schema-parsed, for `createInvite`'s reason: six flat fields, and the screen
+ * shows `onboardingUrl` once. `emailed` may be either value — the handler does send a franchise
+ * invite, and a delivery failure is reported rather than thrown, because nothing can reissue the
+ * handle this call has already consumed.
  */
 export async function createFranchise(
   body: AdminFranchiseInviteBody,
 ): Promise<OnboardingResult<AdminFranchiseInviteResult>> {
-  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED };
-
-  return mock.create(body);
+  return apiRequest<AdminFranchiseInviteResult>("POST", FRANCHISES, {
+    ...FRANCHISE_ADMIN,
+    body,
+  });
 }
 
 /**
@@ -151,9 +131,13 @@ export async function decideFranchise(
   franchiseId: string,
   body: AdminFranchiseApprovalBody,
 ): Promise<AdminReadResult<AdminFranchiseView>> {
-  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
-
-  return reparse(await mock.decide(franchiseId, body));
+  return reparse(
+    await apiRequest<unknown>(
+      "POST",
+      `${FRANCHISES}/${encodeURIComponent(franchiseId)}/approval`,
+      { ...FRANCHISE_ADMIN, body },
+    ),
+  );
 }
 
 /**
@@ -168,9 +152,10 @@ export async function verifyFranchisePayment(
   instalmentNo: number,
   body: AdminFranchisePaymentVerifyBody,
 ): Promise<AdminReadResult<AdminFranchiseView>> {
-  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
-
-  return reparse(await mock.verifyPayment(franchiseId, instalmentNo, body));
+  return reparse(await apiRequest<unknown>("POST", paymentPath(franchiseId, instalmentNo, "verify"), {
+    ...FRANCHISE_ADMIN,
+    body,
+  }));
 }
 
 /**
@@ -185,9 +170,18 @@ export async function refuseFranchisePayment(
   instalmentNo: number,
   body: AdminFranchisePaymentRefuseBody,
 ): Promise<AdminReadResult<AdminFranchiseView>> {
-  if (!IS_MOCK_ADMIN_FRANCHISE) return { ok: false, error: NOT_DEPLOYED, issues: [] };
+  return reparse(await apiRequest<unknown>("POST", paymentPath(franchiseId, instalmentNo, "refuse"), {
+    ...FRANCHISE_ADMIN,
+    body,
+  }));
+}
 
-  return reparse(await mock.refusePayment(franchiseId, instalmentNo, body));
+/**
+ * `instalmentNo` is a path segment, so it is stringified from a number the caller cannot make into
+ * anything else. The handler answers 404 rather than 400 for a segment that does not parse.
+ */
+function paymentPath(franchiseId: string, instalmentNo: number, action: "verify" | "refuse"): string {
+  return `${FRANCHISES}/${encodeURIComponent(franchiseId)}/payments/${instalmentNo}/${action}`;
 }
 
 function reparse(result: OnboardingResult<unknown>): AdminReadResult<AdminFranchiseView> {

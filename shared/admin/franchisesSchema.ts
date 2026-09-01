@@ -7,10 +7,10 @@
  * field across about seventy fields, so a rename type-checks on both sides and lands as a blank
  * cell on the page someone is reading to decide whether a ₹25 lakh franchise is stuck.
  *
- * It also does something `gymsSchema` does not have to: these routes **are not deployed**. The
- * panel talks to a mock (see `client/src/lib/adminFranchiseApi.ts`), so this schema is currently
- * validating our own fixture. That is not wasted — it is the thing that will catch the drift on
- * the day the seam flips, which is exactly when nobody will be looking for it.
+ * There is already one drift for it to catch: the territory projection in `toAdminFranchiseView`
+ * changed shape after `MbpFranchiseAdmin` was last deployed, so until that stack is redeployed
+ * `parseAdminFranchiseView` fails and names the field. That is the intended outcome. The
+ * alternative is a detail page that renders an empty territory panel and looks merely unfilled.
  *
  * The same two abstentions as the gym side:
  *
@@ -197,6 +197,7 @@ const adminFranchiseDocumentSchema = z.object({
   uploadState: z.enum(["pending", "uploaded"]),
   requestedAt: instant,
   uploadedAt: instant,
+  removedAt: instant,
 });
 
 /**
@@ -225,6 +226,25 @@ const adminFranchisePaymentSchema = z.object({
   verifiedByEmail: label.nullable(),
   rejectedAt: instant,
   reason: deferred.nullable(),
+});
+
+/**
+ * The current pin, which is the newest issuance rather than the first.
+ *
+ * `seq` and `issuedCount` are separate numbers on purpose and are not validated against each other: the newest
+ * row's sequence *should* equal the count, and the case where it does not is a row written out of order, which
+ * is exactly what this card would be read to diagnose.
+ */
+const adminFranchiseTermSheetSchema = z.object({
+  seq: z.number().int().min(1),
+  issuedCount: z.number().int().min(1),
+  version: label,
+  effectiveDate: label,
+  validUntil: label,
+  contentHash: label,
+  length: z.number().int().min(0),
+  pdfHash: label.nullable(),
+  issuedAt: label,
 });
 
 const adminFranchiseTimestampsSchema = z.object({
@@ -296,14 +316,14 @@ export const adminFranchiseViewSchema = z.object({
   documents: z.array(adminFranchiseDocumentSchema),
   payments: z.array(adminFranchisePaymentSchema),
 
+  termSheet: adminFranchiseTermSheetSchema.nullable(),
   /**
-   * Both pinned to `null`, matching the handler.
+   * Still pinned to `null`, matching the handler.
    *
-   * `z.null()` rather than `something.nullable()` on purpose: the day a writer lands for either,
-   * this line fails and forces the shape to be described here rather than rendering as an empty
-   * card that nobody notices is empty.
+   * `z.null()` rather than `something.nullable()` on purpose, and the term sheet above is the proof it works:
+   * the day a writer landed for it, this line failed and the shape had to be described here instead of
+   * rendering as an empty card nobody notices is empty. The same is still owed for e-sign.
    */
-  termSheet: z.null(),
   esign: z.null(),
   unmodelledRows: z.array(z.string()),
 

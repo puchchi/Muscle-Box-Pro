@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2, Clock, MapPin, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { franchiseTerritoryLabel } from "@shared/franchise/onboarding/schema";
 import { formatIstDate } from "../../../gym/istDates";
+import TerritoryCutNotice from "../TerritoryCutNotice";
 import type { FranchiseStepViewProps } from "../types";
 
 /**
@@ -20,7 +21,9 @@ import type { FranchiseStepViewProps } from "../types";
  * *Approved.* The granted territory, and the requested one beside it **whenever they differ**.
  * That comparison is the reason the two are stored separately: approving three suburbs of five
  * and showing only the three would hide the fact that anything was cut, and the first time a
- * franchisee should learn that is not after signing.
+ * franchisee should learn that is not after signing. It lives in `TerritoryCutNotice` rather than
+ * here because approval completes this step on read, so nobody lands on this screen and step 5
+ * has to carry the same comparison.
  *
  * *On hold.* What we still need, who is in touch, and the steps to go and fix. A hold reopens
  * steps 1 to 3, which is why the buttons are here rather than a sentence asking them to email.
@@ -62,9 +65,6 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
   }
 
   if (approval.outcome === "approved") {
-    const trimmed = approval.territory.trim();
-    const differs = trimmed !== requested.trim();
-
     return (
       <Card
         icon={<CheckCircle2 className="w-5 h-5 text-primary-ink" aria-hidden="true" />}
@@ -91,19 +91,10 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
           </p>
         </div>
 
-        {/* Shown only when it changed. Repeating an unchanged request under the grant is two
-            identical paragraphs, and the reader learns nothing from the second. */}
-        {differs && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3" data-testid="territory-differs">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-amber-900 mb-1">
-              Not the same as your request
-            </p>
-            <p className="text-sm text-amber-900 leading-relaxed">
-              You asked for {requested}. What is granted above is what the term sheet will say,
-              so read the boundary before you sign. Talk to us if that is not what you expected.
-            </p>
-          </div>
-        )}
+        {/* Shown only when it changed, by the component itself. Repeating an unchanged request
+            under the grant is two identical paragraphs, and the reader learns nothing from the
+            second. No `onSeeBoundary`: the boundary is in the box above this one. */}
+        <TerritoryCutNotice state={state} />
 
         {state.currentStep > 4 && (
           <Button

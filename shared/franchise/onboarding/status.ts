@@ -2,13 +2,21 @@
  * The rules the franchise flow is, expressed without any storage in them.
  *
  * The ladder, the derived step, which steps we complete rather than the franchisee, and the
- * two freeze points. `mockApi.ts` is the only caller today; `mbp-backend`'s
- * `domain/franchise/status.ts` is a verbatim copy of it tomorrow (docs/franchise-onboarding.md
- * §8.5), which is why nothing here reads a clock or a table — `now` is a parameter and state
- * is an argument.
+ * two freeze points. Nothing here reads a clock or a table — `now` is a parameter and state
+ * is an argument — so every rule is assertable on its own rather than through a sequence of API
+ * calls that happens to exercise it.
  *
- * Everything in this module is a *rule*, so a test can assert the rule rather than assert a
- * sequence of API calls that happens to exercise it.
+ * ## This file has a twin in `mbp-backend`, and they are byte-identical
+ *
+ * `services/onboarding/src/domain/franchise/status.ts` is this module with two import paths
+ * changed and nothing else (docs/franchise-onboarding.md §8.5). That is deliberate — the server
+ * is the authority on the ladder and the wizard has to predict it exactly, or a step the client
+ * offers is a step the server answers `wrong_step` to. **A change here is a change there.**
+ * `schema.ts` beside this file has the same arrangement with `domain/franchise/details.ts`, except
+ * that one is hand-copied rather than identical, because that service carries no Zod.
+ *
+ * Callers on this side: `useFranchiseOnboarding.ts`, `StepDocuments.tsx` and the mock's
+ * test suite.
  */
 
 import type { EntityType } from "../../onboarding/types";

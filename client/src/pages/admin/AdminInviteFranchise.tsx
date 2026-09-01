@@ -17,11 +17,10 @@ import {
   type AdminFranchiseInviteFormInput,
   type AdminFranchiseInviteResult,
 } from "@shared/admin/franchiseInvite";
-import { createFranchise, IS_MOCK_ADMIN_FRANCHISE } from "@/lib/adminFranchiseApi";
+import { createFranchise } from "@/lib/adminFranchiseApi";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
 import { NumberField, SelectField, TextField } from "./adminFields";
-import { Notice } from "./AdminUi";
 import { formatInr, formatIstDateTime } from "./adminFormat";
 
 /**
@@ -47,8 +46,9 @@ import { formatInr, formatIstDateTime } from "./adminFormat";
  * ## The link is shown exactly once
  *
  * Only `sha256(handle)` is stored, so this screen is the one place the URL exists after the call
- * returns. There is **no franchise invite sender** — `emailed` comes back `false` — so an admin is
- * the delivery mechanism (open question 12).
+ * returns. The route does mail it to `noticesEmail`, but `emailed` comes back `false` when delivery
+ * failed, and nothing can reissue a handle this call has already consumed. So the URL is on screen
+ * either way, and the `Emailed` row is how an admin knows whether to relay it by hand.
  */
 export default function AdminInviteFranchise() {
   const guard = useAdminGuard();
@@ -91,7 +91,9 @@ function InviteCreated({ result }: { result: AdminFranchiseInviteResult }) {
         Franchise created
       </h1>
       <p className="text-muted-foreground text-sm mb-6">
-        Send this link to the franchisee yourself. There is no franchise invite email.
+        {result.emailed
+          ? "The onboarding link has been emailed to the franchisee. It is below too, in case you need to send it again."
+          : "The email did not go out. Send this link to the franchisee yourself."}
       </p>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 mb-4">
@@ -125,21 +127,6 @@ function InviteCreated({ result }: { result: AdminFranchiseInviteResult }) {
         <Row label="Expires" value={formatIstDateTime(result.expiresAt)} />
         <Row label="Emailed" value={result.emailed ? "Yes" : "No, send it yourself"} />
       </dl>
-
-      {IS_MOCK_ADMIN_FRANCHISE && (
-        <div className="mb-6">
-          <Notice testId="franchise-invite-mock">
-            Nothing was created. The franchise routes are not deployed, so no record of this
-            exists. The link does open, on a fixture that starts over on every reload and shows
-            the fixture's details rather than the ones you just typed. The seeded application is
-            at{" "}
-            <Link href="/franchise/onboarding/demo/demo" className="underline">
-              /franchise/onboarding/demo/demo
-            </Link>
-            .
-          </Notice>
-        </div>
-      )}
 
       <div className="flex items-center gap-3">
         <Button asChild className="rounded-xl cursor-pointer font-bold">
@@ -342,7 +329,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
               control={form.control}
               name="noticesEmail"
               label="Notices email"
-              description="Where you will send the link. Nothing is sent automatically."
+              description="The onboarding link is emailed here as soon as the franchise is created."
             />
             <TextField control={form.control} name="noticesPhone" label="Notices phone" />
           </Section>
