@@ -61,6 +61,9 @@ export function AdminShell({
               <NavLink href="/admin/gyms" pathname={pathname} testId="link-gyms">
                 Gyms
               </NavLink>
+              <NavLink href="/admin/franchises" pathname={pathname} testId="link-franchises">
+                Franchises
+              </NavLink>
               {/*
                 Two links rather than two sections of the overview, and that is the whole of the
                 lazy-loading design: `/admin/inbox` opens an IMAP connection and `/admin/leads` reaches

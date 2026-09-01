@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Info, type LucideIcon } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, Info, type LucideIcon } from "lucide-react";
 
 /**
  * The pieces every admin page is built from: a card, a label/value row, an empty state, an error.
@@ -307,6 +307,104 @@ export function Notice({ children, testId }: { children: React.ReactNode; testId
       <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400" aria-hidden />
       <span className="max-w-[80ch]">{children}</span>
     </p>
+  );
+}
+
+/**
+ * A filter chip with a count.
+ *
+ * Shared by the two list pages rather than copied into both, because the count is the part that
+ * needs one explanation: it counts *loaded* rows on both pages, and two copies of the component
+ * would eventually get two different tooltips saying so.
+ */
+export function Chip({
+  label,
+  count,
+  selected,
+  onClick,
+  testId,
+}: {
+  label: string;
+  count: number;
+  selected: boolean;
+  onClick: () => void;
+  testId: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${
+        selected
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-gray-200 bg-white text-muted-foreground hover:border-gray-300 hover:text-foreground"
+      }`}
+      data-testid={testId}
+    >
+      {label}
+      <span className={`tabular-nums ${selected ? "opacity-80" : "text-gray-400"}`}>{count}</span>
+    </button>
+  );
+}
+
+export type TableSort<K extends string> = { key: K; dir: "asc" | "desc" };
+
+/**
+ * A column header, sortable when given a key.
+ *
+ * `aria-sort` on the cell rather than a class on the arrow, because the arrow is the only thing
+ * saying which column the table is ordered by and an icon is not something a screen reader reads. A
+ * header with no key is a column that cannot be sorted usefully — "Contact" holds two values, and
+ * ordering by "whichever of the email and the phone came first in the markup" is an order nobody
+ * asked for.
+ */
+export function Th<K extends string>({
+  children,
+  sortKey,
+  sort,
+  onSort,
+  align = "left",
+  className = "",
+}: {
+  children: React.ReactNode;
+  sortKey?: K;
+  sort?: TableSort<K> | null;
+  onSort?: (key: K) => void;
+  align?: "left" | "right";
+  /** For a column that is hidden at some widths. The matching `td` needs the same classes. */
+  className?: string;
+}) {
+  const active = sortKey && sort?.key === sortKey ? sort.dir : null;
+  const base = `px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${
+    align === "right" ? "text-right" : "text-left"
+  } ${className}`;
+
+  if (!sortKey || !onSort) {
+    return <th className={base}>{children}</th>;
+  }
+
+  return (
+    <th
+      className={base}
+      aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors ${
+          active ? "text-foreground" : ""
+        } ${align === "right" ? "flex-row-reverse" : ""}`}
+        data-testid={`sort-${sortKey}`}
+      >
+        {children}
+        {active === "asc" ? (
+          <ArrowUp className="w-3 h-3" aria-hidden />
+        ) : active === "desc" ? (
+          <ArrowDown className="w-3 h-3" aria-hidden />
+        ) : null}
+      </button>
+    </th>
   );
 }
 

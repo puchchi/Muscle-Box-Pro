@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchAdminGymList } from "@/lib/adminApi";
@@ -10,7 +10,7 @@ import type { AdminGymListRow } from "@shared/admin/gyms";
 import type { OnboardingStatus } from "@shared/onboarding/types";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
-import { ErrorPanel, Pill } from "./AdminUi";
+import { Chip, ErrorPanel, Pill, Th, type TableSort } from "./AdminUi";
 import { formatIstDateTime, STATUS_CLASS, STATUS_LABEL } from "./adminFormat";
 import { STATUS_LADDER, stalledFor } from "./adminFunnel";
 
@@ -37,7 +37,7 @@ import { STATUS_LADDER, stalledFor } from "./adminFunnel";
  */
 
 type SortKey = "name" | "status" | "createdAt" | "updatedAt";
-type Sort = { key: SortKey; dir: "asc" | "desc" };
+type Sort = TableSort<SortKey>;
 
 export default function AdminGyms() {
   const guard = useAdminGuard();
@@ -357,89 +357,4 @@ function sortRows(rows: AdminGymListRow[], sort: Sort): AdminGymListRow[] {
 
 function nameOf(row: AdminGymListRow): string {
   return row.tradeName || row.legalEntityName || row.slug;
-}
-
-function Chip({
-  label,
-  count,
-  selected,
-  onClick,
-  testId,
-}: {
-  label: string;
-  count: number;
-  selected: boolean;
-  onClick: () => void;
-  testId: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${
-        selected
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-gray-200 bg-white text-muted-foreground hover:border-gray-300 hover:text-foreground"
-      }`}
-      data-testid={testId}
-    >
-      {label}
-      <span className={`tabular-nums ${selected ? "opacity-80" : "text-gray-400"}`}>{count}</span>
-    </button>
-  );
-}
-
-/**
- * A column header, sortable when given a key.
- *
- * `aria-sort` on the cell rather than a class on the arrow, because the arrow is the only thing
- * saying which column the table is ordered by and an icon is not something a screen reader reads.
- * "Contact" has no key: it holds two values, and sorting on "whichever of the email and the phone
- * came first in the markup" is an order nobody asked for.
- */
-function Th({
-  children,
-  sortKey,
-  sort,
-  onSort,
-  align = "left",
-}: {
-  children: React.ReactNode;
-  sortKey?: SortKey;
-  sort?: Sort | null;
-  onSort?: (key: SortKey) => void;
-  align?: "left" | "right";
-}) {
-  const active = sortKey && sort?.key === sortKey ? sort.dir : null;
-  const base = `px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${
-    align === "right" ? "text-right" : "text-left"
-  }`;
-
-  if (!sortKey || !onSort) {
-    return <th className={base}>{children}</th>;
-  }
-
-  return (
-    <th
-      className={base}
-      aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(sortKey)}
-        className={`inline-flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors ${
-          active ? "text-foreground" : ""
-        } ${align === "right" ? "flex-row-reverse" : ""}`}
-        data-testid={`sort-${sortKey}`}
-      >
-        {children}
-        {active === "asc" ? (
-          <ArrowUp className="w-3 h-3" aria-hidden />
-        ) : active === "desc" ? (
-          <ArrowDown className="w-3 h-3" aria-hidden />
-        ) : null}
-      </button>
-    </th>
-  );
 }
