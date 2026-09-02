@@ -204,16 +204,15 @@ function InstructionsPanel({
           {expectedPaise !== null ? formatInr(expectedPaise / 100) : "—"}
         </p>
         <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">
-          By NEFT, RTGS or IMPS. Not a card payment: the amount is beyond most card limits, and the
-          fees on it would come out of the programme rather than out of nowhere.
+          By NEFT, RTGS or IMPS. Not a card payment.
         </p>
       </div>
 
       <div className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3">
         <CopyRow label="Payment reference" value={reference} testId="payment-reference" />
         <p className="text-xs text-muted-foreground leading-relaxed mt-2">
-          Put this in the narration or remarks field. It is how we find your transfer, and one that
-          arrives without it can take days to match to you.
+          Put this in the narration or remarks field. Without it, a transfer can take days to match
+          to you.
         </p>
       </div>
 
@@ -230,7 +229,7 @@ function InstructionsPanel({
 
       <p className="text-xs text-muted-foreground leading-relaxed">
         We never change these details by email or over the phone. If anyone asks you to send this
-        money anywhere else, it is not us. Check this screen.
+        money anywhere else, it is not us.
       </p>
     </section>
   );
@@ -375,7 +374,7 @@ function ClaimForm({
             label="UTR or reference"
             placeholder="SBIN123456789012"
             uppercase
-            description="The reference your bank gave the transfer. On most statements it is called UTR, RRN or transaction reference."
+            description="Your bank's reference for the transfer. Called UTR, RRN or transaction reference on most statements."
           />
           <Field
             form={form}
@@ -383,7 +382,7 @@ function ClaimForm({
             label="Amount transferred"
             rupees
             placeholder={expectedPaise !== null ? String(expectedPaise / 100) : "1250000"}
-            description="In rupees, as it left your account. Tell us the real figure if your bank deducted charges, rather than what it should have been."
+            description="In rupees, as it left your account. The real figure, if your bank deducted charges."
           />
           <Field
             form={form}
@@ -408,7 +407,7 @@ function ClaimForm({
         </Section>
 
         <SubmitBar
-          nextHint="We check this against our bank statement, usually within a working day. Your account is created either way, so you are not waiting on us to get into the portal."
+          nextHint="We check this against our bank statement, usually within a working day. Nothing else waits on it."
           draftStatus={draft.status}
           isSubmitting={isSubmitting}
           label="I've made the transfer"
@@ -473,8 +472,7 @@ function ProofUpload({
   return (
     <div>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        A screenshot or PDF of the transfer, if you have one to hand. Optional, and it settles most
-        questions before we have to ask them.
+        A screenshot or PDF of the transfer, if you have one to hand.
       </p>
       {message && (
         <p className="text-xs text-red-700 font-medium mt-2 flex items-start gap-1.5" role="alert">
@@ -563,8 +561,8 @@ function ClaimedPanel({
             {/* Their transfer date rather than the moment they told us. It is the one figure here
                 they can check against their own statement. */}
             You told us you sent {formatInr(amountPaise / 100)} on {formatIstDate(paidOn)},
-            reference {utr}. A person confirms it against our bank statement, which usually happens
-            within a working day.
+            reference {utr}. A person confirms it against our statement, usually within a working
+            day.
           </p>
         </div>
       </div>
@@ -574,8 +572,7 @@ function ClaimedPanel({
           : `We've stopped checking on this page. Reload it to look again, or leave it: we email ${email || "you"} when it is confirmed.`}
       </p>
       <p className="text-xs text-amber-900 leading-relaxed">
-        Nothing is on hold while we check. Your term sheet is signed and your portal account can be
-        set up now.
+        Nothing is on hold while we check. Your portal account can be set up now.
       </p>
     </section>
   );
@@ -600,9 +597,9 @@ function RefusalPanel({ refusal }: { refusal: string }) {
       </h3>
       <p className="text-sm text-red-800 leading-relaxed mt-1">{refusal}</p>
       <p className="text-sm text-red-800 leading-relaxed mt-2">
-        Check the reference against your statement and send it to us again below. If the money has
-        left your account and you are sure of the details, reply to our email and we will look
-        again ourselves rather than have you send anything twice.
+        Check the reference against your statement and send it to us again below. If you are sure of
+        the details, reply to our email and we will look again ourselves. Do not send the money
+        twice.
       </p>
     </section>
   );
@@ -646,8 +643,7 @@ function VerifiedPanel({
             {receivedPaise !== null ? formatInr(receivedPaise / 100) : "Your transfer"} received
           </h3>
           <p className="text-sm text-muted-foreground leading-relaxed mt-1">
-            Confirmed against our statement on {formatIstDate(verifiedAt)}. Your first instalment is
-            in and procurement can start.
+            Confirmed against our statement on {formatIstDate(verifiedAt)}. Procurement can start.
           </p>
         </div>
       </div>
@@ -658,9 +654,8 @@ function VerifiedPanel({
           data-testid="payment-shortfall"
         >
           That is {formatInr(shortfall / 100)} less than the {formatInr(expectedPaise / 100)} due,
-          which usually means your bank deducted charges. It stays on your record as outstanding
-          against this instalment. We will not chase you for it separately, and we will raise it
-          with you before the next one.
+          which usually means your bank deducted charges. It stays outstanding against this
+          instalment, and we will raise it with you before the next one.
         </p>
       )}
 

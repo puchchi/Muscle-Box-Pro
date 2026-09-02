@@ -133,7 +133,7 @@ export default function StepTerritory({
             name="tier"
             label="Franchise tier"
             options={TIER_OPTIONS}
-            description="The same programme at two scales. You can discuss a change with us before signing."
+            description="The same programme at two scales."
             disabled={readOnly}
           />
         </Section>
@@ -157,7 +157,7 @@ export default function StepTerritory({
             options={districtsOf(selectedState)}
             searchPlaceholder="Search districts"
             emptyHint="Pick a state above and its districts appear here."
-            description="Districts are how a territory gets written into the agreement, because they are official and they do not overlap. Tick every one you want to develop."
+            description="Tick every district you want to develop. This is how the territory gets written into the agreement."
             disabled={readOnly}
           />
 
@@ -170,7 +170,7 @@ export default function StepTerritory({
             placeholder="560001, 560034 …"
             pattern={INDIA_PINCODE}
             invalidMessage="A pin code is six digits, and cannot start with a zero."
-            description="Only if you want part of a district rather than all of it. Type or paste them, separated by commas."
+            description="Only if you want part of a district rather than all of it. Separate them with commas."
             optional
             disabled={readOnly}
           />
@@ -181,7 +181,7 @@ export default function StepTerritory({
             label="Anything else about the area"
             rows={3}
             placeholder="Excludes the airport side of Devanahalli. We would want Hosur added later if it becomes available."
-            description="Only what the lists above could not say. Leave it empty if they said everything."
+            description="Only what the lists above could not say."
             optional
             disabled={readOnly}
           />
@@ -192,7 +192,7 @@ export default function StepTerritory({
             label="Gyms you already know"
             rows={3}
             placeholder="Two chains with four branches between them in Sector 62, both already stocking supplements."
-            description="Existing relationships in the territory, if you have them. This helps us judge the market rather than the application."
+            description="Helps us judge the market, not your application."
             optional
             disabled={readOnly}
           />
@@ -204,16 +204,14 @@ export default function StepTerritory({
         <div className="flex items-start gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-3.5">
           <Info className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            This is a request, not a grant. We check the territory against what is already
-            allocated and what the market can carry, then confirm the exact boundary with you at
-            approval. If we can only approve part of it, you will see precisely which part before
-            anything is signed.
+            This is a request, not a grant. We check it against what is already allocated, then
+            confirm the exact boundary with you at approval.
           </p>
         </div>
 
         {!readOnly && (
           <SubmitBar
-            nextHint="Next you'll upload your documents. Still nothing to sign."
+            nextHint="Next, your documents."
             draftStatus={draft.status}
             isSubmitting={isSubmitting}
           />

@@ -248,7 +248,7 @@ export default function StepDetails({
               name="signatoryPan"
               label="Signatory's PAN"
               placeholder="AAAPM1234A"
-              description="Their own PAN, not the entity's. The e-sign is issued in their name."
+              description="Their own PAN, not the entity's."
               uppercase
               disabled={readOnly}
             />
@@ -262,7 +262,7 @@ export default function StepDetails({
               label="Aadhaar last four digits"
               placeholder="4321"
               inputMode="numeric"
-              description="Only the last four. We never ask for the full number, and we don't store one."
+              description="We never ask for the full number."
               optional
               disabled={readOnly}
             />
@@ -297,7 +297,7 @@ export default function StepDetails({
 
         {!readOnly && (
           <SubmitBar
-            nextHint="Next you'll describe the territory you want. There is nothing to sign until the term sheet."
+            nextHint="Next, the territory you want."
             draftStatus={draft.status}
             isSubmitting={isSubmitting}
           />

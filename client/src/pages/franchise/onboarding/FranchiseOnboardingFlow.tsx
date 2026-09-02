@@ -481,7 +481,7 @@ function ReviewingBanner({
       ? {
           Icon: Pencil,
           title: "You've come back to an earlier step",
-          body: "Change whatever you need to and press Continue. That saves it and takes you back to where you were. Nothing you've already done is undone.",
+          body: "Change whatever you need to and press Continue. That takes you back to where you were.",
         }
       : {
           Icon: ArrowLeft,

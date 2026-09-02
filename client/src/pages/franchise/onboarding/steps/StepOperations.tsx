@@ -149,7 +149,7 @@ export default function StepOperations({
                 name="warehouseAddress"
                 label="Warehouse address"
                 placeholder="Building, street, area, city, state, PIN"
-                description="Where we deliver protein consignments. It can be the registered address if that is where you'll hold stock."
+                description="Where we deliver protein consignments. It can be the registered address."
                 disabled={readOnly}
               />
               <Row>
@@ -159,7 +159,7 @@ export default function StepOperations({
                   label="Warehouse area"
                   placeholder="1200"
                   numeric
-                  description="In square feet, to the nearest foot."
+                  description="In square feet."
                   disabled={readOnly}
                 />
                 <SelectField
@@ -168,7 +168,7 @@ export default function StepOperations({
                   label="Temperature control"
                   placeholder="Choose one"
                   options={TEMPERATURE_OPTIONS}
-                  description="Either answer is fine. It changes how we schedule deliveries and what we can send at once."
+                  description="Either answer is fine. It changes how we schedule deliveries."
                   disabled={readOnly}
                 />
               </Row>
@@ -183,7 +183,7 @@ export default function StepOperations({
               name="operationsContactName"
               label="Operations contact"
               placeholder="Sunil Kumar"
-              description="Whoever actually refills machines and deals with a fault. Often not the signatory."
+              description="Whoever refills machines and deals with a fault. Often not the signatory."
               autoComplete="name"
               disabled={readOnly}
             />
@@ -207,7 +207,7 @@ export default function StepOperations({
             label="Deployment plan"
             rows={4}
             placeholder="Three machines into the two Sector 62 chains within the first month, then two more once we see the volumes."
-            description="Which gyms, roughly when, and in what order. This is a plan rather than a commitment, and it tells us how to sequence the build. Write NA if you have not worked it out yet."
+            description="Which gyms, roughly when, and in what order. A plan, not a commitment. Write NA if you have not worked it out yet."
             disabled={readOnly}
           />
           <SelectField
@@ -216,14 +216,14 @@ export default function StepOperations({
             label="Logistics"
             placeholder="Choose one"
             options={LOGISTICS_OPTIONS}
-            description="How stock and machines move around your territory. Undecided is a perfectly normal answer at this stage."
+            description="How stock and machines move around your territory."
             disabled={readOnly}
           />
         </Section>
 
         {!readOnly && (
           <SubmitBar
-            nextHint="Next is your term sheet: the whole thing, in plain English, before anything is signed."
+            nextHint="Next, your term sheet."
             draftStatus={draft.status}
             isSubmitting={isSubmitting}
           />

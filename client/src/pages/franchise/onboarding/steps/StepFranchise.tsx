@@ -99,8 +99,7 @@ export default function StepFranchise({
           <Pending what="the instalment schedule" />
         )}
         <p className="text-xs text-muted-foreground leading-relaxed">
-          The first instalment is a bank transfer, and it comes after you have signed. We verify it
-          against our statement rather than taking a card payment.
+          The first instalment is a bank transfer, and it comes after you have signed.
         </p>
       </Block>
 
@@ -114,9 +113,8 @@ export default function StepFranchise({
           body={
             terms.capitalRecoveryPaise !== null ? (
               <>
-                That runs until {formatInr(terms.capitalRecoveryPaise / 100)} has reached you. It
-                is how the investment comes back, not a permanent margin, and it stops when the
-                threshold is met.
+                That runs until {formatInr(terms.capitalRecoveryPaise / 100)} has reached you. It is
+                how the investment comes back, not a permanent margin.
               </>
             ) : (
               <Pending what="your recovery threshold" inline />
@@ -168,8 +166,8 @@ export default function StepFranchise({
           ))}
         </ul>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          The machines stay ours. What you hold is the right to operate them in your territory,
-          and that is what the term sheet grants.
+          The machines stay ours. What the term sheet grants is the right to operate them in your
+          territory.
         </p>
       </Block>
 
@@ -256,7 +254,7 @@ function Split({ heading, body }: { heading: string; body: React.ReactNode }) {
  * sign should already have seen why on this screen.
  */
 function Pending({ what, inline }: { what: string; inline?: boolean }) {
-  const text = `We still have to agree ${what} with you. It goes on your term sheet, and until it is set there is nothing to sign.`;
+  const text = `We still have to agree ${what} with you. Until it is set there is nothing to sign.`;
   if (inline) return <>{text}</>;
   return (
     <p className="text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed">

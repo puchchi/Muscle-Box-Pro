@@ -140,8 +140,7 @@ export default function StepDone({
           </h3>
           <p className="text-sm text-gray-700 leading-relaxed mt-1">
             It is <strong className="text-foreground">{email}</strong> with the password you just
-            chose. We'll email you the moment the franchise portal opens, which is where machine
-            build, deployment and your protein and advertising statements will live.
+            chose. We'll email you the moment the franchise portal opens.
           </p>
         </section>
       ) : (
@@ -154,8 +153,7 @@ export default function StepDone({
               Choose a password for your portal
             </label>
             <p id="franchise-password-hint" className="text-sm text-gray-700 leading-relaxed">
-              You'll sign in with <strong className="text-foreground">{email}</strong>. Setting it
-              now means there is nothing to activate later.
+              You'll sign in with <strong className="text-foreground">{email}</strong>.
             </p>
           </div>
           {/* Revealable, and typed once with no confirm box, so seeing it is the only check
@@ -245,7 +243,7 @@ export default function StepDone({
           })}
         </ol>
         <p className="text-xs text-gray-600 mt-4 pt-3 border-t border-gray-100">
-          This link stays live. Come back to it any time to see where things stand.
+          This link stays live. Come back any time to see where things stand.
         </p>
       </section>
     </div>
@@ -295,9 +293,9 @@ function InstalmentCard({
       </h3>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
         {verified
-          ? `Confirmed on ${payment?.verifiedAt ? formatIstDate(payment.verifiedAt) : "our record"}. Procurement starts against it, and the next instalment falls due when your machines are ready.`
+          ? `Confirmed on ${payment?.verifiedAt ? formatIstDate(payment.verifiedAt) : "our record"}. The next instalment falls due when your machines are ready.`
           : claimed
-            ? "We're checking your transfer against our bank statement, usually within a working day. We'll email you when it is confirmed, and nothing here waits on it."
+            ? "We're checking your transfer against our statement, usually within a working day. We'll email you when it is confirmed."
             : "Machine procurement starts when the first instalment reaches us. Everything else is done."}
       </p>
       {shortfall > 0 && (
@@ -307,7 +305,7 @@ function InstalmentCard({
         >
           {formatInr(shortfall / 100)} of the {formatInr((payment?.expectedPaise ?? 0) / 100)} is
           still outstanding, usually because your bank deducted charges. We'll raise it with you
-          before the second instalment rather than chasing it separately.
+          before the second instalment.
         </p>
       )}
       {!verified && !claimed && (
@@ -346,7 +344,7 @@ function nextSteps(state: FranchiseOnboardingState) {
     {
       when: "Within 3 working days",
       title: "Your definitive franchise agreement",
-      body: "Our side drafts it against the term sheet you just signed. It is the longer document, it is signed the same way, and any stamp duty is dealt with there rather than here.",
+      body: "Drafted against the term sheet you just signed. The longer document, signed the same way, and any stamp duty is dealt with there.",
     },
     {
       when: paid ? "Under way now" : "As soon as the first instalment clears",
@@ -356,12 +354,12 @@ function nextSteps(state: FranchiseOnboardingState) {
     {
       when: "When your machines are ready",
       title: "The second instalment falls due",
-      body: "Invoiced against machine readiness rather than a date, so it is not a surprise: it comes with the readiness report, and delivery follows it.",
+      body: "Invoiced against machine readiness rather than a date. It comes with the readiness report, and delivery follows it.",
     },
     {
       when: "After delivery",
       title: "Deployment into your gyms",
-      body: `Install, protein into your warehouse, and the machines go live across ${territory}. The deployment plan you gave us is what we sequence this against.`,
+      body: `Install, protein into your warehouse, and the machines go live across ${territory}. We sequence this against the deployment plan you gave us.`,
     },
     {
       when: "From the first sale",

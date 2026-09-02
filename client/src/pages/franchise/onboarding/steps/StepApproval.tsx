@@ -51,15 +51,10 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
           {state.timestamps.kycSubmittedAt
             ? ` on ${formatIstDate(state.timestamps.kycSubmittedAt)}`
             : ""}
-          . We check the territory against what is already allocated and what the market can
-          carry, which usually takes a few working days. You do not need to do anything, and we
-          will email {state.details.noticesEmail || "you"} either way.
+          . Checking the territory usually takes a few working days. Nothing is needed from you,
+          and we will email {state.details.noticesEmail || "you"} either way.
         </p>
         <Detail label="You asked for" value={requested} />
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          If we can only approve part of the territory, you will see exactly which part here
-          before there is anything to sign.
-        </p>
       </Card>
     );
   }
@@ -73,8 +68,8 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         testId="approval-approved"
       >
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Approved on {formatIstDate(approval.decidedAt)}. This is the territory your term sheet
-          is written against, and the only place it is defined.
+          Approved on {formatIstDate(approval.decidedAt)}. This is the territory your term sheet is
+          written against.
         </p>
 
         <div
@@ -119,8 +114,8 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         testId="approval-on-hold"
       >
         <p className="text-sm text-muted-foreground leading-relaxed">
-          {approval.contactName} is looking at your application and needs the following before we
-          can decide. Your earlier steps are open again, so you can change them here.
+          {approval.contactName} needs the following before we can decide. Your earlier steps are
+          open again.
         </p>
 
         <ul role="list" className="space-y-2" data-testid="approval-outstanding">
@@ -166,8 +161,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         </div>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Submit your documents again when you have dealt with these and the review restarts.
-          Nothing you have already given us is lost.
+          Submit your documents again when you have dealt with these, and the review restarts.
         </p>
       </Card>
     );
@@ -182,13 +176,11 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
     >
       <p className="text-sm text-muted-foreground leading-relaxed">
         We reviewed your application on {formatIstDate(approval.decidedAt)} and cannot offer this
-        territory. That is our decision on this application rather than a judgment about you, and
-        it is final for now.
+        territory. That is our decision on this application rather than a judgment about you.
       </p>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Territories open up as the network grows. If you would like us to come back to you when
-        this one does, reply to the email that brought you here and say so. Nothing further is
-        needed from you, and nothing you gave us will be used for anything else.
+        Territories open up as the network grows. If you would like us to come back to you when this
+        one does, reply to the email that brought you here and say so.
       </p>
     </Card>
   );

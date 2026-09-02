@@ -69,13 +69,12 @@ function specsFor(entityType: EntityType): DocumentSpec[] {
     entity_proof: {
       docType: "entity_proof",
       label: entityProofLabel(entityType),
-      description: "Whatever registered your entity. A scan or a clear photo is fine.",
+      description: "Whatever registered your entity.",
     },
     address_proof: {
       docType: "address_proof",
       label: "Address proof",
-      description:
-        "Anything official showing the registered address: a utility bill, a bank statement, a lease.",
+      description: "A utility bill, a bank statement or a lease showing the registered address.",
     },
     signatory_id: {
       docType: "signatory_id",
@@ -114,9 +113,8 @@ export default function StepDocuments({
     <div className="space-y-6">
       <Section title="What we need">
         <p className="text-xs text-muted-foreground leading-relaxed">
-          PDF, JPEG or PNG, up to {formatBytes(MAX_DOCUMENT_BYTES)} each. These go to our
-          compliance file and are not shared outside it. Once you submit this step they are with
-          us for review, so replacing one after that means asking us.
+          PDF, JPEG or PNG, up to {formatBytes(MAX_DOCUMENT_BYTES)} each. Once you submit, replacing
+          one means asking us.
         </p>
 
         <ul role="list" className="space-y-3">
@@ -158,8 +156,8 @@ export default function StepDocuments({
           <SubmitBar
             nextHint={
               missing.length > 0
-                ? `${missing.length} of ${requiredCount} still to come. We start the review as soon as they are all here.`
-                : "We'll review your application and confirm the territory with you. That usually takes a few working days."
+                ? `${missing.length} of ${requiredCount} still to come.`
+                : "We'll review your application and confirm the territory. Usually a few working days."
             }
             isSubmitting={isSubmitting}
             disabled={missing.length > 0}

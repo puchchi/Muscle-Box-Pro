@@ -7,7 +7,6 @@ import {
   ExternalLink,
   FileSignature,
   Loader2,
-  ShieldCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -208,7 +207,7 @@ export default function StepReviewSign({
           blockedReason={
             blockers.length === 0
               ? null
-              : "There are unresolved items in this document that we have to close before anyone signs it. We're on it, we'll email you the moment your copy is ready, and nothing you've given us is lost."
+              : "There are unresolved items in this document that we have to close before anyone signs it. We'll email you the moment your copy is ready."
           }
           problem={handoffProblem}
           isSubmitting={isSubmitting}
@@ -230,7 +229,7 @@ function PreparingNotice() {
     >
       <h3 className="text-base font-semibold text-foreground">Preparing your term sheet</h3>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
-        One moment. We're issuing your copy. Nothing you've given us is lost.
+        One moment. We're issuing your copy.
       </p>
     </section>
   );
@@ -251,9 +250,9 @@ function ValidityLine({ effectiveDate, validUntil }: { effectiveDate: string; va
     >
       <Clock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
       <span>
-        Dated {formatIstDate(effectiveDate)}. This term sheet is open until{" "}
-        <strong>{formatIstDate(validUntil)}</strong>. After that it lapses and we would issue a
-        fresh one, which may not be on these terms if the territory has moved on.
+        Dated {formatIstDate(effectiveDate)}. Open until{" "}
+        <strong>{formatIstDate(validUntil)}</strong>, after which we would issue a fresh one that
+        may not be on these terms.
       </span>
     </p>
   );
@@ -272,7 +271,7 @@ function HashLine({ contentHash }: { contentHash: string }) {
     <p className="text-xs text-gray-700 leading-relaxed flex items-start gap-2">
       <FileSignature className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
       <span>
-        Document fingerprint (SHA-256), stored with your signature and printed on your copy:{" "}
+        Document fingerprint (SHA-256), printed on your copy:{" "}
         <code className="break-all font-mono text-foreground" data-testid="content-hash">
           {contentHash}
         </code>
@@ -312,6 +311,10 @@ function SignPanel({
   onCheckSignatory(): void;
   onSign(): void;
 }) {
+  const signatoryFor = [legalEntityName, aadhaarLast4 ? `Aadhaar ending ${aadhaarLast4}` : null]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <section
       className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 space-y-5"
@@ -320,8 +323,8 @@ function SignPanel({
       <div>
         <h3 className="text-base font-semibold text-foreground">Sign the term sheet</h3>
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
-          Signing happens at Leegality, not here. We hand them this document and they take the
-          signature in your signatory's own identity, which is what makes it evidence.
+          Signing happens at Leegality, not here. The signature is taken in your signatory's own
+          identity, which is what makes it evidence.
         </p>
       </div>
 
@@ -335,11 +338,9 @@ function SignPanel({
           {signatoryName || "Nobody named yet"}
           {signatoryDesignation ? `, ${signatoryDesignation}` : ""}
         </p>
-        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-          For {legalEntityName}
-          {aadhaarLast4 ? `, against the Aadhaar ending ${aadhaarLast4}` : ""}. Leegality will ask this
-          person and nobody else, so it has to be the person with authority to bind the entity.
-        </p>
+        {signatoryFor && (
+          <p className="text-xs text-muted-foreground mt-1">{signatoryFor}</p>
+        )}
         <Button
           type="button"
           variant="outline"
@@ -392,8 +393,7 @@ function SignPanel({
         <>
           {!hasReadToEnd && (
             <p className="text-xs text-muted-foreground leading-relaxed" data-testid="read-gate">
-              You've read {readPercent}% of the term sheet. Scroll to the end before signing. It is
-              not long, and it is the whole of what you are agreeing to.
+              You've read {readPercent}% of the term sheet. Scroll to the end before signing.
             </p>
           )}
           {problem && (
@@ -401,31 +401,25 @@ function SignPanel({
               {problem}
             </p>
           )}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground leading-relaxed flex items-start gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
-              This tab goes to Leegality and comes back here on its own.
-            </p>
-            <Button
-              type="button"
-              disabled={!hasReadToEnd || isSubmitting}
-              onClick={onSign}
-              className="min-h-11 px-6 rounded-lg font-semibold text-sm cursor-pointer flex-shrink-0"
-              data-testid="button-sign"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                  <span className="ml-1.5">Opening Leegality...</span>
-                </>
-              ) : (
-                <>
-                  Sign with {SIGN_TYPE_LABELS[signType]}
-                  <ExternalLink className="w-4 h-4 ml-1.5" aria-hidden="true" />
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            disabled={!hasReadToEnd || isSubmitting}
+            onClick={onSign}
+            className="min-h-11 px-6 rounded-lg font-semibold text-sm cursor-pointer w-full sm:w-auto"
+            data-testid="button-sign"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <span className="ml-1.5">Opening Leegality...</span>
+              </>
+            ) : (
+              <>
+                Sign with {SIGN_TYPE_LABELS[signType]}
+                <ExternalLink className="w-4 h-4 ml-1.5" aria-hidden="true" />
+              </>
+            )}
+          </Button>
         </>
       )}
     </section>
@@ -494,8 +488,8 @@ function WaitingPanel({
           </h3>
           <p className="text-sm text-amber-900 leading-relaxed mt-1" role="status">
             {confirming
-              ? "We're asking our own record whether the signature has landed. It usually takes a few seconds."
-              : `The ${SIGN_TYPE_LABELS[signType]} session is open. This page moves on by itself the moment the signature reaches us, and you don't have to keep it open.`}
+              ? "This usually takes a few seconds."
+              : `The ${SIGN_TYPE_LABELS[signType]} session is open. This page moves on by itself when the signature reaches us, so you don't have to keep it open.`}
           </p>
         </div>
       </div>
@@ -542,7 +536,7 @@ function WaitingPanel({
         </Button>
         <p className="text-xs text-amber-900 leading-relaxed">
           It reopens the same request rather than starting a second one. The page is personal to
-          your signatory and expires, so it is not something to forward.
+          your signatory, so it is not something to forward.
         </p>
       </div>
     </section>
@@ -574,7 +568,7 @@ function SignedSummary({
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
           Version {version}, signed on {formatIstDateTime(signedAt)} by {signerName} using{" "}
           {SIGN_TYPE_LABELS[signType]}. This copy is read-only. Email us if anything in it needs to
-          change and we'll issue an amendment rather than edit a signed document.
+          change and we'll issue an amendment.
         </p>
         {auditTrailStored && (
           <p className="text-xs text-muted-foreground leading-relaxed mt-2">

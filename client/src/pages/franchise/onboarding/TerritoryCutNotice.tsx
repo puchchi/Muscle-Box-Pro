@@ -41,7 +41,7 @@ export default function TerritoryCutNotice({
       </p>
       <p className="text-sm text-amber-900 leading-relaxed">
         You asked for {requested}. What is granted is {granted}, and that is what the term sheet
-        will say. Read the boundary before you sign, and talk to us if it is not what you expected.
+        will say. Read the boundary before you sign.
       </p>
       {onSeeBoundary && (
         <Button
