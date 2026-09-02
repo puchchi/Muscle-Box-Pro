@@ -133,10 +133,10 @@ export default function StepTerritory({
               than the record's own `terms`: this is what the selected tier means, and `terms` is
               what an admin has actually set for this franchise. */}
           <div
-            className="rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3"
+            className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3"
             data-testid="tier-summary"
           >
-            <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+            <h3 className="text-xs font-semibold text-muted-foreground mb-1.5">
               What that means
             </h3>
             <p className="text-sm text-foreground leading-relaxed">
@@ -208,12 +208,12 @@ export default function StepTerritory({
         {/* Said here rather than at step 4, because it is the sentence that stops someone
             reading their own words back as a promise. The approval screen repeats it when it
             has an answer. */}
-        <div className="flex items-start gap-2.5 rounded-2xl border border-gray-200 bg-white px-4 py-3.5">
+        <div className="flex items-start gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-3.5">
           <Info className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             This is a request, not a grant. We check the territory against what is already
             allocated and what the market can carry, then confirm the exact boundary with you at
-            step 4. If we can only approve part of it, you will see precisely which part before
+            approval. If we can only approve part of it, you will see precisely which part before
             anything is signed.
           </p>
         </div>
@@ -241,10 +241,10 @@ export default function StepTerritory({
 function TerritoryPreview({ state, districts }: { state: string; districts: string[] }) {
   return (
     <div
-      className="rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3"
+      className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3"
       data-testid="territory-preview"
     >
-      <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+      <h3 className="text-xs font-semibold text-muted-foreground mb-1.5">
         What you're asking for
       </h3>
       <p className="text-sm text-foreground leading-relaxed" data-testid="territory-label">

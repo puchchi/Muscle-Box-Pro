@@ -16,7 +16,7 @@ import FranchiseOnboardingFlow from "@/pages/franchise/onboarding/FranchiseOnboa
  * branch. Two rules to keep in step instead of one: whoever adds a route under here that carries a
  * handle adds the `Disallow` too.
  *
- * The handle stays out of the referrer on the way to Digio in step 7. That is `Referrer-Policy` in
+ * The handle stays out of the referrer on the way to Leegality in step 7. That is `Referrer-Policy` in
  * `next.config.mjs` — global `strict-origin-when-cross-origin`, plus `no-referrer` scoped to this
  * route. It matters more here than for a payment link: the URL this leaves for authorises an eSign
  * in a named person's identity.

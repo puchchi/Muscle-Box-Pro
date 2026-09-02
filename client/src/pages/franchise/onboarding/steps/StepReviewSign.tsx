@@ -25,13 +25,13 @@ import type { FranchiseStepViewProps } from "../types";
  * The gym flow's step 3 with the signature taken out of our hands. Everything about the hash
  * discipline carries over — the server renders, hashes and pins; this component displays that
  * fingerprint and echoes it back so a term sheet re-priced between the reader loading and the
- * button being pressed is refused (§6.1). What changes is that the signature is affixed by Digio
+ * button being pressed is refused (§6.1). What changes is that the signature is affixed by Leegality
  * in the signatory's own identity, so this screen ends at a handoff rather than at a form.
  *
  * **There are no "I agree" checkboxes, deliberately.** The gym panel collects two assertions
  * because the server stores them against the signature. Here nothing on the API accepts them:
  * `requestEsign` takes a sign type and the pinned hash, and the assertion that carries weight is
- * the one the signatory makes to Digio against their Aadhaar. A tickbox whose value is never
+ * the one the signatory makes to Leegality against their Aadhaar. A tickbox whose value is never
  * recorded anywhere is theatre on the one screen that must not have any. What this screen does
  * instead is gate on having reached the end of the document, and name exactly who is about to be
  * asked to sign.
@@ -39,16 +39,21 @@ import type { FranchiseStepViewProps } from "../types";
  * **The signing URL is used once and never stored.** It authorises an eSign in a named person's
  * identity, so unlike a deposit link it is not forwardable and this screen never offers it as a
  * link to copy. Coming back to an unsigned term sheet asks the server again: `requestEsign` is
- * idempotent in the document and returns a fresh URL for the same Digio request (§6.4).
+ * idempotent in the document and returns a fresh URL for the same Leegality request (§6.4).
  *
  * **Nothing here can mark the term sheet signed.** The waiting state polls our own record, which
  * only the webhook writes. That covers the paths a redirect handler would miss: a franchisee who
  * signs and closes the tab, or signs on a phone while this tab sits open on a laptop.
  *
- * Two sign types are offered, not three. `electronic` exists in the provider seam because Digio
+ * Two sign types are offered, not three. `electronic` exists in the provider seam because Leegality
  * has it, and it is weaker evidence than either of these for a document that binds a ₹25 lakh
  * commitment; a franchisee who cannot use Aadhaar or a DSC is a conversation, not a third radio
  * button.
+ *
+ * If it is ever offered, it maps to Leegality's **Virtual Sign**, which verifies the signatory by an
+ * OTP to their email or phone. It must never be wired to Quick Sign, which is three clicks with no
+ * OTP at all: that would reproduce the weakness the gym flow's typed-name signature already has,
+ * while looking on this screen like the provider-backed signature it is not.
  */
 
 /**
@@ -219,11 +224,11 @@ export default function StepReviewSign({
 function PreparingNotice() {
   return (
     <section
-      className="rounded-2xl border border-gray-200 bg-white p-6 text-center"
+      className="rounded-xl border border-gray-200 bg-white p-6 text-center"
       role="status"
       data-testid="termsheet-preparing"
     >
-      <h2 className="text-base font-bold text-foreground">Preparing your term sheet</h2>
+      <h3 className="text-base font-semibold text-foreground">Preparing your term sheet</h3>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
         One moment. We're issuing your copy. Nothing you've given us is lost.
       </p>
@@ -258,7 +263,7 @@ function ValidityLine({ effectiveDate, validUntil }: { effectiveDate: string; va
  * The fingerprint, on screen.
  *
  * The franchisee's evidence as much as ours, and the reason it is worth showing: the same value
- * goes on the PDF Digio signs, so a document altered afterwards can be caught by anyone who kept
+ * goes on the PDF Leegality signs, so a document altered afterwards can be caught by anyone who kept
  * the email. `pdfHash` is deliberately not shown — it is ours for verifying the file we handed
  * over, and a second hash on screen invites the question of which one to check.
  */
@@ -309,21 +314,21 @@ function SignPanel({
 }) {
   return (
     <section
-      className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 space-y-5"
+      className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 space-y-5"
       data-testid="sign-panel"
     >
       <div>
-        <h2 className="text-base font-display font-bold text-foreground">Sign the term sheet</h2>
+        <h3 className="text-base font-semibold text-foreground">Sign the term sheet</h3>
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
-          Signing happens at Digio, not here. We hand them this document and they take the
+          Signing happens at Leegality, not here. We hand them this document and they take the
           signature in your signatory's own identity, which is what makes it evidence.
         </p>
       </div>
 
       {previousAttempt && <PreviousAttemptNote attempt={previousAttempt} />}
 
-      <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3" data-testid="signatory-summary">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3" data-testid="signatory-summary">
+        <p className="text-xs font-semibold text-muted-foreground mb-1">
           Who will be asked to sign
         </p>
         <p className="text-sm font-semibold text-foreground">
@@ -332,14 +337,14 @@ function SignPanel({
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed mt-1">
           For {legalEntityName}
-          {aadhaarLast4 ? `, against the Aadhaar ending ${aadhaarLast4}` : ""}. Digio will ask this
+          {aadhaarLast4 ? `, against the Aadhaar ending ${aadhaarLast4}` : ""}. Leegality will ask this
           person and nobody else, so it has to be the person with authority to bind the entity.
         </p>
         <Button
           type="button"
           variant="outline"
           onClick={onCheckSignatory}
-          className="min-h-11 rounded-xl text-xs font-semibold mt-3 cursor-pointer"
+          className="min-h-11 rounded-lg text-xs font-semibold mt-3 cursor-pointer"
           data-testid="button-check-signatory"
         >
           Not the right person? Change it
@@ -351,7 +356,7 @@ function SignPanel({
         {SIGN_TYPES.map((option) => (
           <label
             key={option.value}
-            className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-3 cursor-pointer ${
+            className={`flex items-start gap-2.5 rounded-lg border px-3.5 py-3 cursor-pointer ${
               signType === option.value
                 ? "border-primary/40 bg-primary/5"
                 : "border-gray-200 bg-white"
@@ -378,7 +383,7 @@ function SignPanel({
 
       {blockedReason ? (
         <p
-          className="text-sm text-amber-900 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed"
+          className="text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed"
           data-testid="sign-blocked"
         >
           {blockedReason}
@@ -399,19 +404,19 @@ function SignPanel({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground leading-relaxed flex items-start gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
-              This tab goes to Digio and comes back here on its own.
+              This tab goes to Leegality and comes back here on its own.
             </p>
             <Button
               type="button"
               disabled={!hasReadToEnd || isSubmitting}
               onClick={onSign}
-              className="min-h-11 px-6 rounded-xl font-bold text-sm cursor-pointer flex-shrink-0"
+              className="min-h-11 px-6 rounded-lg font-semibold text-sm cursor-pointer flex-shrink-0"
               data-testid="button-sign"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                  <span className="ml-1.5">Opening Digio...</span>
+                  <span className="ml-1.5">Opening Leegality...</span>
                 </>
               ) : (
                 <>
@@ -431,24 +436,24 @@ function SignPanel({
  * A signing session that ended without a signature.
  *
  * Named rather than silently offering the button again, because the two cases have different
- * fixes: an expiry needs nothing but another attempt, and a declined signature at Digio usually
+ * fixes: an expiry needs nothing but another attempt, and a declined signature at Leegality usually
  * means the signatory was not who we said it was.
  */
 function PreviousAttemptNote({ attempt }: { attempt: "expired" | "declined" }) {
   return (
     <p
-      className="text-sm text-amber-900 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed"
+      className="text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed"
       data-testid={`esign-${attempt}`}
     >
       {attempt === "expired"
         ? "Your last signing session expired before it was completed. Nothing was signed and nothing is lost. Start it again below."
-        : "The last signing attempt was declined at Digio. If that was a mistake, start it again below. If the details it showed weren't right, fix them first and talk to us."}
+        : "The last signing attempt was declined at Leegality. If that was a mistake, start it again below. If the details it showed weren't right, fix them first and talk to us."}
     </p>
   );
 }
 
 /**
- * Sent to Digio, and waiting.
+ * Sent to Leegality, and waiting.
  *
  * Polled rather than left as an end state, for the deposit screen's reason: the wizard moves when
  * our record moves, and only the webhook writes a signature, so a franchisee who has signed and
@@ -476,17 +481,17 @@ function WaitingPanel({
 }) {
   return (
     <section
-      className="rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-6 space-y-4"
+      className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-6 space-y-4"
       data-testid="esign-waiting"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
           <Clock className="w-5 h-5 text-amber-700" aria-hidden="true" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-base font-display font-bold text-amber-900">
+          <h3 className="text-base font-semibold text-amber-900">
             {confirming ? "Checking for your signature" : "Waiting for your signature"}
-          </h2>
+          </h3>
           <p className="text-sm text-amber-900 leading-relaxed mt-1" role="status">
             {confirming
               ? "We're asking our own record whether the signature has landed. It usually takes a few seconds."
@@ -520,13 +525,13 @@ function WaitingPanel({
           variant="outline"
           disabled={isSubmitting}
           onClick={onResume}
-          className="min-h-11 rounded-xl font-semibold text-sm bg-white cursor-pointer sm:self-start"
+          className="min-h-11 rounded-lg font-semibold text-sm bg-white cursor-pointer sm:self-start"
           data-testid="button-resume-signing"
         >
           {isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-              <span className="ml-1.5">Opening Digio...</span>
+              <span className="ml-1.5">Opening Leegality...</span>
             </>
           ) : (
             <>
@@ -560,12 +565,12 @@ function SignedSummary({
 }) {
   return (
     <section
-      className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5 flex items-start gap-3"
+      className="rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5 flex items-start gap-3"
       data-testid="termsheet-signed"
     >
       <CheckCircle2 className="w-5 h-5 text-primary-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
       <div className="min-w-0">
-        <h2 className="text-base font-bold text-foreground">Signed</h2>
+        <h3 className="text-base font-semibold text-foreground">Signed</h3>
         <p className="text-sm text-gray-700 leading-relaxed mt-1">
           Version {version}, signed on {formatIstDateTime(signedAt)} by {signerName} using{" "}
           {SIGN_TYPE_LABELS[signType]}. This copy is read-only. Email us if anything in it needs to
@@ -573,7 +578,7 @@ function SignedSummary({
         </p>
         {auditTrailStored && (
           <p className="text-xs text-muted-foreground leading-relaxed mt-2">
-            Digio's audit trail for the signature is stored with the signed document.
+            Leegality's audit trail for the signature is stored with the signed document.
           </p>
         )}
       </div>

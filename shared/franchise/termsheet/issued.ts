@@ -9,7 +9,7 @@
  * document's identity rather than a display preference, and the **server** computes the hash.
  *
  * Three hashes end up on the record (§6.1). Only the first is computed here. `pdfHash` needs a
- * PDF renderer, which lives in the backend, and `signedPdfHash` is over a file Digio returns.
+ * PDF renderer, which lives in the backend, and `signedPdfHash` is over a file Leegality returns.
  */
 
 import {
@@ -100,9 +100,9 @@ export function canIssueTermSheet(
 /**
  * Version, dates, hash and length — the record pinned at issuance.
  *
- * `pdfHash` is null: this repo has no PDF renderer, and the backend fills it in when it
- * generates the file it hands Digio. A plausible-looking string here would be a hash somebody
- * later trusts.
+ * `pdfHash` is null: this repo has no PDF renderer. The backend's twin of this function pins it at
+ * issuance, by rendering the PDF there and hashing it, so the send path can render again and compare.
+ * A plausible-looking string here would be a hash somebody later trusts.
  */
 export async function fingerprintIssuedTermSheet(
   state: FranchiseOnboardingState,

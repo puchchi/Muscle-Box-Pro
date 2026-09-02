@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
  * Asks our own server, on a timer, while something we do not control settles.
  *
  * Two steps need this and neither can be a redirect handler. Step 7's signature is written by
- * Digio's webhook and step 8's payment by an admin reading a bank statement, so the event that
+ * Leegality's webhook and step 8's payment by an admin reading a bank statement, so the event that
  * moves the wizard arrives at our server with this tab doing nothing. A franchisee who signs and
  * closes the tab, or signs on a phone and watches on a laptop, never comes back through the
  * redirect at all; polling our own record covers every one of those paths with one mechanism.

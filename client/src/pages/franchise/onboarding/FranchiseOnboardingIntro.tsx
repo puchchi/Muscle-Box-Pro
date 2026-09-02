@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { Clock, ExternalLink } from "lucide-react";
 import {
+  FRANCHISE_PHASES,
   franchiseRoughTotalMinutes,
-  franchiseTimedSteps,
+  franchiseStepsInPhase,
 } from "@shared/franchise/onboarding/steps";
+import type { FranchisePhaseId } from "@shared/franchise/onboarding/steps";
 
 /**
  * The cold open, and on the first pass through step 1 the page's own header.
@@ -17,13 +19,17 @@ import {
  *
  * Two things this one has to do that the gym's does not.
  *
- * *Name the two waits.* Nine steps is a long list, and two of them are not the franchisee's:
- * approval at step 4 and our verification of the transfer at step 8. Someone who reaches step
- * 3, submits, and then finds a screen with no button needs to have been told that was coming.
+ * *Name the two waits.* Two parts of this flow are not the franchisee's: approval at step 4 and
+ * our verification of the transfer at step 8. Someone who finishes the application, submits, and
+ * then finds a screen with no button needs to have been told that was coming.
  *
  * *Say what signing means.* This flow ends in a binding term sheet over a ₹25 lakh commitment,
  * so the sentence that matters most is the one about where the commitment starts. It is step 7,
  * and everything before it is an application.
+ *
+ * The copy says stages, not step numbers. The chrome stopped counting to nine when the rail
+ * became four stages, and an intro promising "step 7" would be pointing at a number the
+ * franchisee never sees again.
  */
 export default function FranchiseOnboardingIntro({
   invitedByName,
@@ -37,38 +43,35 @@ export default function FranchiseOnboardingIntro({
 }) {
   return (
     <div
-      className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 mb-6"
+      className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 mb-6"
       data-testid="franchise-onboarding-intro"
     >
-      <p className="text-xs font-bold uppercase tracking-wide text-primary-ink mb-2">
+      <p className="text-xs font-semibold text-primary-ink mb-2">
         {invitedByName} sent you this link
       </p>
-      {/* Sentence case and `font-bold` rather than the flow's uppercase display black, for the
-          reason `OnboardingIntro` gives: this is the one headline that interpolates a name of
-          unknown length, and a long entity name in uppercase is three lines of shouting. */}
       <h1
         ref={headingRef}
         tabIndex={-1}
-        className="text-xl sm:text-2xl font-display font-bold tracking-tight text-foreground mb-2 outline-none"
+        className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground mb-2 outline-none"
       >
         Let's get {franchiseDisplayName} started
       </h1>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Nine steps in four stages. You apply with your details, your territory and your
-        documents. We review the market and confirm the territory with you. Then you read the
-        term sheet and sign it, and the first instalment follows. Nothing is committed until you
-        sign at step 7, so everything before that is an application you can leave and come back
-        to.
+        Four stages. You apply with your details, your territory and your documents. We review the
+        market and confirm the territory with you. Then you read the term sheet and sign it, and
+        the first instalment follows. Nothing is committed until you sign, so everything before
+        that is an application you can leave and come back to.
       </p>
       <p className="mt-2.5 text-sm text-muted-foreground leading-relaxed">
-        Two of the nine are ours rather than yours. Approval takes us a few working days, and
-        verifying your transfer takes us one. Both of those steps tell you where they stand
-        whenever you open this link.
+        Two parts of this are ours rather than yours. Approval takes us a few working days, and
+        verifying your transfer takes us one. Both of them tell you where they stand whenever you
+        open this link.
       </p>
 
-      {/* The steps that cost the franchisee time, with what each one costs. Step 4 is not in
-          this list because it is not their work, and "Approval, 0 minutes" reads worse than an
-          absence. See `franchiseTimedSteps`.
+      {/* Four stages with what each one costs, rather than the nine steps with what each of
+          those costs. The list on the first screen should be the list the rest of the flow
+          shows, and the approval stage is priced "with us" because it has no timed step: a
+          market evaluation is not minutes of the franchisee's own work.
 
           `role="list"` because Tailwind's preflight removes it and Safari drops the role with
           the marker. These links are opened from email, which on iOS means Safari. */}
@@ -77,10 +80,12 @@ export default function FranchiseOnboardingIntro({
         className="mt-4 flex flex-wrap gap-x-6 gap-y-2"
         data-testid="franchise-intro-steps"
       >
-        {franchiseTimedSteps().map((meta) => (
-          <li key={meta.step} className="text-xs whitespace-nowrap">
-            <span className="font-semibold text-foreground">{meta.shortTitle}</span>{" "}
-            <span className="text-muted-foreground tabular-nums">{meta.estimate}</span>
+        {FRANCHISE_PHASES.map((phase) => (
+          <li key={phase.id} className="text-xs whitespace-nowrap">
+            <span className="font-semibold text-foreground">{phase.title}</span>{" "}
+            <span className="text-muted-foreground tabular-nums">
+              {stageMinutes(phase.id) === 0 ? "with us" : `${stageMinutes(phase.id)} minutes`}
+            </span>
           </li>
         ))}
       </ol>
@@ -107,5 +112,13 @@ export default function FranchiseOnboardingIntro({
         </Link>
       </div>
     </div>
+  );
+}
+
+/** Summed from the step estimates rather than typed here, so the four numbers cannot drift. */
+function stageMinutes(phase: FranchisePhaseId): number {
+  return franchiseStepsInPhase(phase).reduce(
+    (total, meta) => total + (meta.estimate === null ? 0 : Number.parseInt(meta.estimate, 10)),
+    0,
   );
 }

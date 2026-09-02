@@ -9,22 +9,22 @@ import { Button } from "@/components/ui/button";
 import { markReturnedFromEsign, takeEsignReturnTo } from "@/lib/esignReturn";
 
 /**
- * Where Digio sends a signatory once the signing session ends.
+ * Where Leegality sends a signatory once the signing session ends.
  *
  * `DepositReturn` with a different third party, and the same three properties.
  *
  * A doormat, not a destination: it recovers the onboarding path this tab stashed on the way out and
  * replaces itself with the wizard, which reads the signature from our own record. The route exists
- * because the redirect URL is registered with Digio when the eSign request is created, so it must
+ * because the redirect URL is registered with Leegality when the eSign request is created, so it must
  * not contain the handle — see [esignReturn.ts](../../lib/esignReturn.ts).
  *
- * **It reads none of the query string.** Digio appends its own identifiers and a status, and a page
+ * **It reads none of the query string.** Leegality appends its own identifiers and a status, and a page
  * that believed any of it would be a way to mark a ₹25 lakh term sheet signed by editing a URL. The
  * webhook is the only thing that may do that (docs/franchise-onboarding.md §6.4). Arriving here
  * means a person came back, which is not the same as a document being signed — the session may have
  * been abandoned, and step 7 is built to show that honestly.
  *
- * **The no-storage case is not an error.** Digio can email the signatory directly, so the person who
+ * **The no-storage case is not an error.** Leegality can email the signatory directly, so the person who
  * signs may never have had this flow open: a company secretary finishing an Aadhaar eSign on their
  * own phone lands here in a browser that never held the path. It cannot be handed the wizard,
  * because identifying the franchise would mean putting a credential in a URL a third party stores.
@@ -62,13 +62,13 @@ export default function EsignReturn() {
 
         {stranded ? (
           <div
-            className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8"
+            className="rounded-xl border border-gray-200 bg-white p-6 sm:p-8"
             data-testid="esign-return-standalone"
           >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
               <ShieldCheck className="w-5 h-5 text-primary" aria-hidden="true" />
             </div>
-            <h1 className="text-lg font-display font-black text-foreground uppercase tracking-tight mb-2">
+            <h1 className="text-lg font-semibold text-foreground tracking-tight mb-2">
               Thank you. We're recording it
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -84,7 +84,7 @@ export default function EsignReturn() {
             <Button
               asChild
               variant="outline"
-              className="min-h-11 w-full rounded-xl font-semibold text-sm mt-6 cursor-pointer"
+              className="min-h-11 w-full rounded-lg font-semibold text-sm mt-6 cursor-pointer"
               data-testid="button-esign-return-help"
             >
               <a href="mailto:contact@muscleboxpro.com">Email us about this signature</a>
@@ -92,14 +92,14 @@ export default function EsignReturn() {
           </div>
         ) : (
           <div
-            className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8"
+            className="rounded-xl border border-gray-200 bg-white p-6 sm:p-8"
             role="status"
             data-testid="esign-return-bouncing"
           >
             <div className="flex items-start gap-3">
               <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="text-sm font-bold text-foreground">
+                <p className="text-sm font-semibold text-foreground">
                   Taking you back to your onboarding
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed mt-1">

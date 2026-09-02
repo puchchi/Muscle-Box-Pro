@@ -171,7 +171,7 @@ export const httpFranchiseOnboardingApi: FranchiseOnboardingApi = {
   /**
    * There is no route behind this, and until there is, it must refuse rather than fabricate a URL.
    *
-   * The wizard's step 7b hands off to Digio, and the handoff needs Digio sandbox credentials that this
+   * The wizard's step 7b hands off to Leegality, and the handoff needs Leegality sandbox credentials that this
    * account does not hold yet. Nothing else in the flow is blocked on it in practice: the term sheet's own
    * `blocks-send` marker means `markTermSheetViewed` answers `not_issuable`, so `state.termSheet` is null and
    * `useFranchiseOnboarding` returns before it reaches this method.

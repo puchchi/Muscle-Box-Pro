@@ -5,7 +5,7 @@
  * eighteen. The reason is the same argument that stripped eleven fields off the gym invite, applied
  * from the start: `validateFranchiseInvite` writes **nine identity fields as `""` and ignores them
  * if an admin sends values**, because they are what the term sheet identifies its counterparty by
- * and what Digio binds a signature against. PAN, GSTIN, CIN, LLPIN, the registered address and the
+ * and what Leegality binds a signature against. PAN, GSTIN, CIN, LLPIN, the registered address and the
  * whole signatory block come from the franchisee's own step 1 or from nowhere.
  *
  * ## The form is in rupees; the wire is in paise

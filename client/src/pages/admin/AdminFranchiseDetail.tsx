@@ -387,7 +387,11 @@ function FranchiseView({
             <Field
               label="PDF hash"
               value={franchise.termSheet.pdfHash}
-              hint={franchise.termSheet.pdfHash ? undefined : "No PDF is rendered yet"}
+              hint={
+                franchise.termSheet.pdfHash
+                  ? undefined
+                  : "This term sheet was pinned before PDFs were rendered"
+              }
               mono
             />
           </Fields>
@@ -398,7 +402,7 @@ function FranchiseView({
           </Empty>
         )}
         <p className="px-4 sm:px-5 py-3.5 text-xs text-muted-foreground leading-relaxed border-t border-gray-100">
-          No signature record. Digio is the platform and nothing writes an e-sign row yet, so this
+          No signature record. Leegality is the platform and nothing writes an e-sign row yet, so this
           stays empty even for a franchise the ladder has already moved past signing.
         </p>
       </Card>

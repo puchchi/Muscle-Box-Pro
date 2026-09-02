@@ -101,7 +101,7 @@ export function isForwardStatus(
  * Null for 4, 7, 8 and 9, and each null is load-bearing:
  *
  *   - 4 is our decision, written by the approval route;
- *   - 7 is `signed`, written by the Digio webhook and by nothing else (§6.4);
+ *   - 7 is `signed`, written by the Leegality webhook and by nothing else (§6.4);
  *   - 8 is `payment_verified`, written by an admin who read a bank statement (§7.3);
  *   - 9 is **not** `active`. `POST /admin/franchises/{id}/activate` is the only route that
  *     ends onboarding. The gym flow's mock wrote `active` here and the real route could not,

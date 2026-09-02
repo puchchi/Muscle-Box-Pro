@@ -50,7 +50,7 @@ export type FranchiseOnboardingActions = {
   /** Fire-and-forget audit write. Never blocks the reader, and a failure is not shown. */
   markTermSheetViewed(): Promise<void>;
   /**
-   * Returns the handoff so the caller can hand the browser to Digio. It is returned rather
+   * Returns the handoff so the caller can hand the browser to Leegality. It is returned rather
    * than stored, and there is nowhere on the state to put it (§6.4).
    */
   requestEsign(signType: EsignSignType): Promise<EsignHandoff | null>;
@@ -84,7 +84,7 @@ export type UseFranchiseOnboarding = {
    * Re-reads the record, silently.
    *
    * Needed because three steps move without the franchisee doing anything: an approval, a
-   * signature that arrives by webhook, a payment an admin verified. The return trip from Digio
+   * signature that arrives by webhook, a payment an admin verified. The return trip from Leegality
    * and the preview hatches both land here.
    */
   reload(): Promise<void>;

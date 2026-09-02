@@ -743,7 +743,7 @@ describe("e-sign", () => {
     expect(JSON.stringify(fetched)).not.toMatch(/signingUrl/);
   });
 
-  it("does not create a second Digio request for a second click", async () => {
+  it("does not create a second Leegality request for a second click", async () => {
     const viewed = await throughTermSheet();
     const input = { signType: "aadhaar" as const, contentHash: viewed.termSheet!.contentHash };
     const first = await api.requestEsign(HANDLE, input);

@@ -180,7 +180,7 @@ function InstructionsPanel({
   if (!instructions) {
     return (
       <section
-        className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6"
+        className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6"
         role="status"
         data-testid="payment-instructions-loading"
       >
@@ -193,14 +193,14 @@ function InstructionsPanel({
 
   return (
     <section
-      className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4"
+      className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4"
       data-testid="payment-instructions"
     >
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+        <p className="text-xs font-semibold text-muted-foreground mb-1">
           Amount due now
         </p>
-        <p className="text-2xl sm:text-3xl font-display font-black text-foreground tracking-tight">
+        <p className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
           {expectedPaise !== null ? formatInr(expectedPaise / 100) : "—"}
         </p>
         <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">
@@ -209,7 +209,7 @@ function InstructionsPanel({
         </p>
       </div>
 
-      <div className="rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3">
         <CopyRow label="Payment reference" value={reference} testId="payment-reference" />
         <p className="text-xs text-muted-foreground leading-relaxed mt-2">
           Put this in the narration or remarks field. It is how we find your transfer, and one that
@@ -217,8 +217,8 @@ function InstructionsPanel({
         </p>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 space-y-3">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3 space-y-3">
+        <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
           <Building2 className="w-3 h-3" aria-hidden="true" />
           Our account
         </p>
@@ -275,7 +275,7 @@ function CopyRow({ label, value, testId }: { label: string; value: string; testI
         type="button"
         variant="ghost"
         onClick={() => void copy()}
-        className="min-h-11 w-11 rounded-xl flex-shrink-0 text-muted-foreground cursor-pointer"
+        className="min-h-11 w-11 rounded-lg flex-shrink-0 text-muted-foreground cursor-pointer"
         data-testid={`button-copy-${testId}`}
       >
         {copied ? (
@@ -497,7 +497,7 @@ function ProofUpload({
           variant="outline"
           disabled={busy}
           onClick={() => inputRef.current?.click()}
-          className="min-h-11 rounded-xl text-xs font-semibold cursor-pointer"
+          className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
           data-testid="button-upload-payment_proof"
         >
           {busy ? (
@@ -518,7 +518,7 @@ function ProofUpload({
               variant="ghost"
               disabled={busy}
               onClick={() => void onRemove()}
-              className="min-h-11 w-11 rounded-xl text-muted-foreground hover:text-red-700 cursor-pointer flex-shrink-0"
+              className="min-h-11 w-11 rounded-lg text-muted-foreground hover:text-red-700 cursor-pointer flex-shrink-0"
               data-testid="button-remove-payment_proof"
             >
               <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -548,17 +548,17 @@ function ClaimedPanel({
 }) {
   return (
     <section
-      className="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6 space-y-4"
+      className="rounded-xl border border-amber-200 bg-amber-50 p-5 sm:p-6 space-y-4"
       data-testid="payment-claimed"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
           <Clock className="w-5 h-5 text-amber-700" aria-hidden="true" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-base font-display font-bold text-amber-900">
+          <h3 className="text-base font-semibold text-amber-900">
             Checking this against our statement
-          </h2>
+          </h3>
           <p className="text-sm text-amber-900 leading-relaxed mt-1" role="status">
             {/* Their transfer date rather than the moment they told us. It is the one figure here
                 they can check against their own statement. */}
@@ -591,13 +591,13 @@ function ClaimedPanel({
 function RefusalPanel({ refusal }: { refusal: string }) {
   return (
     <section
-      className="rounded-2xl border border-red-300 bg-red-50 p-4 sm:p-5"
+      className="rounded-xl border border-red-300 bg-red-50 p-4 sm:p-5"
       data-testid="payment-refused"
     >
-      <h2 className="text-base font-bold text-red-800 flex items-center gap-2">
+      <h3 className="text-base font-semibold text-red-800 flex items-center gap-2">
         <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
         We couldn't confirm that transfer
-      </h2>
+      </h3>
       <p className="text-sm text-red-800 leading-relaxed mt-1">{refusal}</p>
       <p className="text-sm text-red-800 leading-relaxed mt-2">
         Check the reference against your statement and send it to us again below. If the money has
@@ -634,17 +634,17 @@ function VerifiedPanel({
 
   return (
     <section
-      className="rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6 space-y-4"
+      className="rounded-xl border border-primary/20 bg-primary/5 p-5 sm:p-6 space-y-4"
       data-testid="payment-verified"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
           <CheckCircle2 className="w-5 h-5 text-primary-ink" aria-hidden="true" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-base font-display font-bold text-foreground">
+          <h3 className="text-base font-semibold text-foreground">
             {receivedPaise !== null ? formatInr(receivedPaise / 100) : "Your transfer"} received
-          </h2>
+          </h3>
           <p className="text-sm text-muted-foreground leading-relaxed mt-1">
             Confirmed against our statement on {formatIstDate(verifiedAt)}. Your first instalment is
             in and procurement can start.
@@ -654,7 +654,7 @@ function VerifiedPanel({
 
       {shortfall > 0 && (
         <p
-          className="text-sm text-amber-900 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed"
+          className="text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed"
           data-testid="payment-shortfall"
         >
           That is {formatInr(shortfall / 100)} less than the {formatInr(expectedPaise / 100)} due,
@@ -667,7 +667,7 @@ function VerifiedPanel({
       {canCarryOn && (
         <Button
           onClick={onCarryOn}
-          className="min-h-11 rounded-xl font-bold text-sm cursor-pointer"
+          className="min-h-11 rounded-lg font-semibold text-sm cursor-pointer"
           data-testid="button-continue-from-payment"
         >
           Carry on

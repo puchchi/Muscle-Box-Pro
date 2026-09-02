@@ -253,9 +253,9 @@ export default function StepDetails({
               disabled={readOnly}
             />
             {/* Four digits and never more. Aadhaar eSign binds a signature to an Aadhaar
-                identity, and this is how we know which identity we asked Digio to bind. The full
+                identity, and this is how we know which identity we asked Leegality to bind. The full
                 number is a regulated identifier with storage obligations we have no reason to
-                take on, and Digio holds the audit trail that is the actual evidence (§6.5). */}
+                take on, and Leegality holds the audit trail that is the actual evidence (§6.5). */}
             <Field
               form={form}
               name="signatoryAadhaarLast4"
@@ -297,7 +297,7 @@ export default function StepDetails({
 
         {!readOnly && (
           <SubmitBar
-            nextHint="Next you'll describe the territory you want. There is nothing to sign until step 7."
+            nextHint="Next you'll describe the territory you want. There is nothing to sign until the term sheet."
             draftStatus={draft.status}
             isSubmitting={isSubmitting}
           />
@@ -321,10 +321,10 @@ export default function StepDetails({
 function TermSheetPreview({ legalName }: { legalName?: string }) {
   return (
     <div
-      className="rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3"
+      className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3"
       data-testid="termsheet-preview"
     >
-      <h3 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+      <h3 className="text-xs font-semibold text-muted-foreground mb-1.5">
         In your term sheet
       </h3>
       <p className="text-sm text-foreground leading-relaxed">

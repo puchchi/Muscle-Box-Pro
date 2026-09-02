@@ -66,15 +66,15 @@ export default function StepDone({
   return (
     <div className="space-y-6">
       <section
-        className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5"
+        className="rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5"
         data-testid="franchise-signed-confirmation"
       >
         <div className="flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-foreground">
+            <h3 className="text-base font-semibold text-foreground">
               Signed. {state.franchiseDisplayName} is on board.
-            </h2>
+            </h3>
             <p className="text-sm text-gray-700 leading-relaxed mt-1">
               {executed
                 ? `Signed on ${formatIstDate(executed.signedAt)} by ${executed.signerName}`
@@ -97,7 +97,7 @@ export default function StepDone({
             data-testid="termsheet-record"
           >
             <div>
-              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">
+              <dt className="text-xs font-semibold text-muted-foreground">
                 Version
               </dt>
               <dd className="text-sm text-foreground font-semibold mt-0.5">
@@ -105,7 +105,7 @@ export default function StepDone({
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">
+              <dt className="text-xs font-semibold text-muted-foreground">
                 Open until
               </dt>
               <dd className="text-sm text-foreground font-semibold mt-0.5">
@@ -113,7 +113,7 @@ export default function StepDone({
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">
+              <dt className="text-xs font-semibold text-muted-foreground">
                 Document fingerprint
               </dt>
               {/* The first twelve characters: enough to match against the emailed copy, short
@@ -133,11 +133,11 @@ export default function StepDone({
       <InstalmentCard state={state} onGoToInstalment={() => goToStep(8)} />
 
       {hasAccount ? (
-        <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5" data-testid="account-ready">
-          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+        <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5" data-testid="account-ready">
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
             <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
             Your login is set
-          </h2>
+          </h3>
           <p className="text-sm text-gray-700 leading-relaxed mt-1">
             It is <strong className="text-foreground">{email}</strong> with the password you just
             chose. We'll email you the moment the franchise portal opens, which is where machine
@@ -145,7 +145,7 @@ export default function StepDone({
           </p>
         </section>
       ) : (
-        <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
+        <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
           <div>
             <label
               htmlFor="franchise-password"
@@ -174,7 +174,7 @@ export default function StepDone({
                   ? "franchise-password-hint error-franchise-password"
                   : "franchise-password-hint"
               }
-              className={`w-full h-11 rounded-xl border bg-gray-50 pl-3 pr-12 text-base sm:text-sm text-foreground focus:border-primary focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors ${
+              className={`w-full h-11 rounded-lg border bg-gray-50 pl-3 pr-12 text-base sm:text-sm text-foreground focus:border-primary focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors ${
                 error ? "border-red-400 bg-red-50" : "border-gray-200"
               }`}
               data-testid="input-franchise-password"
@@ -208,7 +208,7 @@ export default function StepDone({
             type="button"
             onClick={() => void createAccount()}
             disabled={isSubmitting}
-            className="h-11 px-6 rounded-xl font-bold text-sm w-full sm:w-auto cursor-pointer"
+            className="h-11 px-6 rounded-lg font-semibold text-sm w-full sm:w-auto cursor-pointer"
             data-testid="button-continue"
           >
             {isSubmitting ? "Creating..." : "Create my password"}
@@ -217,13 +217,13 @@ export default function StepDone({
       )}
 
       <section
-        className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
+        className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5"
         data-testid="what-happens-next"
       >
-        <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
+        <h3 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
           <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
           What happens next
-        </h2>
+        </h3>
         <ol role="list">
           {nextSteps(state).map((item, index, all) => {
             const isLast = index === all.length - 1;
@@ -234,7 +234,7 @@ export default function StepDone({
                   {!isLast && <span className="w-px flex-1 bg-gray-200 my-1" />}
                 </div>
                 <div className={`min-w-0 ${isLast ? "" : "pb-4"}`}>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-primary-ink">
+                  <p className="text-xs font-semibold text-primary-ink">
                     {item.when}
                   </p>
                   <p className="text-sm font-semibold text-foreground">{item.title}</p>
@@ -277,12 +277,12 @@ function InstalmentCard({
 
   return (
     <section
-      className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5"
+      className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5"
       data-testid="instalment-outcome"
     >
       {/* `items-start`, not `items-center`: this heading wraps to two lines on a phone, and a
           centred icon then floats beside the gap between them. */}
-      <h2 className="text-base font-bold text-foreground flex items-start gap-2">
+      <h3 className="text-base font-semibold text-foreground flex items-start gap-2">
         <Wallet
           className={`w-4 h-4 flex-shrink-0 mt-1 ${verified ? "text-emerald-600" : "text-muted-foreground"}`}
           aria-hidden="true"
@@ -292,7 +292,7 @@ function InstalmentCard({
           : claimed
             ? "First instalment: with us to confirm"
             : "First instalment still to send"}
-      </h2>
+      </h3>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
         {verified
           ? `Confirmed on ${payment?.verifiedAt ? formatIstDate(payment.verifiedAt) : "our record"}. Procurement starts against it, and the next instalment falls due when your machines are ready.`
@@ -302,7 +302,7 @@ function InstalmentCard({
       </p>
       {shortfall > 0 && (
         <p
-          className="text-sm text-amber-900 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed mt-3"
+          className="text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed mt-3"
           data-testid="instalment-shortfall"
         >
           {formatInr(shortfall / 100)} of the {formatInr((payment?.expectedPaise ?? 0) / 100)} is
@@ -315,7 +315,7 @@ function InstalmentCard({
           type="button"
           variant="outline"
           onClick={onGoToInstalment}
-          className="min-h-11 rounded-xl text-sm font-semibold mt-4 cursor-pointer"
+          className="min-h-11 rounded-lg text-sm font-semibold mt-4 cursor-pointer"
           data-testid="button-to-instalment"
         >
           Transfer details
@@ -361,7 +361,7 @@ function nextSteps(state: FranchiseOnboardingState) {
     {
       when: "After delivery",
       title: "Deployment into your gyms",
-      body: `Install, protein into your warehouse, and the machines go live across ${territory}. Your deployment plan from step 6 is what we sequence this against.`,
+      body: `Install, protein into your warehouse, and the machines go live across ${territory}. The deployment plan you gave us is what we sequence this against.`,
     },
     {
       when: "From the first sale",

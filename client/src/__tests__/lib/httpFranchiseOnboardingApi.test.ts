@@ -320,7 +320,7 @@ describe("uploading a document", () => {
 
 describe("the method with no route", () => {
   /**
-   * Step 7b hands off to Digio and needs credentials this account does not hold. Refusing is the
+   * Step 7b hands off to Leegality and needs credentials this account does not hold. Refusing is the
    * whole behaviour: a fabricated URL would send a franchisee to a signing session that does not
    * exist, having told them their term sheet was ready.
    */

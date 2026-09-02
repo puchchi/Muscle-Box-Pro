@@ -17,7 +17,7 @@
  * `withInstallationComplete` completes the gym flow's step 6 (§7.4). If a method is ever added
  * that writes 4 or 8 into `completedSteps`, that rule is gone.
  *
- * **The signature is not ours to affix.** `requestEsign` hands off to Digio and
+ * **The signature is not ours to affix.** `requestEsign` hands off to Leegality and
  * `refreshEsignStatus` reads our own record. There is deliberately no `sign()` — nothing a
  * client calls may mark a term sheet signed, exactly as no client callback may mark a gym's
  * deposit paid (§6.4).
@@ -92,7 +92,7 @@ export type FranchiseDetails = {
   entityType: EntityType;
   /** The name the territory trades under, and the source of the URL slug. */
   tradeName: string;
-  /** Mandatory: the term sheet identifies its counterparty by PAN, and Digio needs it. */
+  /** Mandatory: the term sheet identifies its counterparty by PAN, and Leegality needs it. */
   pan: string;
   gstin: string;
   /** Companies only. */
@@ -107,8 +107,8 @@ export type FranchiseDetails = {
    * The last four digits, and never more.
    *
    * Aadhaar eSign binds a signature to an Aadhaar identity, and this is how we know which
-   * identity we asked Digio to bind. The full number is a regulated identifier with storage
-   * obligations we have no reason to take on, and Digio holds the audit trail that is the
+   * identity we asked Leegality to bind. The full number is a regulated identifier with storage
+   * obligations we have no reason to take on, and Leegality holds the audit trail that is the
    * actual evidence. Collected for reconciliation, not for verification (§6.5).
    */
   signatoryAadhaarLast4: string;
@@ -322,7 +322,7 @@ export type IssuedTermSheet = {
   /** Diagnostic, not evidence — see `IssuedAgreement.length`. */
   length?: number;
   /**
-   * SHA-256 of the PDF bytes we hand Digio. Answers: is the file Digio signed the file we
+   * SHA-256 of the PDF bytes we hand Leegality. Answers: is the file Leegality signed the file we
    * generated? It is what links the text we rendered to the file that came back signed.
    *
    * Null while no PDF exists. The frontend mock cannot produce one — there is no PDF
@@ -339,7 +339,7 @@ export type EsignSignType = "aadhaar" | "electronic" | "dsc";
 export type EsignStatus = "not_requested" | "requested" | "expired" | "declined" | "signed";
 
 export type EsignRequest = {
-  provider: "digio";
+  provider: "leegality";
   providerDocumentId: string;
   signType: EsignSignType;
   requestedAt: string;
@@ -349,7 +349,7 @@ export type EsignRequest = {
 /**
  * The executed document, written by the webhook and by nothing else (§6.4).
  *
- * `signedPdfHash` is over the file Digio returned: what exactly is in our custody as the
+ * `signedPdfHash` is over the file Leegality returned: what exactly is in our custody as the
  * executed term sheet.
  */
 export type ExecutedTermSheet = {
@@ -363,7 +363,7 @@ export type ExecutedTermSheet = {
    * `IssuedTermSheet.pdfHash` gives.
    */
   signedPdfHash: string | null;
-  /** Digio's audit trail is the real evidence of the Aadhaar OTP; this says we hold a copy. */
+  /** Leegality's audit trail is the real evidence of the Aadhaar OTP; this says we hold a copy. */
   auditTrailStored: boolean;
 };
 
@@ -637,11 +637,17 @@ export interface FranchiseOnboardingApi {
   markTermSheetViewed(handle: string): Promise<FranchiseStateResult>;
 
   /**
-   * Creates the Digio request and returns the handoff. Idempotent: an existing live request
+   * Creates the Leegality request and returns the handoff. Idempotent: an existing live request
    * is returned rather than a second one created.
    *
+   * **That idempotency is ours to enforce, not the provider's.** Leegality's create endpoint has no
+   * idempotency key: the reference we send is searchable but not deduplicated, so calling it twice
+   * makes two real documents, each with a live signing URL in the same person's name. The server
+   * therefore checks its own record first, and resolves a create it did not hear the answer to by
+   * searching for the reference rather than by trying again.
+   *
    * `contentHash` is the pinned hash echoed back, so a term sheet re-priced between the
-   * reader loading and the franchisee clicking through is caught before Digio ever sees a
+   * reader loading and the franchisee clicking through is caught before Leegality ever sees a
    * PDF. Nothing the client sends is stored.
    */
   requestEsign(

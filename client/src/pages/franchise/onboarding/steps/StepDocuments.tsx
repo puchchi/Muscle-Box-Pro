@@ -63,7 +63,7 @@ function specsFor(entityType: EntityType): DocumentSpec[] {
     pan_card: {
       docType: "pan_card",
       label: "PAN card",
-      description: "The entity's PAN card, matching the number you gave at step 1.",
+      description: "The entity's PAN card, matching the number you gave in your details.",
     },
     entity_proof: {
       docType: "entity_proof",
@@ -90,7 +90,7 @@ function specsFor(entityType: EntityType): DocumentSpec[] {
     payment_proof: {
       docType: "payment_proof",
       label: "Transfer proof",
-      description: "Belongs to step 8.",
+      description: "Belongs to the first instalment.",
     },
   };
 
@@ -150,7 +150,7 @@ export default function StepDocuments({
 
       {frozenReason ? (
         <div
-          className="rounded-2xl border border-gray-200 bg-white px-4 py-3.5 flex items-start gap-2.5"
+          className="rounded-xl border border-gray-200 bg-white px-4 py-3.5 flex items-start gap-2.5"
           data-testid="documents-frozen"
         >
           <Check className="w-4 h-4 text-primary-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -238,7 +238,7 @@ function DocumentRow({
 
   return (
     <div
-      className={`rounded-xl border px-3.5 py-3 ${
+      className={`rounded-lg border px-3.5 py-3 ${
         message ? "border-red-300 bg-red-50" : held ? "border-primary/20 bg-primary/5" : "border-gray-200 bg-gray-50"
       }`}
       data-testid={`document-${spec.docType}`}
@@ -296,7 +296,7 @@ function DocumentRow({
               variant="outline"
               disabled={busy}
               onClick={() => inputRef.current?.click()}
-              className="min-h-11 rounded-xl text-xs font-semibold cursor-pointer"
+              className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
               data-testid={`button-upload-${spec.docType}`}
             >
               {busy ? (
@@ -312,7 +312,7 @@ function DocumentRow({
                 variant="ghost"
                 disabled={busy}
                 onClick={() => void onRemove(held.docId)}
-                className="min-h-11 w-11 rounded-xl text-muted-foreground hover:text-red-700 cursor-pointer"
+                className="min-h-11 w-11 rounded-lg text-muted-foreground hover:text-red-700 cursor-pointer"
                 data-testid={`button-remove-${spec.docType}`}
               >
                 <Trash2 className="w-4 h-4" aria-hidden="true" />

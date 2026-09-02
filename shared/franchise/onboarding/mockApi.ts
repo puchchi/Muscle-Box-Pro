@@ -21,7 +21,7 @@
  * ## Where the mock knowingly differs from the live flow
  *
  * `refreshEsignStatus` eventually reports a signature, after a couple of polls. Live, that
- * call is a pure read and only the Digio webhook may write one (§6.4). The poll counter is
+ * call is a pure read and only the Leegality webhook may write one (§6.4). The poll counter is
  * standing in for the webhook's travel time, exactly as the gym deposit mock's does, because a
  * mock that confirms instantly hides the state the return-trip screen exists for. It is the
  * one place in this file where the mock writes something a client-facing route must not.
@@ -108,7 +108,7 @@ export const MOCK_FRANCHISE_HANDLES = {
 /** How many polls the mock makes a franchisee wait before the stand-in webhook lands. */
 const MOCK_ESIGN_POLLS_TO_CONFIRM = 2;
 
-/** How long a Digio signing request stays open in the mock. */
+/** How long a Leegality signing request stays open in the mock. */
 const MOCK_ESIGN_VALIDITY_MS = 7 * 86_400_000;
 
 /**
@@ -762,12 +762,12 @@ export function createMockFranchiseOnboardingApi(
         Date.parse(existing.expiresAt) > Date.parse(nowIso);
 
       // Idempotent in the document, not in the URL. A second call must not create a second
-      // Digio request — but the handoff URL is short-lived and per request, and is deliberately
+      // Leegality request — but the handoff URL is short-lived and per request, and is deliberately
       // not stored on the state for anyone to forward (§6.4).
       const request = live
         ? existing
         : {
-            provider: "digio" as const,
+            provider: "leegality" as const,
             providerDocumentId: `DID-mock-${state.franchiseId}-${state.esign.request ? 2 : 1}`,
             signType: input.signType,
             requestedAt: nowIso,
@@ -783,7 +783,7 @@ export function createMockFranchiseOnboardingApi(
       project(loaded.data);
 
       const handoff: EsignHandoff = {
-        signingUrl: `https://mock.digio.invalid/sign/${request.providerDocumentId}?t=${Date.parse(nowIso)}`,
+        signingUrl: `https://mock.leegality.invalid/sign/${request.providerDocumentId}?t=${Date.parse(nowIso)}`,
         expiresAt: request.expiresAt,
       };
       return { ok: true as const, data: { state: snapshot(state), handoff } };
@@ -1035,7 +1035,7 @@ export function previewDecline(handle: string): FranchiseOnboardingState | null 
   return JSON.parse(JSON.stringify(state)) as FranchiseOnboardingState;
 }
 
-/** Stands in for `POST /webhook/digio/esign`. */
+/** Stands in for `POST /webhook/leegality/esign`. */
 export function previewCompleteEsign(handle: string): FranchiseOnboardingState | null {
   const record = requireRecord(handle);
   if (!record) return null;

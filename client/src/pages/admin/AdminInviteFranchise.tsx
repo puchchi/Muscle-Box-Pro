@@ -30,7 +30,7 @@ import { formatInr, formatIstDateTime } from "./adminFormat";
  *
  * `AdminInviteGym.tsx` lost eleven fields to the same argument after the fact; this form was built
  * with them already gone. PAN, GSTIN, CIN, LLPIN, the registered address and the whole signatory
- * block are what the term sheet identifies its counterparty by and what Digio binds a signature
+ * block are what the term sheet identifies its counterparty by and what Leegality binds a signature
  * against, so they come from the franchisee at step 1 or from nowhere. `POST /admin/franchises`
  * agrees: it writes all nine as `""` and **ignores them if an admin sends values**.
  *

@@ -7,7 +7,12 @@ import { AlertCircle, ArrowLeft, Lock, Pencil, ShieldCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button";
 import { scrollIntoViewGently } from "@/lib/motion";
-import { FRANCHISE_STEP_META, franchiseStepMeta } from "@shared/franchise/onboarding/steps";
+import {
+  franchisePhaseOf,
+  franchiseStepMeta,
+  franchiseStepsInPhase,
+} from "@shared/franchise/onboarding/steps";
+import type { FranchisePhaseId } from "@shared/franchise/onboarding/steps";
 import {
   operationsReadinessSchema,
   paymentClaimSchema,
@@ -18,7 +23,8 @@ import type {
   FranchiseOnboardingStep,
 } from "@shared/franchise/onboarding/types";
 import FranchiseOnboardingIntro from "./FranchiseOnboardingIntro";
-import PhaseRail from "./PhaseRail";
+import { PhaseBar, PhaseRail } from "./PhaseNav";
+import PhaseSteps from "./PhaseSteps";
 import { useFranchiseOnboarding } from "./useFranchiseOnboarding";
 import StepDetails from "./steps/StepDetails";
 import StepTerritory from "./steps/StepTerritory";
@@ -29,7 +35,7 @@ import StepOperations from "./steps/StepOperations";
 import StepReviewSign from "./steps/StepReviewSign";
 import StepInstalment from "./steps/StepInstalment";
 import StepDone from "./steps/StepDone";
-import { SHELL } from "./shell";
+import { COLUMN, PAGE } from "./shell";
 import type { FranchiseStepViewProps } from "./types";
 
 /**
@@ -38,10 +44,23 @@ import type { FranchiseStepViewProps } from "./types";
  * `OnboardingFlow` is the model and its decisions carry over without being re-argued: one URL
  * for the whole flow because the step lives in the database rather than the path, no business
  * logic in this file, a skip link because the chrome is full of focusable things, a measured
- * sticky-chrome height published as a CSS variable, focus moved to the heading of each new
- * step, and one `SHELL` measure for the header, the rail and the body.
+ * sticky-chrome height published as a CSS variable, and focus moved to the heading of each new
+ * step.
  *
- * One difference worth naming.
+ * ## Four screens over nine steps
+ *
+ * The nine steps are the server's, and nothing here changes them: `currentStep` is still whatever
+ * the record says, `completedSteps` still gates what may be opened, and every step still submits
+ * its own call. What changed is that a franchisee is no longer shown a ladder of nine. A **stage**
+ * is the screen — its name is the `h1` — and the step being worked on is an `h2` inside it, with
+ * the stage's other steps as one-line rows above and below (`PhaseSteps`). Nine destinations became
+ * four, and the detail moved from the chrome of every screen to the one place it is a choice.
+ *
+ * A stage with a single step has no `h2`, because "Territory approval" over a heading reading
+ * "Approval" is one heading too many. That is why `headingRef` lands on whichever of the two is the
+ * step on screen: focus after navigating has to arrive at the thing that changed.
+ *
+ * ## One difference from the gym flow worth naming
  *
  * *A declined application is not an error screen.* It is step 4's content. `declined` comes
  * back from every mutating call, and rendering it as a red banner over a form would leave a
@@ -65,6 +84,37 @@ const STEP_COMPONENTS: Record<
   7: StepReviewSign,
   8: StepInstalment,
   9: StepDone,
+};
+
+/**
+ * What a stage is called on the screen it heads, and what it is for.
+ *
+ * Separate from `FRANCHISE_PHASES.title`, which is two words at most because it renders in a nav
+ * beside three others. A page heading has room to say something, and "Apply" as an `h1` over a form
+ * asking for a PAN is a label rather than a sentence. Kept here rather than in `shared/` because it
+ * is this wizard's chrome: nothing else renders it, and the nav's titles are what the invitation
+ * email lists.
+ *
+ * The blurb says why the stage exists, not what is in it. The steps are already listed twice on the
+ * screen below it, as the collapsed rows and as the step's own blurb, and a stage that is one step
+ * gets no blurb at all: approval's would restate step 4's card one line above it.
+ */
+const PHASE_COPY: Record<FranchisePhaseId, { heading: string; blurb?: string }> = {
+  apply: {
+    heading: "Your application",
+    blurb: "Everything we need to assess the territory. None of it commits you to anything.",
+  },
+  approval: {
+    heading: "Territory approval",
+  },
+  agree: {
+    heading: "Your term sheet",
+    blurb: "What you are agreeing to, and then the signature that binds it.",
+  },
+  fund: {
+    heading: "Funding and setup",
+    blurb: "The transfer that starts procurement, and the login that comes with it.",
+  },
 };
 
 /**
@@ -110,8 +160,8 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
   } = useFranchiseOnboarding(handle);
 
   // Before the early returns, so the hook order is the same on every path.
-  const railRef = useRef<HTMLDivElement>(null);
-  const chromeHeight = useStickyChromeHeight(railRef, !isLoading && !fatalError);
+  const chromeRef = useRef<HTMLDivElement>(null);
+  const chromeHeight = useStickyChromeHeight(chromeRef, !isLoading && !fatalError);
   const headingRef = useStepFocus(viewStep, isLoading);
 
   if (isLoading) return <LoadingScreen />;
@@ -121,6 +171,11 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
   }
 
   const meta = franchiseStepMeta(viewStep);
+  const phase = franchisePhaseOf(viewStep);
+  const phaseCopy = PHASE_COPY[phase.id];
+  const phaseSteps = franchiseStepsInPhase(phase.id).map((m) => m.step);
+  const before = phaseSteps.filter((step) => step < viewStep);
+  const after = phaseSteps.filter((step) => step > viewStep);
   const StepBody = STEP_COMPONENTS[viewStep];
   const isBehind = viewStep < currentStep;
   const showIntro = viewStep === 1 && !state.completedSteps.includes(1);
@@ -134,6 +189,14 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
   const showActionError =
     actionError !== null && actionError.code !== "declined" && !stepOwnsFieldErrors;
 
+  const nav = {
+    currentStep,
+    viewStep,
+    completedSteps: state.completedSteps,
+    canView,
+    onSelect: goToStep,
+  };
+
   return (
     <div
       className="min-h-screen bg-gray-50 flex flex-col"
@@ -141,70 +204,102 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
     >
       <a
         href="#franchise-step"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-xl focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-foreground focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
       >
         Skip to this step
       </a>
 
-      <Header franchiseName={state.franchiseDisplayName} />
-
-      <div ref={railRef} className="sticky top-0 z-30">
-        <PhaseRail
-          currentStep={currentStep}
-          viewStep={viewStep}
-          completedSteps={state.completedSteps}
-          canView={canView}
-          onSelect={goToStep}
-        />
+      <div ref={chromeRef} className="sticky top-0 z-30">
+        <Header franchiseName={state.franchiseDisplayName} />
+        <PhaseBar {...nav} />
       </div>
 
-      {/* `tabIndex={-1}` is what makes the skip link skip in Safari, which is what emailed
-          links open in on iOS. See `OnboardingFlow`. */}
-      <main
-        id="franchise-step"
-        tabIndex={-1}
-        className={`flex-1 w-full ${SHELL} py-8 sm:py-10 outline-none`}
+      <div
+        className={`flex-1 ${PAGE} py-8 lg:py-12 lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-12 xl:gap-16`}
       >
-        {showIntro ? (
-          <FranchiseOnboardingIntro
-            headingRef={headingRef}
-            invitedByName={state.invitedByName}
-            franchiseDisplayName={state.franchiseDisplayName}
-          />
-        ) : (
-          <div className="mb-6">
-            <h1
-              ref={headingRef}
-              tabIndex={-1}
-              className="text-xl sm:text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1 outline-none"
-            >
-              {meta.title}
-            </h1>
-            <p className="text-muted-foreground text-sm">{meta.blurb}</p>
-          </div>
-        )}
+        <div
+          className="hidden lg:block lg:sticky lg:self-start"
+          style={{ top: "calc(var(--onboarding-chrome, 0px) + 3rem)" }}
+        >
+          <PhaseRail {...nav} />
+        </div>
 
-        {isBehind && (
-          <ReviewingBanner
+        {/* `tabIndex={-1}` is what makes the skip link skip in Safari, which is what emailed
+            links open in on iOS. See `OnboardingFlow`. */}
+        <main
+          id="franchise-step"
+          tabIndex={-1}
+          className={`${COLUMN} w-full space-y-6 outline-none`}
+        >
+          {showIntro ? (
+            <FranchiseOnboardingIntro
+              headingRef={headingRef}
+              invitedByName={state.invitedByName}
+              franchiseDisplayName={state.franchiseDisplayName}
+            />
+          ) : (
+            <>
+              <div>
+                <h1
+                  // The step on screen, for a stage that is one step. See this module's header.
+                  ref={phaseSteps.length === 1 ? headingRef : undefined}
+                  tabIndex={-1}
+                  className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground outline-none"
+                >
+                  {phaseCopy.heading}
+                </h1>
+                {phaseCopy.blurb && (
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">
+                    {phaseCopy.blurb}
+                  </p>
+                )}
+              </div>
+
+              <PhaseSteps steps={before} state={state} canView={canView} onSelect={goToStep} />
+
+              {phaseSteps.length > 1 && (
+                <div>
+                  <h2
+                    ref={headingRef}
+                    tabIndex={-1}
+                    className="text-lg font-semibold text-foreground outline-none"
+                  >
+                    {meta.title}
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+                    {meta.blurb}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {isBehind && (
+            <ReviewingBanner
+              frozenReason={frozenReason}
+              canEdit={!isReadOnly}
+              onReturn={() => goToStep(currentStep)}
+            />
+          )}
+
+          {showActionError && actionError && <ActionErrorNotice error={actionError} />}
+
+          <StepBody
+            handle={handle}
+            state={state}
+            readOnly={isReadOnly}
             frozenReason={frozenReason}
-            canEdit={!isReadOnly}
-            onReturn={() => goToStep(currentStep)}
+            isSubmitting={isSubmitting}
+            fieldErrors={fieldErrors}
+            goToStep={goToStep}
+            actions={actions}
           />
-        )}
 
-        {showActionError && actionError && <ActionErrorNotice error={actionError} />}
-
-        <StepBody
-          handle={handle}
-          state={state}
-          readOnly={isReadOnly}
-          frozenReason={frozenReason}
-          isSubmitting={isSubmitting}
-          fieldErrors={fieldErrors}
-          goToStep={goToStep}
-          actions={actions}
-        />
-      </main>
+          {!showIntro && (
+            <PhaseSteps steps={after} state={state} canView={canView} onSelect={goToStep} />
+          )}
+        </main>
+      </div>
 
       <Footer />
     </div>
@@ -217,9 +312,10 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
  * The height of the sticky chrome, in pixels, kept current across breakpoints.
  *
  * Published as a CSS variable so the things that have to clear it — the term sheet reader's
- * own contents bar, the `scroll-mt` on every clause anchor — can say so in a class. A
- * `ResizeObserver` rather than a `resize` listener, because the rail also changes height when
- * a phase's step list wraps and the preview strip changes height per step.
+ * own contents bar, the `scroll-mt` on every clause anchor, the stage rail's own sticky offset —
+ * can say so in a class. A `ResizeObserver` rather than a `resize` listener, because the stage bar
+ * is in the measured block below `lg` and out of it above, so the height changes without the
+ * window doing so.
  */
 function useStickyChromeHeight(ref: React.RefObject<HTMLElement | null>, ready: boolean): number {
   const [height, setHeight] = useState(0);
@@ -263,10 +359,10 @@ function useStepFocus(viewStep: number, isLoading: boolean) {
 function Header({ franchiseName }: { franchiseName: string }) {
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className={`${SHELL} h-14 sm:h-16 flex items-center justify-between gap-4`}>
+      <div className={`${PAGE} h-14 sm:h-16 flex items-center justify-between gap-4`}>
         <Link
           href="/"
-          className="flex-shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="flex-shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <Image
             src="/assets/logo.png"
@@ -295,7 +391,7 @@ function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white py-5">
       <div
-        className={`${SHELL} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
+        className={`${PAGE} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
       >
         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
@@ -314,40 +410,47 @@ function Footer() {
 
 /**
  * The wait while the handle resolves. A skeleton of the shell rather than a line of centred
- * text, for the reason `OnboardingFlow.LoadingScreen` gives.
+ * text, for the reason `OnboardingFlow.LoadingScreen` gives. Four rail rows, because four is what
+ * the nav draws.
  */
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col" data-testid="franchise-onboarding-loading">
+    <div
+      className="min-h-screen bg-gray-50 flex flex-col"
+      data-testid="franchise-onboarding-loading"
+    >
       <div className="bg-white border-b border-gray-200">
-        <div className={`${SHELL} h-14 sm:h-16 flex items-center`}>
-          <div className="h-8 w-32 rounded-lg bg-gray-100 animate-pulse" />
+        <div className={`${PAGE} h-14 sm:h-16 flex items-center`}>
+          <div className="h-8 w-32 rounded-md bg-gray-100 animate-pulse" />
         </div>
       </div>
-      <div className="bg-white border-b border-gray-200">
-        <div className="h-1 bg-gray-100" aria-hidden="true" />
-        {/* Four columns, because that is what the rail draws. Off `FRANCHISE_STEP_META` for
-            the row of step placeholders, so the skeleton cannot end up a step short of the
-            thing it stands in for. */}
-        <div className={`${SHELL} py-4 space-y-2`} aria-hidden="true">
-          <div className="flex gap-4">
-            {[0, 1, 2, 3].map((column) => (
-              <div key={column} className="flex-1 h-3 rounded bg-gray-100 animate-pulse" />
-            ))}
-          </div>
-          <div className="flex gap-2">
-            {FRANCHISE_STEP_META.map((step) => (
-              <div key={step.step} className="h-5 w-5 rounded-full bg-gray-100 animate-pulse" />
-            ))}
-          </div>
+      <div className="border-b border-gray-200 bg-white lg:hidden" aria-hidden="true">
+        <div className="h-0.5 bg-gray-100" />
+        <div className={`${PAGE} py-3 flex gap-1.5`}>
+          {[0, 1, 2, 3].map((stage) => (
+            <div key={stage} className="flex-1 h-11 rounded-md bg-gray-100 animate-pulse" />
+          ))}
         </div>
       </div>
-      <div className={`flex-1 w-full ${SHELL} py-8 sm:py-10 space-y-4`} role="status">
-        <p className="sr-only">Opening your application…</p>
-        <div className="h-7 w-2/3 rounded-lg bg-gray-200 animate-pulse" />
-        <div className="h-4 w-1/2 rounded bg-gray-100 animate-pulse" />
-        <div className="h-32 rounded-2xl border border-gray-200 bg-white" />
-        <div className="h-64 rounded-2xl border border-gray-200 bg-white" />
+      <div
+        className={`flex-1 ${PAGE} py-8 lg:py-12 lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-12 xl:gap-16`}
+        role="status"
+      >
+        <div className="hidden lg:block space-y-5" aria-hidden="true">
+          {[0, 1, 2, 3].map((stage) => (
+            <div key={stage} className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-gray-100 animate-pulse" />
+              <div className="h-3 flex-1 rounded bg-gray-100 animate-pulse" />
+            </div>
+          ))}
+        </div>
+        <div className={`${COLUMN} w-full space-y-4`}>
+          <p className="sr-only">Opening your application…</p>
+          <div className="h-8 w-2/3 rounded-md bg-gray-200 animate-pulse" />
+          <div className="h-4 w-1/2 rounded bg-gray-100 animate-pulse" />
+          <div className="h-28 rounded-xl border border-gray-200 bg-white" />
+          <div className="h-64 rounded-xl border border-gray-200 bg-white" />
+        </div>
       </div>
     </div>
   );
@@ -386,12 +489,10 @@ function ReviewingBanner({
 
   return (
     <div
-      className="mb-6 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 flex items-start gap-3"
+      className="rounded-xl border border-gray-200 bg-white px-4 py-3.5 flex items-start gap-3"
       data-testid="reviewing-banner"
     >
-      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-        <Icon className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-      </div>
+      <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-foreground mb-0.5">{title}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
@@ -399,7 +500,7 @@ function ReviewingBanner({
       <Button
         variant="outline"
         onClick={onReturn}
-        className="min-h-11 rounded-xl text-xs font-semibold flex-shrink-0 cursor-pointer"
+        className="min-h-11 rounded-lg text-xs font-semibold flex-shrink-0 cursor-pointer"
         data-testid="button-return-to-current"
       >
         Back to where I was
@@ -425,12 +526,10 @@ function ActionErrorNotice({ error }: { error: FranchiseOnboardingError }) {
     <div
       ref={ref}
       role="alert"
-      className="mb-6 flex items-start gap-3 rounded-2xl border border-red-300 bg-red-50 px-4 py-3.5 scroll-mt-[calc(var(--onboarding-chrome,0px)_+_1rem)]"
+      className="flex items-start gap-2.5 rounded-xl border border-red-300 bg-red-50 px-4 py-3.5 scroll-mt-[calc(var(--onboarding-chrome,0px)_+_1rem)]"
       data-testid="action-error"
     >
-      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-        <AlertCircle className="w-4 h-4 text-red-700" aria-hidden="true" />
-      </div>
+      <AlertCircle className="w-4 h-4 text-red-700 flex-shrink-0 mt-0.5" aria-hidden="true" />
       <p className="text-sm text-red-800 leading-relaxed">{error.message}</p>
     </div>
   );
@@ -471,25 +570,23 @@ function HandleProblem({ error }: { error: FranchiseOnboardingError }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header franchiseName="" />
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex items-center justify-center px-5 py-12">
         <div
           role="alert"
-          className="w-full max-w-md bg-white border border-gray-200 rounded-2xl p-6 sm:p-8"
+          className="w-full max-w-md bg-white border border-gray-200 rounded-xl p-6 sm:p-8"
           data-testid="handle-problem"
         >
-          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
+          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center mb-4">
             <AlertCircle className="w-5 h-5 text-amber-700" aria-hidden="true" />
           </div>
-          <h1 className="text-lg font-display font-black text-foreground uppercase tracking-tight mb-2">
-            {title}
-          </h1>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground mb-2">{title}</h1>
           <p className="text-sm text-muted-foreground leading-relaxed mb-6">{body}</p>
           {cta && (
             /* `asChild`, so this is one anchor rather than a button inside an anchor. This is
                the only screen a franchisee with a dead link ever sees. */
             <Button
               asChild
-              className="min-h-11 w-full rounded-xl font-bold text-sm cursor-pointer"
+              className="min-h-11 w-full rounded-lg font-semibold text-sm cursor-pointer"
               data-testid="button-handle-cta"
             >
               <a href="mailto:contact@muscleboxpro.com">{cta}</a>

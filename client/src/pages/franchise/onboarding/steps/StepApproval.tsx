@@ -78,10 +78,10 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         </p>
 
         <div
-          className="rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3 space-y-2"
+          className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3 space-y-2"
           data-testid="granted-territory"
         >
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+          <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
             <MapPin className="w-3 h-3" aria-hidden="true" />
             Granted
           </p>
@@ -99,7 +99,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         {state.currentStep > 4 && (
           <Button
             onClick={() => goToStep(state.currentStep)}
-            className="min-h-11 rounded-xl font-bold text-sm cursor-pointer"
+            className="min-h-11 rounded-lg font-semibold text-sm cursor-pointer"
             data-testid="button-continue-from-approval"
           >
             Carry on
@@ -142,7 +142,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
           <Button
             variant="outline"
             onClick={() => goToStep(1)}
-            className="min-h-11 rounded-xl text-xs font-semibold cursor-pointer"
+            className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
             data-testid="button-hold-to-details"
           >
             Your details
@@ -150,7 +150,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
           <Button
             variant="outline"
             onClick={() => goToStep(2)}
-            className="min-h-11 rounded-xl text-xs font-semibold cursor-pointer"
+            className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
             data-testid="button-hold-to-territory"
           >
             Your territory
@@ -158,7 +158,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
           <Button
             variant="outline"
             onClick={() => goToStep(3)}
-            className="min-h-11 rounded-xl text-xs font-semibold cursor-pointer"
+            className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
             data-testid="button-hold-to-documents"
           >
             Documents
@@ -166,8 +166,8 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         </div>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Submit step 3 again when you have dealt with these and the review restarts. Nothing you
-          have already given us is lost.
+          Submit your documents again when you have dealt with these and the review restarts.
+          Nothing you have already given us is lost.
         </p>
       </Card>
     );
@@ -221,16 +221,19 @@ function Card({
 }) {
   return (
     <section
-      className={`rounded-2xl border bg-white p-5 sm:p-6 space-y-4 ${TINTS[tint]}`}
+      className={`rounded-xl border bg-white p-5 sm:p-6 space-y-4 ${TINTS[tint]}`}
       data-testid={testId}
     >
       <div className="flex items-start gap-3">
         <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${ICON_TINTS[tint]}`}
+          className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${ICON_TINTS[tint]}`}
         >
           {icon}
         </div>
-        <h2 className="text-base font-display font-bold text-foreground pt-2">{title}</h2>
+        {/* `h2`, where every other step's panels are `h3`. Approval is the one stage that is a
+            single step, so the shell prints the stage `h1` and no step `h2`, and an `h3` here
+            would skip a level. */}
+        <h2 className="text-base font-semibold text-foreground pt-2">{title}</h2>
       </div>
       {children}
     </section>
@@ -239,8 +242,8 @@ function Card({
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3">
+      <p className="text-xs font-semibold text-muted-foreground mb-1">
         {label}
       </p>
       <p className="text-sm text-foreground">{value}</p>

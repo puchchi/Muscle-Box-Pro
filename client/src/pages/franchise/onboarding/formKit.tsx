@@ -35,6 +35,10 @@ import type { DraftStatus } from "../../onboarding/useDraftAutosave";
  * - `disabled:opacity-100` with an explicit grey. shadcn's `opacity-50` puts 44%-grey label
  *   text at 22%, and the read-only view of a submitted step is exactly where someone goes to
  *   check what they typed.
+ * - `border-gray-400` on a white field, not `border-gray-200`. The border is the only thing saying
+ *   where to type, and WCAG 1.4.11 wants 3:1 for it: gray-200 on white is 1.24:1, gray-400 is
+ *   2.61:1. Still short, and the nearest grey that clears it reads as a heavy outline on a form
+ *   this long, so this is the closest that stays legible. Do not lighten it.
  * - `aria-[invalid=true]` styling on the input itself, plus the icon. A red message beside an
  *   untouched-looking grey box is colour as the only signal, twice.
  * - The wrapper `div` sits *outside* `FormControl`. `FormControl` is a Radix `Slot` and clones
@@ -49,13 +53,13 @@ export { Form };
 const ERROR_TEXT = "text-red-700 text-xs font-medium flex items-start gap-1.5";
 
 const inputClass =
-  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-500 focus:border-primary focus:bg-white focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors h-11 rounded-xl " +
-  "aria-[invalid=true]:border-red-400 aria-[invalid=true]:bg-red-50 " +
+  "bg-white border-gray-400 text-foreground placeholder:text-gray-500 focus:border-primary-fill focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors h-11 rounded-lg " +
+  "aria-[invalid=true]:border-red-500 aria-[invalid=true]:bg-red-50 " +
   "disabled:opacity-100 disabled:bg-gray-100 disabled:text-gray-700 disabled:cursor-not-allowed";
 
 const areaClass =
-  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-500 focus:border-primary focus:bg-white focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors rounded-xl resize-none " +
-  "aria-[invalid=true]:border-red-400 aria-[invalid=true]:bg-red-50 " +
+  "bg-white border-gray-400 text-foreground placeholder:text-gray-500 focus:border-primary-fill focus-visible:ring-2 focus-visible:ring-offset-1 transition-colors rounded-lg resize-none " +
+  "aria-[invalid=true]:border-red-500 aria-[invalid=true]:bg-red-50 " +
   "disabled:opacity-100 disabled:bg-gray-100 disabled:text-gray-700 disabled:cursor-not-allowed";
 
 /**
@@ -63,7 +67,11 @@ const areaClass =
  *
  * `<fieldset>`/`<legend>` for the grouping a screen reader needs, with the legend floated to a
  * full-width block rather than left in the gap a browser cuts for it in the top border, and an
- * `h2` inside it because a legend groups but does not navigate.
+ * `h3` inside it because a legend groups but does not navigate.
+ *
+ * `h3` rather than `h2`: the step's own title is the `h2` the shell renders above these, and a
+ * section of one form outranking the form is a heading order a screen reader reads as a new
+ * subject.
  */
 export function Section({
   title,
@@ -73,13 +81,11 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <fieldset className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
-      <legend className="float-left w-full mb-4">
-        <h2 className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h2>
+    <fieldset className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+      <legend className="float-left w-full mb-5">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       </legend>
-      <div className="clear-both space-y-4">{children}</div>
+      <div className="clear-both space-y-5">{children}</div>
     </fieldset>
   );
 }
@@ -289,8 +295,8 @@ export function SelectField<T extends FieldValues>({
               disabled={disabled}
               aria-required={!optional || undefined}
               data-testid={`select-${name}`}
-              className={`w-full min-h-11 rounded-xl border bg-gray-50 px-3 text-base sm:text-sm text-foreground transition-colors focus:border-primary focus:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-700 ${
-                fieldState.error ? "border-red-400 bg-red-50" : "border-gray-200 cursor-pointer"
+              className={`w-full min-h-11 rounded-lg border bg-white px-3 text-base sm:text-sm text-foreground transition-colors focus:border-primary-fill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-700 ${
+                fieldState.error ? "border-red-500 bg-red-50" : "border-gray-400 cursor-pointer"
               }`}
             >
               {placeholder && (
@@ -429,8 +435,8 @@ export function CheckListField<T extends FieldValues>({
                 <div
                   role="group"
                   aria-labelledby={labelId}
-                  className={`max-h-60 overflow-y-auto rounded-xl border ${
-                    fieldState.error ? "border-red-400 bg-red-50" : "border-gray-200 bg-gray-50"
+                  className={`max-h-60 overflow-y-auto rounded-lg border ${
+                    fieldState.error ? "border-red-500 bg-red-50" : "border-gray-400 bg-white"
                   }`}
                   data-testid={`list-${name}`}
                 >
@@ -444,7 +450,7 @@ export function CheckListField<T extends FieldValues>({
                         <li key={option}>
                           <label
                             className={`flex items-center gap-3 px-3 py-2.5 text-sm ${
-                              disabled ? "cursor-not-allowed text-gray-700" : "cursor-pointer hover:bg-white"
+                              disabled ? "cursor-not-allowed text-gray-700" : "cursor-pointer hover:bg-gray-50"
                             }`}
                           >
                             <input
@@ -663,10 +669,10 @@ export function ErrorSummary<T extends FieldValues>({
       ref={ref}
       role="alert"
       tabIndex={-1}
-      className="rounded-2xl border border-red-300 bg-red-50 p-4 outline-none scroll-mt-[calc(var(--onboarding-chrome,0px)_+_1rem)]"
+      className="rounded-xl border border-red-300 bg-red-50 p-4 outline-none scroll-mt-[calc(var(--onboarding-chrome,0px)_+_1rem)]"
       data-testid="step-error-summary"
     >
-      <p className="text-sm font-bold text-red-800 flex items-center gap-2">
+      <p className="text-sm font-semibold text-red-800 flex items-center gap-2">
         <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
         {names.length === 1
           ? "One field needs another look"
@@ -737,9 +743,10 @@ function SummaryMessage({ label, message }: { label: string; message?: string })
  * `type="submit"` button outside a form is a control that silently does nothing.
  *
  * Two shapes, because a band and a card mean different things. On a phone it spans the screen and
- * a `border-t` reads as the bottom of the window. At the shell's measure it is 768px inside a
- * wider viewport, where the same `border-t` reads as a rule drawn across the middle of the page,
- * so from `sm:` up it lifts off the bottom and closes into a bordered card.
+ * a `border-t` reads as the bottom of the window; the `-mx-5` that bleeds it to the edge is the
+ * shell's own `PAGE` padding cancelled, so the two have to stay in step. At `COLUMN`'s measure it
+ * is a reading column inside a wider viewport, where the same `border-t` reads as a rule drawn
+ * across the middle of the page, so from `sm:` up it lifts off the bottom and closes into a card.
  */
 export function SubmitBar({
   nextHint,
@@ -761,19 +768,19 @@ export function SubmitBar({
   return (
     <div
       className={[
-        "sticky bottom-0 -mx-4 px-4 pt-3 pb-4 border-t border-gray-200",
-        "sm:bottom-4 sm:mx-0 sm:px-5 sm:py-4 sm:rounded-2xl sm:border sm:shadow-lg",
+        "sticky bottom-0 -mx-5 px-5 pt-3 pb-4 border-t border-gray-200",
+        "sm:bottom-4 sm:mx-0 sm:px-5 sm:py-4 sm:rounded-xl sm:border sm:shadow-sm",
         "bg-gray-50/95 sm:bg-white/95 backdrop-blur space-y-2",
       ].join(" ")}
     >
-      <p className="text-xs text-muted-foreground">{nextHint}</p>
+      <p className="text-xs text-muted-foreground leading-relaxed">{nextHint}</p>
       <div className="flex items-center justify-between gap-4">
         {draftStatus ? <DraftIndicator status={draftStatus} /> : <span />}
         <Button
           type={onClick ? "button" : "submit"}
           onClick={onClick}
           disabled={isSubmitting || disabled}
-          className="min-h-11 px-6 rounded-xl font-bold text-sm cursor-pointer"
+          className="min-h-11 px-6 rounded-lg font-semibold text-sm cursor-pointer"
           data-testid="button-continue"
         >
           {isSubmitting ? busyLabel : label}

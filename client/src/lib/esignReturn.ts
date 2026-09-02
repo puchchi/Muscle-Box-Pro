@@ -1,12 +1,12 @@
 /**
- * The trip out to Digio and back, for step 7 of franchise onboarding.
+ * The trip out to Leegality and back, for step 7 of franchise onboarding.
  *
  * `depositReturn.ts` is the pattern and its reasoning applies unchanged, with one deliberate
  * subtraction.
  *
  * **What survives the journey:** where the wizard was, so `/franchise/esign-return` can put the
  * tab back inside it. That path contains the handle, a credential, which is why the redirect URL
- * we register with Digio is handle-free and the path is kept here instead. `Referrer-Policy:
+ * we register with Leegality is handle-free and the path is kept here instead. `Referrer-Policy:
  * no-referrer` on the onboarding route exists to stop that value leaking, and a return URL
  * carrying it would reopen the leak deliberately.
  *
@@ -14,7 +14,7 @@
  * a gym that comes back unpaid has a way to the payment page, because a deposit link is
  * forwardable by design. A signing link is the opposite — it authorises an eSign in a named
  * person's identity, it is short-lived, and it is minted per request (docs/franchise-onboarding.md
- * §6.4). `requestEsign` is idempotent in the document and returns a fresh URL for the same Digio
+ * §6.4). `requestEsign` is idempotent in the document and returns a fresh URL for the same Leegality
  * request, so resuming needs a server call rather than a stored URL. That also means there is no
  * scoping problem to solve here: nothing is held that could be handed to the wrong franchise.
  *
@@ -27,7 +27,14 @@
 const RETURN_TO_KEY = "mbp.esign.return-to";
 const RETURNED_KEY = "mbp.esign.returned";
 
-/** Where Digio's redirect lands. Carries no handle, by design. */
+/**
+ * Where Leegality's redirect lands. Carries no handle, by design.
+ *
+ * Registered in Leegality's dashboard, per invitee, under the workflow's custom URL settings. There is
+ * no field on the create request to pass it, so this constant is the value somebody types there rather
+ * than one the code sends. A path that differs between the dashboard and this file is a franchisee
+ * returning to a 404 after signing, and no test on either side can catch it.
+ */
 export const ESIGN_RETURN_PATH = "/franchise/esign-return";
 
 export function rememberSigningAttempt(returnTo: string): void {

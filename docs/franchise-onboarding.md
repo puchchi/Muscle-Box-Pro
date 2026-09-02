@@ -18,7 +18,7 @@ Four things were decided before this was written, and each one shapes a whole se
 
 | Decision | Section |
 |---|---|
-| Signatures go through **Digio**, not a typed name in a box | §6 |
+| Signatures go through **Leegality**, not a typed name in a box | §6 |
 | The first instalment is a **bank transfer we verify**, not a payment gateway | §7 |
 | What gets signed now is a **binding term sheet**, not the definitive agreement | §5 |
 | The flow also captures **KYC, territory and operations readiness** | §3 |
@@ -41,8 +41,8 @@ and verified by us (against a bank statement). That is neither the gym flow's fr
 pattern nor its completed-on-read pattern. §7.4 names it and gives it rules.
 
 **3. The signature is affixed by someone else.** The gym signature is a typed name, two checkboxes
-and a hash we computed — the whole record is ours. A Digio signature is affixed to a PDF by Digio,
-after an Aadhaar OTP or a DSC, and the artifact that carries legal weight is a file we did not
+and a hash we computed — the whole record is ours. A Leegality signature is affixed to a PDF by
+Leegality, after an Aadhaar OTP or a DSC, and the artifact that carries legal weight is a file we did not
 produce the last version of. That reverses the direction of the hash discipline and requires a PDF
 renderer this repo does not have. §6 is the longest section here for that reason.
 
@@ -104,7 +104,7 @@ the journey they read on the public page.
 | 4 | Approval | Approval | **us** — completed on read |
 | 5 | Your franchise | Agree | franchisee (acknowledges) |
 | 6 | Operations readiness | Agree | franchisee |
-| 7 | Review and sign | Agree | franchisee, via Digio |
+| 7 | Review and sign | Agree | franchisee, via Leegality |
 | 8 | First instalment | Fund | **both** — franchisee claims, we verify |
 | 9 | You're set up | Fund | franchisee |
 
@@ -122,12 +122,12 @@ does not.
 |---|---|
 | `legalEntityName`, `entityType` | `EntityType` is reusable verbatim from `shared/onboarding/types.ts`, including `unregistered` |
 | `tradeName` | the name the territory trades under, and the source of the URL slug |
-| `pan` | **new.** Mandatory. A franchise agreement identifies its counterparty by PAN, and Digio needs it for a DSC path |
+| `pan` | **new.** Mandatory. A franchise agreement identifies its counterparty by PAN, and it is required on the DSC path |
 | `gstin` | |
 | `cin` / `llpin` | **new**, conditional on `entityType` being `pvt_ltd` or `llp` |
 | `registeredAddress` | |
 | `signatoryName`, `signatoryDesignation` | |
-| `signatoryPan`, `signatoryAadhaarLast4` | **new.** §6.5 — Digio's Aadhaar eSign binds a signature to an identity, and we need to know which identity we asked it to bind |
+| `signatoryPan`, `signatoryAadhaarLast4` | **new.** §6.5 — Aadhaar eSign binds a signature to an identity, and the last four digits are sent to Leegality as a check the provider enforces against the signing certificate |
 | `noticesEmail`, `noticesPhone` | the notices block, same role as the gym agreement's §41 |
 
 PAN is validated for shape (`[A-Z]{5}[0-9]{4}[A-Z]`) and no further. The fourth character is the
@@ -135,7 +135,7 @@ holder's category — `P` for an individual, `C` for a company, `F` for a firm �
 **not** checked against `entityType`: plenty of applicants apply on their own PAN because the company
 they will trade through does not exist yet, and refusing that is refusing the application. `cin` is
 optional for the same reason. The signatory's PAN is still required to be a `P`, because a signatory
-is a person and Digio cannot bind a company's number to an Aadhaar identity.
+is a person and a company's number cannot be bound to an Aadhaar identity.
 
 **Not collected: bank details.** The franchisee's payout account is a portal setting after
 activation, exactly as `GET /gym/payout-account` is for gyms, and there is nothing to pay out during
@@ -274,7 +274,7 @@ problem. So the warehouse fields are required and the logistics field is not.
 
 ### Step 7 — Review and sign
 
-The term sheet on screen, then off to Digio and back. §5 is the document and §6 is the mechanism.
+The term sheet on screen, then off to Leegality and back. §5 is the document and §6 is the mechanism.
 
 ### Step 8 — First instalment
 
@@ -331,7 +331,7 @@ the mistake that is easy to make.
 | Freeze | Set by | Freezes | Why |
 |---|---|---|---|
 | `approvedAt` | admin approval | step 2, the territory | Exclusivity attaches to the approved territory. A franchisee who could edit it after approval could silently widen what we granted |
-| `signedAt` | the Digio webhook | steps 1, 2, 3, 5, 6 | Every one of them supplies values rendered into the signed term sheet |
+| `signedAt` | the Leegality webhook | steps 1, 2, 3, 5, 6 | Every one of them supplies values rendered into the signed term sheet |
 
 Both enforced server-side. The UI mirrors the window so a field is read-only exactly when the server
 would refuse it — gym doc §4's `DETAILS_EDITABLE_FROM` reasoning, which exists because offering an
@@ -410,10 +410,17 @@ has signatures against it.** Add a version.
 
 ---
 
-## 6. Signing through Digio
+## 6. Signing through Leegality
 
 This is the section with the most new machinery in it, and the reason is that a provider-affixed
 signature inverts the gym flow's central invariant.
+
+**Leegality is the chosen provider** for all three signature paths: ordinary electronic signing,
+Aadhaar eSign, and e-stamping (stamping in the franchise flow only). Everything below the capability
+list was read from `knowledge.leegality.com` on 2026-09-02 and encoded in
+`services/onboarding/src/providers/leegality.ts` with a test per surprise. Nothing has yet run
+against the sandbox, so the shapes are documented rather than proven, and the module's header says so
+in the same words.
 
 ### 6.1 What the gym flow's hash discipline was protecting, and what changes
 
@@ -422,15 +429,15 @@ at signing and compares. The client never computes the hash that gets stored (`s
 types.ts` on `IssuedAgreement` is emphatic about this, and gym doc §21 and §22 record two bugs that
 came from getting it wrong).
 
-Under Digio, the artifact that carries legal weight is a **PDF**, and the last version of it is
-produced by Digio, not by us. The plain-text hash no longer answers "what was signed". It still
+Under Leegality, the artifact that carries legal weight is a **PDF**, and the last version of it is
+produced by Leegality, not by us. The plain-text hash no longer answers "what was signed". It still
 answers something worth keeping, so we end up with three hashes, each with one job:
 
 | Hash | Computed by | Answers |
 |---|---|---|
 | `contentHash` — SHA-256 of the plain-text rendering | us, at issuance | is the document on screen the document on the record? Catches a re-priced term sheet between reader load and sign, exactly as it does for gyms |
-| `pdfHash` — SHA-256 of the PDF bytes we hand Digio | us, at issuance | is the file Digio signed the file we generated? |
-| `signedPdfHash` — SHA-256 of the PDF Digio returns | us, on webhook | what exactly is in our custody as the executed document? |
+| `pdfHash` — SHA-256 of the PDF bytes we hand Leegality | us, at issuance | is the file Leegality signed the file we generated? |
+| `signedPdfHash` — SHA-256 of the PDF Leegality returns | us, on webhook | what exactly is in our custody as the executed document? |
 
 All three are stored. `pdfHash` is the one that makes the other two meaningful: without it there is
 no link between the text we rendered and the file that came back signed, and the chain from "these
@@ -439,7 +446,7 @@ commercials" to "this executed PDF" has a gap in the middle where the interestin
 ### 6.2 We now need a PDF renderer, and we did not before
 
 Gym doc's §8 in the backend design lists "agreement PDF generation" as out of scope. It is in scope
-here — Digio signs a file, so a file must exist.
+here — Leegality signs a file, so a file must exist.
 
 Recommendation: **`pdf-lib`, in the Lambda, from the `Agreement` block tree.** Pure JavaScript, no
 native binaries, no headless browser, and it bundles into a Lambda without a layer. The alternative
@@ -451,6 +458,16 @@ hash that stops verifying for reasons nobody can reproduce.
 One renderer, in the backend, per the same one-renderer-not-two rule as §2.9 of the backend design.
 The React reader in step 7 walks the same `Agreement` tree for display and does not generate a PDF.
 
+**Written to be shared with the gym flow, not franchise-specific.** The franchise flow is where
+Leegality lands first, because none of it is deployed and so nothing live is at risk. The gym flow
+keeps its typed-name signature for now and moves to Leegality as a second phase, and it will want the
+same renderer over its own `Agreement` tree. A renderer that takes a block tree and returns bytes is
+that; one that takes a `FranchiseTermSheet` is a rewrite later.
+
+The file also has a size ceiling worth knowing before it is a support ticket: Leegality accepts the
+PDF as **base64 inside the JSON body, up to 15 MB**. A term sheet is nowhere near that, and an
+executed definitive agreement with scanned annexures could be.
+
 **The PDF must be deterministic.** No timestamp in the document metadata, no creation date, no
 producer string that carries a library version. `pdf-lib` writes a `CreationDate` by default; set it
 explicitly to the term sheet's `effectiveDate` and set `Producer` to a fixed string. Otherwise
@@ -460,52 +477,113 @@ hashes just stop matching each other a week later.
 
 ### 6.3 The provider seam
 
-`services/onboarding/src/providers/digio.ts`, over plain `fetch`, no SDK — the pattern
-`razorpayLinks.ts` already sets.
+`services/onboarding/src/providers/leegality.ts`, over plain `fetch`, no SDK — the pattern
+`razorpayLinks.ts` already sets. It exists, with 59 tests. No route calls it yet.
 
 ```
 interface EsignProvider {
-  createRequest(input: { pdf: Uint8Array; signer: SignerIdentity; redirectUrl: string })
-    : Promise<{ providerDocumentId: string; signingUrl: string }>;
-  getStatus(providerDocumentId: string): Promise<EsignStatus>;
-  download(providerDocumentId: string): Promise<Uint8Array>;
-  parseWebhook(rawBody: string, headers: Headers): EsignEvent;
+  createRequest(input: CreateEsignInput): Promise<CreatedEsign>;
+  getDocument(providerDocumentId: string): Promise<EsignDocumentState>;
+  download(providerDocumentId: string, type: "DOCUMENT" | "AUDIT_TRAIL"): Promise<Uint8Array>;
+  findByIrn(irn: string): Promise<{ providerDocumentId: string; providerStatus: string } | null>;
 }
 ```
 
 An interface with one implementation, for the reason `OnboardingApi` was one before the backend
 existed: it is what makes a mock possible, and the mock is what lets the nine-step wizard be walked
-end to end by anyone without Digio credentials. It is also the thing that makes swapping to
-Leegality a one-file change if the stamping coverage turns out to matter.
+end to end by anyone without Leegality credentials.
 
-**The Digio specifics below are unverified.** `documentation.digio.in` renders client-side and did
-not yield to a fetch on 2026-08-31, so the shapes here are from prior knowledge and must be confirmed
-against Digio's sandbox before implementation. What is *not* uncertain is the set of capabilities we
-need, which is the list above.
+Two of those four methods are not in the shape this section originally guessed at, and each is there
+for a reason the API forced:
 
-| Capability | Expected shape |
+- **`findByIrn`, not `parseWebhook`.** Webhook parsing moved to a free function because the webhook
+  body is not evidence (§6.4). `findByIrn` is new because **Leegality's create endpoint has no
+  idempotency key.** The reference we send (`irn`) is searchable but not deduplicated: the only error
+  it can return is `irn.length.invalid`, so a create we did not hear the answer to, retried, produces
+  a *second real document with a second live signing URL in the same person's name*. Recovery is to
+  search for the reference, never to try again. This is `isDuplicateReference` → re-read by reference
+  in `razorpayLinks.ts`, with the difference that Razorpay refuses the duplicate for us and Leegality
+  does not.
+- **`getDocument`, not `getStatus`.** The status alone cannot answer whether the document was
+  refused, because rejection is a property of the *invitation*, not the document: a document whose
+  only signer declined still reads `SENT`. So the seam returns the invitees too, and
+  `toEsignStatus(providerStatus, invitees)` derives ours from both.
+
+| Capability | Shape, read from the vendor's docs on 2026-09-02 |
 |---|---|
-| Auth | HTTP Basic, `client_id:client_secret` |
-| Upload for signing | `POST /v2/client/document/upload`, JSON with base64 file content and a signers array |
-| Status | `GET /v2/client/document/{document_id}` |
-| Download signed | `GET /v2/client/document/download?document_id=…` |
-| Signing handoff | a gateway URL the signer is redirected to |
-| Sign types | `aadhaar` (Aadhaar eSign, OTP), `electronic`, DSC |
-| Webhook | configured in the Digio dashboard, verified by a shared secret |
+| Auth | `X-Auth-Token: <token>`. **Not** `Authorization: Bearer`, which selects the v4 API, and sending both fails |
+| Environments | separated by **host**: sandbox `https://sandbox.leegality.com`, prod `https://app1.leegality.com`. Separate auth token *and* separate private salt per environment |
+| Create | `POST /api/v3.0/sign/request` — `profileId`, `file: { name, file: <base64 PDF> }`, `invitees[]`, `irn`, and the stamp fields when stamping |
+| Status | `GET /api/v3.3/document/details?documentId=…`, plus ~100 opt-in boolean query params for anything beyond `id`/`name`/`irn`/`status` |
+| Download | `GET /api/v3.3/document/fetchDocument?documentId=…&documentDownloadType=DOCUMENT\|AUDIT_TRAIL` returns a **CDN URL that expires in 15 seconds** |
+| Recovery search | `GET /api/v3.0/sign/request/list?q=…` — matches name, documentId *and* irn, so the caller must filter on exact `irn` |
+| Signing handoff | `signUrl` per invitee in the create response |
+| Sign types | `AADHAAR`, `VIRTUAL_SIGN` (OTP to email or phone), `DSC`, and others. **Not a field on the create request** |
+| Webhook | dashboard config per invitee, `mac` = HMAC-SHA1 over `documentId` alone |
 
-Confirm each against the sandbox and correct this table in place. A note in the provider module
-saying which fields were verified and on what date is worth more than this table is.
+Five of those need spelling out, because each is a place where the obvious-looking implementation is
+wrong:
+
+**There is no `signType` field.** Sign type is workflow configuration, not a request parameter, which
+means **two sign types are two Leegality workflows** and our `signType` selects a `profileId`. That is
+why the credentials include `leegality/workflow-ids` as one JSON parameter (§8.1) rather than one
+parameter per type: split apart, "Aadhaar points at last month's workflow while electronic points at
+this month's" is reachable one `put-parameter` at a time. `resolveWorkflowId` refuses rather than
+falling back to whichever id happens to be configured.
+
+**`"electronic"` maps to Virtual Sign, never Quick Sign.** Virtual Sign verifies the signatory with an
+OTP. Quick Sign is three clicks with no OTP at all, which would reproduce the weakness the gym flow's
+typed name already has while looking, on the same screen, like a provider-backed signature.
+
+**Failures arrive as HTTP 200.** The body is `{ status, data, messages }`, and a refusal is
+`status: 0` with codes in `messages[]`. Warnings arrive *inside* a success — `status: 1` carrying
+`workflow.stamp.warning` is how an unstamped document comes back looking fine. So `createRequest`
+returns its warnings, and the caller is expected to record them: a silently unstamped agreement is
+exactly the failure that is invisible until it matters. Switch on `status` and `messages[].code`,
+never on message text; the vendor's own sample shows `status: 0` beside a success-sounding message.
+
+**Document status is at `data.document.status`.** Not `data.status`, which is `undefined`. Reading the
+wrong one maps a completed document to `requested`, and a signed term sheet shows as pending forever.
+This was written the wrong way first and caught against the vendor's sample response, which is why
+there is a test named after it.
+
+**Timestamps are `DD-MM-YYYY HH:MM:SS` with no timezone**, day-first, and they are IST. The one ISO
+example in the docs is a docs inconsistency. `parseLeegalityTimestamp` round-trips the date before
+trusting it, because `Date.UTC` rolls `31-02` into March rather than rejecting it. And
+**`expiryDate: null` means 45 minutes, not never.**
+
+One more, on vocabulary. Leegality has **four names for one idea**: the details endpoint returns
+`DRAFT|SENT|COMPLETED`, the list endpoint adds `RECEIVED|SIGNED|EXPIRED`, the webhook sends title-case
+`Draft|Sent|Completed`, and the verification block is called `nameVerification`/`titleVerification` in
+one response and `name`/`title` in the other. All four are normalised once, in the provider, into the
+`EsignStatus` this document already uses. A caller reading `verification.name` off a raw details
+response gets `undefined` and records "no mismatch" for a signature that had one.
+
+Confirm each of these against the sandbox and correct this table in place, along with the provider
+module's header, which carries the same date and the same caveat.
 
 ### 6.4 The webhook is the only thing that may mark it signed
 
 Verbatim the deposit rule from gym doc §5, and it transfers without amendment: *"polls our own
 record, never a client callback."*
 
-- `POST /webhook/digio/esign` verifies the shared secret over the raw body before parsing anything
+The heading is about **who is allowed to assert it**, not about which request happens to arrive first.
+The webhook and the reconciler §6.4b makes mandatory are both the server reading the provider, and they
+take the same conditional write; a franchisee's browser takes neither, on any path, ever.
+
+- `POST /webhook/leegality/esign` verifies the `mac` before parsing anything else. Leegality's
+  dashboard configures a **second** URL for failures, so this is two routes or one route with a flag,
+  and the error webhook is the only place a "signature attempt failed" ever arrives
+- **Then re-fetches from the details API and writes what that says, not what the body said.** This is
+  a departure from the Razorpay webhook, and §6.4a is the reason
 - The write is **conditional on `signedAt is null`**, so a redelivered webhook cannot produce a
-  second signature record. Digio, like every webhook sender, will redeliver
-- Idempotency marker keyed on the provider's event id, the way `RZPPAY#<paymentId>` works
-- The return redirect from Digio sets **nothing**. It lands on `/franchise/esign-return`, which
+  second signature record. Leegality, like every webhook sender, will redeliver
+- A cheap idempotency marker, `ESIGNEVENT#<documentId>#<STATUS>`, short-circuits the common
+  redelivery. It is *coarser* than one row per event, because Leegality's webhook carries no event id
+  to key on — so unlike `RZPPAY#<paymentId>` it is an optimisation, and the conditional write above is
+  the actual safety property. `esignEventPk` in `domain/ids.ts` says so where somebody would otherwise
+  read the marker as sufficient
+- The return redirect from Leegality sets **nothing**. It lands on `/franchise/esign-return`, which
   re-reads our own record and shows what our record says
 
 `client/src/lib/depositReturn.ts` and gym doc §25 and §26 are the pattern for the return trip,
@@ -516,43 +594,133 @@ a safety net — is already written and already reasoned about. Reuse it.
 **One thing not to copy from the deposit flow:** the deposit link is forwardable by design, because
 the signatory frequently is not the payer. A signing link is the opposite. It authorises an Aadhaar
 eSign in a named person's identity, and it must not be treated as forwardable — the URL is generated
-per request, short-lived, and the screen must not invite anyone to send it on.
+per request, expires in 45 minutes when Leegality reports no expiry at all, and the screen must not
+invite anyone to send it on.
+
+### 6.4a The MAC covers one field, so the body is a notification and not evidence
+
+`mac` is **HMAC-SHA1 of `documentId` alone**, keyed with the environment's private salt. Everything
+else in the body — the status, the signer's name, the verification results, the timestamps — is
+outside the signature. Two consequences, both of which the handler has to be built around rather than
+noticing later:
+
+1. **A valid MAC proves only that somebody knows the id and the salt.** It does not authenticate a
+   single claim in the payload. So the handler treats the webhook as "document `X` changed, go look",
+   verifies the MAC, and then reads the truth from `getDocument`. The payload never carries the signed
+   PDF or the audit trail anyway, so a fetch was always required; this makes it the only source.
+2. **It is a permanent replay token.** No timestamp, no nonce, so the same body replays forever. The
+   conditional write is what makes that harmless, which is the second reason it is the real guard and
+   not the marker.
+
+The proper compensation is Leegality's **Custom Webhook Headers**, which are not self-serve: they
+require emailing support@leegality.com, receiving a **Webhook Profile ID**, and entering it per invitee
+under "Add custom URLs and webhooks". Worth requesting before this goes to production. Until then a
+shared-secret query parameter on the webhook URL is the available substitute, and it is weaker than it
+looks because the URL is stored in a vendor dashboard.
+
+### 6.4b Three retries, so a poller is not optional
+
+Leegality retries a failed webhook **three times — immediately, at +1 hour, at +3 hours — and then
+gives up permanently.** Razorpay's retries run for a day. Three attempts against a Lambda cold start,
+a throttle, or a deploy window is a franchise agreement that is signed at Leegality and unsigned in our
+record, with nothing left to correct it.
+
+So the reconciler is a correctness requirement here, not a safety net: a scheduled sweep over
+`ESIGN#` rows still in `requested`, calling `getDocument` on each, taking the same conditional-write
+path as the webhook. The webhook makes it fast; the poller makes it true.
+
+Two more operational facts that belong here because they are invisible in code:
+
+- **Webhook and return URLs cannot be set through the API.** They are dashboard configuration, per
+  invitee, at Webhook Version **v2.5**, with a separate **Error Webhook URL** beside the success one.
+  They freeze onto the document when it is sent, so changing them does not affect documents already
+  out. `ESIGN_RETURN_PATH` in `client/src/lib/esignReturn.ts` is a value somebody types into that
+  dashboard, and a mismatch is a franchisee landing on a 404 after signing, which no test on either
+  side can catch.
+- **Localhost can never receive one.** Local development sees the poller path, not the webhook path,
+  which is an argument for the two sharing one function rather than being written twice.
 
 ### 6.5 Identity, and what we are entitled to store
 
-Aadhaar eSign binds a signature to an Aadhaar identity. We pass Digio the signer's name, email and
-PAN; Digio runs the OTP against UIDAI.
+Aadhaar eSign binds a signature to an Aadhaar identity. We pass Leegality the signer's name, email and
+phone; Leegality runs the OTP against UIDAI and returns a signing certificate.
 
 **Store the last four digits of the Aadhaar number and nothing more.** Not the full number, not the
 XML, not the e-KYC response. The full number is a regulated identifier with storage obligations we
 have no reason to take on, the last four is enough to answer "which identity did we ask to sign", and
-Digio holds the audit trail that is the actual evidence. The audit trail is also downloadable and
+Leegality holds the audit trail that is the actual evidence. The audit trail is also downloadable and
 should be stored alongside the signed PDF, in the same bucket, under the same access rules (§9).
 
-`signatoryAadhaarLast4` in step 1 is therefore collected for reconciliation, not for verification. It
-never leaves our record.
+**Revision, 2026-09-02: the last four digits now leave our record, and that is an improvement.** This
+section previously said `signatoryAadhaarLast4` was "collected for reconciliation, not for
+verification" and "never leaves our record". Leegality's `aadhaarConfig` reverses that. It accepts
+per-request checks the provider enforces against the signing certificate itself:
+
+| `aadhaarConfig` field | Checked against |
+|---|---|
+| `verifyName`, `verifySmartName` | the name on the Aadhaar record, exact and fuzzy |
+| **`verifyTitle`** | **the last four digits of the Aadhaar UID** |
+| `verifyPincode`, `verifyState`, `verifyYob`, `verifyGender` | the corresponding certificate fields |
+
+Sending `verifyTitle` turns a bookkeeping note into an actual control: the person who completes the
+OTP must hold the Aadhaar number the authorised signatory declared in step 1, not merely *an* Aadhaar
+number. Without it, any Aadhaar holder with the link can sign as the signatory, and our four digits sit
+in the record proving nothing. That is the field worth sending, and `SignerIdentity.aadhaarLast4`
+carries it.
+
+Two constraints on it:
+
+- Leegality calls the same value `title` on the way back, in `certificateData` — so the field that
+  arrives is not named after what it contains. `certificateData` also exposes `uid`, which we do
+  **not** request; the details endpoint requires a separate opt-in parameter for it, and there is a
+  test asserting we never ask.
+- **Whether a mismatch hard-fails or soft-fails is a dashboard setting**, under Department →
+  eSignature, not an API parameter. No code on our side can read it or assert on it. It has to be set
+  to hard-fail by hand and recorded in the runbook, because a soft-fail configuration makes
+  `verifyTitle` a note in a report rather than a control, and everything above stops being true without
+  a single line changing.
 
 ### 6.6 Stamp duty, named rather than assumed
 
-A definitive franchise agreement in India attracts state stamp duty, and Digio can e-stamp. A term
+A definitive franchise agreement in India attracts state stamp duty, and Leegality can e-stamp. A term
 sheet's position depends on the state and on how binding its language is, and it is a question for
 counsel, not for this document.
 
-What this section fixes is that **the seam carries it**: `createRequest` takes an optional stamp
-series and value, so turning stamping on is a config change and a provider call, not a redesign. And
-the note for whoever executes the definitive agreement: stamping is almost certainly required there,
-it must happen **before** signing, and the stamp becomes part of the PDF and therefore part of
-`pdfHash`.
+**The decision taken: e-stamp the definitive agreement, and sign the term sheet unstamped.** The seam
+carries stamping either way — `createRequest` takes an optional `{ seriesGroup, valueRupees }`, and
+turning it on for the term sheet later is a config change, not a redesign — but it is switched off
+there, for an operational reason rather than a legal one:
+
+**Stamp inventory is pre-purchased per state.** A series is bought for a state before it can be drawn
+on, an empty series **fails the request**, and a term sheet is issued the moment a territory is granted
+in whichever state that turns out to be. Turning stamping on for the term sheet would mean holding
+paid-up inventory in every state we might grant, and the failure when we did not is not a warning on a
+report — it is a franchisee at step 7 who cannot sign. The definitive agreement is negotiated with a
+known state and a known date, which is when buying a series is a task somebody can actually do.
+
+The mechanics, for whoever executes that agreement:
+
+- Stamping must happen **before** signing. The stamp becomes part of the PDF and therefore part of
+  `pdfHash`, which is the ordering §6.1 depends on.
+- Value-based stamping is a **Stamp Group**: `seriesGroup` plus `stampValue`, with Leegality choosing
+  the denominations. Naming explicit series instead means all of them share one state, at most 15, each
+  with quantity 1 to 99.
+- Revenue stamps are state-agnostic at ₹1 each, which is a different instrument from stamp duty and
+  not a substitute for it.
+- An unstamped document can come back looking successful. `workflow.stamp.warning` arrives inside
+  `status: 1` (§6.3), so the handler must record `CreatedEsign.warnings` rather than discarding them on
+  the success path.
 
 ### 6.7 What does not change: the CSP
 
-Digio is a **redirect**, not an embedded widget. `next.config.mjs` sets `frame-src 'none'` site-wide,
-and gym doc §5's second reason for choosing Payment Links over an in-page checkout applies unaltered:
-a redirect needs no CSP change at all, and `form-action 'self'` does not restrict the trip back.
+Leegality is a **redirect**, not an embedded widget. `next.config.mjs` sets `frame-src 'none'`
+site-wide, and gym doc §5's second reason for choosing Payment Links over an in-page checkout applies
+unaltered: a redirect needs no CSP change at all, and `form-action 'self'` does not restrict the trip
+back.
 
-Digio also ships a JS SDK that renders in an iframe or popup. **Do not use it.** It would require
-`frame-src` and `script-src` entries site-wide, on every page, for one screen in one flow — which is
-the exact trade gym doc §5 already refused once.
+Leegality also ships an embeddable signing experience. **Do not use it.** It would require `frame-src`
+and `script-src` entries site-wide, on every page, for one screen in one flow — which is the exact
+trade gym doc §5 already refused once.
 
 ---
 
@@ -657,17 +825,34 @@ single-table design. A franchise bug cannot corrupt a gym's onboarding row, PITR
 set independently, and the GSI design does not have to accommodate two unrelated access patterns on
 one partition space.
 
-Separate SSM SecureStrings for the Digio credentials, per the §7.1 bounding-rotation argument:
+Separate SSM SecureStrings for the Leegality credentials, per the §7.1 bounding-rotation argument:
 
 ```
-/mbp/<env>/onboarding/digio/client-id
-/mbp/<env>/onboarding/digio/client-secret
-/mbp/<env>/onboarding/digio/webhook-secret
+/mbp/<env>/onboarding/leegality/auth-token
+/mbp/<env>/onboarding/leegality/private-salt
+/mbp/<env>/onboarding/leegality/workflow-ids
 ```
 
-Plus a cold-start assertion that a sandbox `client_id` is not in prod — the same check
-`lib/runtime.ts` already makes on the Razorpay key prefix, and for the same reason: a sandbox
-credential in prod signs nothing legally and says nothing about it.
+All three are in `onboardingSsmPaths` and **granted to no role**, in any of the four stacks, with a
+test in each asserting the synthesized template never names them. The stacks share one path list
+because a franchise Lambda and an onboarding Lambda would otherwise drift; sharing the list is not
+sharing the grant.
+
+Three things differ from the Razorpay precedent, and each is a decision rather than an oversight:
+
+- **There is no cold-start prefix assertion, because there is nothing to assert on.** Leegality's
+  auth token carries no environment marker the way a Razorpay key's `rzp_test_` prefix does; the
+  environments are separated by **host**. So `providers/leegality.ts` takes `baseUrl` as a required
+  field with no default, and pairing the right host to the right token is a runbook step rather than a
+  check the code can make. A sandbox token reachable from a prod role is a franchise agreement that
+  looks executed and is not.
+- **`private-salt` is a much weaker secret than its Razorpay counterpart**, because the MAC it keys
+  covers only `documentId` (§6.4a). It authenticates the webhook's *existence*, not its contents.
+- **`workflow-ids` is one JSON parameter, not one per sign type.** Sign type is workflow
+  configuration at Leegality (§6.3), so each type needs its own workflow id, and the ids have to
+  change *together* — the `franchiseBankAccount` argument. Split across parameters, "Aadhaar points at
+  last month's workflow while electronic points at this month's" is reachable one `put-parameter` at a
+  time, and both halves would look fine in the console.
 
 **One stack does not fit, and this is the blocker (found 2026-08-31).** The argument above is about
 identity and secrets, and it still holds. The resource budget defeats it anyway. `services/onboarding`
@@ -700,7 +885,7 @@ suite.
 | `FRANCHISE#<id>` | `PAYMENT#<n>` | `expectedPaise`, the claim (UTR, amount, date), `receivedPaise`, `verifiedAt`, who verified, refusal |
 | `FRANCHISEUSER#<emailLower>` | `PROFILE` | scrypt hash, `franchiseId`, role, status |
 | `TOKEN#<sha256(handle)>` | `META` | keyed on the **hash**, never the handle. `franchiseId`, `typ`, `invitedByName`, revocation markers |
-| `DIGIOEVENT#<eventId>` | `META` | webhook idempotency marker |
+| `ESIGNEVENT#<documentId>#<STATUS>` | `META` | webhook redelivery short-circuit, not the safety property (§6.4) |
 | `FRANCHISEAPP#<applicationId>` | `META` | the existing public applications, plus the status the queue in §8.4 needs |
 
 GSIs: a list index for the admin table (constant partition, `createdAt` sort — with the same
@@ -730,7 +915,7 @@ id would compile in both directions.
 | 5 | `POST /franchise/onboarding/ack` | |
 | 6 | `POST /franchise/onboarding/operations` | |
 | 7a | `POST /franchise/onboarding/termsheet/view` | pins the version, renders text and PDF, stores `contentHash`, `length`, `pdfHash` |
-| 7b | `POST /franchise/onboarding/esign` | creates the Digio request, returns a signing URL. Idempotent — returns the live request if one exists |
+| 7b | `POST /franchise/onboarding/esign` | creates the Leegality request, returns a signing URL. Idempotent on **our** side, because Leegality's create is not (§6.3) |
 | 7b | `GET /franchise/onboarding/esign/status` | reads **our** record |
 | 8 | `GET /franchise/onboarding/payment` | bank details, reference, expected amount, state |
 | 8 | `POST /franchise/onboarding/payment/claim` | the UTR claim. Does not complete the step |
@@ -771,7 +956,7 @@ services/onboarding/src/
       documents.ts      allowed types, size bounds, key construction
       pdf.ts            Agreement tree → deterministic PDF bytes (§6.2)
   providers/
-    digio.ts            EsignProvider over fetch. One implementation, mockable (§6.3)
+    leegality.ts        EsignProvider over fetch. One implementation, mockable (§6.3)
   repo/
     franchises.ts franchiseOnboarding.ts franchiseTermsheets.ts franchiseEsign.ts
     franchisePayments.ts franchiseDocuments.ts franchiseUsers.ts
@@ -853,7 +1038,7 @@ nothing else.
 | `client/src/pages/franchise/onboarding/steps/*` | one file per step |
 | `client/src/pages/franchise/onboarding/TermSheetReader.tsx` | walks the `Agreement` tree. Does **not** hash — gym doc §22 removed that from the browser |
 | `app/franchise/onboarding/[slug]/[handle]/page.tsx` | metadata-only shell, `noindex, nofollow` |
-| `app/franchise/esign-return/page.tsx` | the Digio return, registered as the redirect URL. Carries **no** handle |
+| `app/franchise/esign-return/page.tsx` | the Leegality return, registered in the dashboard as the return URL. Carries **no** handle |
 
 **The mock is now a test double only.** `franchiseOnboardingApi.ts` re-exports
 `httpFranchiseOnboardingApi` unconditionally, and no build serves the mock to a browser. It survives
@@ -950,7 +1135,7 @@ Applied literally that gives a 7-then-2 rail — steps 1 to 7 all fall inside `a
 phase it sits inside, so the public vocabulary on `/franchise` is still the vocabulary in the wizard.
 
 *Three steps complete on read, not two.* §7.4 named 4 and 8. Step 7 belongs with them for the same
-reason: a signature is written by the Digio webhook, so completing it from a franchisee's call would
+reason: a signature is written by the Leegality webhook, so completing it from a franchisee's call would
 be us asserting something we have not been told. `COMPLETED_ON_READ_STEPS` is `[4, 7, 8]`, and
 `franchiseeCommits` is what a submission path checks — `commit()` throws rather than storing one.
 
@@ -1011,8 +1196,21 @@ direction the default should point once the endpoints exist.
 **8. PDF generation.** `domain/franchise/pdf.ts`, with the determinism test (§6.2) written before the
 renderer.
 
-**9. Digio.** The provider module, `POST /franchise/onboarding/esign`, the webhook, the return trip.
-Against Digio's sandbox first, and correct §6.3's table with what the sandbox actually answers.
+**9. Leegality.** The provider module exists (`providers/leegality.ts`, 59 tests) and no route calls
+it. What is left is `POST /franchise/onboarding/esign`, the webhook pair (success and error), the
+reconciler §6.4b makes mandatory, and the return trip. Against the sandbox first, and correct §6.3's
+table and the module header with what the sandbox actually answers.
+
+Three of these are **dashboard work, not code**, and nothing in either repo can verify them:
+
+- two workflows, one per sign type, whose ids go into `leegality/workflow-ids`;
+- per-invitee Webhook URL, Error Webhook URL and return URL at Webhook Version **v2.5**, matching
+  `ESIGN_RETURN_PATH`;
+- Aadhaar mismatch set to **hard-fail** under Department → eSignature (§6.5), without which
+  `verifyTitle` is a note rather than a control.
+
+Worth requesting from support@leegality.com at the same time: **Custom Webhook Headers**, which is the
+proper answer to the one-field MAC (§6.4a) and arrives as a Webhook Profile ID entered per invitee.
 
 **10. Documents.** The bucket, the presigned PUT, the admin presigned GET. Could move earlier;
 placed here because step 3 can be built against the mock without a bucket and the bucket brings the
@@ -1040,7 +1238,7 @@ Named rather than left implied, per gym doc §17.
    safe and is not an answer.
 5. **DPDP retention for KYC documents of declined applicants.** §9. Needed before prod.
 6. **Virus scanning on uploads.** §9. Currently absent.
-7. **Who signs on our side, and is that a second Digio signer or a pre-signed counterpart?** The gym
+7. **Who signs on our side, and is that a second Leegality invitee or a pre-signed counterpart?** The gym
    agreement's execution block prints our signatory as text. An e-signed document usually has both
    parties as signers, which makes the flow two-sided and adds a state where the franchisee has
    signed and we have not.

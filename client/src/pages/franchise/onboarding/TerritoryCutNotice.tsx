@@ -33,10 +33,10 @@ export default function TerritoryCutNotice({
 
   return (
     <div
-      className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 space-y-2.5"
+      className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 space-y-2.5"
       data-testid="territory-differs"
     >
-      <p className="text-[11px] font-bold uppercase tracking-wide text-amber-900">
+      <p className="text-xs font-semibold text-amber-900">
         Not the same as your request
       </p>
       <p className="text-sm text-amber-900 leading-relaxed">
@@ -48,7 +48,7 @@ export default function TerritoryCutNotice({
           type="button"
           variant="outline"
           onClick={onSeeBoundary}
-          className="min-h-11 rounded-xl text-xs font-semibold cursor-pointer border-amber-300 bg-white text-amber-900 hover:bg-amber-100 hover:text-amber-900"
+          className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer border-amber-300 bg-white text-amber-900 hover:bg-amber-100 hover:text-amber-900"
           data-testid="button-see-granted-boundary"
         >
           See the granted boundary

@@ -59,11 +59,11 @@ export default function StepFranchise({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6" data-testid="franchise-headline">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6" data-testid="franchise-headline">
+        <p className="text-xs font-semibold text-muted-foreground mb-1">
           {tier.shortName}
         </p>
-        <p className="text-2xl sm:text-3xl font-display font-black text-foreground tracking-tight">
+        <p className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
           {formatInr(investmentInr)}
         </p>
         <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">
@@ -83,7 +83,7 @@ export default function StepFranchise({
           <ol role="list" className="space-y-2.5">
             {terms.paymentSchedule.map((instalment, index) => (
               <li key={instalment.trigger} className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary-ink text-[11px] font-bold flex items-center justify-center flex-shrink-0">
+                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary-ink text-[11px] font-semibold flex items-center justify-center flex-shrink-0">
                   {index + 1}
                 </span>
                 <span className="text-sm text-foreground leading-relaxed">
@@ -99,7 +99,7 @@ export default function StepFranchise({
           <Pending what="the instalment schedule" />
         )}
         <p className="text-xs text-muted-foreground leading-relaxed">
-          The first instalment is a bank transfer, at step 8, after you have signed. We verify it
+          The first instalment is a bank transfer, and it comes after you have signed. We verify it
           against our statement rather than taking a card payment.
         </p>
       </Block>
@@ -174,7 +174,7 @@ export default function StepFranchise({
       </Block>
 
       {!alreadyAcked && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
           <label
             htmlFor="franchise-ack"
             className="flex items-start gap-2.5 cursor-pointer py-2.5"
@@ -197,13 +197,13 @@ export default function StepFranchise({
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs text-muted-foreground flex items-start gap-1.5">
               <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
-              This is not the signature. That is step 7.
+              This is not the signature. That comes with the term sheet itself.
             </p>
             <Button
               type="button"
               disabled={!acknowledged || isSubmitting}
               onClick={() => void actions.ackFranchise()}
-              className="min-h-11 px-6 rounded-xl font-bold text-sm cursor-pointer flex-shrink-0"
+              className="min-h-11 px-6 rounded-lg font-semibold text-sm cursor-pointer flex-shrink-0"
               data-testid="button-continue"
             >
               {isSubmitting ? "Saving..." : "Continue"}
@@ -227,13 +227,13 @@ function Block({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5" data-testid={testId}>
-      <h2 className="text-sm font-bold text-foreground flex items-center gap-2 mb-3">
+    <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5" data-testid={testId}>
+      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
         <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
           {icon}
         </span>
         {title}
-      </h2>
+      </h3>
       <div className="space-y-3">{children}</div>
     </section>
   );
@@ -241,7 +241,7 @@ function Block({
 
 function Split({ heading, body }: { heading: string; body: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
+    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3">
       <p className="text-sm font-semibold text-foreground">{heading}</p>
       <p className="text-xs text-muted-foreground leading-relaxed mt-1">{body}</p>
     </div>
@@ -259,7 +259,7 @@ function Pending({ what, inline }: { what: string; inline?: boolean }) {
   const text = `We still have to agree ${what} with you. It goes on your term sheet, and until it is set there is nothing to sign.`;
   if (inline) return <>{text}</>;
   return (
-    <p className="text-sm text-amber-900 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed">
+    <p className="text-sm text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 leading-relaxed">
       {text}
     </p>
   );
