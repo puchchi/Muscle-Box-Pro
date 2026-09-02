@@ -44,15 +44,17 @@ import type { FranchiseStepViewProps } from "../types";
  * only the webhook writes. That covers the paths a redirect handler would miss: a franchisee who
  * signs and closes the tab, or signs on a phone while this tab sits open on a laptop.
  *
- * Two sign types are offered, not three. `electronic` exists in the provider seam because Leegality
- * has it, and it is weaker evidence than either of these for a document that binds a ₹25 lakh
- * commitment; a franchisee who cannot use Aadhaar or a DSC is a conversation, not a third radio
- * button.
+ * **One sign type is offered, so there is no choice to make.** `EsignSignType` keeps `dsc` and
+ * `electronic` because the provider seam has them and a historical record may carry either, but this
+ * screen asks for Aadhaar eSign and nothing else. Every option costs a decision on the screen where
+ * a ₹25 lakh commitment is signed, and a franchisee whose signatory cannot use Aadhaar is a
+ * conversation rather than a second radio button. One sign type is also one Leegality workflow to
+ * configure and one `profileId` to hold, which is where the mistakes live.
  *
- * If it is ever offered, it maps to Leegality's **Virtual Sign**, which verifies the signatory by an
- * OTP to their email or phone. It must never be wired to Quick Sign, which is three clicks with no
- * OTP at all: that would reproduce the weakness the gym flow's typed-name signature already has,
- * while looking on this screen like the provider-backed signature it is not.
+ * If `electronic` is ever offered it maps to Leegality's **Virtual Sign**, which verifies the
+ * signatory by an OTP to their email or phone. It must never be wired to Quick Sign, which is three
+ * clicks with no OTP at all: that would reproduce the weakness the gym flow's typed-name signature
+ * already has, while looking on this screen like the provider-backed signature it is not.
  */
 
 /**
@@ -65,19 +67,9 @@ const WATCH = { intervalMs: 5000, maxPolls: 60 };
 
 type PollPhase = "confirm" | "watch" | "stopped";
 
-const SIGN_TYPES: { value: EsignSignType; label: string; description: string }[] = [
-  {
-    value: "aadhaar",
-    label: "Aadhaar eSign",
-    description: "An OTP to the mobile registered with Aadhaar. Nothing to install.",
-  },
-  {
-    value: "dsc",
-    label: "Digital Signature Certificate",
-    description: "If your signatory already signs with a DSC token.",
-  },
-];
+const SIGN_TYPE: EsignSignType = "aadhaar";
 
+/** Still a map: a request made before this screen narrowed to one type renders from its own record. */
 const SIGN_TYPE_LABELS: Record<EsignSignType, string> = {
   aadhaar: "Aadhaar eSign",
   electronic: "Electronic signature",
@@ -92,7 +84,6 @@ export default function StepReviewSign({
 }: FranchiseStepViewProps) {
   const [hasReadToEnd, setHasReadToEnd] = useState(false);
   const [readPercent, setReadPercent] = useState(0);
-  const [signType, setSignType] = useState<EsignSignType>("aadhaar");
   const [handoffProblem, setHandoffProblem] = useState<string | null>(null);
   const [cameBack, setCameBack] = useState(false);
   /**
@@ -143,7 +134,7 @@ export default function StepReviewSign({
 
   async function goToSigning() {
     setHandoffProblem(null);
-    const handoff = await actions.requestEsign(signType);
+    const handoff = await actions.requestEsign(SIGN_TYPE);
     if (!handoff) {
       setHandoffProblem(
         "We couldn't open the signing session. Nothing has been signed. Reload this page and try again, and tell us if it happens twice.",
@@ -186,7 +177,7 @@ export default function StepReviewSign({
       ) : awaitingSignature ? (
         <WaitingPanel
           expiresAt={esign.request?.expiresAt ?? null}
-          signType={esign.request?.signType ?? signType}
+          signType={esign.request?.signType ?? SIGN_TYPE}
           confirming={cameBack && phase === "confirm"}
           watching={phase !== "stopped"}
           isSubmitting={isSubmitting}
@@ -199,8 +190,6 @@ export default function StepReviewSign({
           signatoryDesignation={state.details.signatoryDesignation}
           aadhaarLast4={state.details.signatoryAadhaarLast4}
           legalEntityName={state.details.legalEntityName}
-          signType={signType}
-          onSignTypeChange={setSignType}
           hasReadToEnd={hasReadToEnd}
           readPercent={readPercent}
           previousAttempt={esign.status === "expired" || esign.status === "declined" ? esign.status : null}
@@ -285,8 +274,6 @@ function SignPanel({
   signatoryDesignation,
   aadhaarLast4,
   legalEntityName,
-  signType,
-  onSignTypeChange,
   hasReadToEnd,
   readPercent,
   previousAttempt,
@@ -300,8 +287,6 @@ function SignPanel({
   signatoryDesignation: string;
   aadhaarLast4: string;
   legalEntityName: string;
-  signType: EsignSignType;
-  onSignTypeChange(value: EsignSignType): void;
   hasReadToEnd: boolean;
   readPercent: number;
   previousAttempt: "expired" | "declined" | null;
@@ -352,35 +337,13 @@ function SignPanel({
         </Button>
       </div>
 
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-semibold text-foreground mb-1">How they'll sign</legend>
-        {SIGN_TYPES.map((option) => (
-          <label
-            key={option.value}
-            className={`flex items-start gap-2.5 rounded-lg border px-3.5 py-3 cursor-pointer ${
-              signType === option.value
-                ? "border-primary/40 bg-primary/5"
-                : "border-gray-200 bg-white"
-            }`}
-          >
-            <input
-              type="radio"
-              name="franchise-sign-type"
-              value={option.value}
-              checked={signType === option.value}
-              onChange={() => onSignTypeChange(option.value)}
-              className="w-4 h-4 mt-0.5 flex-shrink-0 accent-primary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              data-testid={`radio-sign-${option.value}`}
-            />
-            <span className="min-w-0">
-              <span className="text-sm font-semibold text-foreground block">{option.label}</span>
-              <span className="text-xs text-muted-foreground leading-relaxed">
-                {option.description}
-              </span>
-            </span>
-          </label>
-        ))}
-      </fieldset>
+      <div data-testid="sign-method">
+        <h4 className="text-sm font-semibold text-foreground">How they'll sign</h4>
+        <p className="text-sm text-gray-700 leading-relaxed mt-1">
+          Aadhaar eSign. Leegality opens this same term sheet, sends an OTP to the mobile registered
+          with Aadhaar, and signs the document once it is entered. There is nothing to install.
+        </p>
+      </div>
 
       {blockedReason ? (
         <p
@@ -415,7 +378,7 @@ function SignPanel({
               </>
             ) : (
               <>
-                Sign with {SIGN_TYPE_LABELS[signType]}
+                Sign with {SIGN_TYPE_LABELS[SIGN_TYPE]}
                 <ExternalLink className="w-4 h-4 ml-1.5" aria-hidden="true" />
               </>
             )}

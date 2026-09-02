@@ -536,11 +536,18 @@ Five of those need spelling out, because each is a place where the obvious-looki
 wrong:
 
 **There is no `signType` field.** Sign type is workflow configuration, not a request parameter, which
-means **two sign types are two Leegality workflows** and our `signType` selects a `profileId`. That is
+means **each sign type is its own Leegality workflow** and our `signType` selects a `profileId`. That is
 why the credentials include `leegality/workflow-ids` as one JSON parameter (§8.1) rather than one
 parameter per type: split apart, "Aadhaar points at last month's workflow while electronic points at
 this month's" is reachable one `put-parameter` at a time. `resolveWorkflowId` refuses rather than
 falling back to whichever id happens to be configured.
+
+**Only Aadhaar eSign is offered, so only one workflow has to exist.** Decided 2026-09-02, after the
+DSC radio button was removed from step 7: every option costs a decision on the screen where a ₹25 lakh
+commitment is signed, and a signatory who cannot use Aadhaar is a conversation rather than a second
+radio button. `EsignSignType` keeps `electronic` and `dsc` because the provider seam has them and a
+stored record may carry either, and `EsignWorkflowIds` is a `Partial` map for exactly this reason. One
+workflow is also one `profileId` to configure and one set of per-invitee webhook URLs to get right.
 
 **`"electronic"` maps to Virtual Sign, never Quick Sign.** Virtual Sign verifies the signatory with an
 OTP. Quick Sign is three clicks with no OTP at all, which would reproduce the weakness the gym flow's
@@ -650,6 +657,30 @@ Two more operational facts that belong here because they are invisible in code:
   side can catch.
 - **Localhost can never receive one.** Local development sees the poller path, not the webhook path,
   which is an argument for the two sharing one function rather than being written twice.
+
+### 6.4c The signed copy is emailed by us, from our own custody
+
+Decided 2026-09-02: **once the signature lands, the franchisee gets the signed PDF by email.** Not a
+link to come back for, and not a screen they have to still be on.
+
+It is sent by the same code path that writes the signature, after `getDocument` and the download, so
+the attachment is the file whose bytes produced `signedPdfHash`. That ordering is the point: an email
+sent before we hold and hash the file promises a document we have not verified. The **conditional write
+on `signedAt is null` is also what makes the email once-only** — the webhook is redelivered and the
+reconciler covers the same rows, so anything outside that guard sends twice.
+
+A new `MailKind`, `franchise_termsheet_signed`, and the eighth-plus case with an attachment:
+`providers/ses.ts` already switches to `Content.Raw` via `domain/mime.ts` when `attachments` is
+non-empty, so no new provider work. The audit trail is a second `fetchDocument` call with type
+`AUDIT_TRAIL` and belongs on the record rather than in the inbox, because it is evidence about the
+signature and not a copy of the agreement.
+
+**Leegality's own `cc[]` is the alternative, and it is a fallback rather than the mechanism.** The
+create request takes a `cc` array whose recipients "receive a copy of the signed document via email
+after all signers complete their action". It costs nothing and needs no code, but the email arrives from
+the vendor, before our record has the document, and carries whatever the vendor decided to attach. Worth
+adding an internal address to it as a tripwire on the day our own send breaks. It is not what the
+franchisee should be relying on.
 
 ### 6.5 Identity, and what we are entitled to store
 
@@ -1227,7 +1258,8 @@ table and the module header with what the sandbox actually answers.
 
 Three of these are **dashboard work, not code**, and nothing in either repo can verify them:
 
-- two workflows, one per sign type, whose ids go into `leegality/workflow-ids`;
+- one workflow, Aadhaar eSign, whose id goes into `leegality/workflow-ids` (§6.3: the map is
+  `Partial`, and step 7 offers nothing else);
 - per-invitee Webhook URL, Error Webhook URL and return URL at Webhook Version **v2.5**, matching
   `ESIGN_RETURN_PATH`;
 - Aadhaar mismatch set to **hard-fail** under Department → eSignature (§6.5), without which
