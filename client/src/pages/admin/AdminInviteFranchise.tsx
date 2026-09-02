@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { FRANCHISE_TIERS, franchiseTier, type FranchiseTierId } from "@shared/franchise/program";
 import {
   adminFranchiseInviteFormSchema,
-  inviteDefaults,
   INVITE_FIELD_FOR_WIRE,
   toAdminFranchiseInviteBody,
   type AdminFranchiseInviteFormInput,
   type AdminFranchiseInviteResult,
 } from "@shared/admin/franchiseInvite";
 import { createFranchise } from "@/lib/adminFranchiseApi";
+import { invitePrefillFrom, type InviteSource } from "./franchiseInviteLink";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
 import { NumberField, SelectField, TextField } from "./adminFields";
@@ -49,6 +49,13 @@ import { formatInr, formatIstDateTime } from "./adminFormat";
  * returns. The route does mail it to `noticesEmail`, but `emailed` comes back `false` when delivery
  * failed, and nothing can reissue a handle this call has already consumed. So the URL is on screen
  * either way, and the `Emailed` row is how an admin knows whether to relay it by hand.
+ *
+ * ## It can arrive prefilled from an enquiry
+ *
+ * The Enquiries view on `/admin/franchises` links here with the applicant's details in the query
+ * string, read by `franchiseInviteLink.ts`. Three fields come across and the legal entity name
+ * deliberately does not. Because that read is `useSearchParams`, the route wraps this in a Suspense
+ * boundary.
  */
 export default function AdminInviteFranchise() {
   const guard = useAdminGuard();
@@ -165,9 +172,10 @@ const ENTITY_TYPE_OPTIONS = [
 
 function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteResult) => void }) {
   const router = useRouter();
+  const prefill = invitePrefillFrom(useSearchParams());
   const form = useForm<AdminFranchiseInviteFormInput>({
     resolver: zodResolver(adminFranchiseInviteFormSchema),
-    defaultValues: inviteDefaults("territory"),
+    defaultValues: prefill.defaults,
     mode: "onBlur",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -301,6 +309,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
           </Section>
 
           <Section title="Franchisee">
+            {prefill.source && <FromEnquiry source={prefill.source} />}
             <TextField
               control={form.control}
               name="legalEntityName"
@@ -336,13 +345,18 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
 
           <Section
             title="Converting an application"
-            note="Leave blank unless this franchise comes from a /franchise enquiry. Recorded on the franchise so the two are not counted twice."
+            note={
+              prefill.source
+                ? "Filled in from the enquiry you came from. Clear it if this franchise is not that applicant. It is recorded on the franchise so the two are not counted twice."
+                : "Leave blank unless this franchise comes from a /franchise enquiry. Recorded on the franchise so the two are not counted twice."
+            }
           >
             <TextField
               control={form.control}
               name="sourceApplicationId"
               label="Application id"
-              placeholder="fa_…"
+              // A uuid, not a prefixed id: `newFranchiseApplicationId` is `randomUUID()`.
+              placeholder="b7e2c1a4-9f38-4d6b-8e05-3c1f7a2d9b64"
               mono
             />
           </Section>
@@ -368,6 +382,46 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
           </div>
         </form>
       </Form>
+    </div>
+  );
+}
+
+/**
+ * What the applicant told us, shown rather than filled in.
+ *
+ * `franchiseInviteLink.ts` on why the legal entity name is not prefilled from `company`: that name is
+ * what the term sheet identifies its counterparty by, and a free-text answer sitting in the field
+ * already is a value nobody chose. This panel is the compensation, so the admin can read what was
+ * written and type the registered name deliberately.
+ */
+function FromEnquiry({ source }: { source: InviteSource }) {
+  return (
+    <div
+      className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+      data-testid="franchise-invite-source"
+    >
+      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        From an enquiry
+      </p>
+      <dl className="mt-2 space-y-1 text-sm">
+        <div className="flex gap-2">
+          <dt className="text-muted-foreground">Applicant</dt>
+          <dd className="font-semibold text-foreground" data-testid="source-applicant">
+            {source.applicantName === "" ? "Not given" : source.applicantName}
+          </dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="text-muted-foreground">Company they wrote</dt>
+          <dd className="font-semibold text-foreground" data-testid="source-company">
+            {source.company ?? "None given"}
+          </dd>
+        </div>
+      </dl>
+      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+        Neither is filled in below. The legal entity name is what the term sheet identifies its
+        counterparty by, so type it as it appears on the incorporation certificate. The email and
+        phone under Contact for notices did come from this enquiry.
+      </p>
     </div>
   );
 }

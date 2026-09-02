@@ -33,6 +33,21 @@ async function directive(name: string): Promise<string[]> {
   return found.split(/\s+/).slice(1);
 }
 
+/** `connect-src` from a re-imported config, for the cases that stub the build's env. */
+async function connectSrcOfAFreshConfig(): Promise<string[]> {
+  const fresh = await import("../../../../next.config.mjs");
+  const rules = await fresh.default.headers!();
+  const csp = rules
+    .find((rule) => rule.source === "/(.*)")!
+    .headers.find((header) => header.key === "Content-Security-Policy")!.value;
+  const found = csp
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("connect-src "));
+  if (!found) throw new Error("expected a connect-src directive in the CSP");
+  return found.split(/\s+/).slice(1);
+}
+
 describe("connect-src and the onboarding API", () => {
   it("allows the origin the API client actually calls", async () => {
     // The one assertion that matters: if these two drift, every wizard and dashboard
@@ -79,6 +94,49 @@ describe("connect-src and the onboarding API", () => {
     // production host stays: a build can be pointed elsewhere without losing it.
     expect(csp).toContain(new URL(sandbox).origin);
     expect(csp).toContain("https://api.muscleboxpro.com");
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("allows the franchise stacks' own hosts, which are not derivable from the onboarding one", async () => {
+    // Three stacks, one origin in production and three unrelated API Gateway ids anywhere else. So
+    // setting `NEXT_PUBLIC_MBP_FRANCHISE_API_URL` is not enough on its own: without the origin here
+    // the browser blocks every franchise admin call, and the console says CSP while the screen says
+    // the routes are not deployed.
+    const onboarding = "https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox";
+    const admin = "https://a1b2c3d4e5.execute-api.ap-south-1.amazonaws.com/sandbox";
+    const wizard = "https://f6g7h8i9j0.execute-api.ap-south-1.amazonaws.com/sandbox";
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", onboarding);
+    vi.stubEnv("NEXT_PUBLIC_MBP_FRANCHISE_API_URL", admin);
+    vi.stubEnv("NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL", wizard);
+    vi.resetModules();
+
+    expect(await connectSrcOfAFreshConfig()).toEqual(
+      expect.arrayContaining([
+        new URL(onboarding).origin,
+        new URL(admin).origin,
+        new URL(wizard).origin,
+      ]),
+    );
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("still allows nothing extra in production, whatever the franchise variables say", async () => {
+    // The gate is the onboarding build, not each variable on its own. A franchise variable left
+    // pointing at the sandbox in a production build must not put an `execute-api` host in front of
+    // real visitors, because the entry is what says the cookie's registrable domain was bypassed.
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "");
+    vi.stubEnv(
+      "NEXT_PUBLIC_MBP_FRANCHISE_API_URL",
+      "https://a1b2c3d4e5.execute-api.ap-south-1.amazonaws.com/sandbox",
+    );
+    vi.resetModules();
+
+    const sources = await connectSrcOfAFreshConfig();
+    expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
 
     vi.unstubAllEnvs();
     vi.resetModules();

@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import AdminInviteFranchise from "@/pages/admin/AdminInviteFranchise";
+import { AdminChecking } from "@/pages/admin/AdminShell";
 
 export const metadata: Metadata = {
   title: "Invite a franchise | MBP admin",
@@ -7,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <AdminInviteFranchise />;
+  return (
+    <Suspense fallback={<AdminChecking />}>
+      <AdminInviteFranchise />
+    </Suspense>
+  );
 }

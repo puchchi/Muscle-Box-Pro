@@ -32,6 +32,13 @@ import {
   parseAdminFranchiseList,
   parseAdminFranchiseView,
 } from "@shared/admin/franchisesSchema";
+import { parseFranchiseApplicationPage } from "@shared/admin/franchiseApplicationsSchema";
+import type {
+  FranchiseApplicationPage,
+  FranchiseTriageBody,
+  FranchiseTriageResult,
+  FranchiseTriageStatus,
+} from "@shared/admin/franchiseApplications";
 import type {
   AdminFranchiseApprovalBody,
   AdminFranchiseList,
@@ -49,6 +56,7 @@ import type { OnboardingError, OnboardingResult } from "@shared/onboarding/types
 const FRANCHISE_ADMIN = { api: "franchiseAdmin" } as const;
 
 const FRANCHISES = "/admin/franchises";
+const APPLICATIONS = "/admin/franchise-applications";
 
 export const ADMIN_FRANCHISES_QUERY_KEY = ["admin", "franchises"] as const;
 export const adminFranchiseQueryKey = (franchiseId: string) =>
@@ -98,6 +106,62 @@ export async function fetchAdminFranchiseView(
   const parsed = parseAdminFranchiseView(result.data);
   if (!parsed.ok) return { ok: false, error: MALFORMED_FRANCHISE, issues: parsed.issues };
   return { ok: true, data: parsed.data };
+}
+
+export type FranchiseApplicationQuery = {
+  limit?: number;
+  /** Omitted means every status. `new` is the working queue and means no triage row at all. */
+  status?: FranchiseTriageStatus;
+};
+
+/**
+ * The enquiry backlog, joined to whatever triage we hold.
+ *
+ * Unpaged, and there is no cursor to ask for: the handler reads a bounded slab of a table keyed by the
+ * applicant's email and joins in memory, so a bigger `limit` is the only lever and `capped` on the
+ * response is how the screen learns the slab was the binding constraint. `limit` is clamped server-side
+ * rather than refused, so a value out of range costs nothing.
+ */
+export async function fetchFranchiseApplications(
+  query: FranchiseApplicationQuery = {},
+): Promise<AdminReadResult<FranchiseApplicationPage>> {
+  const params = new URLSearchParams();
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  if (query.status !== undefined) params.set("status", query.status);
+  const encoded = params.toString();
+
+  const result = await apiRequest<unknown>(
+    "GET",
+    `${APPLICATIONS}${encoded.length > 0 ? `?${encoded}` : ""}`,
+    FRANCHISE_ADMIN,
+  );
+  if (!result.ok) return { ok: false, error: result.error, issues: [] };
+
+  const parsed = parseFranchiseApplicationPage(result.data);
+  if (!parsed.ok) return { ok: false, error: MALFORMED_APPLICATIONS, issues: parsed.issues };
+  return { ok: true, data: parsed.data };
+}
+
+/**
+ * Record a triage decision on one enquiry.
+ *
+ * The response is not schema-parsed, for `createFranchise`'s reason: six flat fields, and the screen
+ * refetches the list rather than patching a row out of them, because `status` is derived from the join
+ * and only the server can do that.
+ *
+ * A 409 here has exactly one meaning — a franchise has already been created from this application, so
+ * the row is terminal. The route's only condition is `attribute_not_exists(franchiseId)`, deliberately
+ * in the write rather than in a read-then-check, so the message can be shown as it arrives.
+ */
+export async function triageFranchiseApplication(
+  applicationId: string,
+  body: FranchiseTriageBody,
+): Promise<OnboardingResult<FranchiseTriageResult>> {
+  return apiRequest<FranchiseTriageResult>(
+    "PATCH",
+    `${APPLICATIONS}/${encodeURIComponent(applicationId)}`,
+    { ...FRANCHISE_ADMIN, body },
+  );
 }
 
 /**
@@ -199,6 +263,11 @@ const MALFORMED_LIST: OnboardingError = {
 const MALFORMED_FRANCHISE: OnboardingError = {
   code: "network",
   message: "This franchise's record came back in a shape this page does not recognise.",
+};
+
+const MALFORMED_APPLICATIONS: OnboardingError = {
+  code: "network",
+  message: "The franchise enquiries came back in a shape this page does not recognise.",
 };
 
 /** Deliberately says the write may have landed: it is a read failure after a successful write. */

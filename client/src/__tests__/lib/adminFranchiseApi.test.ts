@@ -26,7 +26,9 @@ import {
   decideFranchise,
   fetchAdminFranchiseList,
   fetchAdminFranchiseView,
+  fetchFranchiseApplications,
   refuseFranchisePayment,
+  triageFranchiseApplication,
   verifyFranchisePayment,
   ADMIN_FRANCHISES_QUERY_KEY,
   adminFranchiseQueryKey,
@@ -36,13 +38,19 @@ import {
   adminFranchiseListFixture,
   adminFranchiseReviewQueueFixture,
 } from "@/test/adminFranchiseFixture";
+import { franchiseApplicationPageFixture } from "@/test/franchiseApplicationsFixture";
 import {
   adminFranchiseInviteFormSchema,
   inviteDefaults,
   toAdminFranchiseInviteBody,
 } from "@shared/admin/franchiseInvite";
+import {
+  franchiseTriageFormSchema,
+  toFranchiseTriageBody,
+} from "@shared/admin/franchiseApplications";
 
 const FRANCHISE_ID = "b7e2c1a4-9f38-4d6b-8e05-3c1f7a2d9b64";
+const APPLICATION_ID = "a2d51c60-7e94-4b13-9f28-6c05a7e3b149";
 
 function resolves(data: unknown) {
   mockApiRequest.mockResolvedValue({ ok: true, data });
@@ -73,6 +81,8 @@ describe("every route names the franchise admin API", () => {
     const calls: [string, () => Promise<unknown>][] = [
       ["list", () => fetchAdminFranchiseList()],
       ["view", () => fetchAdminFranchiseView(FRANCHISE_ID)],
+      ["applications", () => fetchFranchiseApplications()],
+      ["triage", () => triageFranchiseApplication(APPLICATION_ID, triageBody())],
       ["create", () => createFranchise(inviteBody())],
       [
         "approval",
@@ -248,6 +258,108 @@ describe("fetchAdminFranchiseView", () => {
     expect(result.issues).toEqual([]);
   });
 });
+
+function triageBody() {
+  return toFranchiseTriageBody(
+    franchiseTriageFormSchema.parse({ status: "reviewed", note: "Spoke on 24 Aug." }),
+  );
+}
+
+describe("fetchFranchiseApplications", () => {
+  it("asks for the plain route when given no filter", async () => {
+    resolves(franchiseApplicationPageFixture());
+    await fetchFranchiseApplications();
+    expect(method()).toBe("GET");
+    expect(path()).toBe("/admin/franchise-applications");
+  });
+
+  it("sends the status as a query parameter, because the filter is a server read", async () => {
+    // Not a narrowing of what is already on screen: `new` means *no triage row at all*, which only the
+    // join can decide. The chips on the screen therefore carry no counts.
+    resolves(franchiseApplicationPageFixture());
+    await fetchFranchiseApplications({ status: "new", limit: 100 });
+    expect(path()).toBe("/admin/franchise-applications?limit=100&status=new");
+  });
+
+  it("returns the parsed page, triage and all", async () => {
+    resolves(franchiseApplicationPageFixture());
+    const result = await fetchFranchiseApplications();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.applications).toHaveLength(4);
+    expect(result.data.applications[0].triage).toBeNull();
+    expect(result.data.applications[3].triage?.franchiseId).toBe(FRANCHISE_ID);
+  });
+
+  it("reports a malformed page with the field paths that failed", async () => {
+    const page = franchiseApplicationPageFixture() as unknown as Record<string, any>;
+    page.applications[0].status = "untriaged";
+    resolves(page);
+    const result = await fetchFranchiseApplications();
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toContain("franchise enquiries");
+    expect(result.issues.join(" ")).toContain("applications.0.status");
+  });
+
+  it("passes a refused status through as the validation error it arrives as", async () => {
+    // Unlike `limit`, a bad `status` is refused rather than clamped: answering with every application to
+    // a request that asked for the rejected ones would have an admin acting on rows they filtered out.
+    fails("validation", "Must be one of new, reviewed, rejected, converted.");
+    const result = await fetchFranchiseApplications();
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("validation");
+    expect(result.issues).toEqual([]);
+  });
+});
+
+describe("triageFranchiseApplication", () => {
+  it("patches the application by id", async () => {
+    resolves(triageResult());
+    await triageFranchiseApplication(APPLICATION_ID, triageBody());
+    expect(method()).toBe("PATCH");
+    expect(path()).toBe(`/admin/franchise-applications/${APPLICATION_ID}`);
+    expect(options().body).toEqual({ status: "reviewed", note: "Spoke on 24 Aug." });
+  });
+
+  it("escapes an id it was handed", async () => {
+    resolves(triageResult());
+    await triageFranchiseApplication("../franchises", triageBody());
+    expect(path()).toBe("/admin/franchise-applications/..%2Ffranchises");
+  });
+
+  it("returns the decision, unparsed", async () => {
+    // Six flat fields, and the screen refetches the list rather than patching a row out of them: `status`
+    // is derived from the join, and only the server can do that.
+    resolves(triageResult());
+    const result = await triageFranchiseApplication(APPLICATION_ID, triageBody());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.decidedByEmail).toBe("anurag@muscleboxpro.com");
+  });
+
+  it("passes a 409 through with the server's message, which has one meaning", async () => {
+    // The route's only condition is `attribute_not_exists(franchiseId)`, in the write rather than in a
+    // read-then-check, so a conflict here means a franchise already exists and the row is terminal.
+    fails("wrong_step", "A franchise has already been created from this application.");
+    const result = await triageFranchiseApplication(APPLICATION_ID, triageBody());
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toContain("already been created");
+  });
+});
+
+function triageResult() {
+  return {
+    applicationId: APPLICATION_ID,
+    reference: "MBP-FR-A2D51C607E",
+    status: "reviewed",
+    note: "Spoke on 24 Aug.",
+    decidedByEmail: "anurag@muscleboxpro.com",
+    decidedAt: "2026-08-24T09:15:00.000Z",
+  };
+}
 
 /** A valid invite body, through the form schema the caller is trusted to have run. */
 function inviteBody() {

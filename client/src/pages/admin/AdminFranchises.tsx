@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchAdminFranchiseList } from "@/lib/adminFranchiseApi";
 import type { AdminFranchiseListRow } from "@shared/admin/franchises";
+import AdminFranchiseApplications from "./AdminFranchiseApplications";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
 import { Chip, ErrorPanel, Notice, Pill, StatCard, Th, type TableSort } from "./AdminUi";
@@ -38,6 +39,12 @@ import {
  *   else on this page, which filters and counts over the rows already fetched. That distinction is
  *   the reason the toggle exists, so both halves say which they are.
  *
+ * A third view sits behind the same chips and is a different resource entirely: the `/franchise`
+ * enquiry backlog, on `GET /admin/franchise-applications`. It is here rather than on a page of its
+ * own because an enquiry and a franchise are two states of one pipeline, and this is where an invite
+ * comes from. `AdminFranchiseApplications` owns its own fetch, so nothing is requested for it until
+ * its chip is pressed.
+ *
  * What this page cannot show, and no amount of client-side work will fix: **the tier and the
  * investment**. Neither is on `AdminFranchiseListRow`, because neither is on the `PROFILE` row the
  * list handler reads, so there is no pipeline value to total here. The detail page is the only place
@@ -46,11 +53,13 @@ import {
 
 type SortKey = "name" | "status" | "createdAt" | "updatedAt";
 type Sort = TableSort<SortKey>;
-type View = "all" | "review";
+type View = "all" | "review" | "applications";
 
 export default function AdminFranchises() {
   const guard = useAdminGuard();
   const [view, setView] = useState<View>("all");
+  /** Null until the enquiries view has been opened, so its chip shows no number rather than a wrong one. */
+  const [applicationCount, setApplicationCount] = useState<number | null>(null);
   const [rows, setRows] = useState<AdminFranchiseListRow[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,6 +88,9 @@ export default function AdminFranchises() {
 
   useEffect(() => {
     if (guard.state !== "ready") return;
+    // The enquiries view reads a different resource and fetches it itself, so this effect has
+    // nothing to do for it. Without the guard, opening that tab would fetch the franchise list too.
+    if (view === "applications") return;
     let cancelled = false;
     setIsLoading(true);
     load(view, null).finally(() => {
@@ -108,6 +120,8 @@ export default function AdminFranchises() {
     setSort(null);
     setRows([]);
     setCursor(null);
+    // A franchise-list failure has no bearing on the enquiries view, which reads a different route.
+    setProblem(null);
     setView(next);
   }
 
@@ -134,6 +148,7 @@ export default function AdminFranchises() {
 
   const now = Date.now();
   const narrowed = group !== "all" || needle !== "";
+  const showingApplications = view === "applications";
 
   function toggleSort(key: SortKey) {
     setSort((prev) => {
@@ -154,13 +169,15 @@ export default function AdminFranchises() {
             Franchises
           </h1>
           <p className="text-muted-foreground text-sm">
-            {isLoading
-              ? "Loading…"
-              : view === "review"
-                ? `${rows.length} waiting on a decision or a bank check, longest first.`
-                : narrowed
-                  ? `${visible.length} of ${rows.length} loaded.`
-                  : `${rows.length} loaded, newest first.`}
+            {view === "applications"
+              ? "Enquiries from the form on /franchise, and what we decided about each one."
+              : isLoading
+                ? "Loading…"
+                : view === "review"
+                  ? `${rows.length} waiting on a decision or a bank check, longest first.`
+                  : narrowed
+                    ? `${visible.length} of ${rows.length} loaded.`
+                    : `${rows.length} loaded, newest first.`}
           </p>
         </div>
         <Button asChild className="rounded-xl cursor-pointer bg-primary text-white font-bold">
@@ -183,22 +200,46 @@ export default function AdminFranchises() {
       )}
 
       <div className="mb-4 flex flex-wrap gap-1.5" role="group" aria-label="Which franchises to show">
+        {/* No numbers on the franchise chips while the enquiries view is showing: no franchise list
+            is on screen then, and "All franchises 0" is a false claim rather than an unknown one. */}
         <Chip
           label="All franchises"
-          count={view === "all" ? rows.length : 0}
+          count={showingApplications ? undefined : view === "all" ? rows.length : 0}
           selected={view === "all"}
           onClick={() => switchTo("all")}
           testId="view-all"
         />
         <Chip
           label="Review queue"
-          count={view === "review" ? rows.length : summary.counts.waiting}
+          count={
+            showingApplications ? undefined : view === "review" ? rows.length : summary.counts.waiting
+          }
           selected={view === "review"}
           onClick={() => switchTo("review")}
           testId="view-review"
         />
+        <Chip
+          label="Enquiries"
+          count={applicationCount ?? undefined}
+          selected={view === "applications"}
+          onClick={() => switchTo("applications")}
+          testId="view-applications"
+        />
       </div>
 
+      {view === "applications" ? (
+        <AdminFranchiseApplications onLoaded={setApplicationCount} />
+      ) : (
+        // Called rather than rendered as a component. A nested component would be a new type on
+        // every render, which unmounts the filter input and loses focus on each keystroke.
+        franchiseList()
+      )}
+    </AdminShell>
+  );
+
+  function franchiseList() {
+    return (
+      <>
       {view === "review" ? (
         <div className="mb-4">
           <Notice testId="admin-franchises-queue-note">
@@ -416,8 +457,9 @@ export default function AdminFranchises() {
           </Button>
         </div>
       )}
-    </AdminShell>
-  );
+      </>
+    );
+  }
 }
 
 /**

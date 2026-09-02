@@ -28,18 +28,34 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  */
 const PRODUCTION_API_ORIGIN = "https://api.muscleboxpro.com";
 
+function originOf(configured) {
+  if (!configured) return null;
+  try {
+    return new URL(configured).origin;
+  } catch {
+    // Unparseable is a misconfiguration, and the safe reading of one is "allow nothing extra".
+    return null;
+  }
+}
+
 /**
- * A non-production API origin to allow, or `null` — which is what production returns.
+ * The non-production API origins to allow, empty in production.
  *
  * The sandbox stack answers on `https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox`
  * and a browser has to reach it to test the integration at all. Rather than adding that host
  * to the list above — where it would ship to production and quietly widen the CSP for every
- * real visitor — it is **derived from the API origin this build was configured with.** So the
+ * real visitor — it is **derived from the API origins this build was configured with.** So the
  * entry exists exactly where the requests do:
  *
- *   - Env unset, or set to the production host → `null`. Production's `connect-src` contains
+ *   - Env unset, or set to the production host → empty. Production's `connect-src` contains
  *     no `amazonaws.com` entry, which is the property `securityHeaders.test.ts` pins.
- *   - Env set to the sandbox → that origin, and nothing else, is allowed.
+ *   - Env set to the sandbox → those origins, and nothing else, are allowed.
+ *
+ * There are three because there are three stacks, and in production all three are one origin
+ * mapped at `/`, `/franchise` and `/franchise-wizard`. Off that domain they are three unrelated
+ * API Gateway ids, so a franchise origin cannot be derived from the onboarding one and has to be
+ * named. **Both franchise entries are gated on the onboarding build being non-production**, so a
+ * production build allows nothing extra whatever those two variables are left set to.
  *
  * `NEXT_PUBLIC_*` is read at build time, so this is decided when the bundle is built and
  * cannot be flipped by a runtime variable. It is the same rule as `BEARER_SESSION_ALLOWED`
@@ -49,19 +65,17 @@ const PRODUCTION_API_ORIGIN = "https://api.muscleboxpro.com";
  * Loosening the CSP is not the dangerous part of pointing a build at `execute-api`; losing
  * `SameSite=Lax` is, and that is why the bearer hatch is confined to the same condition.
  */
-function nonProductionApiOrigin() {
-  const configured = process.env.NEXT_PUBLIC_MBP_API_URL;
-  if (!configured) return null;
-  try {
-    const origin = new URL(configured).origin;
-    return origin === PRODUCTION_API_ORIGIN ? null : origin;
-  } catch {
-    // Unparseable is a misconfiguration, and the safe reading of one is "allow nothing extra".
-    return null;
-  }
+function nonProductionApiOrigins() {
+  const onboarding = originOf(process.env.NEXT_PUBLIC_MBP_API_URL);
+  if (onboarding === null || onboarding === PRODUCTION_API_ORIGIN) return [];
+  const franchise = [
+    originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_API_URL),
+    originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL),
+  ].filter((origin) => origin !== null && origin !== PRODUCTION_API_ORIGIN);
+  return [...new Set([onboarding, ...franchise])];
 }
 
-const NON_PRODUCTION_API_ORIGIN = nonProductionApiOrigin();
+const NON_PRODUCTION_API_ORIGINS = nonProductionApiOrigins();
 
 const CONNECT_SRC = [
   "'self'",
@@ -74,7 +88,7 @@ const CONNECT_SRC = [
   // Supabase auth, still carrying the gym login until it moves onto the cookie sessions
   // above (TODO A2). Nothing else in the app depends on this origin any more.
   "https://esyfzbcoufjcnakloahc.supabase.co",
-  ...(NON_PRODUCTION_API_ORIGIN ? [NON_PRODUCTION_API_ORIGIN] : []),
+  ...NON_PRODUCTION_API_ORIGINS,
 ];
 
 const INDEXNOW_KEY = "a3f7b2e8d4c1f9a6b5e0d7c3f2a8b1e4";

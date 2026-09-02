@@ -314,11 +314,15 @@ export function Notice({ children, testId }: { children: React.ReactNode; testId
 }
 
 /**
- * A filter chip with a count.
+ * A filter chip, with a count where there is an honest one.
  *
  * Shared by the two list pages rather than copied into both, because the count is the part that
  * needs one explanation: it counts *loaded* rows on both pages, and two copies of the component
  * would eventually get two different tooltips saying so.
+ *
+ * `count` is optional for the case where no such number exists. The enquiry status chips filter
+ * server-side, so selecting one is a different read rather than a narrowing of the rows on screen,
+ * and the only count available for the unselected ones would be zero.
  */
 export function Chip({
   label,
@@ -328,7 +332,7 @@ export function Chip({
   testId,
 }: {
   label: string;
-  count: number;
+  count?: number;
   selected: boolean;
   onClick: () => void;
   testId: string;
@@ -346,7 +350,9 @@ export function Chip({
       data-testid={testId}
     >
       {label}
-      <span className={`tabular-nums ${selected ? "opacity-80" : "text-gray-400"}`}>{count}</span>
+      {count !== undefined && (
+        <span className={`tabular-nums ${selected ? "opacity-80" : "text-gray-400"}`}>{count}</span>
+      )}
     </button>
   );
 }
