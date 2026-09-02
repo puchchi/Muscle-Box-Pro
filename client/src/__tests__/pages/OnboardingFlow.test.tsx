@@ -16,7 +16,20 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+/**
+ * The wizard's seam serves the HTTP client, so a component test has to supply the double.
+ *
+ * The same in-memory mock `onboarding-mock-api.test.ts` exercises, and one instance for the
+ * file: it holds no state of its own — `resetMockOnboarding()` clears the module store every
+ * instance reads — and an object is what `vi.spyOn` needs to stub a single call.
+ */
+vi.mock("@/lib/onboardingApi", async () => {
+  const { createMockOnboardingApi } = await import("@shared/onboarding/mockApi");
+  return { onboardingApi: createMockOnboardingApi() };
+});
+
 import {
+  advanceMockInstallation,
   createMockOnboardingApi,
   DEMO_TOKEN,
   MOCK_TOKENS,
@@ -40,8 +53,8 @@ import OnboardingFlow from "@/pages/onboarding/OnboardingFlow";
  * and takes two deliberate actions to sign it, and that step 5 does not let a deferred
  * deposit disappear. Wording that can change without changing the deal is left alone.
  *
- * These run against the same in-memory mock the app uses in development, so the
- * flow is exercised end-to-end rather than against per-test stubs.
+ * These run against the in-memory mock rather than per-test stubs, so the flow is exercised
+ * end-to-end: one record moves through the same rules the endpoints enforce.
  */
 
 const VALID = {
@@ -86,6 +99,21 @@ async function signTheAgreement(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByTestId("checkbox-agreed"));
   await user.click(screen.getByTestId("button-sign"));
   await waitFor(() => expect(screen.getByTestId("deposit-amount")).toBeInTheDocument());
+}
+
+/**
+ * Presses pay, and comes back the way the gateway sends a gym back.
+ *
+ * The button leaves this tab for the payment page (§25), so nothing past step 4 is reachable
+ * in the tab that pressed it. Reopening the link with the return marker set is the round trip
+ * `/gym/deposit-return` makes, and the state the wizard actually resumes in — the marker is
+ * what puts the step on its fast cadence rather than the five-second revisit one.
+ */
+async function payTheDeposit(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId("button-continue"));
+  markReturnedFromGateway();
+  cleanup();
+  return await open();
 }
 
 describe("OnboardingFlow — opening a link", () => {
@@ -803,9 +831,9 @@ describe("OnboardingFlow — step 3 reads and signs", () => {
  * off the step since the defer button went on 2026-08-25.
  *
  * Since §25 the pay button also *leaves* — this tab goes to the payment page and the
- * gateway sends it back. Preview has no gateway, so pressing Pay lands directly in the
- * state the tab really returns in, which is what makes these assertions possible; the
- * route itself is covered by [DepositReturn.test.tsx](./DepositReturn.test.tsx).
+ * gateway sends it back. So anything past the press is asserted after `payTheDeposit`
+ * reopens the link the way the return route does; the route itself is covered by
+ * [DepositReturn.test.tsx](./DepositReturn.test.tsx).
  *
  * And since §26 the gym presses one button and gets an outcome. There is no "check now"
  * and nothing that asks it to declare a payment, so what these tests pin is that the
@@ -847,10 +875,22 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
     const user = await open();
     await signTheAgreement(user);
 
-    await user.click(screen.getByTestId("button-continue"));
+    /*
+      Confirming is a state the tab passes *through*, and it is over in two reads. Held here
+      rather than raced: the reads are answered as failures, which the poll ignores, so the
+      record stays pending for as long as the assertions below need and then clears on its own
+      once the hold comes off.
+    */
+    const answer = onboardingApi.refreshDepositStatus.bind(onboardingApi);
+    let held = true;
+    const refresh = vi
+      .spyOn(onboardingApi, "refreshDepositStatus")
+      .mockImplementation(async (token) =>
+        held ? { ok: false, error: { code: "network", message: "not yet" } } : answer(token),
+      );
 
-    // Asserted inside the `waitFor`, because confirming is a state this tab passes
-    // *through* on its way to the receipt — a second query would race the poll.
+    await payTheDeposit(user);
+
     await waitFor(() => {
       const panel = screen.getByTestId("deposit-waiting");
       // One press, then an outcome. The manual check went on 2026-08-25: a gym cannot know
@@ -869,16 +909,23 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
       expect(screen.queryByTestId("deposit-link-panel")).not.toBeInTheDocument();
     });
 
-    // And then it finishes by itself, on the record rather than on the redirect.
-    await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
+    // And then it finishes by itself, on the record rather than on the redirect. Nothing is
+    // pressed between the hold coming off and the receipt.
+    held = false;
+    await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument(), {
+      // Two reads at the confirming cadence, plus the mock's first one reporting the money
+      // unseen — past the 5s the rest of the file runs inside.
+      timeout: 10_000,
+    });
     expect(screen.getByTestId("deposit-outcome")).toHaveTextContent("Deposit received");
     expect(screen.getByTestId("deposit-receipt-no")).toHaveTextContent("MBP-DEP-");
-  });
+    refresh.mockRestore();
+  }, 20_000);
 
   it("hands back the reference in full when a gym comes back for it", async () => {
-    const user = await open();
-    await signTheAgreement(user);
-    await user.click(screen.getByTestId("button-continue"));
+    const opened = await open();
+    await signTheAgreement(opened);
+    const user = await payTheDeposit(opened);
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
 
     // Back to step 4, which is the only reason to return to it: the reference is what the
@@ -967,13 +1014,13 @@ describe("OnboardingFlow — step 4 takes the deposit", () => {
  */
 describe("OnboardingFlow — the whole flow", () => {
   it("walks sign, pay the deposit, and set a password", async () => {
-    const user = await open();
-    await signTheAgreement(user);
+    const opened = await open();
+    await signTheAgreement(opened);
     expect(screen.getByTestId("deposit-status")).toHaveTextContent("Not paid yet");
 
-    await user.click(screen.getByTestId("button-continue"));
-    // One press and the deposit clears itself: the mock's first read reports the money as
-    // not yet seen — the common case in reality — and the second finds it.
+    const user = await payTheDeposit(opened);
+    // Back from the gateway, and the deposit clears itself: the mock's first read reports the
+    // money as not yet seen — the common case in reality — and the second finds it.
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
 
     // Steps 1 and 2 are viewable but locked once signed.
@@ -1055,9 +1102,9 @@ describe("OnboardingFlow — the whole flow", () => {
    * said. The message belongs under the input it is about.
    */
   it("puts a password the server refuses under the field, not in a banner over the step", async () => {
-    const user = await open();
-    await signTheAgreement(user);
-    await user.click(screen.getByTestId("button-continue"));
+    const opened = await open();
+    await signTheAgreement(opened);
+    const user = await payTheDeposit(opened);
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
 
     const refused = vi.spyOn(onboardingApi, "createAccount").mockResolvedValue({
@@ -1132,9 +1179,9 @@ describe("OnboardingFlow — the whole flow", () => {
 describe("OnboardingFlow — step 6 tracks the installation", () => {
   /** Signs, pays the deposit, sets a password: the shortest walk to step 6. */
   async function reachStepSix() {
-    const user = await open();
-    await signTheAgreement(user);
-    await user.click(screen.getByTestId("button-continue"));
+    const opened = await open();
+    await signTheAgreement(opened);
+    const user = await payTheDeposit(opened);
     // Two reads before the mock's webhook lands, both on the step's own timer.
     await waitFor(() => expect(screen.getByTestId("input-portal-password")).toBeInTheDocument());
     await user.type(screen.getByTestId("input-portal-password"), "a-long-enough-password");
@@ -1171,8 +1218,15 @@ describe("OnboardingFlow — step 6 tracks the installation", () => {
    * is the gym's view of that record, so the values have to actually appear here.
    */
   it("names the unit and the date once they exist", async () => {
-    const user = await reachStepSix();
-    await user.click(screen.getByTestId("button-preview-advance-installation"));
+    await reachStepSix();
+
+    // Driven through the store and the link reopened, because that is the only way this
+    // record moves: we allocate the unit, and a technician signs Schedule A on site. There is
+    // no control on the step for either, which is the next assertion but one.
+    advanceMockInstallation(DEMO_TOKEN);
+    cleanup();
+    await open();
+    await waitFor(() => expect(screen.getByTestId("installation-unit")).toBeInTheDocument());
 
     const unit = screen.getByTestId("installation-unit");
     expect(unit).toHaveTextContent("MuscleBoxPro MBP-1");
@@ -1181,8 +1235,12 @@ describe("OnboardingFlow — step 6 tracks the installation", () => {
       "Booking your installation date",
     );
 
-    await user.click(screen.getByTestId("button-preview-advance-installation"));
-    expect(screen.getByTestId("installation-status")).toHaveTextContent(/^Installed on /);
+    advanceMockInstallation(DEMO_TOKEN);
+    cleanup();
+    await open();
+    await waitFor(() =>
+      expect(screen.getByTestId("installation-status")).toHaveTextContent(/^Installed on /),
+    );
     // Nothing on this step is a control the gym completes: the record moved because we
     // moved it, and there is no button here that could have signed anything.
     expect(screen.queryByTestId("button-sign")).not.toBeInTheDocument();

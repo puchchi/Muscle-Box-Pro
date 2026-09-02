@@ -94,14 +94,10 @@ const MOCK_DAYS_TO_INSTALLATION = 14;
  * Walks the mock's installation forward one state: unallocated → allocated → installed.
  *
  * Step 6 is the one step nothing in the wizard completes. A real record moves when we
- * allocate a unit and again when a technician signs Schedule A on site — neither of which
- * a preview can wait for, so without this the only reachable rendering of the step is the
- * empty one and the two that carry actual particulars would ship unlooked at.
+ * allocate a unit and again when a technician signs Schedule A on site, so a test that wants
+ * either of the two renderings carrying actual particulars has to drive the store here.
  *
- * Preview only. Reached through `previewAdvanceInstallation` in
- * `client/src/lib/onboardingApi.ts`, because a component importing this module directly is
- * what the mock/live seam exists to prevent. Returns the machine as it now stands, or null
- * if this token has no record yet.
+ * Returns the machine as it now stands, or null if this token has no record yet.
  */
 export function advanceMockInstallation(token: string): MachineSummary | null {
   const record = store.get(token);

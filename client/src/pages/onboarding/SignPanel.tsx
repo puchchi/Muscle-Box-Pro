@@ -59,7 +59,6 @@ export default function SignPanel({
   hasReadToEnd,
   readPercent,
   blockedReason,
-  previewOtp,
   isSubmitting,
   onReviewDetails,
   onRequestOtp,
@@ -75,8 +74,6 @@ export default function SignPanel({
   readPercent?: number;
   /** Set when the agreement may not be issued as it stands. Overrides all below. */
   blockedReason: string | null;
-  /** Preview builds show the fixed code, so the flow can be walked without an inbox. */
-  previewOtp?: string | null;
   isSubmitting: boolean;
   /** Takes the gym back to step 1 to read what it submitted. */
   onReviewDetails(): void;
@@ -253,12 +250,6 @@ export default function SignPanel({
                 signature.
               </span>
             </p>
-
-            {previewOtp && (
-              <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-                Preview mode: no email was sent. The code is <strong>{previewOtp}</strong>.
-              </p>
-            )}
 
             <div>
               <label htmlFor="otp" className="text-sm font-semibold text-foreground block mb-1">

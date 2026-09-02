@@ -1,14 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, FileSignature } from "lucide-react";
-import { IS_MOCK_ONBOARDING, PREVIEW_OTP } from "@/lib/onboardingApi";
+import { CheckCircle2, FileSignature } from "lucide-react";
 import { ISSUED_AGREEMENT } from "@shared/agreement/issued";
-import { canIssue, collectBlockers } from "@shared/agreement/render";
+import { canIssue } from "@shared/agreement/render";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
 import { issuedAgreementFields } from "@shared/onboarding/issuedAgreement";
-import type { Blocker } from "@shared/agreement/types";
-import AgreementReader, { sectionAnchor } from "../AgreementReader";
+import AgreementReader from "../AgreementReader";
 import SignPanel from "../SignPanel";
 import type { StepViewProps } from "../types";
 
@@ -27,12 +25,12 @@ import type { StepViewProps } from "../types";
  * the document the gym reads in step with that fingerprint is the server's job, on the
  * write side, where the re-issue lives.
  *
- * **Signing is refused in production while the document has unresolved clauses.**
- * `canIssue()` decides, and that is not a warning to click past: an agreement with a
- * hole in it is worse than no agreement. Preview builds override the refusal —
- * otherwise the flow could not be walked at all — and say so on screen. v2.3 has no
- * blocking markers, so this path is dormant rather than dead: it is what stops the next
- * version being issued half-drafted.
+ * **Signing is refused while the document has unresolved clauses.** `canIssue()` decides,
+ * and that is not a warning to click past: an agreement with a hole in it is worse than no
+ * agreement. There is no override, and the blockers themselves are never rendered — a gym
+ * must not read our drafting notes about its own contract. v2.3 has no blocking markers, so
+ * this path is dormant rather than dead: it is what stops the next version being issued
+ * half-drafted.
  */
 export default function StepReviewSign({
   state,
@@ -71,7 +69,6 @@ export default function StepReviewSign({
   // `{}` while the document is still being issued: `canIssue` takes partial fields, and
   // an un-issued agreement is not issuable, which is the right answer anyway.
   const issuable = canIssue(ISSUED_AGREEMENT, fields ?? {}).ok;
-  const blockers = collectBlockers(ISSUED_AGREEMENT).filter((b) => b.severity === "blocks-send");
 
   useEffect(() => {
     // Fire-and-forget audit write; it must never gate the reader from rendering.
@@ -110,18 +107,9 @@ export default function StepReviewSign({
 
   return (
     <div className="space-y-6">
-      {/*
-        Internal blocker list, shown only in preview. In production this must stay
-        hidden and the gym sees the "isn't ready to sign" panel instead, with the
-        detail going to an internal alert — a gym must never read our drafting notes
-        about its own contract.
-      */}
-      {IS_MOCK_ONBOARDING && !issuable && <NotReadyNotice blockers={blockers} />}
-
       <AgreementReader
         agreement={ISSUED_AGREEMENT}
         fields={fields}
-        showInternalMarkers={IS_MOCK_ONBOARDING}
         onReachedEnd={onReachedEnd}
         onProgress={onProgress}
       />
@@ -142,11 +130,10 @@ export default function StepReviewSign({
           hasReadToEnd={hasReadToEnd}
           readPercent={readPercent}
           blockedReason={
-            issuable || IS_MOCK_ONBOARDING
+            issuable
               ? null
               : "There are unresolved items in the document we need to close before you sign it. We're on it, and we'll email you as soon as your copy is ready, and nothing you've entered is lost."
           }
-          previewOtp={IS_MOCK_ONBOARDING ? PREVIEW_OTP : null}
           isSubmitting={isSubmitting}
           onReviewDetails={() => goToStep(1)}
           onRequestOtp={actions.requestSigningOtp}
@@ -233,44 +220,5 @@ function SignedSummary({
         </p>
       </div>
     </section>
-  );
-}
-
-/**
- * The internal blocker list.
- *
- * Visible only while the wizard runs in preview, because the whole point of the `todo`
- * markers is that somebody sees them. In production the gym gets the "isn't ready to
- * sign" panel and this detail goes to an internal alert instead.
- */
-function NotReadyNotice({ blockers }: { blockers: Blocker[] }) {
-  return (
-    <div
-      className="rounded-xl border border-amber-200 bg-amber-50 p-4"
-      data-testid="agreement-not-issuable"
-    >
-      <p className="text-sm font-semibold text-amber-900 mb-1 flex items-center gap-2">
-        <AlertTriangle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-        This agreement can't be issued yet
-      </p>
-      <p className="text-xs text-amber-800 leading-relaxed mb-3">
-        {blockers.length} unresolved item{blockers.length === 1 ? "" : "s"} in the source document.
-        Internal view: a gym must never see this list. Signing is enabled here only because this is
-        a preview build.
-      </p>
-      <ul role="list" className="space-y-1.5">
-        {blockers.map((blocker) => (
-          <li key={blocker.id} className="text-[11px] text-amber-800 leading-relaxed">
-            <a
-              href={`#${sectionAnchor(blocker.location)}`}
-              className="font-bold underline decoration-amber-400"
-            >
-              {blocker.location}
-            </a>{" "}
-            : {blocker.problem}
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }

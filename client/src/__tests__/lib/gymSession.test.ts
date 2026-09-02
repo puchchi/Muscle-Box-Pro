@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
- * The gym portal's session seam, on the live path.
+ * The gym portal's session seam.
  *
  * Mocked at `apiRequest`, so what is under test is the seam's own judgement — which routes it
  * calls, what it takes from a response body, and what it does with a sandbox token — and not
@@ -16,9 +16,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
  * - **Reading `gymStatus` off the wire.** The server calls that field `status`. Nothing
  *   renders it today, which is exactly why a rename at this boundary needs a test: the first
  *   thing to read it would find `null` on a gym mid-onboarding and show the wrong portal.
- *
- * `USE_LIVE_API` is read once at module scope, so the module is imported per test through
- * `gymSessionLive()` rather than at the top of the file.
  */
 
 const { mockApiRequest, mockRemember, mockForget } = vi.hoisted(() => ({
@@ -33,9 +30,7 @@ vi.mock("@/lib/apiClient", () => ({
   forgetBearerSession: mockForget,
 }));
 
-// Never reached on the live path, and unmocked it would build a real Supabase client at
-// import time.
-vi.mock("@/lib/supabase", () => ({ supabase: { auth: {} } }));
+import * as gymSession from "@/lib/gymSession";
 
 /** A complete `GET /gym/session` body, as the deployed handler sends it. */
 const LIVE_SESSION = {
@@ -46,12 +41,6 @@ const LIVE_SESSION = {
   status: "deposit_paid",
   expiresAt: "2026-08-27T06:03:53.102Z",
 };
-
-async function gymSessionLive() {
-  vi.stubEnv("NEXT_PUBLIC_MBP_API_MODE", "live");
-  vi.resetModules();
-  return await import("@/lib/gymSession");
-}
 
 function resolves(data: unknown) {
   mockApiRequest.mockResolvedValue({ ok: true, data });
@@ -65,15 +54,10 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.resetModules();
-});
-
 describe("signing in", () => {
   it("posts the credentials to the gym login route", async () => {
     resolves(LIVE_SESSION);
-    const { signInToPortal } = await gymSessionLive();
+    const { signInToPortal } = gymSession;
     await signInToPortal("owner@testgym7.com", "correct horse");
 
     const [method, path, options] = mockApiRequest.mock.calls[0] as [string, string, { body?: unknown; handle?: unknown }];
@@ -89,7 +73,7 @@ describe("signing in", () => {
     // what matters here is that the field is offered rather than dropped, because without it
     // every request after the login is anonymous and the dashboard is unreachable.
     resolves({ ...LIVE_SESSION, sessionToken: "sandbox-token-9f2c" });
-    const { signInToPortal } = await gymSessionLive();
+    const { signInToPortal } = gymSession;
     await signInToPortal("owner@testgym7.com", "correct horse");
     expect(mockRemember).toHaveBeenCalledWith("sandbox-token-9f2c");
   });
@@ -99,14 +83,14 @@ describe("signing in", () => {
     // branching is what keeps one code path for both, and the hatch is off on that host
     // anyway. A client that *required* the token would work in sandbox and 401 in production.
     resolves(LIVE_SESSION);
-    const { signInToPortal } = await gymSessionLive();
+    const { signInToPortal } = gymSession;
     await signInToPortal("owner@testgym7.com", "correct horse");
     expect(mockRemember).toHaveBeenCalledWith(undefined);
   });
 
   it("stores nothing from a failed login", async () => {
     fails("validation", "Email or password is incorrect.");
-    const { signInToPortal } = await gymSessionLive();
+    const { signInToPortal } = gymSession;
     await signInToPortal("owner@testgym7.com", "wrong");
     expect(mockRemember).not.toHaveBeenCalled();
   });
@@ -116,7 +100,7 @@ describe("signing in", () => {
     // turns the server's deliberate silence into an enumeration oracle. The exception is a
     // request that never arrived: "incorrect email or password" would be actively untrue.
     fails("validation", "Email or password is incorrect.");
-    const { signInToPortal } = await gymSessionLive();
+    const { signInToPortal } = gymSession;
     const rejected = await signInToPortal("owner@testgym7.com", "wrong");
     expect(rejected.ok).toBe(false);
     if (!rejected.ok) expect(rejected.error.code).toBe("invalid_token");
@@ -131,7 +115,7 @@ describe("signing in", () => {
 describe("asking who is signed in", () => {
   it("reads the guard route", async () => {
     resolves(LIVE_SESSION);
-    const { fetchGymSession } = await gymSessionLive();
+    const { fetchGymSession } = gymSession;
     await fetchGymSession();
     const [method, path] = mockApiRequest.mock.calls[0] as [string, string];
     expect(method).toBe("GET");
@@ -141,7 +125,7 @@ describe("asking who is signed in", () => {
   it("answers null when there is no session and when we could not ask", async () => {
     // Both, deliberately conflated: the caller sends them to sign in either way, and telling
     // them apart would let a network blip render a dashboard shell with no data in it.
-    const { fetchGymSession } = await gymSessionLive();
+    const { fetchGymSession } = gymSession;
     fails("invalid_token", "This link is no longer usable.");
     expect(await fetchGymSession()).toBeNull();
     fails("network", "We couldn't reach us just now.");
@@ -155,7 +139,7 @@ describe("asking who is signed in", () => {
     // `status` on the wire, `gymStatus` here. A gym that has signed but not paid its deposit
     // is `signed`, not a lapsed lead, and the dashboard's "your machine is being installed"
     // state is what reads this — a silent `null` shows an empty portal instead.
-    const { fetchGymSession, signInToPortal } = await gymSessionLive();
+    const { fetchGymSession, signInToPortal } = gymSession;
 
     resolves(LIVE_SESSION);
     expect(await fetchGymSession()).toEqual({
@@ -175,7 +159,7 @@ describe("asking who is signed in", () => {
     // absent one is renderable. Inventing any of these would be the browser deciding what
     // it may reach.
     resolves({ email: "owner@testgym7.com" });
-    const { fetchGymSession } = await gymSessionLive();
+    const { fetchGymSession } = gymSession;
     expect(await fetchGymSession()).toEqual({
       email: "owner@testgym7.com",
       gymId: null,
@@ -190,7 +174,7 @@ describe("signing out", () => {
     // Both halves. Only the server can expire an `HttpOnly` cookie, and only this side can
     // drop the bearer copy — which is the sole credential a `localhost` tab ever had.
     resolves({});
-    const { signOutOfPortal } = await gymSessionLive();
+    const { signOutOfPortal } = gymSession;
     await signOutOfPortal();
     const [method, path] = mockApiRequest.mock.calls[0] as [string, string];
     expect(method).toBe("POST");
@@ -202,7 +186,7 @@ describe("signing out", () => {
     // A gym on a shared office computer clicked sign out. Leaving a live token behind
     // because the round trip 500'd is the failure that matters.
     fails("network", "We couldn't reach us just now.");
-    const { signOutOfPortal } = await gymSessionLive();
+    const { signOutOfPortal } = gymSession;
     await expect(signOutOfPortal()).resolves.toBeUndefined();
     expect(mockForget).toHaveBeenCalled();
   });

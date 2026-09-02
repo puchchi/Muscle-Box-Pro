@@ -1189,9 +1189,9 @@ first backend work and it is deliberately first: it unblocks minting a real invi
 that already exists in production today (§2).
 
 **7. The backend wizard.** The table, `requireFranchiseHandle`, the read, the drafts, the commits,
-the ladder, both freeze points. Flip `franchiseOnboardingApi.ts` to live behind the same
-`NEXT_PUBLIC_MBP_API_MODE` flag the gym flow uses — and note gym doc §8's warning about which
-direction the default should point once the endpoints exist.
+the ladder, both freeze points. Point `franchiseOnboardingApi.ts` at the live implementation with no
+mode flag at all: the gym flow's switch has been deleted, because an opt-**in** live mode meant any
+build that forgot the variable served fixtures to a real applicant.
 
 **8. PDF generation.** `domain/franchise/pdf.ts`, with the determinism test (§6.2) written before the
 renderer.
