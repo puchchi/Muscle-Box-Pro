@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Info } from "lucide-react";
 
 import { INDIA_PINCODE, INDIA_STATE_NAMES, districtsOf } from "@shared/geo/india";
-import { FRANCHISE_TIERS, formatLakh, franchiseTier } from "@shared/franchise/program";
+import { FRANCHISE_TIERS, formatLakh } from "@shared/franchise/program";
 import {
   franchiseTerritoryLabel,
   territoryProposalSchema,
@@ -14,12 +14,13 @@ import {
 import type { TerritoryProposal } from "@shared/franchise/onboarding/types";
 import {
   AreaField,
+  CardChoiceField,
   CheckListField,
   CodeListField,
+  ComboField,
   ErrorSummary,
   Form,
   Section,
-  SelectField,
   SubmitBar,
   useServerFieldErrors,
 } from "../formKit";
@@ -60,9 +61,18 @@ const FIELD_LABELS: Record<keyof TerritoryProposal, string> = {
 
 const STATE_OPTIONS = INDIA_STATE_NAMES.map((name) => ({ value: name, label: name }));
 
+/**
+ * Both tiers, with the number each one implies on the card rather than behind a click.
+ *
+ * Off `FRANCHISE_TIERS` rather than the record's own `terms`: this is what the tier means, where
+ * `terms` is what an admin has actually set for this franchise. `positioning` carries the body on its
+ * own, because `marketRights` for the territory tier is the same sentence with fewer words in it.
+ */
 const TIER_OPTIONS = FRANCHISE_TIERS.map((tier) => ({
   value: tier.id,
-  label: `${tier.shortName} · ${formatLakh(tier.investmentInr)} · ${tier.initialMachines} machines`,
+  title: tier.shortName,
+  headline: `${formatLakh(tier.investmentInr)} · ${tier.initialMachines} machines`,
+  body: tier.positioning,
 }));
 
 export default function StepTerritory({
@@ -90,7 +100,6 @@ export default function StepTerritory({
   }
 
   const { errors, submitCount } = form.formState;
-  const tier = franchiseTier(form.watch("tier"));
 
   const selectedState = form.watch("proposedState");
   const districts = form.watch("proposedDistricts");
@@ -119,40 +128,24 @@ export default function StepTerritory({
         />
 
         <Section title="What you're applying for">
-          <SelectField
+          <CardChoiceField
             form={form}
             name="tier"
             label="Franchise tier"
             options={TIER_OPTIONS}
-            description="Both tiers are the same programme at different scale. You can discuss a change with us before signing."
+            description="The same programme at two scales. You can discuss a change with us before signing."
             disabled={readOnly}
           />
-
-          {/* The consequence of the field above it, on the same screen, because the number the
-              tier implies is the number this application is about. Off `FRANCHISE_TIERS` rather
-              than the record's own `terms`: this is what the selected tier means, and `terms` is
-              what an admin has actually set for this franchise. */}
-          <div
-            className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3"
-            data-testid="tier-summary"
-          >
-            <h3 className="text-xs font-semibold text-muted-foreground mb-1.5">
-              What that means
-            </h3>
-            <p className="text-sm text-foreground leading-relaxed">
-              {formatLakh(tier.investmentInr)} for {tier.initialMachines} machines, and{" "}
-              {tier.marketRights.toLowerCase()}. {tier.positioning}
-            </p>
-          </div>
         </Section>
 
         <Section title="The market you want">
-          <SelectField
+          <ComboField
             form={form}
             name="proposedState"
             label="State"
             options={STATE_OPTIONS}
             placeholder="Choose a state or union territory"
+            searchPlaceholder="Search states"
             description="Changing this clears the districts below."
             disabled={readOnly}
           />
@@ -163,8 +156,8 @@ export default function StepTerritory({
             label="Districts"
             options={districtsOf(selectedState)}
             searchPlaceholder="Search districts"
-            emptyHint="Choose a state first."
-            description="Tick every district you want to develop. Districts are how the territory gets written into the agreement, because they are official and they do not overlap."
+            emptyHint="Pick a state above and its districts appear here."
+            description="Districts are how a territory gets written into the agreement, because they are official and they do not overlap. Tick every one you want to develop."
             disabled={readOnly}
           />
 

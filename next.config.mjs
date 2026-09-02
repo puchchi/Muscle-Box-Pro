@@ -16,9 +16,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * `api.muscleboxpro.com` share one registrable domain, so the session cookies are
  * same-*site* and `SameSite=Lax` keeps its CSRF protection. Behind an
  * `execute-api.<region>.amazonaws.com` URL the requests are cross-site, the cookies would
- * need `SameSite=None`, and that protection is gone. So an `amazonaws.com` entry appearing
- * in this list is not routine housekeeping — it means something bypassed the domain that is
- * doing the security work. See `mbp-backend` docs/gym-onboarding-api-design.md §4.2.
+ * need `SameSite=None`, and that protection is gone. So an `execute-api` entry appearing in
+ * this list is not routine housekeeping — it means something bypassed the domain that is
+ * doing the security work. See `mbp-backend` docs/gym-onboarding-api-design.md §4.2. The one
+ * `amazonaws.com` host that is *not* that is the documents bucket, for the reasons at
+ * `franchiseDocsOrigin()`: nothing cookie-authenticated ever goes there.
  *
  * An earlier version of this comment said the browser would never connect to AWS at all,
  * because the design of the day put a Supabase edge function in front as a BFF. That design
@@ -77,6 +79,35 @@ function nonProductionApiOrigins() {
 
 const NON_PRODUCTION_API_ORIGINS = nonProductionApiOrigins();
 
+/**
+ * The franchise documents bucket, which a browser `PUT`s identity documents straight into.
+ *
+ * **Not gated on the environment, unlike everything above**, and the difference is the point. A
+ * presigned `PUT` goes to S3 by definition — the bytes deliberately never pass through a Lambda, so
+ * an Aadhaar scan is never in a function's memory or an access log — and there is therefore no
+ * version of this that routes through `api.muscleboxpro.com`. Production needs the entry as much as
+ * the sandbox does.
+ *
+ * It does not trade away what the entries above are guarding. The upload sends
+ * `credentials: "omit"` and S3 refuses a credentialed cross-origin request anyway, so no session
+ * cookie reaches this host and no `SameSite` promise is involved. The signature is the whole
+ * authorisation, and it expires in five minutes.
+ *
+ * The bucket is `mbp-franchise-docs-<env>-<account>`, so this cannot be derived: the account id is
+ * not something the frontend knows. Hence a variable — and hence the shape check, because this is
+ * the one entry a *production* build can add, and a mistyped value must widen nothing rather than
+ * allow some other host. `ap-south-1` is pinned because both environments pin that region.
+ */
+function franchiseDocsOrigin() {
+  const origin = originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN);
+  if (origin === null) return [];
+  const { protocol, hostname } = new URL(origin);
+  const ours = /^mbp-franchise-docs-[a-z0-9-]+\.s3\.ap-south-1\.amazonaws\.com$/.test(hostname);
+  return protocol === "https:" && ours ? [origin] : [];
+}
+
+const FRANCHISE_DOCS_ORIGIN = franchiseDocsOrigin();
+
 const CONNECT_SRC = [
   "'self'",
   "https://va.vercel-insights.com",
@@ -89,6 +120,7 @@ const CONNECT_SRC = [
   // above (TODO A2). Nothing else in the app depends on this origin any more.
   "https://esyfzbcoufjcnakloahc.supabase.co",
   ...NON_PRODUCTION_API_ORIGINS,
+  ...FRANCHISE_DOCS_ORIGIN,
 ];
 
 const INDEXNOW_KEY = "a3f7b2e8d4c1f9a6b5e0d7c3f2a8b1e4";

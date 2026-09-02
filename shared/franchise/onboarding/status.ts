@@ -236,8 +236,9 @@ export const FIRST_STEP_REQUIRING_APPROVAL: FranchiseOnboardingStep = 5;
 /**
  * What step 3 must have before it can be committed.
  *
- * `financial_evidence` is deliberately absent: it is optional, and asking for it by hand
- * during evaluation loses nothing because evaluation is a conversation regardless (§3).
+ * These four are the whole of step 3. Evidence of funds used to sit beside them as an optional
+ * upload and is gone: asking for it by hand during evaluation loses nothing, because evaluation is
+ * a conversation regardless (§3), and an optional row on a KYC screen reads as a fifth demand.
  * `payment_proof` belongs to step 8 and is never required — a UTR is the claim.
  */
 export function requiredDocumentTypes(entityType: EntityType): FranchiseDocumentType[] {

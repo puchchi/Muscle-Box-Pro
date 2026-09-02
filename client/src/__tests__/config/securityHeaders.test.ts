@@ -68,6 +68,10 @@ describe("connect-src and the onboarding API", () => {
     // sandbox needs that host and gets it from `nonProductionApiOrigin()`, which returns
     // null here; the next test is the other half of that pair. The two together are the
     // point: the entry exists where the requests do and nowhere else.
+    //
+    // The documents bucket is the one `amazonaws.com` host a production build may add, because
+    // a presigned `PUT` cannot go through our domain. It is nothing to do with cookies, and it
+    // has its own pair of tests below.
     const sources = await directive("connect-src");
     expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
   });
@@ -137,6 +141,47 @@ describe("connect-src and the onboarding API", () => {
 
     const sources = await connectSrcOfAFreshConfig();
     expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /**
+   * The documents bucket, which is the one `amazonaws.com` host production is allowed to keep.
+   *
+   * A franchisee's PAN scan is `PUT` straight to S3 from the browser, so this entry has to exist
+   * wherever uploads happen — production included, since the bytes bypassing our Lambdas is the
+   * design rather than a sandbox shortcut. That makes it the only variable that can widen a
+   * production CSP, which is why the shape check below matters more than the happy path.
+   */
+  const DOCS_BUCKET = "https://mbp-franchise-docs-sandbox-000000000000.s3.ap-south-1.amazonaws.com";
+
+  it("allows the documents bucket even with no sandbox API configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN", DOCS_BUCKET);
+    vi.resetModules();
+
+    expect(await connectSrcOfAFreshConfig()).toContain(DOCS_BUCKET);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it.each([
+    ["some other bucket", "https://someone-elses-bucket.s3.ap-south-1.amazonaws.com"],
+    ["a host that merely ends in ours", "https://evil.com/mbp-franchise-docs-prod.s3.ap-south-1.amazonaws.com"],
+    ["plain http", "http://mbp-franchise-docs-sandbox-000000000000.s3.ap-south-1.amazonaws.com"],
+    ["nonsense", "not-a-url"],
+  ])("ignores %s rather than allowing it", async (_label, value) => {
+    // A typo in a Vercel production variable must widen nothing. Every rejection is silent and
+    // total: the entry is absent, uploads fail visibly in the console, and no other host is
+    // reachable as a side effect of getting this wrong.
+    vi.stubEnv("NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN", value);
+    vi.resetModules();
+
+    const sources = await connectSrcOfAFreshConfig();
+    expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
+    expect(sources).not.toContain(new URL(value, "https://placeholder.invalid").origin);
 
     vi.unstubAllEnvs();
     vi.resetModules();

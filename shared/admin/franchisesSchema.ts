@@ -98,7 +98,15 @@ const franchiseStatus = z.enum([
 const adminFranchiseListRowSchema = z.object({
   franchiseId: label,
   legalEntityName: deferred,
-  tradeName: label,
+  /**
+   * `deferred`, not `label`, and the detail schema below has always had it right.
+   *
+   * A blank trade name is an answer rather than a gap: step 1 accepts one, the backend says so in
+   * as many words ("an entity trading under its own name"), and `franchiseNameOf` already falls
+   * back to the legal name. Requiring a character here rejected the whole list over one row's
+   * empty string, so the panel showed "0 loaded" for a franchise that was fine.
+   */
+  tradeName: deferred,
   slug: label,
   status: franchiseStatus,
   entityType: entityTypeOrBlank,
@@ -188,7 +196,6 @@ const adminFranchiseDocumentSchema = z.object({
     "entity_proof",
     "address_proof",
     "signatory_id",
-    "financial_evidence",
     "payment_proof",
   ]),
   contentType: deferred,

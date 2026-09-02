@@ -293,7 +293,6 @@ export const documentUploadSchema = z.object({
     "entity_proof",
     "address_proof",
     "signatory_id",
-    "financial_evidence",
     "payment_proof",
   ]),
   fileName: z.string().trim().min(1).max(255),

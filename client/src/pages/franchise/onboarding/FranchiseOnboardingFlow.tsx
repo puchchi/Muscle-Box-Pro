@@ -180,6 +180,7 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
   const isBehind = viewStep < currentStep;
   const showIntro = viewStep === 1 && !state.completedSteps.includes(1);
 
+
   const stepOwnsFieldErrors =
     fieldErrors !== null &&
     Object.keys(fieldErrors).length > 0 &&
@@ -295,9 +296,10 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
             actions={actions}
           />
 
-          {!showIntro && (
-            <PhaseSteps steps={after} state={state} canView={canView} onSelect={goToStep} />
-          )}
+          {/* On the intro screen too, and that is what pays for the intro being four sentences.
+              "Your territory, 3 minutes" is a row against the step it describes, so the card at the
+              top does not have to be a table of what the whole flow costs. */}
+          <PhaseSteps steps={after} state={state} canView={canView} onSelect={goToStep} />
         </main>
       </div>
 
@@ -488,19 +490,23 @@ function ReviewingBanner({
         };
 
   return (
+    // Stacked on a phone. Beside a button this wide, `frozenReason` was a 100px-wide column of
+    // ten lines.
     <div
-      className="rounded-xl border border-gray-200 bg-white px-4 py-3.5 flex items-start gap-3"
+      className="rounded-xl border border-gray-200 bg-white px-4 py-3.5 flex flex-col gap-3 sm:flex-row sm:items-start"
       data-testid="reviewing-banner"
     >
-      <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-foreground mb-0.5">{title}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+      <div className="flex items-start gap-3 min-w-0 flex-1">
+        <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground mb-0.5">{title}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+        </div>
       </div>
       <Button
         variant="outline"
         onClick={onReturn}
-        className="min-h-11 rounded-lg text-xs font-semibold flex-shrink-0 cursor-pointer"
+        className="min-h-11 rounded-lg text-xs font-semibold flex-shrink-0 self-start cursor-pointer"
         data-testid="button-return-to-current"
       >
         Back to where I was

@@ -39,10 +39,11 @@ import type { FranchiseStepViewProps } from "../types";
  * radius the same handle authorising a nine-step form does not. So a held document shows its
  * name, its size and a tick.
  *
- * The required list comes from `requiredDocumentTypes`, which is what the server checks too, so
- * this cannot ask for a document the submit does not want or miss one it does. An unregistered
- * applicant is asked for three rather than four, because there is no incorporation certificate
- * to produce.
+ * The list comes from `requiredDocumentTypes`, which is what the server checks too, so this cannot
+ * ask for a document the submit does not want or miss one it does. An unregistered applicant is
+ * asked for three rather than four, because there is no incorporation certificate to produce.
+ * Everything shown is required: there is no optional row, and so no row a franchisee has to decide
+ * about.
  */
 
 type DocumentSpec = {
@@ -81,12 +82,6 @@ function specsFor(entityType: EntityType): DocumentSpec[] {
       label: "Signatory's photo ID",
       description: "Aadhaar, passport or driving licence for the person signing.",
     },
-    financial_evidence: {
-      docType: "financial_evidence",
-      label: "Evidence of funds",
-      description:
-        "A bank statement, a sanction letter, anything that shows the investment is available. Optional, and it moves an application along faster than anything else here.",
-    },
     payment_proof: {
       docType: "payment_proof",
       label: "Transfer proof",
@@ -94,8 +89,7 @@ function specsFor(entityType: EntityType): DocumentSpec[] {
     },
   };
 
-  const required = requiredDocumentTypes(entityType).map((docType) => all[docType]);
-  return [...required, all.financial_evidence];
+  return requiredDocumentTypes(entityType).map((docType) => all[docType]);
 }
 
 function formatBytes(bytes: number): string {
@@ -131,7 +125,6 @@ export default function StepDocuments({
               <DocumentRow
                 spec={spec}
                 held={state.documents.find((doc) => doc.docType === spec.docType) ?? null}
-                required={spec.docType !== "financial_evidence"}
                 readOnly={readOnly}
                 error={fieldErrors?.[spec.docType] ?? null}
                 onUpload={(file) =>
@@ -190,7 +183,6 @@ export default function StepDocuments({
 function DocumentRow({
   spec,
   held,
-  required,
   readOnly,
   error,
   onUpload,
@@ -198,7 +190,6 @@ function DocumentRow({
 }: {
   spec: DocumentSpec;
   held: UploadedDocument | null;
-  required: boolean;
   readOnly: boolean;
   error: string | null;
   onUpload(file: File): Promise<boolean>;
@@ -253,12 +244,7 @@ function DocumentRow({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground flex items-baseline gap-2">
-            {spec.label}
-            {!required && (
-              <span className="text-[11px] font-medium text-muted-foreground">Optional</span>
-            )}
-          </p>
+          <p className="text-sm font-semibold text-foreground">{spec.label}</p>
           {held ? (
             <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {held.fileName} · {formatBytes(held.sizeBytes)}

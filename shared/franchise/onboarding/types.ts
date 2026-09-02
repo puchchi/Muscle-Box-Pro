@@ -193,8 +193,6 @@ export type FranchiseDocumentType =
   | "entity_proof"
   | "address_proof"
   | "signatory_id"
-  /** Optional on purpose: it is the field a serious applicant supplies and a hesitant one abandons over (§3). */
-  | "financial_evidence"
   | "payment_proof";
 
 /**

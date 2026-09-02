@@ -164,17 +164,6 @@ const ADMIN_FRANCHISE_VIEW: AdminFranchiseView = {
       removedAt: null,
     },
     {
-      docId: "4e8b2f61-c095-4a37-b8d1-72f6a3e09c48",
-      docType: "financial_evidence",
-      contentType: "application/pdf",
-      bytes: 3_204_887,
-      originalFilename: "bank-statement-apr-jun.pdf",
-      uploadState: "uploaded",
-      requestedAt: "2026-08-03T08:58:00.000Z",
-      uploadedAt: "2026-08-03T09:00:00.000Z",
-      removedAt: null,
-    },
-    {
       docId: "7c3d1a94-6e82-4b50-a173-9f28c5b06e11",
       docType: "pan_card",
       contentType: "application/pdf",

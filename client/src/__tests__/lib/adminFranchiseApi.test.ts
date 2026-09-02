@@ -168,6 +168,20 @@ describe("fetchAdminFranchiseList", () => {
     expect(result.data.franchises[1].entityType).toBe("");
   });
 
+  it("accepts a row whose tradeName is empty, which is an entity trading under its own name", async () => {
+    // A real sandbox row on 2026-09-02, and it blanked the list: `tradeName` was the one identity
+    // field still required to be non-empty here, while step 1 accepts a blank one and calls it an
+    // answer. `franchiseNameOf` already falls back to the legal name, so there was never a screen
+    // that needed this to be filled in.
+    const list = adminFranchiseListFixture() as unknown as Record<string, any>;
+    list.franchises[0].tradeName = "";
+    resolves(list);
+    const result = await fetchAdminFranchiseList();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.franchises[0].tradeName).toBe("");
+  });
+
   it("reports a malformed page with the field paths that failed", async () => {
     const list = adminFranchiseListFixture() as unknown as Record<string, any>;
     list.franchises[0].status = "awaiting_review";

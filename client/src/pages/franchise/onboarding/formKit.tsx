@@ -2,8 +2,16 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { FieldErrors, FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
-import { AlertCircle, Search, X } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, ChevronsUpDown, Search, X } from "lucide-react";
 
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Form,
   FormControl,
@@ -13,6 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -41,6 +50,10 @@ import type { DraftStatus } from "../../onboarding/useDraftAutosave";
  *   this long, so this is the closest that stays legible. Do not lighten it.
  * - `aria-[invalid=true]` styling on the input itself, plus the icon. A red message beside an
  *   untouched-looking grey box is colour as the only signal, twice.
+ * - The error sits directly under the control, above the description. `FormItem`'s own order puts
+ *   it last, which on the state field read as a box, a grey line about clearing districts, and only
+ *   then the red line saying what was actually wrong. `aria-describedby` is composed by
+ *   `FormControl` and is unaffected by the order these render in.
  * - The wrapper `div` sits *outside* `FormControl`. `FormControl` is a Radix `Slot` and clones
  *   its single child to attach the id, `aria-describedby` and `aria-invalid`; give it a div and
  *   all three land on the div and the field is silently unlabelled.
@@ -219,8 +232,8 @@ export function Field<T extends FieldValues>({
               />
             )}
           </div>
-          {description && <FormDescription className="text-xs">{description}</FormDescription>}
           <FormMessage className={ERROR_TEXT} />
+          {description && <FormDescription className="text-xs">{description}</FormDescription>}
         </FormItem>
       )}
     />
@@ -255,8 +268,8 @@ export function AreaField<T extends FieldValues>({
               data-testid={`input-${name}`}
             />
           </FormControl>
-          {description && <FormDescription className="text-xs">{description}</FormDescription>}
           <FormMessage className={ERROR_TEXT} />
+          {description && <FormDescription className="text-xs">{description}</FormDescription>}
         </FormItem>
       )}
     />
@@ -270,6 +283,11 @@ export function AreaField<T extends FieldValues>({
  * The blank first option exists only where the schema has no default. An enum with no answer
  * yet must not read as though the first value was chosen, which is the whole point of
  * `temperatureControl` being `"yes" | "no"` rather than a boolean.
+ *
+ * `appearance-none` with a drawn chevron, because the platform's own arrow is a different shape,
+ * size and colour on every OS and these sit in a column beside `Input`s that all match each other.
+ * An unanswered select renders its placeholder grey, like a placeholder in a text box: `text-base`
+ * black on a required field reads as an answer already given.
  */
 export function SelectField<T extends FieldValues>({
   form,
@@ -288,30 +306,273 @@ export function SelectField<T extends FieldValues>({
       render={({ field, fieldState }) => (
         <FormItem>
           <Label optional={optional}>{label}</Label>
-          <FormControl>
-            <select
-              {...field}
-              value={field.value ?? ""}
-              disabled={disabled}
-              aria-required={!optional || undefined}
-              data-testid={`select-${name}`}
-              className={`w-full min-h-11 rounded-lg border bg-white px-3 text-base sm:text-sm text-foreground transition-colors focus:border-primary-fill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-700 ${
-                fieldState.error ? "border-red-500 bg-red-50" : "border-gray-400 cursor-pointer"
+          <div className="relative">
+            <FormControl>
+              <select
+                {...field}
+                value={field.value ?? ""}
+                disabled={disabled}
+                aria-required={!optional || undefined}
+                data-testid={`select-${name}`}
+                className={`w-full h-11 appearance-none rounded-lg border bg-white pl-3 pr-10 text-base sm:text-sm transition-colors focus:border-primary-fill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-700 [&>option]:text-foreground ${
+                  field.value ? "text-foreground" : "text-gray-500"
+                } ${
+                  fieldState.error ? "border-red-500 bg-red-50" : "border-gray-400 cursor-pointer"
+                }`}
+              >
+                {placeholder && (
+                  <option value="" disabled>
+                    {placeholder}
+                  </option>
+                )}
+                {options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </FormControl>
+            <ChevronDown
+              className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${
+                fieldState.error ? "text-red-600" : "text-gray-500"
               }`}
-            >
-              {placeholder && (
-                <option value="" disabled>
-                  {placeholder}
-                </option>
-              )}
-              {options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </FormControl>
+              aria-hidden="true"
+            />
+          </div>
+          <FormMessage className={ERROR_TEXT} />
           {description && <FormDescription className="text-xs">{description}</FormDescription>}
+        </FormItem>
+      )}
+    />
+  );
+}
+
+/**
+ * A searchable single-choice list: a button that opens a filtered list of options.
+ *
+ * `SelectField`'s native control stays the right answer for two to five options. It is the wrong one
+ * for the 36 states and union territories, which is the field this exists for: a native list that
+ * long opens as a scroll the height of the screen with nothing to type at, and Uttar Pradesh is
+ * twenty-odd rows below the top with no way to get there but dragging.
+ *
+ * The closed control is a button rather than a text box. There is nothing to type into it until it
+ * is open, and a text box that ignores typing is worse than a button that says it opens a list.
+ *
+ * Closing counts as leaving the field, so it calls `field.onBlur`. Under `mode: "onBlur"` that is
+ * what makes opening the list and dismissing it without choosing report the field as unanswered,
+ * which is the same thing tabbing out of an empty required text box does.
+ *
+ * `defaultValue` is the answer already given, and it is what makes reopening the list usable: cmdk
+ * highlights the first row otherwise, so somebody coming back to change Uttar Pradesh opened a list
+ * scrolled to Andaman with no sign of their own answer in it. Radix unmounts the content on close, so
+ * this is re-read on every open and does not need to be controlled.
+ *
+ * The highlight is overridden off `bg-accent`. This theme sets `--accent` to the logo's magenta at
+ * full saturation, which as a filled row is both louder than anything else on the screen and a
+ * different red from the brand red beside it.
+ */
+export function ComboField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  description,
+  options,
+  placeholder,
+  searchPlaceholder,
+  optional,
+  disabled,
+}: BaseFieldProps<T> & {
+  options: readonly { value: string; label: string }[];
+  /** Shows the search box. Omit for a list short enough to read. */
+  searchPlaceholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field, fieldState }) => {
+        const selected = options.find((option) => option.value === field.value);
+
+        const choose = (value: string) => {
+          field.onChange(value);
+          setOpen(false);
+          // As in `CheckListField`: `mode: "onBlur"` does not revalidate on change, and picking
+          // from a list is not a blur.
+          if (fieldState.error) void form.trigger(name);
+        };
+
+        return (
+          <FormItem>
+            <Label optional={optional}>{label}</Label>
+            <Popover
+              open={open}
+              onOpenChange={(next) => {
+                setOpen(next);
+                if (!next) field.onBlur();
+              }}
+            >
+              <PopoverTrigger asChild>
+                <FormControl>
+                  <button
+                    ref={field.ref}
+                    type="button"
+                    role="combobox"
+                    disabled={disabled}
+                    aria-required={!optional || undefined}
+                    data-testid={`select-${name}`}
+                    className={`w-full h-11 flex items-center justify-between gap-2 rounded-lg border bg-white pl-3 pr-3 text-base sm:text-sm text-left transition-colors focus:border-primary-fill focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-700 ${
+                      fieldState.error
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-400 cursor-pointer hover:border-gray-500"
+                    }`}
+                  >
+                    <span className={`truncate ${selected ? "text-foreground" : "text-gray-500"}`}>
+                      {selected?.label ?? placeholder ?? "Choose one"}
+                    </span>
+                    {fieldState.error ? (
+                      <AlertCircle
+                        className="w-4 h-4 text-red-600 flex-shrink-0"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <ChevronsUpDown
+                        className="w-4 h-4 text-gray-500 flex-shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
+                </FormControl>
+              </PopoverTrigger>
+              {/* The trigger's own width, so the open list is the control rather than a menu
+                  floating beside it. `p-0`: the padding belongs to the rows, which are targets. */}
+              <PopoverContent
+                align="start"
+                className="w-[var(--radix-popover-trigger-width)] p-0 rounded-lg"
+                data-testid={`list-${name}`}
+              >
+                <Command defaultValue={selected?.label} loop>
+                  {searchPlaceholder && (
+                    <CommandInput placeholder={searchPlaceholder} className="text-base sm:text-sm" />
+                  )}
+                  <CommandList className="max-h-64">
+                    <CommandEmpty className="px-3 py-6 text-xs text-muted-foreground text-left">
+                      Nothing matches that.
+                    </CommandEmpty>
+                    <CommandGroup className="p-1.5">
+                      {options.map((option) => (
+                        <CommandItem
+                          key={option.value}
+                          value={option.label}
+                          onSelect={() => choose(option.value)}
+                          className="cursor-pointer gap-2.5 rounded-md px-2.5 py-2 min-h-11 sm:min-h-0 text-sm data-[selected=true]:bg-primary/10 data-[selected=true]:text-foreground"
+                          data-testid={`option-${name}-${option.value}`}
+                        >
+                          <Check
+                            className={`w-4 h-4 flex-shrink-0 text-primary-ink ${
+                              option.value === field.value ? "opacity-100" : "opacity-0"
+                            }`}
+                            aria-hidden="true"
+                          />
+                          {option.label}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <FormMessage className={ERROR_TEXT} />
+            {description && <FormDescription className="text-xs">{description}</FormDescription>}
+          </FormItem>
+        );
+      }}
+    />
+  );
+}
+
+/**
+ * A short closed choice, as cards that say what each option means.
+ *
+ * For the franchise tier, and for anything else where the options are two or three and choosing
+ * between them needs a fact about each. A dropdown of "Territory Franchise · ₹25 lakh · 5 machines"
+ * hides the comparison behind a click and then needs a panel underneath explaining what was picked,
+ * which is two controls' worth of screen to answer one question. Cards put both options and the
+ * consequence of each in the space that panel took.
+ *
+ * Native radios inside the labels, so arrow keys move between the cards and one tab stop covers the
+ * group, which is what a `div` full of buttons would have to reimplement. The whole card is the
+ * label, so the target is the card rather than the 16px circle.
+ */
+export function CardChoiceField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  description,
+  options,
+  disabled,
+}: BaseFieldProps<T> & {
+  options: readonly { value: string; title: string; headline: string; body: string }[];
+}) {
+  const labelId = useId();
+
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <span id={labelId} className="text-gray-700 text-sm font-semibold block">
+            {label}
+          </span>
+          {description && <FormDescription className="text-xs">{description}</FormDescription>}
+
+          <div
+            role="radiogroup"
+            aria-labelledby={labelId}
+            className="grid gap-3 sm:grid-cols-2"
+            data-testid={`cards-${name}`}
+          >
+            {options.map((option) => {
+              const isChosen = field.value === option.value;
+              return (
+                <label
+                  key={option.value}
+                  className={`relative flex flex-col gap-1 rounded-lg border p-3.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-1 ${
+                    disabled ? "cursor-not-allowed" : "cursor-pointer"
+                  } ${
+                    isChosen
+                      ? "border-primary-fill bg-primary/5"
+                      : "border-gray-300 bg-white hover:border-gray-400"
+                  }`}
+                  data-testid={`card-${name}-${option.value}`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <input
+                      type="radio"
+                      name={String(name)}
+                      value={option.value}
+                      checked={isChosen}
+                      onChange={() => field.onChange(option.value)}
+                      onBlur={field.onBlur}
+                      disabled={disabled}
+                      className="w-4 h-4 flex-shrink-0 accent-primary focus-visible:outline-none disabled:cursor-not-allowed"
+                      data-testid={`radio-${name}-${option.value}`}
+                    />
+                    <span className="text-sm font-semibold text-foreground">{option.title}</span>
+                  </span>
+                  <span className="text-sm font-semibold text-primary-ink tabular-nums pl-[26px]">
+                    {option.headline}
+                  </span>
+                  <span className="text-xs text-muted-foreground leading-relaxed pl-[26px]">
+                    {option.body}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
           <FormMessage className={ERROR_TEXT} />
         </FormItem>
       )}
@@ -389,6 +650,11 @@ export function CheckListField<T extends FieldValues>({
               )}
             </span>
 
+            {/* Above the list, not under it: this one says how to use the control rather than
+                what the control means, and an instruction below a scrolling list of 75 districts
+                is an instruction nobody reaches. */}
+            {description && <FormDescription className="text-xs">{description}</FormDescription>}
+
             {selected.length > 0 && (
               <ul className="flex flex-wrap gap-1.5" data-testid={`chips-${name}`}>
                 {selected.map((value) => (
@@ -410,7 +676,11 @@ export function CheckListField<T extends FieldValues>({
             )}
 
             {options.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{emptyHint}</p>
+              // A box the size of the control that is coming, rather than a line of grey text
+              // where a control should be. The gap is the answer to a question above it.
+              <p className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3.5 py-4 text-xs text-muted-foreground">
+                {emptyHint}
+              </p>
             ) : (
               <>
                 <div className="relative">
@@ -449,7 +719,7 @@ export function CheckListField<T extends FieldValues>({
                       {shown.map((option) => (
                         <li key={option}>
                           <label
-                            className={`flex items-center gap-3 px-3 py-2.5 text-sm ${
+                            className={`flex items-center gap-3 px-3 py-2.5 min-h-11 sm:min-h-0 text-sm ${
                               disabled ? "cursor-not-allowed text-gray-700" : "cursor-pointer hover:bg-gray-50"
                             }`}
                           >
@@ -471,7 +741,6 @@ export function CheckListField<T extends FieldValues>({
               </>
             )}
 
-            {description && <FormDescription className="text-xs">{description}</FormDescription>}
             <FormMessage className={ERROR_TEXT} />
           </FormItem>
         );
@@ -612,8 +881,8 @@ export function CodeListField<T extends FieldValues>({
                 {invalidMessage}
               </p>
             )}
-            {description && <FormDescription className="text-xs">{description}</FormDescription>}
             <FormMessage className={ERROR_TEXT} />
+            {description && <FormDescription className="text-xs">{description}</FormDescription>}
           </FormItem>
         );
       }}

@@ -197,12 +197,15 @@ substance of this step.
 | Entity proof — incorporation certificate, LLP agreement, GST certificate, or partnership deed | yes, except `unregistered` |
 | Address proof for the registered address | yes |
 | Signatory photo ID | yes |
-| Net worth or bank statement evidence | optional, and asked for as optional on purpose |
 
-The last row is the `background` field's argument from `shared/validation/franchise.ts`, one step
-further along: financial evidence is the field a serious applicant supplies and a hesitant one
-abandons the form over. Making it optional here and asking for it by hand during evaluation loses
-nothing, because evaluation is a conversation regardless.
+**Four rows, and every one of them required.** Net worth or bank statement evidence used to sit
+below them as an optional fifth, on the `background` field's argument from
+`shared/validation/franchise.ts`: financial evidence is the field a serious applicant supplies and a
+hesitant one abandons the form over. That argument settled the question the other way in the end.
+Asking for it by hand during evaluation loses nothing, because evaluation is a conversation
+regardless, and an optional row on a KYC screen still reads as a fifth demand to the person looking
+at it. So the document type is gone from both repos rather than merely hidden, and a screen with no
+optional row is a screen with nothing on it for a franchisee to decide about.
 
 ### Step 4 — Approval
 
@@ -993,6 +996,14 @@ is a path-traversal write into another franchise's prefix.
 The presigned PUT is bounded on **content type and length** in the policy itself, not checked after
 the fact: PDF, JPEG or PNG, and a few megabytes. An unbounded presigned PUT is an open upload
 endpoint for as long as it is valid.
+
+**Two things outside the handler have to be right before a browser can spend that URL**, and both
+fail in ways that say nothing about themselves. The bucket's CORS rule must name the frontend's
+origin — it does, built from the same `allowedOrigins` the API's allow-list uses. And the frontend's
+`connect-src` must name the bucket, which is `NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN` in
+`next.config.mjs`. That variable is needed **in production too**, unlike the three API URLs beside
+it: the bytes bypassing our Lambdas is the design, so there is no version of this upload that goes
+through `api.muscleboxpro.com`. Without it the presign succeeds and the PUT never leaves the browser.
 
 ### The franchisee can write but never read
 

@@ -315,18 +315,12 @@ export function franchiseNameOf(row: AdminFranchiseListRow): string {
 
 // ── Labels the detail page needs ────────────────────────────────────────────
 
-/**
- * The five KYC types plus the payment screenshot, which is a document of a different kind.
- *
- * `financial_evidence` reads as optional because it is: §3 makes it the field a serious applicant
- * supplies and a hesitant one abandons over, so its absence is not a gap to chase.
- */
+/** The four KYC types plus the payment screenshot, which is a document of a different kind. */
 export const FRANCHISE_DOC_TYPE_LABEL: Record<FranchiseDocumentType, string> = {
   pan_card: "PAN card",
   entity_proof: "Entity proof",
   address_proof: "Address proof",
   signatory_id: "Signatory ID",
-  financial_evidence: "Financial evidence (optional)",
   payment_proof: "Transfer proof",
 };
 

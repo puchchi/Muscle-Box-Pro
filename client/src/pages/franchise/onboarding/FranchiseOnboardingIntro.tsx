@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { Clock, ExternalLink } from "lucide-react";
-import {
-  FRANCHISE_PHASES,
-  franchiseRoughTotalMinutes,
-  franchiseStepsInPhase,
-} from "@shared/franchise/onboarding/steps";
-import type { FranchisePhaseId } from "@shared/franchise/onboarding/steps";
+import { franchiseRoughTotalMinutes } from "@shared/franchise/onboarding/steps";
 
 /**
  * The cold open, and on the first pass through step 1 the page's own header.
@@ -17,19 +12,31 @@ import type { FranchisePhaseId } from "@shared/franchise/onboarding/steps";
  * unless something above it says who sent it, and the card that says so has to carry the `h1`
  * or the document opens on an `h2`.
  *
- * Two things this one has to do that the gym's does not.
+ * ## Four sentences, because the first screenful is not for reading
  *
- * *Name the two waits.* Two parts of this flow are not the franchisee's: approval at step 4 and
- * our verification of the transfer at step 8. Someone who finishes the application, submits, and
- * then finds a screen with no button needs to have been told that was coming.
+ * This card used to be two paragraphs, a list of four stages with a duration each, and a total. It
+ * pushed the first input below the fold on a 900px screen: the whole opening view was preamble in
+ * front of a form nobody had been given a reason to distrust. Most of it was also already on the
+ * screen twice over. **The stage list is `PhaseNav`**, three inches to the left and on every screen
+ * after this one. **The per-step durations are `PhaseSteps`**, which the shell now renders under the
+ * form on this screen too, so "Your territory, 3 minutes" is a row next to the step it describes
+ * rather than a line in a paragraph about the future.
  *
- * *Say what signing means.* This flow ends in a binding term sheet over a ₹25 lakh commitment,
- * so the sentence that matters most is the one about where the commitment starts. It is step 7,
- * and everything before it is an application.
+ * What is left is what nothing else says:
  *
- * The copy says stages, not step numbers. The chrome stopped counting to nine when the rail
- * became four stages, and an intro promising "step 7" would be pointing at a number the
- * franchisee never sees again.
+ * *Who sent it, and to whom.* The eyebrow and the `h1`.
+ *
+ * *Where the commitment starts.* This flow ends in a binding term sheet over a ₹25 lakh
+ * commitment, so the sentence that matters most is the one saying everything before the signature
+ * is an application. It stays in body copy rather than moving to a footnote.
+ *
+ * *That one stage is not theirs.* Someone who finishes the application, submits, and finds a screen
+ * with no button needs to have been told that was coming. Approval is the only wait long enough to
+ * read as a broken page, so it is the only one named here; the day we take to verify a transfer is
+ * step 8's own screen, four stages and a signature away.
+ *
+ * The copy says stages, not step numbers. The chrome stopped counting to nine when the nav became
+ * four stages, and an intro promising "step 7" would point at a number the franchisee never sees.
  */
 export default function FranchiseOnboardingIntro({
   invitedByName,
@@ -43,10 +50,10 @@ export default function FranchiseOnboardingIntro({
 }) {
   return (
     <div
-      className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 mb-6"
+      className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6"
       data-testid="franchise-onboarding-intro"
     >
-      <p className="text-xs font-semibold text-primary-ink mb-2">
+      <p className="text-xs font-semibold text-primary-ink mb-1.5">
         {invitedByName} sent you this link
       </p>
       <h1
@@ -57,47 +64,15 @@ export default function FranchiseOnboardingIntro({
         Let's get {franchiseDisplayName} started
       </h1>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Four stages. You apply with your details, your territory and your documents. We review the
-        market and confirm the territory with you. Then you read the term sheet and sign it, and
-        the first instalment follows. Nothing is committed until you sign, so everything before
-        that is an application you can leave and come back to.
-      </p>
-      <p className="mt-2.5 text-sm text-muted-foreground leading-relaxed">
-        Two parts of this are ours rather than yours. Approval takes us a few working days, and
-        verifying your transfer takes us one. Both of them tell you where they stand whenever you
-        open this link.
+        Four stages, and about {franchiseRoughTotalMinutes()} minutes of your work in total. Nothing
+        is committed until you sign the term sheet in stage three, so everything before that is an
+        application.
       </p>
 
-      {/* Four stages with what each one costs, rather than the nine steps with what each of
-          those costs. The list on the first screen should be the list the rest of the flow
-          shows, and the approval stage is priced "with us" because it has no timed step: a
-          market evaluation is not minutes of the franchisee's own work.
-
-          `role="list"` because Tailwind's preflight removes it and Safari drops the role with
-          the marker. These links are opened from email, which on iOS means Safari. */}
-      <ol
-        role="list"
-        className="mt-4 flex flex-wrap gap-x-6 gap-y-2"
-        data-testid="franchise-intro-steps"
-      >
-        {FRANCHISE_PHASES.map((phase) => (
-          <li key={phase.id} className="text-xs whitespace-nowrap">
-            <span className="font-semibold text-foreground">{phase.title}</span>{" "}
-            <span className="text-muted-foreground tabular-nums">
-              {stageMinutes(phase.id) === 0 ? "with us" : `${stageMinutes(phase.id)} minutes`}
-            </span>
-          </li>
-        ))}
-      </ol>
-
-      <div className="mt-5 pt-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-5">
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-          {/* Rounded to the nearest five, and still derived from the step list rather than
-              typed here. "Your time" is the load-bearing word: the calendar length of this
-              flow is set by our approval, which is not a duration we can promise. */}
-          About {franchiseRoughTotalMinutes()} minutes of your time in total. You can stop
-          anywhere and come back to this same link.
+      <div className="mt-4 pt-3.5 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-5">
+        <p className="text-xs text-muted-foreground flex items-start sm:items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5 flex-shrink-0 mt-px sm:mt-0" aria-hidden="true" />
+          Stage two is ours. Approval takes us a few working days.
         </p>
         <Link
           href="/franchise"
@@ -112,13 +87,5 @@ export default function FranchiseOnboardingIntro({
         </Link>
       </div>
     </div>
-  );
-}
-
-/** Summed from the step estimates rather than typed here, so the four numbers cannot drift. */
-function stageMinutes(phase: FranchisePhaseId): number {
-  return franchiseStepsInPhase(phase).reduce(
-    (total, meta) => total + (meta.estimate === null ? 0 : Number.parseInt(meta.estimate, 10)),
-    0,
   );
 }
