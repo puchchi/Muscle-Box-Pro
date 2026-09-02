@@ -39,7 +39,7 @@ export function AdminShell({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="theme-console min-h-screen bg-gray-50">
       <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         {/*
           `flex-wrap` on both rows, because four tabs plus the brand and the sign-out button no longer
@@ -153,7 +153,7 @@ function NavLink({
 /** What every admin page shows while `useAdminGuard` is still asking. */
 export function AdminChecking() {
   return (
-    <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+    <div className="theme-console min-h-screen flex items-center justify-center text-muted-foreground">
       Checking your session…
     </div>
   );

@@ -265,15 +265,23 @@ and is already tested; reuse it rather than restating the arithmetic.
 and the term sheet is going to reference them. So they get collected before it is issued rather than
 discovered after.
 
-- `warehouseAddress`, `warehouseAreaSqft`, `hasTemperatureControl`
+- `warehouseNotIdentified`, `warehouseAddress`, `warehouseAreaSqft`, `temperatureControl`
 - `operationsContactName`, `operationsContactPhone` — the person who actually refills machines,
   which is frequently not the signatory
 - `deploymentPlan` — how they intend to place their allocation, and by when
 - `logisticsArrangement` — own vehicle, contracted, or undecided
 
 **"Undecided" is an allowed answer and is not a blocker.** A franchisee who has not contracted
-logistics before signing is normal; one who cannot say where the protein will be stored is a §24
-problem. So the warehouse fields are required and the logistics field is not.
+logistics before signing is normal, and `deploymentPlan` takes "NA" for the same reason (two
+characters, not twenty).
+
+**Nor is "no warehouse yet".** `warehouseNotIdentified` is a checkbox, and ticking it makes the
+other three warehouse fields forbidden rather than required — both halves enforced, because an
+address stored under a ticked box is one no screen would show again. Schedule 2 then renders
+`WAREHOUSE_NOT_IDENTIFIED_DECLARATION` (`shared/franchise/termsheet/fields.ts`, byte-identical in
+`mbp-backend`) in place of the address, which is what keeps `canIssue()` from refusing on an
+unresolved token. That string is operative signed text, not a placeholder: it replaces a fact with
+an undertaking to notify the address in writing before the first consignment.
 
 ### Step 7 — Review and sign
 
@@ -1116,15 +1124,20 @@ mechanism that stops an *incomplete* one being issued is a different one and nee
 missing field is an unresolved token and `canIssue()` refuses on one. A City franchise whose payment
 schedule and recovery threshold an admin has not set therefore cannot reach a signature.
 
-*There is one `blocks-send` marker, and it is about the money.* Clause 5.6 states what happens to
+*There was one `blocks-send` marker, and it was about the money.* Clause 5.6 states what happens to
 the first instalment if the definitive agreement is never executed: applied against the investment,
 non-refundable on the franchisee's default or on failure of due diligence, refunded without interest
 less committed OEM procurement cost where we do not proceed for any other reason. The program
 document nowhere addresses it, and a franchisee pays ₹12,50,000 under this instrument, so it could
-not be left out. It was drafted in-house and nobody has approved it, hence `blocks-send`: **no term
-sheet can be issued until that marker is deleted, and deleting it is the sign-off.** The preview
-still walks, because the gym flow's precedent (`StepReviewSign`) shows the blocker list only under
-the mock flag and does not gate signing in preview. This is open question 9.
+not be left out. It was drafted in-house, so it shipped behind a `blocks-send` marker: no term sheet
+could be issued at all until the refund position was signed off.
+
+**Signed off 2026-09-02, and the marker is deleted** (open question 9). Clause 5.6 stands as drafted,
+so `canIssueTermSheet` now refuses only on an unresolved token, which is a franchise whose own record
+is incomplete rather than a document we consider unfinished. The `needs-review` counsel marker
+remains and names §5 among the clauses to review; it does not block issuing. One consequence worth
+knowing before testing: step 7b is now reachable, and it fails on the three Leegality SSM
+SecureStrings that do not exist yet (§8.1).
 
 One consequence outside this repo: `mbp-backend` holds a **verbatim copy** of `shared/agreement/`,
 and `render.ts` and `goldenVector.ts` have both moved. That copy has to be re-taken along with the
@@ -1255,10 +1268,12 @@ Named rather than left implied, per gym doc §17.
    signed and we have not.
 8. **Second instalment and procurement tracking.** Deliberately out of scope; §7.6 keeps the record
    shaped for it.
-9. **Is clause 5.6 of the term sheet the right refund position?** Drafted in-house because a
-   ₹12,50,000 instalment paid under a term sheet cannot leave the question unanswered, and the
-   program document does not answer it. It carries the only `blocks-send` marker in the document, so
-   nothing can be issued until it is approved. §11, phase 3.
+9. ~~**Is clause 5.6 of the term sheet the right refund position?**~~ Answered 2026-09-02: yes, as
+   drafted. Applied against the investment; non-refundable on the franchisee's default or on failure
+   of due diligence; refunded without interest less committed OEM procurement cost where we do not
+   proceed for any other reason. The `blocks-send` marker was deleted, which is the sign-off, and
+   term sheets now issue. Counsel review of the clause is still outstanding under question 1's
+   marker (`termsheet-v1-not-reviewed-by-counsel`), which does not block issuing. §11, phase 3.
 10. **Where do the franchise admin routes live, given the 500-resource ceiling?** §8.1. Their own
     `RestApi` is the only option that fits, and it needs the admin cookie to carry a `Domain`
     attribute, which is an auth change affecting the gym dashboard. Blocks any franchise deploy.

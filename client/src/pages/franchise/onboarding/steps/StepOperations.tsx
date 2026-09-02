@@ -7,6 +7,7 @@ import { operationsReadinessSchema } from "@shared/franchise/onboarding/schema";
 import type { OperationsReadiness } from "@shared/franchise/onboarding/types";
 import {
   AreaField,
+  CheckField,
   ErrorSummary,
   Field,
   Form,
@@ -26,16 +27,22 @@ import type { FranchiseStepViewProps } from "../types";
  * after. Protein is delivered to the franchisee's warehouse and stored there, so a signature
  * over a supply obligation with no answer to "where does it go" is a signature over a gap.
  *
- * **Temperature control is `"yes" | "no"`, not a checkbox.** An unticked box records "no" from
+ * **Temperature control is `"yes" | "no" | ""`, not a checkbox.** An unticked box records "no" from
  * somebody who was never asked, and storage conditions are load-bearing under §24. The select
  * opens with no answer selected for exactly that reason.
  *
- * **Logistics may be undecided, and that is not a blocker.** A franchisee who has not contracted
- * transport before signing is normal. One who cannot say where the protein will be stored is a
- * §24 problem, which is why the warehouse fields are required and this one is not.
+ * **The warehouse may not exist yet, and there is a box for saying so.** It governs all three
+ * storage fields rather than sitting beside them, because a franchisee who has not found a
+ * warehouse cannot answer any of the three and blank fields would read as an abandoned form. The
+ * box is the answer, and Schedule 2 of the term sheet carries an undertaking to name the address
+ * before the first consignment instead of the address itself.
+ *
+ * **Logistics may be undecided, and that is not a blocker either.** A franchisee who has not
+ * contracted transport before signing is normal.
  */
 
 const FIELD_LABELS: Record<keyof OperationsReadiness, string> = {
+  warehouseNotIdentified: "Warehouse",
   warehouseAddress: "Warehouse address",
   warehouseAreaSqft: "Warehouse area",
   temperatureControl: "Temperature control",
@@ -66,7 +73,15 @@ export default function StepOperations({
 }: FranchiseStepViewProps) {
   const form = useForm<OperationsReadiness>({
     resolver: zodResolver(operationsReadinessSchema),
+    // The three storage fields are listed explicitly because the schema now allows each to be
+    // empty and `null`/`""` are values rather than the absence of one. Without them a legacy
+    // record spreads in without the flag and `warehouseAreaSqft` starts as `undefined`, which
+    // the number input renders as an uncontrolled box.
     defaultValues: {
+      warehouseNotIdentified: false,
+      warehouseAddress: "",
+      warehouseAreaSqft: null,
+      temperatureControl: "",
       ...(state.operations ?? {}),
       ...(state.drafts.operations ?? {}),
     } as OperationsReadiness,
@@ -77,6 +92,17 @@ export default function StepOperations({
   const draft = useFranchiseDraftAutosave(handle, "operations", values, { enabled: !readOnly });
 
   useServerFieldErrors(form, fieldErrors, (field) => field in FIELD_LABELS);
+
+  // Ticked means the three fields below must be empty, and the schema refuses a stored address
+  // under a ticked box. Clearing the errors too: `mode: "onBlur"` does not revalidate on change,
+  // so "include the full address" would otherwise stay red over a hidden field.
+  function onWarehouseNotIdentified(checked: boolean) {
+    if (!checked) return;
+    form.setValue("warehouseAddress", "");
+    form.setValue("warehouseAreaSqft", null);
+    form.setValue("temperatureControl", "");
+    form.clearErrors(["warehouseAddress", "warehouseAreaSqft", "temperatureControl"]);
+  }
 
   async function onSubmit(operations: OperationsReadiness) {
     await draft.flush();
@@ -96,34 +122,58 @@ export default function StepOperations({
         />
 
         <Section title="Where the protein is stored">
-          <AreaField
+          <CheckField
             form={form}
-            name="warehouseAddress"
-            label="Warehouse address"
-            placeholder="Building, street, area, city, state, PIN"
-            description="Where we deliver protein consignments. It can be the registered address if that is where you'll hold stock."
+            name="warehouseNotIdentified"
+            label="Not decided yet"
+            // Dropped once it is ticked, where "tick this if" is an instruction about something
+            // already done and the paragraph below it is the answer.
+            description={
+              values.warehouseNotIdentified
+                ? undefined
+                : "Tick this if you have not settled on a warehouse. It will not hold up your term sheet."
+            }
+            onCheckedChange={onWarehouseNotIdentified}
             disabled={readOnly}
           />
-          <Row>
-            <Field
-              form={form}
-              name="warehouseAreaSqft"
-              label="Warehouse area"
-              placeholder="1200"
-              numeric
-              description="In square feet, to the nearest foot."
-              disabled={readOnly}
-            />
-            <SelectField
-              form={form}
-              name="temperatureControl"
-              label="Temperature control"
-              placeholder="Choose one"
-              options={TEMPERATURE_OPTIONS}
-              description="Either answer is fine. It changes how we schedule deliveries and what we can send at once."
-              disabled={readOnly}
-            />
-          </Row>
+
+          {values.warehouseNotIdentified ? (
+            <p className="text-sm text-gray-600">
+              We will ask for the address, the area and the storage conditions before your first
+              consignment leaves. Your term sheet says so in Schedule 2.
+            </p>
+          ) : (
+            <>
+              <AreaField
+                form={form}
+                name="warehouseAddress"
+                label="Warehouse address"
+                placeholder="Building, street, area, city, state, PIN"
+                description="Where we deliver protein consignments. It can be the registered address if that is where you'll hold stock."
+                disabled={readOnly}
+              />
+              <Row>
+                <Field
+                  form={form}
+                  name="warehouseAreaSqft"
+                  label="Warehouse area"
+                  placeholder="1200"
+                  numeric
+                  description="In square feet, to the nearest foot."
+                  disabled={readOnly}
+                />
+                <SelectField
+                  form={form}
+                  name="temperatureControl"
+                  label="Temperature control"
+                  placeholder="Choose one"
+                  options={TEMPERATURE_OPTIONS}
+                  description="Either answer is fine. It changes how we schedule deliveries and what we can send at once."
+                  disabled={readOnly}
+                />
+              </Row>
+            </>
+          )}
         </Section>
 
         <Section title="Who runs the machines">
@@ -157,7 +207,7 @@ export default function StepOperations({
             label="Deployment plan"
             rows={4}
             placeholder="Three machines into the two Sector 62 chains within the first month, then two more once we see the volumes."
-            description="Which gyms, roughly when, and in what order. This is a plan rather than a commitment, and it tells us how to sequence the build."
+            description="Which gyms, roughly when, and in what order. This is a plan rather than a commitment, and it tells us how to sequence the build. Write NA if you have not worked it out yet."
             disabled={readOnly}
           />
           <SelectField

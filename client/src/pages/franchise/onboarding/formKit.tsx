@@ -277,12 +277,68 @@ export function AreaField<T extends FieldValues>({
 }
 
 /**
+ * One tick, for a question whose answers are yes and nothing.
+ *
+ * `CheckListField` below is an array of ticks and a different control. This is a single boolean,
+ * so the label goes beside the box rather than above it and there is no `optional` chip: a
+ * checkbox nobody ticked has already answered.
+ *
+ * `min-h-11` is on the `<label>` rather than the input, because the 44px target is the whole row
+ * a thumb lands on and a 20px box with a sentence beside it is a 20px target.
+ *
+ * `onCheckedChange` is for the case this exists for: a box that governs other fields, whose
+ * values have to be cleared when it is ticked.
+ */
+export function CheckField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  description,
+  disabled,
+  onCheckedChange,
+}: Omit<BaseFieldProps<T>, "placeholder" | "optional"> & {
+  onCheckedChange?: (checked: boolean) => void;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <label className="flex min-h-11 items-start gap-3 py-1 cursor-pointer">
+            <FormControl>
+              <input
+                type="checkbox"
+                ref={field.ref}
+                name={field.name}
+                checked={field.value === true}
+                onBlur={field.onBlur}
+                onChange={(event) => {
+                  field.onChange(event.target.checked);
+                  onCheckedChange?.(event.target.checked);
+                }}
+                disabled={disabled}
+                className="mt-0.5 w-5 h-5 shrink-0 rounded border-gray-400 accent-primary cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                data-testid={`input-${name}`}
+              />
+            </FormControl>
+            <span className="text-gray-700 text-sm font-semibold">{label}</span>
+          </label>
+          <FormMessage className={ERROR_TEXT} />
+          {description && <FormDescription className="text-xs">{description}</FormDescription>}
+        </FormItem>
+      )}
+    />
+  );
+}
+
+/**
  * A native `<select>`, rather than the Radix one, for the reason the gym flow's entity-type
  * field gives: these are short lists and the native control is what a phone renders best.
  *
  * The blank first option exists only where the schema has no default. An enum with no answer
  * yet must not read as though the first value was chosen, which is the whole point of
- * `temperatureControl` being `"yes" | "no"` rather than a boolean.
+ * `temperatureControl` carrying `""` as a third case rather than being a boolean.
  *
  * `appearance-none` with a drawn chevron, because the platform's own arrow is a different shape,
  * size and colour on every OS and these sit in a column beside `Input`s that all match each other.

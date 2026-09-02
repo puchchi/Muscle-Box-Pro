@@ -154,22 +154,29 @@ export type TerritoryProposal = {
 
 /** Step 6. §24, §27 and §28 of the program document, collected before the term sheet is issued. */
 export type OperationsReadiness = {
+  /**
+   * A boolean where `temperatureControl` below refuses to be one, and the difference is what an
+   * untouched form sends: unticked with an empty address fails validation, so `true` here can
+   * only have been ticked deliberately. The three fields it governs are empty when it is set.
+   */
+  warehouseNotIdentified: boolean;
   warehouseAddress: string;
-  warehouseAreaSqft: number;
+  warehouseAreaSqft: number | null;
   /**
    * An answer, not the absence of one — the `unregistered` argument in `EntityType` applied
    * to a checkbox. A boolean defaulting to false records "no" from a franchisee who was
-   * never asked, and §24 makes storage conditions load-bearing.
+   * never asked, and §24 makes storage conditions load-bearing. `""` is the third case and
+   * means the question was not put: there is no warehouse to ask it about yet.
    */
-  temperatureControl: "yes" | "no";
+  temperatureControl: "yes" | "no" | "";
   /** Frequently not the signatory: this is whoever actually refills machines. */
   operationsContactName: string;
   operationsContactPhone: string;
   deploymentPlan: string;
   /**
    * "Undecided" is allowed and is not a blocker. A franchisee who has not contracted
-   * logistics before signing is normal; one who cannot say where the protein will be stored
-   * is a §24 problem, which is why the warehouse fields are required and this is not.
+   * logistics before signing is normal, and one who has not found a warehouse yet says so
+   * with `warehouseNotIdentified` rather than by leaving fields blank.
    */
   logisticsArrangement: "own_vehicle" | "contracted" | "undecided";
 };

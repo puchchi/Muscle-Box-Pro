@@ -323,7 +323,7 @@ export function AdminReplyComposer({
           <Button
             onClick={() => void handleSend()}
             disabled={!fresh || busy !== null}
-            className="rounded-xl cursor-pointer bg-primary text-white font-bold"
+            className="rounded-xl cursor-pointer bg-primary-fill text-primary-foreground font-bold"
             data-testid="button-send-reply"
           >
             <Send className="w-4 h-4" aria-hidden />

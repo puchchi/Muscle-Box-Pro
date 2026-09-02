@@ -117,9 +117,11 @@ export type AdminFranchiseApproval = {
 };
 
 export type AdminFranchiseOperations = {
+  /** Set when the franchisee has told us there is no warehouse yet. The three fields below are then empty. */
+  warehouseNotIdentified: boolean;
   warehouseAddress: string;
-  warehouseAreaSqft: number;
-  temperatureControl: "yes" | "no";
+  warehouseAreaSqft: number | null;
+  temperatureControl: "yes" | "no" | "";
   operationsContactName: string;
   operationsContactPhone: string;
   deploymentPlan: string;

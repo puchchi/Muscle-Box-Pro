@@ -14,7 +14,7 @@ import {
 } from "@shared/franchise/onboarding/steps";
 import type { FranchisePhaseId } from "@shared/franchise/onboarding/steps";
 import {
-  operationsReadinessSchema,
+  OPERATIONS_FIELD_NAMES,
   paymentClaimSchema,
 } from "@shared/franchise/onboarding/schema";
 import type {
@@ -136,7 +136,7 @@ function stepMarksField(
 ): boolean {
   if (step === 1) return field in state.details;
   if (step === 2) return field in state.territory;
-  if (step === 6) return field in operationsReadinessSchema.shape;
+  if (step === 6) return OPERATIONS_FIELD_NAMES.includes(field);
   if (step === 8) return field in paymentClaimSchema.shape;
   if (step === 9) return field === "password";
   return false;

@@ -172,9 +172,9 @@ export const httpFranchiseOnboardingApi: FranchiseOnboardingApi = {
    * There is no route behind this, and until there is, it must refuse rather than fabricate a URL.
    *
    * The wizard's step 7b hands off to Leegality, and the handoff needs Leegality sandbox credentials that this
-   * account does not hold yet. Nothing else in the flow is blocked on it in practice: the term sheet's own
-   * `blocks-send` marker means `markTermSheetViewed` answers `not_issuable`, so `state.termSheet` is null and
-   * `useFranchiseOnboarding` returns before it reaches this method.
+   * account does not hold yet. This is now the first wall a franchisee reaches rather than a theoretical one:
+   * the term sheet no longer carries a `blocks-send` marker, so `markTermSheetViewed` issues, `state.termSheet`
+   * is populated and step 7b is reachable.
    */
   async requestEsign() {
     return { ok: false, error: NO_ESIGN_PROVIDER };

@@ -25,6 +25,7 @@ import {
   FRANCHISE_STATUS_CLASS,
   FRANCHISE_STATUS_LABEL,
   LOGISTICS_LABEL,
+  TEMPERATURE_LABEL,
   franchiseEntityLabel,
   franchiseStepLabel,
   franchiseTierLabel,
@@ -329,14 +330,25 @@ function FranchiseView({
       >
         {franchise.operations ? (
           <Fields>
-            <Field label="Warehouse" value={franchise.operations.warehouseAddress} />
+            <Field
+              label="Warehouse"
+              value={
+                franchise.operations.warehouseNotIdentified
+                  ? "Not identified yet"
+                  : franchise.operations.warehouseAddress
+              }
+            />
             <Field
               label="Area"
-              value={`${franchise.operations.warehouseAreaSqft.toLocaleString("en-IN")} sq ft`}
+              value={
+                franchise.operations.warehouseAreaSqft === null
+                  ? null
+                  : `${franchise.operations.warehouseAreaSqft.toLocaleString("en-IN")} sq ft`
+              }
             />
             <Field
               label="Temperature control"
-              value={franchise.operations.temperatureControl === "yes" ? "Yes" : "No"}
+              value={TEMPERATURE_LABEL[franchise.operations.temperatureControl]}
             />
             <Field label="Operations contact" value={franchise.operations.operationsContactName} />
             <Field label="Contact phone" value={franchise.operations.operationsContactPhone} />

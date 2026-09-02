@@ -19,9 +19,9 @@
  * side in isolation (docs/franchise-onboarding.md §8.5, test 1).
  *
  * One property worth knowing before reading the vector: `todo` blocks are excluded from
- * `renderPlainText`, so resolving v1's `blocks-send` marker does **not** move the hash below.
- * That is deliberate and is the same reason the gym agreement's markers are excluded. A
- * signature is against clauses, not against our internal notes about them.
+ * `renderPlainText`, so resolving a marker in v1 does **not** move the hash below. That is
+ * deliberate and is the same reason the gym agreement's markers are excluded. A signature is
+ * against clauses, not against our internal notes about them.
  */
 
 import type { AgreementGoldenVector } from "../../agreement/goldenVector";

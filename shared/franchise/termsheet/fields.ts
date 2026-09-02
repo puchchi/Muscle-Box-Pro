@@ -42,6 +42,17 @@ import type { FranchiseTermSheetFields } from "./types";
 export const TERM_SHEET_VALIDITY_DAYS = 45;
 
 /**
+ * What Schedule 2 says where the franchisee has told us they have no warehouse yet.
+ *
+ * A declaration rather than a blank, and rendered rather than withheld, because the token has to
+ * resolve for `canIssue()` to pass: a franchisee who ticked the box would otherwise be unable to
+ * reach a term sheet at all, which is the opposite of what the box is for. It replaces a fact
+ * with an undertaking, so it is operative text in a signed document and not a placeholder.
+ */
+export const WAREHOUSE_NOT_IDENTIFIED_DECLARATION =
+  "Not yet identified. The Franchisee will notify MuscleBox Pro of the warehouse address in writing before the first consignment is dispatched.";
+
+/**
  * The date a term sheet issued on `effectiveDateIso` lapses, as an ISO date.
  *
  * Arithmetic in UTC on a date with no time in it, so the answer does not depend on the machine
@@ -135,7 +146,9 @@ export function toTermSheetFields(
   }
 
   if (operations) {
-    fields.warehouseAddress = operations.warehouseAddress;
+    fields.warehouseAddress = operations.warehouseNotIdentified
+      ? WAREHOUSE_NOT_IDENTIFIED_DECLARATION
+      : operations.warehouseAddress;
     fields.operationsContactName = operations.operationsContactName;
     fields.operationsContactPhone = operations.operationsContactPhone;
   }

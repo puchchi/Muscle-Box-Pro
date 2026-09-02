@@ -86,7 +86,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6 py-12">
+    <div className="theme-console min-h-screen flex items-center justify-center bg-gray-50 px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <h1
@@ -159,7 +159,7 @@ export default function AdminLogin() {
               // button reset, and `components/ui/button.tsx` sets no cursor of its own, so a
               // button without this reads as unclickable however well it works. Every other
               // hand-written button in the app does the same — see `GymLogin`.
-              className="w-full h-11 bg-primary text-white font-bold text-sm rounded-xl cursor-pointer"
+              className="w-full h-11 bg-primary-fill text-primary-foreground font-bold text-sm rounded-xl cursor-pointer"
               data-testid="button-login"
             >
               {isSubmitting ? "Signing in…" : "Sign in"}

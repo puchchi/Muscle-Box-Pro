@@ -336,6 +336,13 @@ export const FRANCHISE_PAYMENT_STATE_CLASS: Record<"pending" | "verified" | "rej
   rejected: "bg-red-50 text-red-700",
 };
 
+/** `""` maps to `""` so `Field` renders its em dash: there is no warehouse to ask the question about. */
+export const TEMPERATURE_LABEL: Record<"yes" | "no" | "", string> = {
+  yes: "Yes",
+  no: "No, ambient storage",
+  "": "",
+};
+
 export const LOGISTICS_LABEL: Record<"own_vehicle" | "contracted" | "undecided", string> = {
   own_vehicle: "Their own vehicle",
   contracted: "A contracted carrier",

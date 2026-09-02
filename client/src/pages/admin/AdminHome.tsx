@@ -137,7 +137,7 @@ export default function AdminHome() {
                 : `First ${funnel.counted} gyms. Every figure below is a floor, not a total.`}
           </p>
         </div>
-        <Button asChild className="rounded-xl cursor-pointer bg-primary text-white font-bold">
+        <Button asChild className="rounded-xl cursor-pointer bg-primary-fill text-primary-foreground font-bold">
           <Link href="/admin/gyms/new" data-testid="link-invite-gym">
             <Plus className="w-4 h-4" aria-hidden />
             Invite a gym

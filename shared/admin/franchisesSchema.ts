@@ -179,9 +179,12 @@ const adminFranchiseApprovalSchema = z.object({
 });
 
 const adminFranchiseOperationsSchema = z.object({
+  // Defaulted rather than required: the deployed read projection does not send this key yet, and a
+  // response that fails to parse takes the whole detail page with it.
+  warehouseNotIdentified: z.boolean().default(false),
   warehouseAddress: deferred,
-  warehouseAreaSqft: z.number(),
-  temperatureControl: z.enum(["yes", "no"]),
+  warehouseAreaSqft: z.number().nullable(),
+  temperatureControl: z.enum(["yes", "no", ""]),
   operationsContactName: deferred,
   operationsContactPhone: deferred,
   deploymentPlan: deferred,
@@ -349,8 +352,17 @@ export const adminFranchiseViewSchema = z.object({
  */
 export const _franchiseListTypeCheck =
   adminFranchiseListSchema satisfies z.ZodType<AdminFranchiseList>;
-export const _franchiseViewTypeCheck =
-  adminFranchiseViewSchema satisfies z.ZodType<AdminFranchiseView>;
+/**
+ * `unknown` on the input side, unlike the list above, because one field is defaulted
+ * (`warehouseNotIdentified`) and a default makes the parsed *input* differ from the output.
+ * The output is still pinned exactly, which is the half this line exists to pin: what the page
+ * receives. The input of a wire parser is unknown by definition.
+ */
+export const _franchiseViewTypeCheck = adminFranchiseViewSchema satisfies z.ZodType<
+  AdminFranchiseView,
+  z.ZodTypeDef,
+  unknown
+>;
 
 export function parseAdminFranchiseList(value: unknown): AdminParse<AdminFranchiseList> {
   return toParse(adminFranchiseListSchema.safeParse(value));

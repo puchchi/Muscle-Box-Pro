@@ -171,8 +171,12 @@ function stepSummary(
     }
     case 5:
       return `${formatInr(state.terms.investmentPaise / 100)}, ${state.terms.machineAllocation} machines`;
-    case 6:
-      return state.operations?.warehouseAddress.split("\n")[0]?.trim() || null;
+    case 6: {
+      const operations = state.operations;
+      if (!operations) return null;
+      if (operations.warehouseNotIdentified) return "Warehouse still to be decided";
+      return operations.warehouseAddress.split("\n")[0]?.trim() || null;
+    }
     case 7:
       return state.esign.executed
         ? `Signed on ${formatIstDate(state.esign.executed.signedAt)}`

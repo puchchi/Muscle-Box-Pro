@@ -24,7 +24,8 @@
  *     The one exception is the franchise-level cost list in §10, which is the program
  *     document's own list and is not per-franchise.
  *   - Where something is unresolved, emit a `todo` rather than inventing or omitting a
- *     clause. Two markers are live below and one of them is `blocks-send`.
+ *     clause. One marker is live below and it is `needs-review`, so nothing here blocks
+ *     issuing.
  *
  * ── Why the deferred terms are not `todo` markers ────────────────────────────
  * Because they are not holes in *this* document. A term sheet that carries the commercials
@@ -80,20 +81,6 @@ export const FRANCHISE_TERM_SHEET_V1: Agreement = {
         "No Indian legal counsel has read this Term Sheet. Three parts carry the risk: §2, which asserts that the commercial terms bind while the rest is subject to the Definitive Franchise Agreement; §19, which carries over the governing law and forum settled in-house for the gym agreement v2.3; and the stamp position, since this instrument is issued unstamped and an unstamped instrument can be inadmissible in evidence until stamped with penalty.",
       resolution:
         "Have counsel review §2, §5, §18 and §19 and confirm the stamp position for the state of execution. Then either delete this marker or issue v2.ts with their wording. This is a needs-review marker and so does not block issuing: proceeding is a knowing decision to carry the risk, not an oversight.",
-    },
-    // The one hole that the money makes unavoidable. Drafted text exists in §5.6 so the
-    // document is readable and reviewable, and this marker is `blocks-send` anyway: the
-    // Franchisee pays ₹12,50,000 under this Term Sheet, and what happens to that money if
-    // the Definitive Franchise Agreement is never executed is a commercial decision nobody
-    // has signed off. Deleting this marker is the sign-off, and it is one line.
-    {
-      kind: "todo",
-      id: "termsheet-v1-first-instalment-if-no-definitive-agreement",
-      severity: "blocks-send",
-      problem:
-        "§5.6 states what happens to amounts paid under this Term Sheet if the Definitive Franchise Agreement is never executed: applied against the total investment, non-refundable on the Franchisee's default or on failure of due diligence, refundable without interest less committed OEM procurement cost where MuscleBox Pro does not proceed for any other reason. The program document nowhere addresses this and the wording was drafted in-house against a ₹12,50,000 first instalment. It has not been approved commercially or legally.",
-      resolution:
-        "Have the refund position decided commercially and reviewed by counsel. If §5.6 is right as drafted, delete this marker. If it is not, issue v2.ts with the agreed wording. Until then no Term Sheet can be issued, which is the intended behaviour.",
     },
   ],
 
@@ -265,8 +252,9 @@ export const FRANCHISE_TERM_SHEET_V1: Agreement = {
           number: "5.5",
           text: "Taxes applicable to the investment are payable in addition, at the rate in force when each instalment falls due.",
         },
-        // Drafted in-house. The `blocks-send` marker on the cover is what stops this
-        // reaching a signature before it is approved, and it names this clause.
+        // Drafted in-house and signed off commercially as it stands: the refund position is
+        // a decision, not a placeholder. It is still inside the scope of the counsel review
+        // the `needs-review` marker on the cover asks for.
         {
           kind: "clause",
           number: "5.6",

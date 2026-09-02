@@ -139,6 +139,7 @@ const ADMIN_FRANCHISE_VIEW: AdminFranchiseView = {
   },
 
   operations: {
+    warehouseNotIdentified: false,
     warehouseAddress: "Unit 14, Nanded Phata Logistics Park, Sinhagad Road, Pune 411041",
     warehouseAreaSqft: 1800,
     temperatureControl: "yes",

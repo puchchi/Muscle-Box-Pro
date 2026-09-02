@@ -218,22 +218,33 @@ export function franchiseTerritoryGrantDraft(proposal: {
   return parts.join(" ");
 }
 
-/** Step 6. */
-export const operationsReadinessSchema = z.object({
-  warehouseAddress: z
-    .string()
-    .trim()
-    .min(10, "Include the full address of the warehouse the protein will be delivered to"),
+/**
+ * Step 6, without the conditional rules `warehouseNotIdentified` puts on three of its fields.
+ *
+ * Split out because the rules need `.superRefine()`, which returns a `ZodEffects` with no
+ * `.shape`, and the wizard reads the shape to decide which step a server field error belongs to.
+ * `OPERATIONS_FIELD_NAMES` below is what it reads instead.
+ */
+const operationsFields = z.object({
+  /**
+   * A boolean where `temperatureControl` refuses to be one, and the difference is what an
+   * untouched form sends: unticked with an empty address fails, so `true` here can only have
+   * been ticked on purpose. `.default(false)` so a client that predates the field still parses.
+   */
+  warehouseNotIdentified: z.boolean().default(false),
+  warehouseAddress: z.string().trim(),
   /**
    * A number rather than a string, because it is a quantity we will compare against a
-   * requirement. The form registers it with `valueAsNumber`.
+   * requirement. The form registers it with `valueAsNumber`, which sends `NaN` for an empty
+   * input, and `NaN` is not `null`: it fails the number check and gets `invalid_type_error`.
    */
   warehouseAreaSqft: z
     .number({ invalid_type_error: "Enter the area in square feet" })
     .int("Round to the nearest square foot")
     .min(100, "That looks too small to hold a protein consignment")
-    .max(1_000_000, "That looks too large to be a square-foot figure"),
-  temperatureControl: z.enum(["yes", "no"], {
+    .max(1_000_000, "That looks too large to be a square-foot figure")
+    .nullable(),
+  temperatureControl: z.enum(["yes", "no", ""], {
     errorMap: () => ({ message: "Tell us whether the warehouse is temperature controlled" }),
   }),
   operationsContactName: z
@@ -244,12 +255,71 @@ export const operationsReadinessSchema = z.object({
   deploymentPlan: z
     .string()
     .trim()
-    .min(20, "How and by when do you plan to place your machines?")
+    .min(2, "Tell us how you plan to place your machines. Write NA if it is not decided yet.")
     .max(2000),
   logisticsArrangement: z.enum(["own_vehicle", "contracted", "undecided"], {
     errorMap: () => ({ message: "Choose how you plan to move stock and machines" }),
   }),
 });
+
+/**
+ * Step 6.
+ *
+ * The three warehouse fields are required unless the franchisee has told us there is no
+ * warehouse yet, and empty unless they have. Both halves are enforced: a stored address under a
+ * ticked box is an address no screen would ever show again.
+ */
+export const operationsReadinessSchema = operationsFields.superRefine((value, ctx) => {
+  if (value.warehouseNotIdentified) {
+    if (value.warehouseAddress !== "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["warehouseAddress"],
+        message: "Clear the address, or untick the box above",
+      });
+    }
+    if (value.warehouseAreaSqft !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["warehouseAreaSqft"],
+        message: "Clear the area, or untick the box above",
+      });
+    }
+    if (value.temperatureControl !== "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["temperatureControl"],
+        message: "Clear the storage answer, or untick the box above",
+      });
+    }
+    return;
+  }
+
+  if (value.warehouseAddress.length < 10) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["warehouseAddress"],
+      message: "Include the full address of the warehouse the protein will be delivered to",
+    });
+  }
+  if (value.warehouseAreaSqft === null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["warehouseAreaSqft"],
+      message: "Enter the area in square feet",
+    });
+  }
+  if (value.temperatureControl === "") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["temperatureControl"],
+      message: "Tell us whether the warehouse is temperature controlled",
+    });
+  }
+});
+
+/** The step-6 field names, for the `.shape` lookup `operationsReadinessSchema` no longer offers. */
+export const OPERATIONS_FIELD_NAMES: readonly string[] = Object.keys(operationsFields.shape);
 
 /**
  * Step 8's claim.

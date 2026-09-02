@@ -78,13 +78,13 @@ export default function GymForgotPassword() {
   const facts = SELF_SERVE_RESET_ENABLED ? selfServeFacts : relayFacts;
 
   return (
-    <div className="min-h-screen flex">
+    <div className="theme-console min-h-screen flex">
 
       {/* ── Left Brand Panel ── */}
-      <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-br from-accent via-primary to-orange-500 flex-col justify-between p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 rounded-full bg-white -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-white translate-x-1/3 translate-y-1/3" />
+      <div className="hidden lg:flex lg:w-[45%] bg-neutral-950 flex-col justify-between p-12 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-96 h-96 rounded-full bg-primary/30 blur-3xl -translate-x-1/3 -translate-y-1/3" />
+          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-white/[0.04] blur-2xl translate-x-1/3 translate-y-1/3" />
         </div>
 
         <div className="relative z-10 hero-rise">
@@ -336,7 +336,7 @@ function ResetForm({ onSent }: { onSent: () => void }) {
           type="submit"
           disabled={sending}
           aria-busy={sending}
-          className="w-full h-11 bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20 disabled:opacity-70"
+          className="w-full h-11 bg-primary-fill text-primary-foreground font-bold text-sm hover:bg-primary-fill/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20 disabled:opacity-70"
           data-testid="button-send-reset"
         >
           {sending ? "Sending..." : "Send reset link"}

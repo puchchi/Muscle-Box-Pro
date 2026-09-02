@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { GOLDEN_TERM_SHEET_V1 } from "@shared/franchise/termsheet/goldenVector";
 import {
   TERM_SHEET_VALIDITY_DAYS,
+  WAREHOUSE_NOT_IDENTIFIED_DECLARATION,
   termSheetValidUntil,
 } from "@shared/franchise/termsheet/fields";
 // The same entry point the server issues through. A test that renders through its own copy of
@@ -79,6 +80,7 @@ const VALID_TERRITORY: TerritoryProposal = {
 };
 
 const VALID_OPERATIONS: OperationsReadiness = {
+  warehouseNotIdentified: false,
   warehouseAddress: "Plot 22, Site IV Industrial Area, Sahibabad 201010",
   warehouseAreaSqft: 2400,
   temperatureControl: "yes",
@@ -691,6 +693,30 @@ describe("the term sheet", () => {
       }),
     );
     expect(rewarehoused.termSheet!.contentHash).not.toBe(first.contentHash);
+  });
+
+  it("issues with a declaration where the franchisee has no warehouse yet", async () => {
+    // The box on step 6 would be worthless if it left `warehouseAddress` unresolved: `canIssue()`
+    // refuses on an unresolved token, so the franchisee it exists for would be the one franchisee
+    // who could never reach a term sheet. What it renders instead is an undertaking, and it is
+    // operative signed text.
+    await throughKyc();
+    previewApprove(HANDLE);
+    await expectState(api.ackFranchise(HANDLE));
+    await expectState(
+      api.submitOperations(HANDLE, {
+        ...VALID_OPERATIONS,
+        warehouseNotIdentified: true,
+        warehouseAddress: "",
+        warehouseAreaSqft: null,
+        temperatureControl: "",
+      }),
+    );
+
+    const state = await expectState(api.markTermSheetViewed(HANDLE));
+    expect(state.termSheet).not.toBeNull();
+    const text = renderIssuedTermSheetText(state, state.termSheet!.effectiveDate);
+    expect(text).toContain(WAREHOUSE_NOT_IDENTIFIED_DECLARATION);
   });
 
   it("is immutable once signed", async () => {

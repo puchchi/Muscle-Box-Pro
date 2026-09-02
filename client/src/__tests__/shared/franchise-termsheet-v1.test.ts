@@ -257,8 +257,8 @@ describe("the terms a franchisee is most likely to misremember", () => {
 describe("what happens to the money", () => {
   it("states where the first instalment stands if the definitive agreement is never executed", () => {
     // The one term the money makes unavoidable and the program document nowhere answers.
-    // It is drafted, and the cover's blocks-send marker is what stops it being issued on
-    // that drafting alone.
+    // Drafted in-house and signed off commercially, so the three positions below are the
+    // agreed ones rather than a first attempt.
     const money = textOf("5");
     expect(money).toContain("If the Definitive Franchise Agreement is not executed");
     expect(money).toContain("refunded without interest");
@@ -331,23 +331,17 @@ describe("issuing", () => {
     }
   });
 
-  it("refuses to issue while the first-instalment marker is unresolved", () => {
-    // The intended behaviour, not a defect. Deleting that marker is the commercial
-    // sign-off on clause 5.6, and until then no term sheet may be sent for signature.
+  it("issues on a complete set of fields", () => {
     const check = canIssue<FranchiseTermSheetFields>(FRANCHISE_TERM_SHEET_V1, FIXTURE);
-    expect(check.ok).toBe(false);
-    if (check.ok) return;
-    expect(check.unresolvedTokens).toEqual([]);
-    expect(check.blockers.map((b) => b.id)).toEqual([
-      "termsheet-v1-first-instalment-if-no-definitive-agreement",
-    ]);
+    expect(check.ok).toBe(true);
   });
 
-  it("carries exactly one blocks-send marker and one needs-review marker", () => {
+  it("carries exactly one marker and it does not block sending", () => {
     // A count, so that resolving one and adding two is visible. The severities matter:
-    // needs-review is a knowing decision to carry risk, blocks-send is a stop.
+    // needs-review is a knowing decision to carry risk, blocks-send is a stop, and a
+    // blocks-send appearing here means no franchisee can be sent a term sheet at all.
     const bySeverity = collectBlockers(FRANCHISE_TERM_SHEET_V1).map((b) => b.severity);
-    expect(bySeverity).toEqual(["blocks-send", "needs-review"]);
+    expect(bySeverity).toEqual(["needs-review"]);
   });
 
   it("names a resolution on every marker", () => {
@@ -359,9 +353,9 @@ describe("issuing", () => {
   });
 
   it("keeps markers out of the hashed text", () => {
-    // So that resolving the blocks-send marker does not invalidate signatures taken
-    // against clauses that never changed.
-    expect(TEXT).not.toContain("blocks-send");
+    // So that resolving a marker does not invalidate signatures taken against clauses that
+    // never changed.
+    expect(TEXT).not.toContain("needs-review");
     expect(TEXT).not.toContain("No Indian legal counsel");
   });
 });
