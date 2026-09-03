@@ -403,6 +403,26 @@ describe("documents", () => {
     expect(state.completedSteps).toContain(3);
   });
 
+  /* A proprietor has no registration certificate either, so the row that asked for "proof the
+     business exists" was asking for a document nobody holds. */
+  it("does not ask a proprietorship for entity proof", async () => {
+    await expectState(
+      api.submitDetails(HANDLE, {
+        ...VALID_DETAILS,
+        entityType: "proprietorship",
+        pan: "AAAPM1234A",
+        cin: "",
+      }),
+    );
+    for (const docType of ["pan_card", "address_proof", "signatory_id"] as const) {
+      await expectState(
+        api.uploadDocument(HANDLE, { docType, fileName: `${docType}.pdf`, file: pdf() }),
+      );
+    }
+    const state = await expectState(api.submitKyc(HANDLE));
+    expect(state.completedSteps).toContain(3);
+  });
+
   it("stops accepting uploads once step 3 is submitted", async () => {
     await throughKyc();
     const error = await expectError(

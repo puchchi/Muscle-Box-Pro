@@ -35,7 +35,7 @@ import StepOperations from "./steps/StepOperations";
 import StepReviewSign from "./steps/StepReviewSign";
 import StepInstalment from "./steps/StepInstalment";
 import StepDone from "./steps/StepDone";
-import { COLUMN, PAGE } from "./shell";
+import { BODY_TEXT, COLUMN, HINT_TEXT, PAGE } from "./shell";
 import type { FranchiseStepViewProps } from "./types";
 
 /**
@@ -250,7 +250,7 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
                   {phaseCopy.heading}
                 </h1>
                 {phaseCopy.blurb && (
-                  <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">
+                  <p className={`${BODY_TEXT} mt-1.5`}>
                     {phaseCopy.blurb}
                   </p>
                 )}
@@ -267,7 +267,7 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
                   >
                     {meta.title}
                   </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+                  <p className={`${BODY_TEXT} mt-1`}>
                     {meta.blurb}
                   </p>
                 </div>
@@ -500,7 +500,7 @@ function ReviewingBanner({
         <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground mb-0.5">{title}</p>
-          <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+          <p className={HINT_TEXT}>{body}</p>
         </div>
       </div>
       <Button
@@ -586,7 +586,7 @@ function HandleProblem({ error }: { error: FranchiseOnboardingError }) {
             <AlertCircle className="w-5 h-5 text-amber-700" aria-hidden="true" />
           </div>
           <h1 className="text-xl font-semibold tracking-tight text-foreground mb-2">{title}</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-6">{body}</p>
+          <p className={`${BODY_TEXT} mb-6`}>{body}</p>
           {cta && (
             /* `asChild`, so this is one anchor rather than a button inside an anchor. This is
                the only screen a franchisee with a dead link ever sees. */

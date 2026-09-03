@@ -38,6 +38,7 @@ import {
 } from "../formKit";
 import { useFranchiseDraftAutosave } from "../useFranchiseDraftAutosave";
 import { useBackgroundPoll } from "../useBackgroundPoll";
+import { BODY_TEXT, HINT_TEXT } from "../shell";
 import type { FranchiseStepViewProps } from "../types";
 
 /**
@@ -203,14 +204,14 @@ function InstructionsPanel({
         <p className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
           {expectedPaise !== null ? formatInr(expectedPaise / 100) : "—"}
         </p>
-        <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">
+        <p className={`${BODY_TEXT} mt-1.5`}>
           By NEFT, RTGS or IMPS. Not a card payment.
         </p>
       </div>
 
       <div className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3">
         <CopyRow label="Payment reference" value={reference} testId="payment-reference" />
-        <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+        <p className={`${HINT_TEXT} mt-2`}>
           Put this in the narration or remarks field. Without it, a transfer can take days to match
           to you.
         </p>
@@ -227,7 +228,7 @@ function InstructionsPanel({
         <CopyRow label="Bank" value={bankAccount.bankName} testId="bank-name" />
       </div>
 
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <p className={HINT_TEXT}>
         We never change these details by email or over the phone. If anyone asks you to send this
         money anywhere else, it is not us.
       </p>
@@ -404,10 +405,14 @@ function ClaimForm({
             }
             onRemove={() => (proof ? actions.removeDocument(proof.docId) : Promise.resolve(false))}
           />
+          <p className={HINT_TEXT}>
+            We check this against our statement, usually within a working day. Nothing else waits on
+            it.
+          </p>
         </Section>
 
         <SubmitBar
-          nextHint="We check this against our bank statement, usually within a working day. Nothing else waits on it."
+          nextHint="Then we check it against our statement."
           draftStatus={draft.status}
           isSubmitting={isSubmitting}
           label="I've made the transfer"
@@ -471,7 +476,7 @@ function ProofUpload({
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground leading-relaxed">
+      <p className={BODY_TEXT}>
         A screenshot or PDF of the transfer, if you have one to hand.
       </p>
       {message && (
@@ -507,7 +512,7 @@ function ProofUpload({
         </Button>
         {fileName && (
           <>
-            <p className="text-xs text-muted-foreground truncate" data-testid="payment-proof-name">
+            <p className={`${HINT_TEXT} truncate`} data-testid="payment-proof-name">
               {fileName}
               {sizeBytes !== null ? ` · ${Math.max(1, Math.round(sizeBytes / 1024))} KB` : ""}
             </p>
@@ -566,12 +571,12 @@ function ClaimedPanel({
           </p>
         </div>
       </div>
-      <p className="text-xs text-amber-900 leading-relaxed">
+      <p className="text-[13px] text-amber-900 leading-relaxed">
         {watching
           ? `This page updates on its own when it is confirmed, and we email ${email || "you"} either way.`
           : `We've stopped checking on this page. Reload it to look again, or leave it: we email ${email || "you"} when it is confirmed.`}
       </p>
-      <p className="text-xs text-amber-900 leading-relaxed">
+      <p className="text-[13px] text-amber-900 leading-relaxed">
         Nothing is on hold while we check. Your portal account can be set up now.
       </p>
     </section>
@@ -642,7 +647,7 @@ function VerifiedPanel({
           <h3 className="text-base font-semibold text-foreground">
             {receivedPaise !== null ? formatInr(receivedPaise / 100) : "Your transfer"} received
           </h3>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+          <p className={`${BODY_TEXT} mt-1`}>
             Confirmed against our statement on {formatIstDate(verifiedAt)}. Procurement can start.
           </p>
         </div>

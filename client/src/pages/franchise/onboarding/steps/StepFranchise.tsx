@@ -6,6 +6,7 @@ import { Building2, Coins, Info, Megaphone, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MACHINE_RIGHTS, formatInr, franchiseTier } from "@shared/franchise/program";
 import TerritoryCutNotice from "../TerritoryCutNotice";
+import { BODY_TEXT, HINT_TEXT } from "../shell";
 import type { FranchiseStepViewProps } from "../types";
 
 /**
@@ -66,7 +67,7 @@ export default function StepFranchise({
         <p className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
           {formatInr(investmentInr)}
         </p>
-        <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">
+        <p className={`${BODY_TEXT} mt-1.5`}>
           For {terms.machineAllocation} machines and the right to develop{" "}
           {state.approval?.outcome === "approved" ? state.approval.territory : tier.marketRights.toLowerCase()}.
         </p>
@@ -98,7 +99,7 @@ export default function StepFranchise({
         ) : (
           <Pending what="the instalment schedule" />
         )}
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className={HINT_TEXT}>
           The first instalment is a bank transfer, and it comes after you have signed.
         </p>
       </Block>
@@ -165,7 +166,7 @@ export default function StepFranchise({
             </li>
           ))}
         </ul>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className={HINT_TEXT}>
           The machines stay ours. What you get is the right to operate them in your territory.
         </p>
       </Block>
@@ -192,7 +193,7 @@ export default function StepFranchise({
               before the term sheet was issued, which is what makes "you were shown the splits"
               a fact on the record rather than an assumption. */}
           <div className="flex items-center justify-between gap-4">
-            <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+            <p className={`${HINT_TEXT} flex items-start gap-1.5`}>
               <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
               This is not the signature. That comes with the agreement itself.
             </p>
@@ -240,7 +241,7 @@ function Split({ heading, body }: { heading: string; body: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3">
       <p className="text-sm font-semibold text-foreground">{heading}</p>
-      <p className="text-xs text-muted-foreground leading-relaxed mt-1">{body}</p>
+      <p className={`${HINT_TEXT} mt-1`}>{body}</p>
     </div>
   );
 }

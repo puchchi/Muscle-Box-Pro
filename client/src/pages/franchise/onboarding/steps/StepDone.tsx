@@ -8,6 +8,7 @@ import { franchisePasswordSchema } from "@shared/franchise/onboarding/schema";
 import { formatInr, franchiseTier } from "@shared/franchise/program";
 import type { FranchiseOnboardingState } from "@shared/franchise/onboarding/types";
 import { formatIstDate } from "../../../gym/istDates";
+import { HINT_TEXT } from "../shell";
 import type { FranchiseStepViewProps } from "../types";
 
 /**
@@ -242,7 +243,7 @@ export default function StepDone({
             );
           })}
         </ol>
-        <p className="text-xs text-gray-600 mt-4 pt-3 border-t border-gray-100">
+        <p className={`${HINT_TEXT} mt-4 pt-3 border-t border-gray-100`}>
           This link stays live. Come back any time to see where things stand.
         </p>
       </section>

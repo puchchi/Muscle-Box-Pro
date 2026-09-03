@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Clock, ExternalLink } from "lucide-react";
 import { franchiseRoughTotalMinutes } from "@shared/franchise/onboarding/steps";
+import { BODY_TEXT } from "./shell";
 
 /**
  * The cold open, and on the first pass through step 1 the page's own header.
@@ -63,7 +64,7 @@ export default function FranchiseOnboardingIntro({
       >
         Let's get {franchiseDisplayName} started
       </h1>
-      <p className="text-sm text-muted-foreground leading-relaxed">
+      <p className={BODY_TEXT}>
         Four stages, and about {franchiseRoughTotalMinutes()} minutes of your work in total. Nothing
         is committed until you sign the agreement in stage three, so everything before that is an
         application.

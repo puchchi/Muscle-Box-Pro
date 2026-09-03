@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { franchiseTerritoryLabel } from "@shared/franchise/onboarding/schema";
 import { formatIstDate } from "../../../gym/istDates";
 import TerritoryCutNotice from "../TerritoryCutNotice";
+import { BODY_TEXT, HINT_TEXT } from "../shell";
 import type { FranchiseStepViewProps } from "../types";
 
 /**
@@ -46,7 +47,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         title="With us for review"
         testId="approval-waiting"
       >
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className={BODY_TEXT}>
           Your application arrived
           {state.timestamps.kycSubmittedAt
             ? ` on ${formatIstDate(state.timestamps.kycSubmittedAt)}`
@@ -67,7 +68,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         title="Territory approved"
         testId="approval-approved"
       >
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className={BODY_TEXT}>
           Approved on {formatIstDate(approval.decidedAt)}. This is the territory your agreement is
           written against.
         </p>
@@ -81,7 +82,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
             Granted
           </p>
           <p className="text-sm font-semibold text-foreground">{approval.territory}</p>
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+          <p className={`${BODY_TEXT} whitespace-pre-line`}>
             {approval.territoryBoundary}
           </p>
         </div>
@@ -113,7 +114,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         title="We need a bit more"
         testId="approval-on-hold"
       >
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className={BODY_TEXT}>
           {approval.contactName} needs the following before we can decide. Your earlier steps are
           open again.
         </p>
@@ -160,7 +161,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className={HINT_TEXT}>
           Submit your documents again when you have dealt with these, and the review restarts.
         </p>
       </Card>
@@ -174,11 +175,11 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
       title="We're not able to take this forward"
       testId="approval-declined"
     >
-      <p className="text-sm text-muted-foreground leading-relaxed">
+      <p className={BODY_TEXT}>
         We reviewed your application on {formatIstDate(approval.decidedAt)} and cannot offer this
         territory. That is our decision on this application rather than a judgment about you.
       </p>
-      <p className="text-sm text-muted-foreground leading-relaxed">
+      <p className={BODY_TEXT}>
         Territories open up as the network grows. If you would like us to come back to you when this
         one does, reply to the email that brought you here and say so.
       </p>

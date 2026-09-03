@@ -18,6 +18,7 @@ import type {
   UploadedDocument,
 } from "@shared/franchise/onboarding/types";
 import { Section, SubmitBar } from "../formKit";
+import { BODY_TEXT, HINT_TEXT } from "../shell";
 import type { FranchiseStepViewProps } from "../types";
 
 /**
@@ -40,8 +41,9 @@ import type { FranchiseStepViewProps } from "../types";
  * name, its size and a tick.
  *
  * The list comes from `requiredDocumentTypes`, which is what the server checks too, so this cannot
- * ask for a document the submit does not want or miss one it does. An unregistered applicant is
- * asked for three rather than four, because there is no incorporation certificate to produce.
+ * ask for a document the submit does not want or miss one it does. A proprietorship or an
+ * unregistered applicant is asked for three rather than four, because there is no incorporation
+ * certificate to produce.
  * Everything shown is required: there is no optional row, and so no row a franchisee has to decide
  * about.
  */
@@ -52,10 +54,10 @@ type DocumentSpec = {
   description: string;
 };
 
+/** Only reached for the three entity types `requiredDocumentTypes` asks entity proof of. */
 function entityProofLabel(entityType: EntityType): string {
   if (entityType === "llp") return "LLP agreement";
   if (entityType === "partnership") return "Partnership deed";
-  if (entityType === "proprietorship") return "Proof the business exists";
   return "Certificate of incorporation";
 }
 
@@ -112,7 +114,7 @@ export default function StepDocuments({
   return (
     <div className="space-y-6">
       <Section title="What we need">
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className={HINT_TEXT}>
           PDF, JPEG or PNG, up to {formatBytes(MAX_DOCUMENT_BYTES)} each. Once you submit, replacing
           one means asking us.
         </p>
@@ -145,7 +147,7 @@ export default function StepDocuments({
           data-testid="documents-frozen"
         >
           <Check className="w-4 h-4 text-primary-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm text-muted-foreground leading-relaxed">{frozenReason}</p>
+          <p className={BODY_TEXT}>{frozenReason}</p>
         </div>
       ) : (
         !readOnly && (
@@ -157,7 +159,7 @@ export default function StepDocuments({
             nextHint={
               missing.length > 0
                 ? `${missing.length} of ${requiredCount} still to come.`
-                : "We'll review your application and confirm the territory. Usually a few working days."
+                : "We confirm the territory in a few working days."
             }
             isSubmitting={isSubmitting}
             disabled={missing.length > 0}
@@ -232,7 +234,7 @@ function DocumentRow({
       }`}
       data-testid={`document-${spec.docType}`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex flex-wrap items-start gap-3">
         <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
           {held ? (
             <Check className="w-4 h-4 text-primary-ink" aria-hidden="true" />
@@ -244,11 +246,11 @@ function DocumentRow({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground">{spec.label}</p>
           {held ? (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            <p className={`${HINT_TEXT} mt-0.5 truncate`}>
               {held.fileName} · {formatBytes(held.sizeBytes)}
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+            <p className={`${HINT_TEXT} mt-0.5`}>
               {spec.description}
             </p>
           )}
@@ -261,7 +263,7 @@ function DocumentRow({
         </div>
 
         {!readOnly && (
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0 w-full justify-end sm:w-auto">
             {/* The input is hidden and driven by the button, because a bare file input cannot
                 be styled to 44px reliably across browsers. `aria-label` on it rather than a
                 visible label: the row's own heading is what names it, and `id`-based labelling

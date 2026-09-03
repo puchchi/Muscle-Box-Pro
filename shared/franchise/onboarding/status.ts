@@ -243,9 +243,13 @@ export const FIRST_STEP_REQUIRING_APPROVAL: FranchiseOnboardingStep = 5;
  */
 export function requiredDocumentTypes(entityType: EntityType): FranchiseDocumentType[] {
   const required: FranchiseDocumentType[] = ["pan_card", "address_proof", "signatory_id"];
-  // An unregistered franchisee has no incorporation certificate, LLP agreement or partnership
-  // deed to produce. Requiring one would make the answer `unregistered` exists for unusable.
-  if (entityType !== "unregistered") required.splice(1, 0, "entity_proof");
+  // A proprietorship or an unregistered franchisee has no incorporation certificate, LLP agreement
+  // or partnership deed to produce. Requiring one would make the answer `unregistered` exists for
+  // unusable, and asked a proprietor for "proof the business exists", which is not one document
+  // anybody holds.
+  if (entityType !== "unregistered" && entityType !== "proprietorship") {
+    required.splice(1, 0, "entity_proof");
+  }
   return required;
 }
 

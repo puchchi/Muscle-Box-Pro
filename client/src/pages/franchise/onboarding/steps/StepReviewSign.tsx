@@ -15,6 +15,7 @@ import { canIssueTermSheet } from "@shared/franchise/termsheet/issued";
 import type { EsignSignType } from "@shared/franchise/onboarding/types";
 import { formatIstDate, formatIstDateTime } from "../../../gym/istDates";
 import { useBackgroundPoll } from "../useBackgroundPoll";
+import { HINT_TEXT } from "../shell";
 import type { FranchiseStepViewProps } from "../types";
 
 /**
@@ -245,7 +246,7 @@ function PreparingNotice() {
 function ValidityLine({ validUntil }: { validUntil: string }) {
   return (
     <p
-      className="text-xs text-gray-700 leading-relaxed flex items-start gap-2 sm:max-w-md"
+      className="text-[13px] text-gray-700 leading-relaxed flex items-start gap-2 sm:max-w-md"
       data-testid="termsheet-validity"
     >
       <Clock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -323,7 +324,7 @@ function SignPanel({
             {signatoryDesignation ? `, ${signatoryDesignation}` : ""}
           </p>
           {signatoryFor && (
-            <p className="text-xs text-muted-foreground mt-1">{signatoryFor}</p>
+            <p className={`${HINT_TEXT} mt-1`}>{signatoryFor}</p>
           )}
         </div>
         <Button
@@ -453,13 +454,13 @@ function WaitingPanel({
       </div>
 
       {expiresAt && (
-        <p className="text-xs text-amber-900 leading-relaxed">
+        <p className="text-[13px] text-amber-900 leading-relaxed">
           Signing stays open until {formatIstDateTime(expiresAt)}.
         </p>
       )}
 
       {!watching && (
-        <p className="text-xs text-amber-900 leading-relaxed" data-testid="esign-poll-stopped">
+        <p className="text-[13px] text-amber-900 leading-relaxed" data-testid="esign-poll-stopped">
           We've stopped checking on this page to save your battery. Reload it to check again, or
           just leave it. We'll email you as soon as it is signed.
         </p>
@@ -492,7 +493,7 @@ function WaitingPanel({
             </>
           )}
         </Button>
-        <p className="text-xs text-amber-900 leading-relaxed">
+        <p className="text-[13px] text-amber-900 leading-relaxed">
           This reopens the same request. The page is for the person signing, so please don't
           forward it.
         </p>
@@ -529,7 +530,7 @@ function SignedSummary({
           something needs to, email us and we'll issue an amendment.
         </p>
         {auditTrailStored && (
-          <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+          <p className={`${HINT_TEXT} mt-2`}>
             We keep the signing record, showing who signed and when, with your document.
           </p>
         )}

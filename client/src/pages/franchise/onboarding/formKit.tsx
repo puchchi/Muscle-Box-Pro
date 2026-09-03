@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { scrollIntoViewGently } from "@/lib/motion";
 import DraftIndicator from "../../onboarding/DraftIndicator";
 import type { DraftStatus } from "../../onboarding/useDraftAutosave";
+import { HINT_TEXT } from "./shell";
 
 /**
  * The form parts, shared by the five franchise steps that submit a record.
@@ -85,6 +86,10 @@ const areaClass =
  * `h3` rather than `h2`: the step's own title is the `h2` the shell renders above these, and a
  * section of one form outranking the form is a heading order a screen reader reads as a new
  * subject.
+ *
+ * `text-base` rather than `text-sm`, which is the size the field labels are: at `text-sm` this
+ * title and the first label under it were the same size and the same weight, and the label's
+ * darker grey made it the louder of the two. A card title has to outrank the fields it holds.
  */
 export function Section({
   title,
@@ -96,7 +101,7 @@ export function Section({
   return (
     <fieldset className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
       <legend className="float-left w-full mb-5">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
       </legend>
       <div className="clear-both space-y-5">{children}</div>
     </fieldset>
@@ -233,7 +238,7 @@ export function Field<T extends FieldValues>({
             )}
           </div>
           <FormMessage className={ERROR_TEXT} />
-          {description && <FormDescription className="text-xs">{description}</FormDescription>}
+          {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
         </FormItem>
       )}
     />
@@ -269,7 +274,7 @@ export function AreaField<T extends FieldValues>({
             />
           </FormControl>
           <FormMessage className={ERROR_TEXT} />
-          {description && <FormDescription className="text-xs">{description}</FormDescription>}
+          {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
         </FormItem>
       )}
     />
@@ -325,7 +330,7 @@ export function CheckField<T extends FieldValues>({
             <span className="text-gray-700 text-sm font-semibold">{label}</span>
           </label>
           <FormMessage className={ERROR_TEXT} />
-          {description && <FormDescription className="text-xs">{description}</FormDescription>}
+          {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
         </FormItem>
       )}
     />
@@ -396,7 +401,7 @@ export function SelectField<T extends FieldValues>({
             />
           </div>
           <FormMessage className={ERROR_TEXT} />
-          {description && <FormDescription className="text-xs">{description}</FormDescription>}
+          {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
         </FormItem>
       )}
     />
@@ -527,7 +532,7 @@ export function ComboField<T extends FieldValues>({
                     <CommandInput placeholder={searchPlaceholder} className="text-base sm:text-sm" />
                   )}
                   <CommandList className="max-h-64">
-                    <CommandEmpty className="px-3 py-6 text-xs text-muted-foreground text-left">
+                    <CommandEmpty className={`${HINT_TEXT} px-3 py-6 text-left`}>
                       Nothing matches that.
                     </CommandEmpty>
                     <CommandGroup className="p-1.5">
@@ -554,7 +559,7 @@ export function ComboField<T extends FieldValues>({
               </PopoverContent>
             </Popover>
             <FormMessage className={ERROR_TEXT} />
-            {description && <FormDescription className="text-xs">{description}</FormDescription>}
+            {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
           </FormItem>
         );
       }}
@@ -596,7 +601,7 @@ export function CardChoiceField<T extends FieldValues>({
           <span id={labelId} className="text-gray-700 text-sm font-semibold block">
             {label}
           </span>
-          {description && <FormDescription className="text-xs">{description}</FormDescription>}
+          {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
 
           <div
             role="radiogroup"
@@ -635,9 +640,7 @@ export function CardChoiceField<T extends FieldValues>({
                   <span className="text-sm font-semibold text-primary-ink tabular-nums pl-[26px]">
                     {option.headline}
                   </span>
-                  <span className="text-xs text-muted-foreground leading-relaxed pl-[26px]">
-                    {option.body}
-                  </span>
+                  <span className={`${HINT_TEXT} pl-[26px]`}>{option.body}</span>
                 </label>
               );
             })}
@@ -723,7 +726,7 @@ export function CheckListField<T extends FieldValues>({
             {/* Above the list, not under it: this one says how to use the control rather than
                 what the control means, and an instruction below a scrolling list of 75 districts
                 is an instruction nobody reaches. */}
-            {description && <FormDescription className="text-xs">{description}</FormDescription>}
+            {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
 
             {selected.length > 0 && (
               <ul className="flex flex-wrap gap-1.5" data-testid={`chips-${name}`}>
@@ -748,7 +751,7 @@ export function CheckListField<T extends FieldValues>({
             {options.length === 0 ? (
               // A box the size of the control that is coming, rather than a line of grey text
               // where a control should be. The gap is the answer to a question above it.
-              <p className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3.5 py-4 text-xs text-muted-foreground">
+              <p className={`${HINT_TEXT} rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3.5 py-4`}>
                 {emptyHint}
               </p>
             ) : (
@@ -781,7 +784,7 @@ export function CheckListField<T extends FieldValues>({
                   data-testid={`list-${name}`}
                 >
                   {shown.length === 0 ? (
-                    <p className="px-3 py-3 text-xs text-muted-foreground">
+                    <p className={`${HINT_TEXT} px-3 py-3`}>
                       Nothing matches “{query.trim()}”.
                     </p>
                   ) : (
@@ -952,7 +955,7 @@ export function CodeListField<T extends FieldValues>({
               </p>
             )}
             <FormMessage className={ERROR_TEXT} />
-            {description && <FormDescription className="text-xs">{description}</FormDescription>}
+            {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
           </FormItem>
         );
       }}
@@ -1086,6 +1089,21 @@ function SummaryMessage({ label, message }: { label: string; message?: string })
  * shell's own `PAGE` padding cancelled, so the two have to stay in step. At `COLUMN`'s measure it
  * is a reading column inside a wider viewport, where the same `border-t` reads as a rule drawn
  * across the middle of the page, so from `sm:` up it lifts off the bottom and closes into a card.
+ *
+ * **One row, and opaque.** Both are corrections. The hint used to sit on its own line above a row
+ * holding the draft indicator and the button, and since `idle` renders no indicator at all, the
+ * common case was a 106px box with a sentence in one corner and the button in the diagonally
+ * opposite one. It is now a text column beside the button, which is 73px and reads as one object.
+ * The background was `/95` with a `backdrop-blur`: over the white cards this floats on, that ghosted
+ * whatever it covered through itself, and a field showing faintly through the chrome looks like a
+ * page that failed to paint rather than like a bar with content behind it. Keep it opaque.
+ *
+ * A row on a phone too, which is worth a note because stacking it and giving the button the full
+ * width is the more usual answer and was tried. Measured at 390px, the button is 44px and two lines
+ * of hint are 42px, so the row costs nothing until a hint runs to three: 73px against a stacked
+ * 104px on every step. That makes the length of `nextHint` a layout constraint, and a tight one.
+ * Beside the widest of these buttons a hint has about 26 characters to the line at 390px, so keep
+ * it under about 48. Anything longer belongs in the step, where it has the full column.
  */
 export function SubmitBar({
   nextHint,
@@ -1104,22 +1122,28 @@ export function SubmitBar({
   disabled?: boolean;
   onClick?: () => void;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useActionBarClearance(ref);
+
   return (
     <div
+      ref={ref}
       className={[
         "sticky bottom-0 -mx-5 px-5 pt-3 pb-4 border-t border-gray-200",
-        "sm:bottom-4 sm:mx-0 sm:px-5 sm:py-4 sm:rounded-xl sm:border sm:shadow-sm",
-        "bg-gray-50/95 sm:bg-white/95 backdrop-blur space-y-2",
+        "sm:bottom-4 sm:mx-0 sm:px-5 sm:py-3.5 sm:rounded-xl sm:border sm:shadow-sm",
+        "bg-gray-50 sm:bg-white",
       ].join(" ")}
     >
-      <p className="text-xs text-muted-foreground leading-relaxed">{nextHint}</p>
       <div className="flex items-center justify-between gap-4">
-        {draftStatus ? <DraftIndicator status={draftStatus} /> : <span />}
+        <div className="min-w-0 space-y-1">
+          <p className={HINT_TEXT}>{nextHint}</p>
+          {draftStatus ? <DraftIndicator status={draftStatus} /> : null}
+        </div>
         <Button
           type={onClick ? "button" : "submit"}
           onClick={onClick}
           disabled={isSubmitting || disabled}
-          className="min-h-11 px-6 rounded-lg font-semibold text-sm cursor-pointer"
+          className="min-h-11 px-6 rounded-lg font-semibold text-sm cursor-pointer flex-shrink-0"
           data-testid="button-continue"
         >
           {isSubmitting ? busyLabel : label}
@@ -1127,6 +1151,37 @@ export function SubmitBar({
       </div>
     </div>
   );
+}
+
+/**
+ * Keeps the document's `scroll-padding-bottom` equal to the height of this bar.
+ *
+ * Focusing a control scrolls it only just into view, which lands it flush against the bottom of the
+ * viewport and therefore underneath this bar. Measured before this existed: focusing the State and
+ * District controls put them 76% and 64% under it, and `ErrorSummary`'s `setFocus` is the path that
+ * does it, so telling somebody which field is wrong scrolled them to a field they could not see.
+ * `scroll-padding` on the scroll container is the only thing that fixes it, and it has to be a
+ * measured value because the height depends on how long `nextHint` runs.
+ *
+ * The extra 16px is `sm:bottom-4`, the gap the bar floats above the viewport edge from `sm:` up.
+ */
+function useActionBarClearance(ref: React.RefObject<HTMLElement | null>): void {
+  useEffect(() => {
+    const element = ref.current;
+    // Absent in jsdom, where there is no layout to clear.
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    // `getBoundingClientRect` rather than `contentRect`, which is the content box and leaves out
+    // the bar's own padding — most of what there is to clear.
+    const observer = new ResizeObserver(() => {
+      root.style.scrollPaddingBottom = `${Math.round(element.getBoundingClientRect().height) + 16}px`;
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      root.style.scrollPaddingBottom = "";
+    };
+  }, [ref]);
 }
 
 /**

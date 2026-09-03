@@ -3,8 +3,6 @@
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Info } from "lucide-react";
-
 import { INDIA_PINCODE, INDIA_STATE_NAMES, districtsOf } from "@shared/geo/india";
 import { FRANCHISE_TIERS, formatLakh } from "@shared/franchise/program";
 import {
@@ -206,17 +204,6 @@ export default function StepTerritory({
             disabled={readOnly}
           />
         </Section>
-
-        {/* Said here rather than at step 4, because it is the sentence that stops someone
-            reading their own words back as a promise. The approval screen repeats it when it
-            has an answer. */}
-        <div className="flex items-start gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-3.5">
-          <Info className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            This is a request, not a grant. We check it against what is already allocated, then
-            confirm the exact boundary with you at approval.
-          </p>
-        </div>
 
         {!readOnly && (
           <SubmitBar
