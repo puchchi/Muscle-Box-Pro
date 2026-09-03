@@ -6,7 +6,7 @@
  * Regenerate with `npm run gen:agreement`; that script's header explains why the text is
  * derived rather than typed, and what is hand-authored alongside it.
  *
- * Source at generation: 66064 bytes, 74 sections.
+ * Source at generation: 67561 bytes, 74 sections.
  *
  * Editing this file by hand defeats the point of generating it — the next run silently
  * reverts the edit, and until it does, the signed document and the reviewed document differ.
@@ -1026,14 +1026,14 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
         ],
       },
       { kind: "paragraph", text: "MuscleBoxPro may take back the machines as part of the approved exit process." },
-      { kind: "paragraph", text: "See also Section 58 (Capital Protection After 24 Months) for the treatment of unrecovered capital where exit or termination occurs after the franchisee has completed 24 months from the Operational Start Date." },
+      { kind: "paragraph", text: "A franchisee that voluntarily exits under this Section 44 does not qualify for the protection in Section 58 (Capital Protection After 24 Months), which is reserved for terminations and non-renewals that are not the franchisee's own choice or fault. See Section 58 for the specific qualifying cases." },
     ],
   },
   {
     number: "45",
     heading: "Termination",
     blocks: [
-      { kind: "paragraph", text: "MuscleBoxPro may terminate the franchise in accordance with the definitive agreement for reasons including:" },
+      { kind: "paragraph", text: "MuscleBoxPro may terminate the franchise for reasons including:" },
       {
         kind: "bullets",
         items: [
@@ -1258,7 +1258,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
       { kind: "paragraph", text: "Technical Support: MuscleBoxPro" },
       { kind: "paragraph", text: "Franchise Term: 3 years from the Operational Start Date, renewable at no extra cost (Section 68)" },
       { kind: "paragraph", text: "Machine Insurance: Franchisee, from delivery onward (Section 61)" },
-      { kind: "paragraph", text: "Capital Protection After 24 Months: Machine transfer or cash refund, at MuscleBoxPro's discretion (Section 58)" },
+      { kind: "paragraph", text: "Capital Protection After 24 Months: Machine transfer or cash refund, at MuscleBoxPro's discretion, for terminations and non-renewals that are not the franchisee's fault (Section 58)" },
       { kind: "paragraph", text: "Expansion: Available subject to approval and performance" },
     ],
   },
@@ -1282,7 +1282,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
       { kind: "paragraph", text: "Technical Support: MuscleBoxPro" },
       { kind: "paragraph", text: "Franchise Term: 3 years from the Operational Start Date, renewable at no extra cost (Section 68)" },
       { kind: "paragraph", text: "Machine Insurance: Franchisee, from delivery onward (Section 61)" },
-      { kind: "paragraph", text: "Capital Protection After 24 Months: Machine transfer or cash refund, at MuscleBoxPro's discretion (Section 58)" },
+      { kind: "paragraph", text: "Capital Protection After 24 Months: Machine transfer or cash refund, at MuscleBoxPro's discretion, for terminations and non-renewals that are not the franchisee's fault (Section 58)" },
       { kind: "paragraph", text: "Expansion: Additional machines and future expansion subject to approval and performance" },
     ],
   },
@@ -1375,15 +1375,26 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
     number: "58",
     heading: "Capital Protection After 24 Months",
     blocks: [
+      { kind: "paragraph", text: "This Section 58 (including the Buy-In Option below) protects a franchisee whose franchise ends through no fault of its own. It does not apply, regardless of how much time has elapsed, where:" },
+      {
+        kind: "bullets",
+        items: [
+          "MuscleBoxPro terminates the franchise for any ground listed in Section 45 (Termination), including material breach, fraud, misuse of Machines, unauthorized technology use, unauthorized product substitution, brand misuse, non-payment, serious operational non-compliance, failure to meet minimum requirements, unauthorized transfer, material misrepresentation, or conduct materially damaging to the MuscleBoxPro brand;",
+          "MuscleBoxPro declines to renew the franchise term under Section 68 because the franchisee failed to meet the performance, compliance, or payment requirements under Sections 31 and 49; or",
+          "the franchisee voluntarily exits the franchise under Section 44 for its own reasons.",
+        ],
+      },
+      { kind: "paragraph", text: "In each of these cases, the Machines remain MuscleBoxPro's property, and no transfer, refund, or buy-in is available under this Section 58." },
       { kind: "paragraph", text: "This Section 58 applies where, after the franchisee has completed 24 months from the Operational Start Date, and before the franchisee has reached the applicable Capital Recovery Threshold under Section 17 or Section 69:" },
       {
         kind: "bullets",
         items: [
-          "the franchise is terminated for any reason, whether by MuscleBoxPro, by the franchisee, or by mutual agreement; or",
-          "the franchise term expires under Section 68 (Franchise Term and Renewal) without being renewed.",
+          "MuscleBoxPro terminates the franchise for its own business reasons, other than any ground listed in Section 45; or",
+          "MuscleBoxPro declines to renew the franchise term under Section 68 for reasons unrelated to the franchisee's performance, compliance, or payment; or",
+          "the Parties end the franchise by mutual written agreement that expressly states this Section 58 applies.",
         ],
       },
-      { kind: "paragraph", text: "In either case, MuscleBoxPro will notify the franchisee of its election between the following two options within 30 days of the triggering event, and will, at its sole discretion, elect one of them:" },
+      { kind: "paragraph", text: "In any of these qualifying cases, MuscleBoxPro will notify the franchisee of its election between the following two options within 30 days of the triggering event, and will, at its sole discretion, elect one of them:" },
       {
         kind: "bullets",
         items: [
@@ -1401,8 +1412,8 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
         ],
       },
       { kind: "paragraph", text: "Where Option 2 applies, the franchise ends in the ordinary course and the Machines are returned to MuscleBoxPro in accordance with Section 44 (Franchise Exit)." },
-      { kind: "subheading", text: "Buy-In Option for Termination Within the First 24 Months", level: 2 },
-      { kind: "paragraph", text: "If the franchise is terminated within the first 24 months from the Operational Start Date, this Section 58 does not apply, and neither Machine Transfer nor Cash Refund is available. Instead, in lieu of forfeiting its investment outright, the franchisee may propose a replacement party (an \"Incoming Party\") to buy into the franchise in its place:" },
+      { kind: "subheading", text: "Buy-In Option for a Qualifying Termination Within the First 24 Months", level: 2 },
+      { kind: "paragraph", text: "If a termination that qualifies under this Section 58 (i.e., one within the categories above, not one of the excluded fault-based cases) occurs within the first 24 months from the Operational Start Date, Options 1 and 2 above are not available. Instead, in lieu of forfeiting its investment outright, the franchisee may propose a replacement party (an \"Incoming Party\") to buy into the franchise in its place:" },
       {
         kind: "bullets",
         items: [
@@ -1413,7 +1424,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
           "If no Incoming Party is approved within 60 days of the termination taking effect, the Machines are returned to MuscleBoxPro in accordance with Section 44 (Franchise Exit), and MuscleBoxPro will not refund any unrecovered capital.",
         ],
       },
-      { kind: "paragraph", text: "This Section 58, including the Buy-In Option, does not apply where termination arises from fraud, serious misuse of Machines, unauthorized technology use, unauthorized transfer, or conduct materially damaging to the MuscleBoxPro brand; in such cases, the Machines remain MuscleBoxPro's property, and no transfer, refund, or buy-in is available, regardless of how much time has elapsed." },
+      { kind: "paragraph", text: "A termination within the first 24 months that falls within any of the fault-based exclusions at the start of this Section 58 (Section 45 grounds, performance-based non-renewal, or a voluntary exit under Section 44) does not qualify for the Buy-In Option either; in such cases, the Machines remain MuscleBoxPro's property, and no transfer, refund, or buy-in is available, regardless of how much time has elapsed." },
     ],
   },
   {

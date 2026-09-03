@@ -73,7 +73,7 @@ const VALID_DETAILS: FranchiseDetails = {
 const VALID_TERRITORY: TerritoryProposal = {
   tier: "territory",
   proposedState: "Karnataka",
-  proposedDistricts: ["Bengaluru (Bangalore) Urban", "Ramanagara"],
+  proposedDistricts: ["Bengaluru (Bangalore) Urban"],
   proposedPincodes: [],
   proposedBoundary: "",
   existingRelationships: "",
@@ -584,14 +584,11 @@ describe("freeze points", () => {
   it("keeps the granted territory separate from what was proposed", async () => {
     await throughKyc();
     const state = previewApprove(HANDLE, {
-      territory: "Bengaluru (Bangalore) Urban, Karnataka",
-      territoryBoundary: "Bengaluru Urban only. Ramanagara is not included.",
+      territory: "South Bengaluru",
+      territoryBoundary: "Bengaluru Urban south of the Outer Ring Road only.",
     })!;
-    expect(state.territory.proposedDistricts).toEqual([
-      "Bengaluru (Bangalore) Urban",
-      "Ramanagara",
-    ]);
-    expect(state.approval).toMatchObject({ territory: "Bengaluru (Bangalore) Urban, Karnataka" });
+    expect(state.territory.proposedDistricts).toEqual(["Bengaluru (Bangalore) Urban"]);
+    expect(state.approval).toMatchObject({ territory: "South Bengaluru" });
   });
 
   it("freezes everything the term sheet renders once it is signed", async () => {

@@ -927,13 +927,13 @@ Upon an approved exit:
 
 MuscleBoxPro may take back the machines as part of the approved exit process.
 
-**See also Section 58 (Capital Protection After 24 Months)** for the treatment of unrecovered capital where exit or termination occurs after the franchisee has completed 24 months from the Operational Start Date.
+A franchisee that voluntarily exits under this Section 44 does not qualify for the protection in Section 58 (Capital Protection After 24 Months), which is reserved for terminations and non-renewals that are not the franchisee's own choice or fault. See Section 58 for the specific qualifying cases.
 
 ---
 
 # 45. Termination
 
-MuscleBoxPro may terminate the franchise in accordance with the definitive agreement for reasons including:
+MuscleBoxPro may terminate the franchise for reasons including:
 
 - Material breach
 - Fraud
@@ -1179,7 +1179,7 @@ The franchisee continues participating in the long-term economics of the MuscleB
 
 **Machine Insurance:** Franchisee, from delivery onward (Section 61)
 
-**Capital Protection After 24 Months:** Machine transfer or cash refund, at MuscleBoxPro's discretion (Section 58)
+**Capital Protection After 24 Months:** Machine transfer or cash refund, at MuscleBoxPro's discretion, for terminations and non-renewals that are not the franchisee's fault (Section 58)
 
 **Expansion:** Available subject to approval and performance
 
@@ -1219,7 +1219,7 @@ The franchisee continues participating in the long-term economics of the MuscleB
 
 **Machine Insurance:** Franchisee, from delivery onward (Section 61)
 
-**Capital Protection After 24 Months:** Machine transfer or cash refund, at MuscleBoxPro's discretion (Section 58)
+**Capital Protection After 24 Months:** Machine transfer or cash refund, at MuscleBoxPro's discretion, for terminations and non-renewals that are not the franchisee's fault (Section 58)
 
 **Expansion:** Additional machines and future expansion subject to approval and performance
 
@@ -1305,12 +1305,21 @@ Where any provision of Sections 57 to 72 (this Addendum) conflicts with a provis
 
 # 58. Capital Protection After 24 Months
 
-This Section 58 applies where, after the franchisee has completed 24 months from the Operational Start Date, and before the franchisee has reached the applicable Capital Recovery Threshold under Section 17 or Section 69:
+This Section 58 (including the Buy-In Option below) protects a franchisee whose franchise ends through no fault of its own. It does not apply, regardless of how much time has elapsed, where:
 
-- the franchise is terminated for any reason, whether by MuscleBoxPro, by the franchisee, or by mutual agreement; or
-- the franchise term expires under Section 68 (Franchise Term and Renewal) without being renewed.
+- MuscleBoxPro terminates the franchise for any ground listed in Section 45 (Termination), including material breach, fraud, misuse of Machines, unauthorized technology use, unauthorized product substitution, brand misuse, non-payment, serious operational non-compliance, failure to meet minimum requirements, unauthorized transfer, material misrepresentation, or conduct materially damaging to the MuscleBoxPro brand;
+- MuscleBoxPro declines to renew the franchise term under Section 68 because the franchisee failed to meet the performance, compliance, or payment requirements under Sections 31 and 49; or
+- the franchisee voluntarily exits the franchise under Section 44 for its own reasons.
 
-In either case, MuscleBoxPro will notify the franchisee of its election between the following two options within **30 days** of the triggering event, and will, at its sole discretion, elect one of them:
+In each of these cases, the Machines remain MuscleBoxPro's property, and no transfer, refund, or buy-in is available under this Section 58.
+
+**This Section 58 applies** where, after the franchisee has completed 24 months from the Operational Start Date, and before the franchisee has reached the applicable Capital Recovery Threshold under Section 17 or Section 69:
+
+- MuscleBoxPro terminates the franchise for its own business reasons, other than any ground listed in Section 45; or
+- MuscleBoxPro declines to renew the franchise term under Section 68 for reasons unrelated to the franchisee's performance, compliance, or payment; or
+- the Parties end the franchise by mutual written agreement that expressly states this Section 58 applies.
+
+In any of these qualifying cases, MuscleBoxPro will notify the franchisee of its election between the following two options within **30 days** of the triggering event, and will, at its sole discretion, elect one of them:
 
 - **Option 1, Machine Transfer:** Transfer ownership of the Machines allocated to the franchisee's Territory to the franchisee, in lieu of any cash refund of unrecovered capital; or
 - **Option 2, Cash Refund:** Refund the remaining unrecovered capital amount (i.e., the applicable Capital Recovery Threshold less cumulative Distributable Profit already received by the franchisee) directly to the franchisee, within **30 days** of that election, together with interest at **18% per annum** from the triggering event until payment.
@@ -1323,9 +1332,9 @@ Where Option 1 applies:
 
 Where Option 2 applies, the franchise ends in the ordinary course and the Machines are returned to MuscleBoxPro in accordance with Section 44 (Franchise Exit).
 
-## Buy-In Option for Termination Within the First 24 Months
+## Buy-In Option for a Qualifying Termination Within the First 24 Months
 
-If the franchise is terminated within the first 24 months from the Operational Start Date, this Section 58 does not apply, and neither Machine Transfer nor Cash Refund is available. Instead, in lieu of forfeiting its investment outright, the franchisee may propose a replacement party (an **"Incoming Party"**) to buy into the franchise in its place:
+If a termination that qualifies under this Section 58 (i.e., one within the categories above, not one of the excluded fault-based cases) occurs within the first 24 months from the Operational Start Date, Options 1 and 2 above are not available. Instead, in lieu of forfeiting its investment outright, the franchisee may propose a replacement party (an **"Incoming Party"**) to buy into the franchise in its place:
 
 - The Incoming Party would pay the outgoing franchisee an amount towards the outgoing franchisee's remaining/unrecovered investment, as commercially negotiated between the outgoing franchisee and the Incoming Party.
 - The Incoming Party would take over the franchise rights and obligations, functioning as a franchise transfer under Section 43 (Franchise Transfer).
@@ -1333,7 +1342,7 @@ If the franchise is terminated within the first 24 months from the Operational S
 - MuscleBoxPro will evaluate a complete Incoming Party proposal within **15 business days** and will not unreasonably withhold approval where the Incoming Party meets the requirements of this Section 58. **MuscleBoxPro's decision on a specific Incoming Party is final, and the franchisee cannot compel MuscleBoxPro to approve a particular Incoming Party.** This does not limit the franchisee's right to refer a dispute about whether MuscleBoxPro complied with the "will not unreasonably withhold approval" standard in this Section 58 to arbitration under Section 50, but the remedy for a proven breach of that standard is limited to damages, not an order compelling approval of any Incoming Party. MuscleBoxPro will provide written reasons if it declines a proposed Incoming Party.
 - If no Incoming Party is approved within **60 days** of the termination taking effect, the Machines are returned to MuscleBoxPro in accordance with Section 44 (Franchise Exit), and MuscleBoxPro will not refund any unrecovered capital.
 
-This Section 58, including the Buy-In Option, does not apply where termination arises from fraud, serious misuse of Machines, unauthorized technology use, unauthorized transfer, or conduct materially damaging to the MuscleBoxPro brand; in such cases, the Machines remain MuscleBoxPro's property, and no transfer, refund, or buy-in is available, regardless of how much time has elapsed.
+A termination within the first 24 months that falls within any of the fault-based exclusions at the start of this Section 58 (Section 45 grounds, performance-based non-renewal, or a voluntary exit under Section 44) does not qualify for the Buy-In Option either; in such cases, the Machines remain MuscleBoxPro's property, and no transfer, refund, or buy-in is available, regardless of how much time has elapsed.
 
 ---
 

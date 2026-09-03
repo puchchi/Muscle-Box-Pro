@@ -82,7 +82,25 @@ describe("territoryProposalSchema", () => {
     const result = territoryProposalSchema.safeParse({ ...VALID, proposedDistricts: [] });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe("Choose at least one district");
+      expect(result.error.issues[0]?.message).toBe("Choose the district you want to develop");
+    }
+  });
+
+  /*
+    The picker is single-choice, so this is the stale-payload case rather than something the form can
+    send. It is here because the rule is a commercial one and the schema is where it is stated: an
+    application asks for one district, and more than one is a decision taken at approval.
+  */
+  it("refuses a second district", () => {
+    const result = territoryProposalSchema.safeParse({
+      ...VALID,
+      proposedDistricts: ["Bengaluru (Bangalore) Urban", "Ramanagara"],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        "One district per application. Ask for the rest in the box below",
+      );
     }
   });
 
@@ -91,12 +109,8 @@ describe("territoryProposalSchema", () => {
     still the old state's. `StepTerritory` clears them on change, and this is what catches it if
     that effect ever stops firing.
   */
-  it("names the districts that are not in the chosen state", () => {
-    const result = territoryProposalSchema.safeParse({
-      ...VALID,
-      proposedState: "Kerala",
-      proposedDistricts: ["Ernakulam", "Bengaluru (Bangalore) Urban"],
-    });
+  it("names the district that is not in the chosen state", () => {
+    const result = territoryProposalSchema.safeParse({ ...VALID, proposedState: "Kerala" });
     expect(result.success).toBe(false);
     if (!result.success) {
       const issue = result.error.issues.find((i) => i.path[0] === "proposedDistricts");

@@ -435,12 +435,21 @@ export function ComboField<T extends FieldValues>({
   options,
   placeholder,
   searchPlaceholder,
+  asArray,
   optional,
   disabled,
 }: BaseFieldProps<T> & {
   options: readonly { value: string; label: string }[];
   /** Shows the search box. Omit for a list short enough to read. */
   searchPlaceholder?: string;
+  /**
+   * Holds the one answer as a one-item array.
+   *
+   * For `proposedDistricts`, which is an array because a *granted* territory can be several
+   * districts while an application asks for one. Adapting here keeps the field name, the schema
+   * and the server's error key all on the array, rather than translating in the submit handler.
+   */
+  asArray?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -449,10 +458,15 @@ export function ComboField<T extends FieldValues>({
       control={form.control}
       name={name}
       render={({ field, fieldState }) => {
-        const selected = options.find((option) => option.value === field.value);
+        const current = asArray
+          ? Array.isArray(field.value)
+            ? field.value[0]
+            : undefined
+          : field.value;
+        const selected = options.find((option) => option.value === current);
 
         const choose = (value: string) => {
-          field.onChange(value);
+          field.onChange(asArray ? [value] : value);
           setOpen(false);
           // As in `CheckListField`: `mode: "onBlur"` does not revalidate on change, and picking
           // from a list is not a blur.
@@ -527,7 +541,7 @@ export function ComboField<T extends FieldValues>({
                         >
                           <Check
                             className={`w-4 h-4 flex-shrink-0 text-primary-ink ${
-                              option.value === field.value ? "opacity-100" : "opacity-0"
+                              option.value === current ? "opacity-100" : "opacity-0"
                             }`}
                             aria-hidden="true"
                           />

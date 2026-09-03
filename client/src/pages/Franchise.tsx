@@ -756,9 +756,10 @@ export default function Franchise() {
                   <p>
                     The {FRANCHISE.proteinProfitSharePct.duringRecovery}% is a capital
                     recovery mechanism, not a margin. It runs until you have received
-                    cumulative eligible protein-business profit of{" "}
-                    {formatInr(example.thresholdInr)} on the {territory.shortName}, and the{" "}
-                    {city.shortName} threshold is set in its own agreement.
+                    cumulative eligible protein-business profit equal to your{" "}
+                    {formatInr(territory.investmentInr)} investment plus GST on the{" "}
+                    {territory.shortName}, and the {city.shortName} threshold is set in its
+                    own agreement.
                   </p>
                   {/*
                     One paragraph, no nested elements around the phrase itself: this is the
@@ -977,7 +978,7 @@ export default function Franchise() {
           <SectionHeading
             eyebrow="Machines"
             title="You operate them. We own them."
-            blurb="The franchise investment is not a purchase of the machines. It buys the right to operate them in your territory, and on expiry or termination they remain ours."
+            blurb="The franchise investment is not a purchase of the machines. It buys the right to operate them in your territory, and they stay ours for as long as the franchise runs."
           />
 
           {/*

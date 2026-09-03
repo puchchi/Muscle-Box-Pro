@@ -5,17 +5,26 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
-import { CheckListField, CodeListField, Form } from "@/pages/franchise/onboarding/formKit";
+import {
+  CheckListField,
+  CodeListField,
+  ComboField,
+  Form,
+} from "@/pages/franchise/onboarding/formKit";
 import { INDIA_PINCODE } from "@shared/geo/india";
 
 /**
- * The two controls step 2 gained when the territory stopped being a paragraph.
+ * The controls step 2 gained when the territory stopped being a paragraph.
  *
  * Tested here rather than through the wizard because reaching step 2 means filling step 1's nine
  * identity fields first, and none of that has anything to do with what these do. What is worth
- * pinning down is the behaviour a reader would not guess from the markup: a district list that
- * stays sorted however it was clicked, and a pin code box that refuses a bad token at the point of
- * typing instead of adding a chip that is quietly wrong until submit.
+ * pinning down is the behaviour a reader would not guess from the markup: a district dropdown that
+ * writes a one-item array, a list that stays sorted however it was clicked, and a pin code box that
+ * refuses a bad token at the point of typing instead of adding a chip that is quietly wrong until
+ * submit.
+ *
+ * `CheckListField` is the multi-select the district picker used to be. Step 2 asks for one district
+ * and uses `ComboField` for it, so nothing renders `CheckListField` today.
  */
 
 const DISTRICTS = ["Bengaluru (Bangalore) Urban", "Mysuru (Mysore)", "Ramanagara", "Udupi"];
@@ -50,6 +59,31 @@ function Host({ districts = DISTRICTS }: { districts?: readonly string[] }) {
         />
         <output data-testid="value-districts">{JSON.stringify(picked)}</output>
         <output data-testid="value-pincodes">{JSON.stringify(codes)}</output>
+      </form>
+    </Form>
+  );
+}
+
+/** Step 2's district control: one answer, held as a one-item array. */
+function ComboHost() {
+  const form = useForm<Values>({
+    defaultValues: { districts: [], pincodes: [] },
+  });
+  const picked = form.watch("districts");
+
+  return (
+    <Form {...form}>
+      <form>
+        <ComboField
+          form={form}
+          name="districts"
+          label="District"
+          options={DISTRICTS.map((d) => ({ value: d, label: d }))}
+          placeholder="Choose a district"
+          searchPlaceholder="Search districts"
+          asArray
+        />
+        <output data-testid="value-districts">{JSON.stringify(picked)}</output>
       </form>
     </Form>
   );
@@ -93,6 +127,36 @@ function pincodesValue() {
 
 beforeEach(() => {
   cleanup();
+});
+
+/*
+  `asArray` is the one thing about this control a reader would not guess: `proposedDistricts` is an
+  array because a granted territory can be several districts, and an application asks for one. A
+  plain string written into that field would fail the schema on submit rather than at the click.
+*/
+describe("ComboField, asArray", () => {
+  it("writes the chosen district as a one-item array", async () => {
+    const user = userEvent.setup();
+    render(<ComboHost />);
+
+    await user.click(screen.getByTestId("select-districts"));
+    await user.click(screen.getByTestId("option-districts-Udupi"));
+
+    expect(districtsValue()).toEqual(["Udupi"]);
+    expect(screen.getByTestId("select-districts")).toHaveTextContent("Udupi");
+  });
+
+  it("replaces the answer rather than adding to it", async () => {
+    const user = userEvent.setup();
+    render(<ComboHost />);
+
+    await user.click(screen.getByTestId("select-districts"));
+    await user.click(screen.getByTestId("option-districts-Udupi"));
+    await user.click(screen.getByTestId("select-districts"));
+    await user.click(screen.getByTestId("option-districts-Ramanagara"));
+
+    expect(districtsValue()).toEqual(["Ramanagara"]);
+  });
 });
 
 describe("CheckListField", () => {

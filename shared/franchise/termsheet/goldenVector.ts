@@ -129,10 +129,32 @@ export const GOLDEN_TERM_SHEET_V1: FranchiseTermSheetGoldenVector = {
  *   - nothing else. Every other string is byte-identical to v1's, deliberately: two vectors that differ
  *     in more places than the version does make a hash change impossible to attribute.
  *
- * `length` is 68,304 against v1's 20,818 because 2.0 is the whole 72-section programme document rather
+ * `length` is 69,798 against v1's 20,818 because 2.0 is the whole 72-section programme document rather
  * than a 17-clause term sheet. That ratio is the check worth doing by eye if this ever fails: a 2.0 hash
  * that moved with the length roughly unchanged is a wording change, and one whose length collapsed is a
  * generated file that lost sections.
+ *
+ * ## This hash was re-pinned once, on 2026-09-03, and that is allowed exactly once more than never
+ *
+ * It was 68,304 / `7d88048e…` for the first day of 2.0's life. §58 (Capital Protection After 24 Months)
+ * said the protection applied "where the franchise is terminated for any reason, whether by MuscleBoxPro,
+ * by the franchisee, or by mutual agreement" — so a franchisee we terminated for **fraud**, and a
+ * franchisee who simply walked away under §44, both qualified for a machine transfer or a cash refund of
+ * unrecovered capital with 18% interest. The amendment restricts it to endings that are not the
+ * franchisee's own fault or choice, and it is a wording change of the kind the ratio note above describes:
+ * +1,494 characters, no section added or lost.
+ *
+ * **Re-pinning here was legitimate only because nothing had signed 2.0 yet**, and that was checked against
+ * the data rather than assumed: the single live Aadhaar invite in sandbox is against `TERMSHEET#001` at
+ * **1.0** (its `ESIGN#` row carries 1.0's `contentHash`), and no `ESIGN#` row anywhere names a 2.0 hash.
+ * `v2.ts`'s header states the trigger precisely — *once a franchisee signs against 2.0*, a document change
+ * means v3 — and that had not happened. It has to be checked, not reasoned about, because the whole point
+ * of the banner at the top of this file is that the failing test looks identical either way.
+ *
+ * One consequence that is data rather than code: sandbox holds a `TERMSHEET#002` row pinned at version
+ * 2.0 with the **old** `contentHash`, issued before the amendment and never sent for signature. It is left
+ * alone deliberately (it sits in a real franchisee's partition), and it is now a row whose stored hash no
+ * version file can reproduce. Re-issuing writes a fresh row; nothing reads that one.
  */
 export const GOLDEN_TERM_SHEET_V2: FranchiseTermSheetGoldenVector = {
   version: "2.0",
@@ -183,6 +205,6 @@ export const GOLDEN_TERM_SHEET_V2: FranchiseTermSheetGoldenVector = {
       phone: "+91 33333 33333",
     },
   },
-  contentHash: "7d88048e25cb241465d9849408c9252c2ce9eba811bf7cf88f15e33a48ff0277",
-  length: 68_304,
+  contentHash: "a38aedfa52fcb293d3b91c8a510013e502cbd165e0c009c121fe62d240cd032f",
+  length: 69_798,
 };

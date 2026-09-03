@@ -8,16 +8,10 @@
  * leave a stale figure buried in prose.
  */
 import type { FaqEntry } from "../partnership/faq";
-import {
-  FRANCHISE,
-  formatInr,
-  franchiseTier,
-  recoveryExample,
-} from "./program";
+import { FRANCHISE, formatInr, franchiseTier } from "./program";
 
 const territory = franchiseTier("territory");
 const city = franchiseTier("city");
-const example = recoveryExample("territory");
 
 export const FRANCHISE_FAQ: FaqEntry[] = [
   {
@@ -27,7 +21,12 @@ export const FRANCHISE_FAQ: FaqEntry[] = [
       `contractual right to develop and operate the network in your territory, using machines we own, supply and ` +
       `support. You can move them between approved locations and replace an underperforming gym, but you cannot ` +
       `sell one, transfer it, or use it outside the MuscleBox Pro ecosystem. On exit or termination the machines ` +
-      `come back to us.`,
+      `normally come back to us. There is one narrow exception. If we end the franchise for our own business ` +
+      `reasons, or decline to renew it for reasons unrelated to how you have run it, and you have not yet ` +
+      `recovered your capital, then once you are past 24 months of operation we choose between transferring the ` +
+      `machines to you and refunding your unrecovered amount with interest. It does not apply if you choose to ` +
+      `exit, if we decline to renew because targets or payments were missed, or if we terminate on any of the ` +
+      `grounds listed in the agreement, such as breach or non-payment.`,
   },
   {
     question: "What do the two franchise tiers cost?",
@@ -48,8 +47,9 @@ export const FRANCHISE_FAQ: FaqEntry[] = [
   {
     question: "How does capital recovery work?",
     answer:
-      `Until you have received cumulative eligible protein-business profit of ` +
-      `${formatInr(example.thresholdInr)}, ${FRANCHISE.proteinProfitSharePct.duringRecovery}% of the applicable ` +
+      `Until you have received cumulative eligible protein-business profit equal to your ` +
+      `${formatInr(territory.investmentInr)} investment plus GST, ` +
+      `${FRANCHISE.proteinProfitSharePct.duringRecovery}% of the applicable ` +
       `MuscleBox Pro distributable protein-business profit from your machines goes to you. After that the split ` +
       `moves to ${FRANCHISE.proteinProfitSharePct.afterRecovery}:${FRANCHISE.proteinProfitSharePct.afterRecovery} ` +
       `and you keep participating for the life of the franchise. The ${city.shortName} threshold is set in its own ` +
@@ -112,8 +112,8 @@ export const FRANCHISE_FAQ: FaqEntry[] = [
       `your own team, and keeping every machine working and stocked. That last part is the daily job. You check ` +
       `the machines, top up protein, refill cups and approved supplies, clear expired stock, keep the machine and ` +
       `its area clean, act on platform alerts and report faults quickly. You cannot pass that work to the gym, ` +
-      `its staff or anyone else without our written approval. These costs are included in the franchise-level ` +
-      `profit calculation.`,
+      `its staff or anyone else without our written approval. Those local costs are yours to carry. They are not ` +
+      `taken off the profit your share is worked out from.`,
   },
   {
     question: "Can I add machines later?",
@@ -137,7 +137,8 @@ export const FRANCHISE_FAQ: FaqEntry[] = [
       `Both are possible with our prior approval. A transferee has to meet our financial, operational, compliance, ` +
       `brand and territory requirements, and a transfer never carries machine ownership with it. On an approved exit ` +
       `we take the machines back, franchise rights may revert to us, protein inventory is handled per the agreement ` +
-      `and outstanding obligations remain payable.`,
+      `and outstanding obligations remain payable. Choosing to exit also means the capital protection described ` +
+      `above does not apply, so anything you have not recovered by then stays unrecovered.`,
   },
   {
     question: "Are returns guaranteed?",

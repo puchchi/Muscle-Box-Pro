@@ -15,7 +15,6 @@ import type { TerritoryProposal } from "@shared/franchise/onboarding/types";
 import {
   AreaField,
   CardChoiceField,
-  CheckListField,
   CodeListField,
   ComboField,
   ErrorSummary,
@@ -34,12 +33,18 @@ import type { FranchiseStepViewProps } from "../types";
  * exclusivity is the thing being sold, so the record has to say what was asked for in words a
  * lawyer can read back.
  *
- * **Pick districts. Do not draft a boundary.** This screen used to require a description of where
+ * **Pick a district. Do not draft a boundary.** This screen used to require a description of where
  * the territory started and stopped, 20 characters minimum, and it was the wrong question: an
  * applicant who answers "Bangalore" is telling us everything they can usefully tell us, and the
  * rest is a contract clause that an admin writes at approval. So the required answer is now a state
- * and its districts, the pin codes are there for somebody who wants half a metro rather than all of
- * it, and the prose box survives as an optional place to put what the list could not say.
+ * and one of its districts, the pin codes are there for somebody who wants half a metro rather than
+ * all of it, and the prose box survives as an optional place to put what the list could not say.
+ *
+ * **One district per application.** It was a tick-as-many-as-you-like list, and it is now the same
+ * dropdown as the state above it. `proposedDistricts` stays an array so the record shape does not
+ * turn on the rule, which is what `ComboField`'s `asArray` is for. Somebody who wants four districts
+ * is making four applications or asking for them in the box below, and either way it is a decision
+ * taken at approval rather than a checkbox.
  *
  * **Still no map, and no polygon.** `shared/geo/india.ts` has the argument, and the short version is
  * that districts are official and enumerable where a shape dragged in a browser is neither.
@@ -53,7 +58,7 @@ import type { FranchiseStepViewProps } from "../types";
 const FIELD_LABELS: Record<keyof TerritoryProposal, string> = {
   tier: "Franchise tier",
   proposedState: "State",
-  proposedDistricts: "Districts",
+  proposedDistricts: "District",
   proposedPincodes: "Pin codes",
   proposedBoundary: "Anything else about the area",
   existingRelationships: "Gyms you already know",
@@ -103,11 +108,12 @@ export default function StepTerritory({
 
   const selectedState = form.watch("proposedState");
   const districts = form.watch("proposedDistricts");
+  const districtOptions = districtsOf(selectedState).map((d) => ({ value: d, label: d }));
 
   /*
-    Districts belong to the state above them, so changing the state has to clear them. Skipped on
+    A district belongs to the state above it, so changing the state has to clear it. Skipped on
     the first render: mounting with a saved selection would otherwise wipe it, which is the read-only
-    view of a submitted step showing an empty list.
+    view of a submitted step showing no district at all.
   */
   const knownState = useRef(selectedState);
   useEffect(() => {
@@ -146,19 +152,22 @@ export default function StepTerritory({
             options={STATE_OPTIONS}
             placeholder="Choose a state or union territory"
             searchPlaceholder="Search states"
-            description="Changing this clears the districts below."
+            description="Changing this clears the district below."
             disabled={readOnly}
           />
 
-          <CheckListField
+          <ComboField
             form={form}
             name="proposedDistricts"
-            label="Districts"
-            options={districtsOf(selectedState)}
+            label="District"
+            options={districtOptions}
+            placeholder={
+              districtOptions.length === 0 ? "Pick a state first" : "Choose a district"
+            }
             searchPlaceholder="Search districts"
-            emptyHint="Pick a state above and its districts appear here."
-            description="Tick every district you want to develop. This is how the territory gets written into the agreement."
-            disabled={readOnly}
+            description="This is how the territory gets written into the agreement."
+            asArray
+            disabled={readOnly || districtOptions.length === 0}
           />
 
           {districts.length > 0 && <TerritoryPreview state={selectedState} districts={districts} />}
@@ -225,9 +234,9 @@ export default function StepTerritory({
  * The selection read back as one sentence, under the list that produces it.
  *
  * `StepDetails`'s term sheet preview makes the case for previewing next to the field rather than
- * above the form. It applies for the same reason and one more: twelve ticked checkboxes are not
- * something anybody can check at a glance, and this is the string an admin will read when deciding
- * what to grant.
+ * above the form. It applies for the same reason and one more: this is the string an admin will read
+ * when deciding what to grant, and the district and the state are two separate controls until it
+ * puts them in one sentence.
  */
 function TerritoryPreview({ state, districts }: { state: string; districts: string[] }) {
   return (

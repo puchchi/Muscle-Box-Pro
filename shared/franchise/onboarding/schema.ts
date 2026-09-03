@@ -122,13 +122,16 @@ export const franchiseDetailsSchema = z
   });
 
 /**
- * Step 2. Districts rather than prose — see `TerritoryProposal`.
+ * Step 2. A district rather than prose — see `TerritoryProposal`.
  *
  * The district names are checked against `shared/geo/india.ts` and the state has to be one we
  * hold, because the picker is the only thing that writes them and a name it could not have
  * produced is a value nothing downstream can render. That is a different judgement from the PAN
  * above: there, refusing meant refusing a real applicant, and here it means refusing a payload the
  * form cannot have sent.
+ *
+ * The backend's `validateTerritoryProposal` is the twin of this and still allows 60. It is the
+ * looser of the two, so nothing breaks, but the rule is only enforced here until it moves too.
  */
 export const territoryProposalSchema = z
   .object({
@@ -140,10 +143,10 @@ export const territoryProposalSchema = z
       .refine(isKnownState, "Choose a state or union territory from the list"),
     proposedDistricts: z
       .array(z.string().trim().min(2))
-      .min(1, "Choose at least one district")
-      // Enough for a franchisee taking most of a small state, and short of a payload that pastes
-      // the whole country in.
-      .max(60, "That is more districts than one franchise can be granted"),
+      .min(1, "Choose the district you want to develop")
+      // An array of one rather than a string, because what is granted can be more than one district
+      // and the two are the same field on the record.
+      .max(1, "One district per application. Ask for the rest in the box below"),
     proposedPincodes: z
       .array(z.string().trim().regex(INDIA_PINCODE, "A pin code is six digits"))
       .max(300, "That is too many pin codes to list. Describe the area in the box below instead"),

@@ -56,9 +56,11 @@ export type FranchiseTier = {
    *
    * §57 defines it as what the franchisee actually paid towards the investment "inclusive of
    * GST and other statutory levies", and §63 makes every investment figure in the document
-   * exclusive of GST. So the two differ by the GST rate, and a page that showed the investment
-   * as the threshold would understate what the franchisee has to earn back by ₹4,50,000 on a
-   * Territory Franchise.
+   * exclusive of GST. So the two differ by the GST rate, by ₹4,50,000 on a Territory Franchise.
+   *
+   * This is the binding figure and what the agreement, the onboarding API and the dashboard's
+   * recovery progress use. The public page states the threshold in words instead, as the
+   * investment "plus GST", rather than printing the grossed-up number.
    *
    * Stays nullable. §21 used to defer the City threshold and this was `null` for that reason;
    * the document now fixes both, but "not published" remains a state the page must be able to
@@ -419,13 +421,20 @@ export function journeyByPhase() {
  * recovery does not reduce the remaining amount, and profit that arrives *past* the
  * threshold is split rather than paid out whole. Both were wrong in every hand-written
  * version of this example, in opposite directions.
+ *
+ * It illustrates the mechanism in base rupees, against `investmentInr` rather than the
+ * GST-inclusive `capitalRecoveryInr`, because the page states the threshold once as "the
+ * investment plus GST" and grossing up only this block would leave a reader subtracting
+ * ₹20,00,000 from a figure the page no longer shows. Still refuses to run for a tier with
+ * no published threshold: an illustration of a term that has not been fixed is a
+ * representation about money that nothing backs.
  */
 export function recoveryExample(tierId: FranchiseTierId = "territory") {
   const tier = franchiseTier(tierId);
-  const threshold = tier.capitalRecoveryInr;
-  if (threshold === null) {
+  if (tier.capitalRecoveryInr === null) {
     throw new Error(`No published capital recovery threshold for tier: ${tierId}`);
   }
+  const threshold = tier.investmentInr;
 
   const alreadyReceivedInr = 20_00_000;
   const nextDistributionInr = 8_00_000;
