@@ -40,7 +40,7 @@ export default function TerritoryCutNotice({
         Not the same as your request
       </p>
       <p className="text-sm text-amber-900 leading-relaxed">
-        You asked for {requested}. What is granted is {granted}, and that is what the term sheet
+        You asked for {requested}. What is granted is {granted}, and that is what the agreement
         will say. Read the boundary before you sign.
       </p>
       {onSeeBoundary && (

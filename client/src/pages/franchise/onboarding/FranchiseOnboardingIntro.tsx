@@ -65,7 +65,7 @@ export default function FranchiseOnboardingIntro({
       </h1>
       <p className="text-sm text-muted-foreground leading-relaxed">
         Four stages, and about {franchiseRoughTotalMinutes()} minutes of your work in total. Nothing
-        is committed until you sign the term sheet in stage three, so everything before that is an
+        is committed until you sign the agreement in stage three, so everything before that is an
         application.
       </p>
 

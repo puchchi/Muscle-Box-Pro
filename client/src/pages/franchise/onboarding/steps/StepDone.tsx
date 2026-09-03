@@ -84,9 +84,9 @@ export default function StepDone({
                 : "."}
             </p>
             <p className="text-sm text-gray-700 leading-relaxed mt-2" data-testid="termsheet-copy-note">
-              We'll email the countersigned term sheet to{" "}
+              We'll email your copy, with our signature on it too, to{" "}
               <strong className="text-foreground">{email}</strong>, usually the same working day.
-              Keep it: the definitive franchise agreement is drawn up against it.
+              Keep it: your full franchise agreement is drawn up from it.
             </p>
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function StepDone({
             </div>
             <div className="min-w-0">
               <dt className="text-xs font-semibold text-muted-foreground">
-                Document fingerprint
+                Reference
               </dt>
               {/* The first twelve characters: enough to match against the emailed copy, short
                   enough to read out on a phone call, and the full hash is on the PDF. */}
@@ -288,7 +288,7 @@ function InstalmentCard({
         {verified && payment?.receivedPaise !== null && payment?.receivedPaise !== undefined
           ? `First instalment received: ${formatInr(payment.receivedPaise / 100)}`
           : claimed
-            ? "First instalment: with us to confirm"
+            ? "We're checking your first instalment"
             : "First instalment still to send"}
       </h3>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
@@ -296,7 +296,7 @@ function InstalmentCard({
           ? `Confirmed on ${payment?.verifiedAt ? formatIstDate(payment.verifiedAt) : "our record"}. The next instalment falls due when your machines are ready.`
           : claimed
             ? "We're checking your transfer against our statement, usually within a working day. We'll email you when it is confirmed."
-            : "Machine procurement starts when the first instalment reaches us. Everything else is done."}
+            : "We order your machines once the first instalment reaches us. Everything else is done."}
       </p>
       {shortfall > 0 && (
         <p
@@ -343,23 +343,23 @@ function nextSteps(state: FranchiseOnboardingState) {
   return [
     {
       when: "Within 3 working days",
-      title: "Your definitive franchise agreement",
-      body: "Drafted against the term sheet you just signed. The longer document, signed the same way, and any stamp duty is dealt with there.",
+      title: "Your full franchise agreement",
+      body: "Drawn up from what you just signed. It is the longer document, signed the same way, and any stamp duty is handled there.",
     },
     {
       when: paid ? "Under way now" : "As soon as the first instalment clears",
-      title: "OEM procurement begins",
-      body: `We place the order for your ${machines} machines. This is the long part of the programme and it is measured in months, not weeks.`,
+      title: "Your machines go on order",
+      body: `We place the order for your ${machines} machines. This is the long part of the programme, measured in months rather than weeks.`,
     },
     {
       when: "When your machines are ready",
       title: "The second instalment falls due",
-      body: "Invoiced against machine readiness rather than a date. It comes with the readiness report, and delivery follows it.",
+      body: "We invoice it when your machines are ready rather than on a fixed date. The readiness report comes with it, and delivery follows.",
     },
     {
       when: "After delivery",
-      title: "Deployment into your gyms",
-      body: `Install, protein into your warehouse, and the machines go live across ${territory}. We sequence this against the deployment plan you gave us.`,
+      title: "The machines go into your gyms",
+      body: `We install them, stock your warehouse with protein, and the machines go live across ${territory}, in the order you set out in your deployment plan.`,
     },
     {
       when: "From the first sale",

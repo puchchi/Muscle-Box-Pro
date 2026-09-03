@@ -68,7 +68,7 @@ export default function StepApproval({ state, goToStep }: FranchiseStepViewProps
         testId="approval-approved"
       >
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Approved on {formatIstDate(approval.decidedAt)}. This is the territory your term sheet is
+          Approved on {formatIstDate(approval.decidedAt)}. This is the territory your agreement is
           written against.
         </p>
 

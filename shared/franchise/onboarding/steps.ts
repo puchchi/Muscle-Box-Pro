@@ -61,7 +61,7 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "apply",
     title: "Your details",
     shortTitle: "Your details",
-    blurb: "The legal and contact details that identify you in the term sheet.",
+    blurb: "Your business and contact details, as they will appear in the agreement.",
     estimate: "5 minutes",
   },
   {
@@ -69,7 +69,7 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "apply",
     title: "Your territory",
     shortTitle: "Territory",
-    blurb: "The districts you want to develop, and the tier you want them on.",
+    blurb: "The districts you want to develop, and the size of franchise you want.",
     estimate: "3 minutes",
   },
   {
@@ -77,7 +77,7 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "apply",
     title: "KYC and documents",
     shortTitle: "Documents",
-    blurb: "Proof of the entity, the address and the person signing.",
+    blurb: "Proof of your business, your address and the person signing.",
     estimate: "10 minutes",
   },
   {
@@ -93,7 +93,7 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "agree",
     title: "Your franchise",
     shortTitle: "Your franchise",
-    blurb: "The investment, the splits, and how capital recovery works.",
+    blurb: "What you put in, what you earn, and how you get your capital back.",
     estimate: "5 minutes",
   },
   {
@@ -101,7 +101,7 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "agree",
     title: "Operations readiness",
     shortTitle: "Operations",
-    blurb: "Your warehouse, your team on the ground, and how you plan to deploy.",
+    blurb: "Where you'll store stock, who runs the machines, and how you'll roll them out.",
     estimate: "5 minutes",
   },
   {
@@ -109,7 +109,7 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "agree",
     title: "Review and sign",
     shortTitle: "Review & sign",
-    blurb: "The full term sheet, in plain English first.",
+    blurb: "Who signs, and how.",
     estimate: "15 minutes",
   },
   {
@@ -117,7 +117,7 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "fund",
     title: "First instalment",
     shortTitle: "First instalment",
-    blurb: "Bank transfer, and the reference to quote on it.",
+    blurb: "How to make the transfer, and the reference to put on it.",
     estimate: "10 minutes",
   },
   {
@@ -125,7 +125,7 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "fund",
     title: "You're set up",
     shortTitle: "Done",
-    blurb: "Your signed term sheet, your portal login, and what happens over the next months.",
+    blurb: "Your signed agreement, your portal login, and what happens over the next months.",
     estimate: "2 minutes",
   },
 ] as const;

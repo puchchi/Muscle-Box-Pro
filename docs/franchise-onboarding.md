@@ -285,7 +285,8 @@ an undertaking to notify the address in writing before the first consignment.
 
 ### Step 7 — Review and sign
 
-The term sheet on screen, then off to Leegality and back. §5 is the document and §6 is the mechanism.
+Who signs, on what terms, then off to Leegality and back. The document itself is read at Leegality
+rather than here (§6.3a). §5 is the document and §6 is the mechanism.
 
 ### Step 8 — First instalment
 
@@ -446,7 +447,7 @@ answers something worth keeping, so we end up with three hashes, each with one j
 
 | Hash | Computed by | Answers |
 |---|---|---|
-| `contentHash` — SHA-256 of the plain-text rendering | us, at issuance | is the document on screen the document on the record? Catches a re-priced term sheet between reader load and sign, exactly as it does for gyms |
+| `contentHash` — SHA-256 of the plain-text rendering | us, at issuance | is the document being signed the document on the record? Catches a re-priced term sheet between step 7 loading and sign, exactly as it does for gyms |
 | `pdfHash` — SHA-256 of the PDF bytes we hand Leegality | us, at issuance | is the file Leegality signed the file we generated? |
 | `signedPdfHash` — SHA-256 of the PDF Leegality returns | us, on webhook | what exactly is in our custody as the executed document? |
 
@@ -467,7 +468,8 @@ document we are about to hash. A hash over bytes that shift when a font substitu
 hash that stops verifying for reasons nobody can reproduce.
 
 One renderer, in the backend, per the same one-renderer-not-two rule as §2.9 of the backend design.
-The React reader in step 7 walks the same `Agreement` tree for display and does not generate a PDF.
+Nothing in the browser generates a PDF, and as of 2026-09-03 nothing in the browser renders the term
+sheet at all: step 7 hands off to Leegality, which previews the document itself (§6.3a).
 
 **Written to be shared with the gym flow, not franchise-specific.** The franchise flow is where
 Leegality lands first, because none of it is deployed and so nothing live is at risk. The gym flow
@@ -579,6 +581,46 @@ response gets `undefined` and records "no mismatch" for a signature that had one
 
 Confirm each of these against the sandbox and correct this table in place, along with the provider
 module's header, which carries the same date and the same caveat.
+
+### 6.3a The document is read at Leegality, not in the wizard
+
+Decided 2026-09-03. Step 7 no longer renders the term sheet. `TermSheetReader` came out of it, the
+read gate came out with it, and what is left is the validity line, the fingerprint, who is about to
+sign, what they are about to be shown, and the button.
+
+**The reason is that Leegality already previews the document, and its preview is the one attached to
+the signature.** Every signer flow does it — Aadhaar eSign's own step is "preview the document and
+click Proceed" — so a reader in the wizard asked the franchisee to read the same term sheet twice and
+put the reading that carries weight second, after the reading we gated on. One document, read once, in
+the place that signs it.
+
+Three consequences worth stating, because each of them looks like an omission:
+
+- **There is no read gate.** The button is enabled as soon as the term sheet is pinned. Gating here
+  would gate on the wrong reading, and a gate the franchisee satisfies by scrolling is not evidence of
+  anything a court would look at, where Leegality's audit trail is.
+- **`markTermSheetViewed` still runs on mount** and is still what pins the document. The pin is where
+  `contentHash` comes from, and `contentHash` is what step 7 echoes, so removing the reader did not
+  remove the reason the step calls it. §6.1's protection is unchanged.
+- **The fingerprint is not on the screen at all.** It is evidence about a copy the franchisee holds,
+  and they hold one only once it has been signed and emailed, which is where step 9 prints it. The
+  pinned hash still does its work in the request; printing it before there is anything to compare it
+  against bought nothing and cost the longest sentence on the screen.
+
+`client/src/pages/franchise/onboarding/TermSheetReader.tsx` is left in the tree with no caller. It is
+the only browser-side renderer of the `Agreement` tree for this document, and an admin-side preview is
+the obvious future use; delete it if that never arrives.
+
+**Two dashboard settings this flow depends on.** The first is the authentication mode, and it must be
+Aadhaar **OTP** alone: Aadhaar Face eSign requires the Leegality Helper and AadhaarFaceRD apps from the
+Play Store and is Android-only, and Iris and Biometric Thumb need hardware. Anything else turns "open
+the page and type the code you are sent" into an app install, on the screen where ₹25 lakh is committed.
+The screen no longer spells the OTP out in its copy, so a workflow misconfigured this way would not
+contradict anything on screen. It would simply strand the signatory.
+The second is `Set retry attempts`, per invitee, 0 to 10. It is what makes "Reject if failed" true, and
+therefore what makes the backend's three-attempt ladder the right shape rather than a duplicate of a
+provider retry; set to anything above 0 it stops being terminal at the provider and §6.3's argument for
+owning the retry needs re-reading. Neither is visible from either repo.
 
 ### 6.4 The webhook is the only thing that may mark it signed
 
@@ -1086,7 +1128,7 @@ nothing else.
 | `client/src/pages/franchise/onboarding/FranchiseOnboardingFlow.tsx` | the shell: chrome, rail, token-problem screens, step dispatch. No business logic |
 | `client/src/pages/franchise/onboarding/PhaseRail.tsx` | nine steps in four phases (§3) |
 | `client/src/pages/franchise/onboarding/steps/*` | one file per step |
-| `client/src/pages/franchise/onboarding/TermSheetReader.tsx` | walks the `Agreement` tree. Does **not** hash — gym doc §22 removed that from the browser |
+| `client/src/pages/franchise/onboarding/TermSheetReader.tsx` | walks the `Agreement` tree. Does **not** hash — gym doc §22 removed that from the browser. **No caller since 2026-09-03** (§6.3a) |
 | `app/franchise/onboarding/[slug]/[handle]/page.tsx` | metadata-only shell, `noindex, nofollow` |
 | `app/franchise/esign-return/page.tsx` | the Leegality return, registered in the dashboard as the return URL. Carries **no** handle |
 
@@ -1251,10 +1293,23 @@ build that forgot the variable served fixtures to a real applicant.
 **8. PDF generation.** `domain/franchise/pdf.ts`, with the determinism test (§6.2) written before the
 renderer.
 
-**9. Leegality.** The provider module exists (`providers/leegality.ts`, 59 tests) and no route calls
-it. What is left is `POST /franchise/onboarding/esign`, the webhook pair (success and error), the
-reconciler §6.4b makes mandatory, and the return trip. Against the sandbox first, and correct §6.3's
-table and the module header with what the sandbox actually answers.
+**9. Leegality.** Both routes exist as of 2026-09-02, and `httpFranchiseOnboardingApi.requestEsign`
+calls the first of them — `POST /franchise/onboarding/esign`, plus the webhook. **One** webhook route,
+not the pair this list expected: Leegality's success and error deliveries are two dashboard fields
+that both point at one URL, and the handler needs no second route because it takes the outcome from a
+`getTransaction` read rather than from the delivery. `webhookType` and the claimed document status are
+logged and used for nothing, so which endpoint fired is evidence about Leegality and never an
+instruction. The return trip (`/franchise/esign-return`) was already built. Three attempts are allowed,
+then the refusal is `frozen` and its message promises a person, because the workflow is configured
+"Reject if failed".
+
+What is left: the **reconciler** §6.4b makes mandatory — Leegality retries a webhook three times and
+then abandons it, so a lost delivery is a franchisee watching a spinner over a document they have
+signed — and a `franchise_termsheet_signed` mail carrying the signed PDF. And neither route is
+deployed: the sandbox wizard stack has no `/franchise/onboarding/esign` yet, so step 7's button
+answers "we couldn't reach us" until it does, and the three `leegality/*` SSM parameters have to exist
+before it can boot. Correct §6.3's table and the provider module header once the sandbox has actually
+answered.
 
 Three of these are **dashboard work, not code**, and nothing in either repo can verify them:
 

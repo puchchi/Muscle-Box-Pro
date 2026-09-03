@@ -39,6 +39,37 @@ import type {
  * a failed poll is not something to put in front of anyone.
  */
 
+/**
+ * What `requestEsign` answers, and why it is not `EsignHandoff | null`.
+ *
+ * Step 7 is the one screen whose failures are worth reading. Three attempts, a `content_mismatch` that
+ * means "reload", an `already_signed` that means the other tab won, and an exhausted ladder whose refusal
+ * promises a person — and the server phrases all four for the franchisee. A `null` would throw that away
+ * and leave the step inventing a sentence, which is how somebody gets told to try again on the one path
+ * where trying again is the thing that cannot work.
+ *
+ * `error: null` means we never asked: there was no pinned term sheet to echo a hash from.
+ */
+export type EsignHandoffOutcome =
+  | { ok: true; handoff: EsignHandoff }
+  | { ok: false; error: FranchiseOnboardingError | null };
+
+/**
+ * The codes that mean the server is somewhere other than where this client thinks it is, so the honest
+ * response to them is to re-read rather than only to report.
+ *
+ * `content_mismatch` is deliberately **not** here. It means the term sheet moved, and its message tells the
+ * franchisee to reload and read the current version — folding in a fresh state would silently re-point the
+ * screen at a re-priced document and let the next click sign text nobody had read.
+ */
+const RE_READ_CODES: ReadonlySet<FranchiseOnboardingError["code"]> = new Set([
+  "wrong_step",
+  "frozen",
+  // Only the e-sign routes raise it, and it is exactly the case where our record has moved: the signature
+  // landed in another tab or by webhook while this one was still showing a button.
+  "already_signed",
+]);
+
 export type FranchiseOnboardingActions = {
   submitDetails(details: FranchiseDetails): Promise<boolean>;
   submitTerritory(territory: TerritoryProposal): Promise<boolean>;
@@ -51,9 +82,10 @@ export type FranchiseOnboardingActions = {
   markTermSheetViewed(): Promise<void>;
   /**
    * Returns the handoff so the caller can hand the browser to Leegality. It is returned rather
-   * than stored, and there is nowhere on the state to put it (§6.4).
+   * than stored, and there is nowhere on the state to put it (§6.4). On a refusal it returns the
+   * server's error instead of a bare null — see `EsignHandoffOutcome`.
    */
-  requestEsign(signType: EsignSignType): Promise<EsignHandoff | null>;
+  requestEsign(signType: EsignSignType): Promise<EsignHandoffOutcome>;
   refreshEsignStatus(): Promise<void>;
   loadPaymentInstructions(): Promise<PaymentInstructions | null>;
   claimPayment(input: PaymentClaimInput): Promise<boolean>;
@@ -118,7 +150,7 @@ export function useFranchiseOnboarding(handle: string): UseFranchiseOnboarding {
   /**
    * Runs one mutating call and folds the result into state.
    *
-   * `wrong_step` and `frozen` re-read rather than just reporting: the server has told us it is
+   * The codes in `RE_READ_CODES` re-read rather than just reporting: the server has told us it is
    * somewhere else, so the honest response is to render where it actually is. `declined` does
    * not, because the state it would re-read is the same state, and the message is the screen.
    */
@@ -128,14 +160,24 @@ export function useFranchiseOnboarding(handle: string): UseFranchiseOnboarding {
         { ok: true; data: T } | { ok: false; error: FranchiseOnboardingError }
       >,
       extract: (data: T) => FranchiseOnboardingState | null,
+      /**
+       * Where the error goes when the step owns the message rather than the shell.
+       *
+       * The same reasoning that keeps `declined` out of the banner, applied per call instead of per code:
+       * a step that renders the refusal beside the button that caused it must not also have it repeated
+       * at the top of the page. The re-read above still happens either way — that is about our record
+       * being stale, not about who displays the sentence.
+       */
+      ownError?: (error: FranchiseOnboardingError) => void,
     ): Promise<T | null> => {
       setActionError(null);
       setIsSubmitting(true);
       try {
         const result = await call();
         if (!result.ok) {
-          setActionError(result.error);
-          if (result.error.code === "wrong_step" || result.error.code === "frozen") {
+          if (ownError) ownError(result.error);
+          else setActionError(result.error);
+          if (RE_READ_CODES.has(result.error.code)) {
             const fresh = await franchiseOnboardingApi.getState(handle);
             if (fresh.ok) {
               setState(fresh.data);
@@ -213,12 +255,21 @@ export function useFranchiseOnboarding(handle: string): UseFranchiseOnboarding {
     },
     async requestEsign(signType) {
       const contentHash = state?.termSheet?.contentHash;
-      if (!contentHash) return null;
+      // Nothing pinned, so nothing to echo. Refused here rather than sent as an empty string, which the
+      // server would answer as a field error about a hash the franchisee has never seen.
+      if (!contentHash) return { ok: false, error: null };
+      let refusal: FranchiseOnboardingError | null = null;
       const data = await run(
         () => franchiseOnboardingApi.requestEsign(handle, { signType, contentHash }),
         (d) => d.state,
+        (error) => {
+          refusal = error;
+        },
       );
-      return data?.handoff ?? null;
+      // `refusal` is assigned inside the callback above, which TypeScript's control-flow analysis cannot
+      // see through, so the narrowing to `never` is wrong rather than the code.
+      if (!data) return { ok: false, error: refusal as FranchiseOnboardingError | null };
+      return { ok: true, handoff: data.handoff };
     },
     async refreshEsignStatus() {
       await refresh(() => franchiseOnboardingApi.refreshEsignStatus(handle));

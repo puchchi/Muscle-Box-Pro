@@ -166,8 +166,7 @@ export default function StepFranchise({
           ))}
         </ul>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          The machines stay ours. What the term sheet grants is the right to operate them in your
-          territory.
+          The machines stay ours. What you get is the right to operate them in your territory.
         </p>
       </Block>
 
@@ -195,7 +194,7 @@ export default function StepFranchise({
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs text-muted-foreground flex items-start gap-1.5">
               <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
-              This is not the signature. That comes with the term sheet itself.
+              This is not the signature. That comes with the agreement itself.
             </p>
             <Button
               type="button"

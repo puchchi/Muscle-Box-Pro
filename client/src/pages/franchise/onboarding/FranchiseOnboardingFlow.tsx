@@ -108,12 +108,12 @@ const PHASE_COPY: Record<FranchisePhaseId, { heading: string; blurb?: string }> 
     heading: "Territory approval",
   },
   agree: {
-    heading: "Your term sheet",
-    blurb: "What you are agreeing to, and then the signature that binds it.",
+    heading: "Your agreement",
+    blurb: "What you are agreeing to, and then the signature that makes it binding.",
   },
   fund: {
     heading: "Funding and setup",
-    blurb: "The transfer that starts procurement, and the login that comes with it.",
+    blurb: "The transfer that gets your machines on order, and the login that comes with it.",
   },
 };
 

@@ -1,16 +1,18 @@
 /**
  * `FranchiseOnboardingApi` over the franchise wizard API.
  *
- * The live half of the seam described in [franchiseOnboardingApi.ts](./franchiseOnboardingApi.ts). Fourteen
- * routes in `MbpFranchiseWizard-<env>` back sixteen methods, and the three places the count does not line up
- * are the interesting part of this file:
+ * The live half of the seam described in [franchiseOnboardingApi.ts](./franchiseOnboardingApi.ts). Sixteen
+ * routes in `MbpFranchiseWizard-<env>` back sixteen methods, and the count lines up by coincidence rather
+ * than by design — three places it does not correspond:
  *
  * - `refreshEsignStatus` and `refreshPaymentStatus` are both `GET /franchise/onboarding`. Neither has a route
  *   of its own because neither reads anything a state response does not already carry, and the thing they are
  *   waiting for is written by somebody else: the e-sign webhook, and an admin verifying a bank statement.
  * - `uploadDocument` is three calls. §9 keeps the presigned PUT out of the components, so the dance lives
  *   here.
- * - `requestEsign` has no route at all. See the method.
+ * - `POST /franchise/esign/webhook` has no method here and must never get one. It is Leegality's route,
+ *   authenticated by a MAC over the document id, and it is the only thing in the system that may mark a term
+ *   sheet signed. A client-side call to it would be a browser claiming a signature.
  *
  * Every response body is the payload itself rather than an envelope, so `franchiseApiRequest<T>` casts
  * straight to the contract type. Nothing here re-validates the shape: the server builds these responses from
@@ -21,6 +23,7 @@
 import { franchiseApiRequest } from "./apiClient";
 import type {
   DocumentUploadInput,
+  EsignHandoff,
   FranchiseDraftKey,
   FranchiseDraftSaveResult,
   FranchiseOnboardingApi,
@@ -51,12 +54,6 @@ const UPLOAD_FAILED: FranchiseOnboardingError = {
   code: "network",
   message:
     "We couldn't finish sending that file. Nothing else you've filled in is lost. Check your connection and try the upload again.",
-};
-
-const NO_ESIGN_PROVIDER: FranchiseOnboardingError = {
-  code: "network",
-  message:
-    "Signing isn't switched on yet. We'll email you the moment your term sheet is ready to sign, and nothing you've given us is lost.",
 };
 
 function state(path: string, handle: string, body?: unknown): Promise<FranchiseStateResult> {
@@ -169,15 +166,33 @@ export const httpFranchiseOnboardingApi: FranchiseOnboardingApi = {
   },
 
   /**
-   * There is no route behind this, and until there is, it must refuse rather than fabricate a URL.
+   * Step 7b, and the only method whose success value is not a state on its own.
    *
-   * The wizard's step 7b hands off to Leegality, and the handoff needs Leegality sandbox credentials that this
-   * account does not hold yet. This is now the first wall a franchisee reaches rather than a theoretical one:
-   * the term sheet no longer carries a `blocks-send` marker, so `markTermSheetViewed` issues, `state.termSheet`
-   * is populated and step 7b is reachable.
+   * `{ state, handoff }`, because the signing URL has nowhere else to go: it authorises an Aadhaar eSign in one
+   * named person's identity, so it is not on `EsignState`, not written to any row, not logged at either end and
+   * not emailed. It is returned once per call and forgotten — the hook folds the state in and hands the URL
+   * straight to a navigation.
+   *
+   * **Safe to call twice, because the server is idempotent in the document rather than in the URL.** Leegality's
+   * create endpoint has no idempotency key, so calling it twice would make two real documents with two live
+   * invites in the same person's name. The route decides between reusing and creating *before* anything reaches
+   * the provider, and a reuse re-reads the existing document's URL. That is what makes the waiting panel's
+   * "open the signing page again" honest.
+   *
+   * Three attempts in total, then the refusal is `frozen` and its message promises a person rather than another
+   * button — the workflow is configured "Reject if failed", so one fumbled Aadhaar OTP is terminal at the
+   * provider and owning the retry is the other half of that choice.
+   *
+   * `contentHash` is echoed rather than chosen. The server checks it against the term sheet row it pinned *and*
+   * re-renders the PDF to check its hash too, and answers `content_mismatch` for either — so a term sheet
+   * re-priced between the reader loading and the button being pressed cannot be the one that gets signed.
    */
-  async requestEsign() {
-    return { ok: false, error: NO_ESIGN_PROVIDER };
+  requestEsign(handle, input) {
+    return franchiseApiRequest<{ state: FranchiseOnboardingState; handoff: EsignHandoff }>(
+      "POST",
+      `${ONBOARDING}/esign`,
+      { handle, body: input },
+    );
   },
 
   /** Our own record. The webhook is the only thing that may mark a term sheet signed. */

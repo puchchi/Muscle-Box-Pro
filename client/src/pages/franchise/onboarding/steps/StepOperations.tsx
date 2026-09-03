@@ -131,7 +131,7 @@ export default function StepOperations({
             description={
               values.warehouseNotIdentified
                 ? undefined
-                : "Tick this if you have not settled on a warehouse. It will not hold up your term sheet."
+                : "Tick this if you have not settled on a warehouse. It will not hold up your agreement."
             }
             onCheckedChange={onWarehouseNotIdentified}
             disabled={readOnly}
@@ -140,7 +140,7 @@ export default function StepOperations({
           {values.warehouseNotIdentified ? (
             <p className="text-sm text-gray-600">
               We will ask for the address, the area and the storage conditions before your first
-              consignment leaves. Your term sheet says so in Schedule 2.
+              consignment leaves. Your agreement says so in Schedule 2.
             </p>
           ) : (
             <>
@@ -223,7 +223,7 @@ export default function StepOperations({
 
         {!readOnly && (
           <SubmitBar
-            nextHint="Next, your term sheet."
+            nextHint="Next, your agreement."
             draftStatus={draft.status}
             isSubmitting={isSubmitting}
           />

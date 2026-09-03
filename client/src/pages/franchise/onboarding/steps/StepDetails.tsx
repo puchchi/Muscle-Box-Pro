@@ -56,8 +56,8 @@ const FIELD_LABELS: Record<keyof FranchiseDetails, string> = {
   signatoryDesignation: "Designation",
   signatoryPan: "Signatory's PAN",
   signatoryAadhaarLast4: "Aadhaar last four digits",
-  noticesEmail: "Notices email",
-  noticesPhone: "Notices phone",
+  noticesEmail: "Email for notices",
+  noticesPhone: "Phone for notices",
 };
 
 const ENTITY_TYPE_OPTIONS = Object.entries(ENTITY_TYPE_LABELS).map(([value, label]) => ({
@@ -123,13 +123,13 @@ export default function StepDetails({
           onGoToField={(name) => form.setFocus(name)}
         />
 
-        <Section title="The entity taking the franchise">
+        <Section title="The business taking the franchise">
           <Field
             form={form}
             name="legalEntityName"
             label="Legal entity name"
             placeholder="Northline Ventures Private Limited"
-            description="Exactly as registered. This goes into the term sheet."
+            description="Exactly as registered. This goes into the agreement."
             autoComplete="organization"
             disabled={readOnly}
           />
@@ -162,7 +162,7 @@ export default function StepDetails({
               name="pan"
               label="PAN"
               placeholder="AABCU9603R"
-              description="The term sheet identifies you by PAN, and the e-sign needs it."
+              description="Your agreement identifies you by PAN, and signing needs it."
               // Typed in lowercase more often than not, and the schema uppercases on parse, so
               // the box may as well show what will be stored.
               uppercase
@@ -216,7 +216,7 @@ export default function StepDetails({
             name="registeredAddress"
             label="Registered address"
             placeholder="Building, street, area, city, state, PIN"
-            description="Where formal notices under the term sheet will be served."
+            description="Where we send anything official, including the agreement itself."
             disabled={readOnly}
           />
         </Section>
@@ -228,7 +228,7 @@ export default function StepDetails({
               name="signatoryName"
               label="Signatory name"
               placeholder="Rajesh Mehta"
-              description="Who signs the term sheet, and can bind the entity above."
+              description="Who signs the agreement, and can commit the business above to it."
               autoComplete="name"
               disabled={readOnly}
             />
@@ -237,7 +237,7 @@ export default function StepDetails({
               name="signatoryDesignation"
               label="Designation"
               placeholder="Director"
-              description="Director, Partner, Proprietor: their title in the entity above."
+              description="Director, Partner, Proprietor: their title in the business above."
               autoComplete="organization-title"
               disabled={readOnly}
             />
@@ -274,18 +274,18 @@ export default function StepDetails({
             <Field
               form={form}
               name="noticesEmail"
-              label="Notices email"
+              label="Email for notices"
               type="email"
               inputMode="email"
               placeholder="r.mehta@northline.in"
-              description="Formal notices go here, and your portal login is created under it."
+              description="Anything official comes here, and this is the email you will log in with."
               autoComplete="email"
               disabled={readOnly}
             />
             <Field
               form={form}
               name="noticesPhone"
-              label="Notices phone"
+              label="Phone for notices"
               type="tel"
               inputMode="tel"
               placeholder="+91 98450 12345"
@@ -325,10 +325,10 @@ function TermSheetPreview({ legalName }: { legalName?: string }) {
       data-testid="termsheet-preview"
     >
       <h3 className="text-xs font-semibold text-muted-foreground mb-1.5">
-        In your term sheet
+        In your agreement
       </h3>
       <p className="text-sm text-foreground leading-relaxed">
-        This Term Sheet is between <strong>BlendBox Innovations LLP</strong> and{" "}
+        It will be between <strong>BlendBox Innovations LLP</strong> and{" "}
         {legalName?.trim() ? (
           <strong data-testid="preview-legal-name">{legalName.trim()}</strong>
         ) : (

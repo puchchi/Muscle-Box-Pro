@@ -184,7 +184,7 @@ function InstructionsPanel({
         role="status"
         data-testid="payment-instructions-loading"
       >
-        <p className="text-sm text-muted-foreground">Fetching the transfer details...</p>
+        <p className="text-sm text-muted-foreground">Getting your transfer details...</p>
       </section>
     );
   }

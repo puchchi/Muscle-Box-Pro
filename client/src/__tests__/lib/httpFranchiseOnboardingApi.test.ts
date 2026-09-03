@@ -3,12 +3,12 @@ import { httpFranchiseOnboardingApi as api } from "@/lib/httpFranchiseOnboarding
 import type { FranchiseOnboardingState } from "@shared/franchise/onboarding/types";
 
 /**
- * `FranchiseOnboardingApi` mapped onto the fourteen wizard routes.
+ * `FranchiseOnboardingApi` mapped onto the wizard routes.
  *
  * `httpOnboardingApi.test.ts`'s brief, for the franchise half: what earns a test is not that a POST
- * reaches a URL, it is each place the sixteen-method contract and the fourteen routes disagree, plus
- * the three-call upload dance. Every one of those is somewhere a wrong guess stays invisible until
- * integration.
+ * reaches a URL, it is each place the sixteen-method contract and the stack's routes disagree, plus
+ * the three-call upload dance and the one method that answers something other than a state. Every one
+ * of those is somewhere a wrong guess stays invisible until integration.
  *
  * `fetch` is mocked, so these pin what this repo *sends and accepts*. They do not claim the backend
  * agrees; the notes in `httpFranchiseOnboardingApi.ts` are what carry that.
@@ -318,22 +318,107 @@ describe("uploading a document", () => {
   });
 });
 
-describe("the method with no route", () => {
+describe("the one method whose success is not a state", () => {
+  const CONTENT_HASH = "a".repeat(64);
+  const SIGNING_URL = "https://sandbox.leegality.com/sign/TOKEN-4f2a";
+
   /**
-   * Step 7b hands off to Leegality and needs credentials this account does not hold. Refusing is the
-   * whole behaviour: a fabricated URL would send a franchisee to a signing session that does not
-   * exist, having told them their term sheet was ready.
+   * The handoff is the reason this method cannot share `state()`. Asserted together with the body
+   * because the pair is the contract: the hash is echoed rather than chosen, and the URL comes back
+   * beside a state that deliberately has nowhere to put it.
    */
-  it("refuses e-sign without calling anything", async () => {
+  it("posts the sign type and the pinned hash, and returns the signing URL beside the state", async () => {
+    queue({
+      state: state({ currentStep: 7, status: "esign_requested" }),
+      handoff: { signingUrl: SIGNING_URL, expiresAt: "2026-09-02T12:45:00.000Z" },
+    });
+
     const result = await api.requestEsign(HANDLE, {
       signType: "aadhaar",
-      contentHash: "a".repeat(64),
+      contentHash: CONTENT_HASH,
+    });
+
+    const [sent] = requests();
+    expect(sent.method).toBe("POST");
+    expect(sent.url).toBe(`${BASE}/franchise/onboarding/esign`);
+    expect(sent.headers.Authorization).toBe(`Bearer ${HANDLE}`);
+    expect(sent.body).toEqual({ signType: "aadhaar", contentHash: CONTENT_HASH });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.data.handoff.signingUrl).toBe(SIGNING_URL);
+    expect(result.data.state.currentStep).toBe(7);
+  });
+
+  /**
+   * A fourth attempt, and the code is `frozen` rather than one of its own.
+   *
+   * `FranchiseOnboardingErrorCode` is shared with the backend and adding a member is a change on both
+   * sides, so `franchiseEsignAttemptsExhausted` reuses `frozen` and carries the explanation in the
+   * message. That makes the *message* what has to survive this mapping — it is the only place a
+   * franchisee is told a person will pick this up — and `frozen` is in the recognised set, so it does,
+   * verbatim rather than replaced by the status's generic sentence.
+   */
+  it("passes the exhausted-attempts refusal through as frozen with the server's own sentence", async () => {
+    fail(409, {
+      code: "frozen",
+      message:
+        "We couldn't complete the signing after three attempts. We'll be in touch to sort this out with you — nothing is lost.",
+    });
+
+    const result = await api.requestEsign(HANDLE, {
+      signType: "aadhaar",
+      contentHash: CONTENT_HASH,
     });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("unreachable");
-    expect(result.error.message).toContain("nothing you've given us is lost");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.error.code).toBe("frozen");
+    expect(result.error.message).toContain("three attempts");
+  });
+
+  /**
+   * 409 maps to `wrong_step` by status, and this body has to beat that.
+   *
+   * The two send a franchisee somewhere different: `wrong_step` re-reads the record and moves the
+   * wizard, while `content_mismatch` means the document itself moved and the only recovery is a reload
+   * that re-pins it. Losing the distinction is somebody clicking a button that keeps failing on a page
+   * that keeps looking correct.
+   */
+  it("keeps content_mismatch rather than falling back to the status's wrong_step", async () => {
+    fail(409, {
+      code: "content_mismatch",
+      message: "Your copy of the term sheet is out of date. Reload this page. Nothing has been signed.",
+    });
+
+    const result = await api.requestEsign(HANDLE, {
+      signType: "aadhaar",
+      contentHash: CONTENT_HASH,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.error.code).toBe("content_mismatch");
+  });
+
+  /**
+   * An unconfigured Leegality, or a create whose answer we never heard, is a 500 carrying `serverError`
+   * — which is not in the recognised set, so the status decides. `network` is right: its copy is "try
+   * again in a moment", which is the truth, and nothing about the term sheet or the franchisee is wrong.
+   */
+  it("reports a server-side signing failure as network rather than as anything the franchisee did", async () => {
+    fail(500, { code: "serverError", message: "Internal server error" });
+
+    const result = await api.requestEsign(HANDLE, {
+      signType: "aadhaar",
+      contentHash: CONTENT_HASH,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.error.code).toBe("network");
+    // And not the backend's words, which at that point are a runtime's boilerplate rather than copy.
+    expect(result.error.message).not.toContain("Internal server error");
   });
 });
 

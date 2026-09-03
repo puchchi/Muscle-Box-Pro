@@ -292,14 +292,20 @@ const nextConfig = {
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
       {
-        // Franchise onboarding, whose step 7 leaves for Digio. The handle in this path is the
+        // Franchise onboarding, whose step 7 leaves for Leegality. The handle in this path is the
         // credential for a flow that signs a ₹25 lakh term sheet, and the thing it would leak to
         // is a signing session in a named person's identity.
+        //
+        // Load-bearing as of the e-sign routes going in, not theoretical: step 7 navigates this tab
+        // to `*.leegality.com` with `window.location.assign`, and the URL it leaves is
+        // `/franchise/onboarding/<slug>/<handle>`. Without this header the 30-day handle arrives at
+        // a third party in a `Referer`, which is the same leak `mbp-backend` §4.3 refuses to put in
+        // an access log.
         source: "/franchise/onboarding/:path*",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
       {
-        // Digio's return path. It carries no handle by design, but it does carry Digio's own
+        // Leegality's return path. It carries no handle by design, but it does carry Leegality's own
         // request identifiers, and it is the one page in this flow whose next navigation is
         // back into a credential-bearing URL.
         source: "/franchise/esign-return",
