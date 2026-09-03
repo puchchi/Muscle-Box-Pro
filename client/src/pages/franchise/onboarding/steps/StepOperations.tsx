@@ -17,7 +17,6 @@ import {
   SubmitBar,
   useServerFieldErrors,
 } from "../formKit";
-import { BODY_TEXT } from "../shell";
 import { useFranchiseDraftAutosave } from "../useFranchiseDraftAutosave";
 import type { FranchiseStepViewProps } from "../types";
 
@@ -142,29 +141,25 @@ export default function StepOperations({
             form={form}
             name="warehouseNotIdentified"
             label="Not decided yet"
-            // Dropped once it is ticked, where the paragraph below is the answer. What is left is
-            // the half a franchisee cannot work out for themselves: the label says what ticking
-            // means, and this says what it costs them.
+            // Both halves say what ticking costs, which is the part a franchisee cannot work out
+            // from the label. Under the tick rather than in a paragraph of its own below it: the
+            // three fields it replaces are gone, so a block on its own sat in their gap.
             description={
               values.warehouseNotIdentified
-                ? undefined
+                ? "We will ask for the address and storage details before your first consignment."
                 : "This will not hold up your agreement."
             }
             onCheckedChange={onWarehouseNotIdentified}
             disabled={readOnly}
           />
 
-          {values.warehouseNotIdentified ? (
-            <p className={BODY_TEXT}>
-              We will ask for the address, the area and the storage conditions before your first
-              consignment leaves.
-            </p>
-          ) : (
+          {!values.warehouseNotIdentified && (
             <>
               <AreaField
                 form={form}
                 name="warehouseAddress"
                 label="Warehouse address"
+                rows={2}
                 placeholder="Building, street, area, city, state, PIN"
                 description="Where we deliver protein consignments. It can be the registered address."
                 disabled={readOnly}
@@ -187,7 +182,6 @@ export default function StepOperations({
                   label="Temperature control"
                   placeholder="Choose one"
                   options={TEMPERATURE_OPTIONS}
-                  description="It changes how we schedule deliveries."
                   disabled={readOnly}
                 />
               </Row>
@@ -200,8 +194,8 @@ export default function StepOperations({
             form={form}
             name="deploymentPlan"
             label="Deployment plan"
-            rows={4}
-            placeholder="Three machines into the two Sector 62 chains within the first month, then two more once we see the volumes."
+            rows={3}
+            placeholder="Three machines into the two Sector 62 chains in month one, then two more."
             // The "write NA" half is the schema's own message for an empty box, and it arrives at
             // the moment it is needed rather than sitting under a field somebody is filling in.
             description="Which gyms, roughly when, and in what order. A plan, not a commitment."

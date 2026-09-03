@@ -66,7 +66,7 @@ describe("the warehouse box on step 6", () => {
     await user.click(screen.getByTestId("input-warehouseNotIdentified"));
     expect(screen.queryByTestId("input-warehouseAddress")).not.toBeInTheDocument();
     expect(screen.queryByTestId("input-warehouseAreaSqft")).not.toBeInTheDocument();
-    expect(screen.getByText(/before your first consignment leaves/)).toBeInTheDocument();
+    expect(screen.getByText(/before your first consignment/)).toBeInTheDocument();
 
     await user.click(screen.getByTestId("input-warehouseNotIdentified"));
     expect(screen.getByTestId("input-warehouseAddress")).toBeInTheDocument();

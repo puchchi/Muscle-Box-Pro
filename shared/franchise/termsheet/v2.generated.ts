@@ -6,7 +6,7 @@
  * Regenerate with `npm run gen:agreement`; that script's header explains why the text is
  * derived rather than typed, and what is hand-authored alongside it.
  *
- * Source at generation: 67561 bytes, 74 sections.
+ * Source at generation: 68185 bytes, 74 sections.
  *
  * Editing this file by hand defeats the point of generating it — the next run silently
  * reverts the edit, and until it does, the signed document and the reviewed document differ.
@@ -392,7 +392,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
     heading: "Capital Recovery Model",
     blocks: [
       { kind: "paragraph", text: "The Territory Franchise operates under a capital recovery model." },
-      { kind: "paragraph", text: "Until the franchisee has received cumulative eligible protein-business profit equal to the Capital Recovery Threshold (₹29,50,000 at 18% GST; see Section 57):" },
+      { kind: "paragraph", text: "Until the franchisee has received cumulative eligible protein-business profit equal to the Capital Recovery Threshold (the franchise investment plus the GST and other statutory levies borne by the franchisee on it; see Section 57):" },
       { kind: "subheading", text: "Protein Business", level: 2 },
       {
         kind: "callout",
@@ -451,7 +451,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
     heading: "Capital Recovery Example",
     blocks: [
       { kind: "paragraph", text: "This example illustrates the calculation mechanism only. It is not a projection or forecast of actual revenue, profit, or timeline, and actual figures will depend on the factors listed in Section 56." },
-      { kind: "paragraph", text: "For a Territory Franchise, the Capital Recovery Threshold is ₹29,50,000 (₹25,00,000 base investment plus 18% GST; see Section 57)." },
+      { kind: "paragraph", text: "The Capital Recovery Threshold for a franchise is the franchise investment plus the GST and other statutory levies borne by the franchisee on it, determined under Section 57. No figure is fixed here, because the applicable rates are the ones in force when each payment is made. For the arithmetic below, and for no other purpose, assume a threshold of ₹30,00,000." },
       { kind: "paragraph", text: "If the franchisee has received:" },
       {
         kind: "callout",
@@ -460,15 +460,15 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
       { kind: "paragraph", text: "in eligible protein-business profit distributions:" },
       {
         kind: "callout",
-        lines: ["Remaining recovery amount = ₹7,50,000"],
+        lines: ["Remaining recovery amount = ₹8,00,000"],
       },
-      { kind: "paragraph", text: "Any advertising income received during this period does not reduce the ₹7,50,000 remaining recovery amount." },
+      { kind: "paragraph", text: "Any advertising income received during this period does not reduce the ₹8,00,000 remaining recovery amount." },
       { kind: "paragraph", text: "If the franchisee subsequently receives ₹10,00,000 in eligible protein-business profit:" },
       {
         kind: "bullets",
         items: [
-          "₹7,50,000 completes capital recovery.",
-          "The remaining ₹2,50,000 is distributed under the post-recovery 50:50 protein profit-sharing model.",
+          "₹8,00,000 completes capital recovery.",
+          "The remaining ₹2,00,000 is distributed under the post-recovery 50:50 protein profit-sharing model.",
         ],
       },
       { kind: "paragraph", text: "The MuscleBoxPro dashboard will track the recovery status." },
@@ -1033,7 +1033,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
     number: "45",
     heading: "Termination",
     blocks: [
-      { kind: "paragraph", text: "MuscleBoxPro may terminate the franchise for reasons including:" },
+      { kind: "paragraph", text: "MuscleBoxPro may terminate the franchise for these reasons, and for no others:" },
       {
         kind: "bullets",
         items: [
@@ -1246,7 +1246,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
       { kind: "paragraph", text: "Market: Defined geographic territory" },
       { kind: "paragraph", text: "Machine Ownership: MuscleBoxPro" },
       { kind: "paragraph", text: "Initial Protein Profit Share: 100% Franchisee" },
-      { kind: "paragraph", text: "Capital Recovery Threshold: ₹29,50,000 at 18% GST (see Section 57)" },
+      { kind: "paragraph", text: "Capital Recovery Threshold: The franchise investment plus the GST and other statutory levies borne by the franchisee on it (see Section 57)" },
       { kind: "paragraph", text: "Advertising Profit Share: 25% Franchisee / 75% MuscleBoxPro" },
       { kind: "paragraph", text: "Post-Recovery Protein Profit: 50% Franchisee / 50% MuscleBoxPro" },
       { kind: "paragraph", text: "Machine Delivery: MuscleBoxPro" },
@@ -1272,7 +1272,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
       { kind: "paragraph", text: "Machine Ownership: MuscleBoxPro" },
       { kind: "paragraph", text: "City Rights: Exclusive, subject to performance and reserved-account provisions" },
       { kind: "paragraph", text: "Advertising Profit Share: 25% Franchisee / 75% MuscleBoxPro" },
-      { kind: "paragraph", text: "Protein Profit Share: Same model as the Territory Franchise (100% Franchisee until the Capital Recovery Threshold, ₹59,00,000 at 18% GST, is recovered, then 50% Franchisee / 50% MuscleBoxPro; see Sections 57 and 69)" },
+      { kind: "paragraph", text: "Protein Profit Share: Same model as the Territory Franchise (100% Franchisee until the Capital Recovery Threshold, being the franchise investment plus the GST and other statutory levies borne by the franchisee on it, is recovered, then 50% Franchisee / 50% MuscleBoxPro; see Sections 57 and 69)" },
       { kind: "paragraph", text: "Machine Delivery: MuscleBoxPro" },
       { kind: "paragraph", text: "Protein Delivery: MuscleBoxPro to franchisee warehouse" },
       { kind: "paragraph", text: "Local Logistics: Franchisee" },
@@ -1361,7 +1361,7 @@ export const PROGRAM_SECTIONS: readonly Section[] = [
           "\"Territory\" means the geographic area assigned to a Territory Franchise, or the defined city assigned to a City Franchise, as applicable.",
           "\"Supplementary Terms Agreement\" means any written agreement signed by both Parties after this document's execution that amends or supplements this document. Where this document states that a matter \"will be specified in\", \"governed by\", or \"subject to\" a future or separate agreement, it means a Supplementary Terms Agreement, or, until one is signed, good-faith agreement between the Parties consistent with the rest of this document. This document does not contemplate a separate \"definitive franchise agreement\" superseding it; once executed under Section 72, this document is the definitive, binding agreement between the Parties (see Section 56).",
           "\"Distributable Profit\" (referred to elsewhere in this document as \"eligible protein-business profit\") means the profit calculated under Section 16 (Franchise-Level Profit Calculation), which already accounts for the gym's profit share paid under Section 15. The reporting and audit procedure for Distributable Profit is set out in Section 62.",
-          "\"Capital Recovery Threshold\" means the total amount actually paid by the franchisee towards the franchise investment under Section 6, inclusive of GST and other statutory levies borne by the franchisee. At an 18% GST rate, this is ₹29,50,000 for a Territory Franchise (base investment ₹25,00,000) and ₹59,00,000 for a City Franchise (base investment ₹50,00,000), adjusted for the GST rate actually applicable at the time of payment.",
+          "\"Capital Recovery Threshold\" means the total amount actually paid by the franchisee towards the franchise investment under Section 6, inclusive of GST and other statutory levies borne by the franchisee on it. It is therefore that franchise's own investment together with those levies as actually charged, at the rate in force when each payment is made. This document fixes neither a rupee figure nor a rate for it, deliberately: a rate stated here would be wrong from the day the statutory rate changed, and the threshold is in every case the investment plus what the franchisee actually bore on it.",
           "\"Machine(s)\" means the MuscleBoxPro automated protein shake machines allocated to a franchise.",
           "\"OEM\" means the original equipment manufacturer engaged by MuscleBoxPro to manufacture the Machines.",
           "\"Confidential Information\" means any non-public information disclosed by MuscleBoxPro to the franchisee in connection with the franchise, including but not limited to the categories listed in Section 47.",

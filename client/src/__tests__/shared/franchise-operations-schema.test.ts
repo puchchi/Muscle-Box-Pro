@@ -91,6 +91,32 @@ describe("the warehouse box", () => {
   });
 });
 
+describe("the operations contact", () => {
+  // Step 6 has no control for it any more, so an untouched submit sends two empty strings and the
+  // schema has to accept them. The undertaking that goes into Schedule 2 in their place is pinned
+  // in `franchise-onboarding-mock.test.ts`, beside the warehouse one.
+  it("passes when neither half has been nominated", () => {
+    expect(errors({ ...UNTICKED, operationsContactName: "", operationsContactPhone: "" })).toEqual({});
+  });
+
+  it("still refuses a phone number that is not one", () => {
+    expect(errors({ ...UNTICKED, operationsContactPhone: "call the office" })).toEqual({
+      operationsContactPhone: "A valid phone number is required",
+    });
+  });
+
+  it("defaults to empty, so a client that stops sending the fields still parses", () => {
+    const {
+      operationsContactName: _name,
+      operationsContactPhone: _phone,
+      ...withoutTheContact
+    } = UNTICKED;
+    const parsed = operationsReadinessSchema.parse(withoutTheContact);
+    expect(parsed.operationsContactName).toBe("");
+    expect(parsed.operationsContactPhone).toBe("");
+  });
+});
+
 describe("the deployment plan", () => {
   it("takes NA", () => {
     expect(errors({ ...UNTICKED, deploymentPlan: "NA" })).toEqual({});

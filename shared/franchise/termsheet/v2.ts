@@ -33,6 +33,27 @@
  *     ones that bind this franchisee are in Schedule 1, and Schedule 1 says it prevails over them.
  *   - Where something is unresolved, emit a `todo` rather than inventing or omitting a clause.
  *
+ * ── The Capital Recovery Threshold is not a rupee figure here ────────────────
+ * Both tables state it as "{{investment}}, plus GST and other statutory levies" rather than as
+ * `{{capitalRecoveryThreshold}}`, which this document does not render at all. The threshold is the one
+ * amount in the instrument that is a *function of a tax rate*: §57 defines it as what the franchisee
+ * actually paid inclusive of the levies they bore, so a signed document stating ₹29,50,000 has hard-coded
+ * 18% into a franchise whose second instalment may be charged at a different rate. The figure is not wrong
+ * today; it is wrong on the day the rate moves, and by then it is signed.
+ *
+ * So the derivation is signed instead of its result, and the two agree by construction. `program.ts` still
+ * computes `capitalRecoveryPaise` and we still store it, because MBP has to track recovery against a number
+ * and the dashboard has to show one (§20's last line, §62's query right); what changed is that the *number*
+ * is our record of the rate in force, and the *document* is the rule that produced it. When they disagree,
+ * §57 and this Schedule say the rule wins, which is the right way round.
+ *
+ * `capitalRecoveryThreshold` therefore stays in `FranchiseTermSheetFields` and stays populated: 1.0 renders
+ * it in two places and a franchisee has signed 1.0, so the field is evidence and cannot be removed. One
+ * consequence to know: it was also the token whose absence stopped a City franchise with no threshold set
+ * from being issued a document. That guard is not lost, because the same franchise has no `paymentSchedule`
+ * either and `{{firstInstalment}}` is still unresolved for it, but the guard is now carried by one token
+ * rather than two. `termsAreComplete` in `program.ts` is the pre-flight that says so out loud.
+ *
  * ── Why Schedule 1 has to say it prevails ────────────────────────────────────
  * The source document describes **both** tiers throughout — §2 and §3, §17 and §21, §53 and §54 — because it
  * is a programme brochure as well as an instrument. A franchisee reading their own executed agreement would
@@ -177,12 +198,16 @@ const PARTICULARS: Section = {
         ["Payable", "{{firstInstalmentTrigger}}"],
         ["Second instalment", "{{secondInstalment}}"],
         ["Payable", "{{secondInstalmentTrigger}}"],
-        ["Capital Recovery Threshold, inclusive of GST (Section 57)", "{{capitalRecoveryThreshold}}"],
+        // Not a rupee figure, and deliberately not `{{capitalRecoveryThreshold}}` — see the header note.
+        [
+          "Capital Recovery Threshold (Section 57)",
+          "{{investment}}, plus the GST and other statutory levies actually borne by the Franchisee on that investment",
+        ],
       ],
     },
     {
       kind: "paragraph",
-      text: "The Capital Recovery Threshold above is the franchise investment together with GST and other statutory levies borne by the Franchisee, calculated at the rate applicable at the date of this document. Section 57 governs how it is determined if that rate changes before payment.",
+      text: "The Capital Recovery Threshold is stated as the investment plus the levies actually borne on it, rather than as a single amount, because those levies are charged at the rates in force when each instalment is paid. Section 57 governs how it is determined. MuscleBoxPro will record the amount reached against it, and the Franchisee may query that record under Section 62.",
     },
     { kind: "subheading", text: "Profit Sharing", level: 2 },
     {
@@ -258,8 +283,8 @@ export const FRANCHISE_AGREEMENT_V2: Agreement = {
         ["Franchise", "{{tierName}}"],
         ["Territory", "{{territory}}"],
         ["Machine allocation", "{{machineAllocation}}"],
-        ["Franchise investment", "{{investment}}"],
-        ["Capital Recovery Threshold", "{{capitalRecoveryThreshold}}"],
+        ["Franchise investment, exclusive of GST", "{{investment}}"],
+        ["Capital Recovery Threshold (Section 57)", "{{investment}}, plus GST and other statutory levies"],
         ["Effective Date", "{{effectiveDate}}"],
         ["Open for execution until", "{{validUntil}}"],
       ],

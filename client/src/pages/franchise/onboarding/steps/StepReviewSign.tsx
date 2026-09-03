@@ -105,7 +105,6 @@ const SIGN_TYPE_LABELS: Record<EsignSignType, string> = {
 export default function StepReviewSign({
   state,
   isSubmitting,
-  goToStep,
   actions,
 }: FranchiseStepViewProps) {
   const [handoffProblem, setHandoffProblem] = useState<string | null>(null);
@@ -212,7 +211,6 @@ export default function StepReviewSign({
           }
           problem={handoffProblem}
           isSubmitting={isSubmitting}
-          onCheckSignatory={() => goToStep(1)}
           onSign={() => void goToSigning()}
         />
       )}
@@ -268,7 +266,6 @@ function SignPanel({
   blockedReason,
   problem,
   isSubmitting,
-  onCheckSignatory,
   onSign,
 }: {
   signatoryName: string;
@@ -280,7 +277,6 @@ function SignPanel({
   blockedReason: string | null;
   problem: string | null;
   isSubmitting: boolean;
-  onCheckSignatory(): void;
   onSign(): void;
 }) {
   const signatoryFor = [legalEntityName, aadhaarLast4 ? `Aadhaar ending ${aadhaarLast4}` : null]
@@ -308,35 +304,22 @@ function SignPanel({
 
       {previousAttempt && <PreviousAttemptNote attempt={previousAttempt} />}
 
-      {/* The name and the way to correct it on one row, for the reason a checkout puts "Change"
-          beside a delivery address: the answer is what is being checked, and the correction is
-          incidental until it is wrong. */}
+      {/* A summary with no "Change" beside it, on purpose. Nobody reaches this screen without
+          `kycSubmittedAt`, so `freezeReason` has already locked step 1 and the button led to a form
+          that could only be read. A wrong name here is a conversation, and the lock on step 1 is
+          where that sentence lives. */}
       <div
-        className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3 flex items-start justify-between gap-3"
+        className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3"
         data-testid="signatory-summary"
       >
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-muted-foreground mb-1">
-            Who will be asked to sign
-          </p>
-          <p className="text-sm font-semibold text-foreground">
-            {signatoryName || "Nobody named yet"}
-            {signatoryDesignation ? `, ${signatoryDesignation}` : ""}
-          </p>
-          {signatoryFor && (
-            <p className={`${HINT_TEXT} mt-1`}>{signatoryFor}</p>
-          )}
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onCheckSignatory}
-          aria-label="Change who signs"
-          className="min-h-11 px-3 -mr-1 rounded-lg text-xs font-semibold text-primary-ink hover:bg-primary/10 hover:text-primary-ink flex-shrink-0 cursor-pointer"
-          data-testid="button-check-signatory"
-        >
-          Change
-        </Button>
+        <p className="text-xs font-semibold text-muted-foreground mb-1">
+          Who will be asked to sign
+        </p>
+        <p className="text-sm font-semibold text-foreground">
+          {signatoryName || "Nobody named yet"}
+          {signatoryDesignation ? `, ${signatoryDesignation}` : ""}
+        </p>
+        {signatoryFor && <p className={`${HINT_TEXT} mt-1`}>{signatoryFor}</p>}
       </div>
 
       {blockedReason && (

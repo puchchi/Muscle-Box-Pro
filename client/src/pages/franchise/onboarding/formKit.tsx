@@ -91,6 +91,11 @@ const areaClass =
  * title and the first label under it were the same size and the same weight, and the label's
  * darker grey made it the louder of the two. A card title has to outrank the fields it holds.
  *
+ * Fields are 16px apart, against the 8px `FormItem` puts between a label, its control and its
+ * hint. The ratio is what does the grouping, not the absolute gap: at 20px the cards read as a
+ * list of separate questions with air around each, and there is no room for a wider gap on a
+ * phone anyway.
+ *
  * `description` is for a note that governs the whole card rather than one field. Hung on the first
  * field instead, it reads as describing that field: "often not the signatory" under `Operations
  * contact` and beside an empty `Operations phone` left the row ragged and the note half-scoped.
@@ -107,11 +112,11 @@ export function Section({
 }) {
   return (
     <fieldset className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
-      <legend className={`float-left w-full ${description ? "mb-1" : "mb-5"}`}>
+      <legend className={`float-left w-full ${description ? "mb-1" : "mb-4"}`}>
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
       </legend>
-      {description && <p className={`${HINT_TEXT} clear-both mb-5`}>{description}</p>}
-      <div className="clear-both space-y-5">{children}</div>
+      {description && <p className={`${HINT_TEXT} clear-both mb-4`}>{description}</p>}
+      <div className="clear-both space-y-4">{children}</div>
     </fieldset>
   );
 }
@@ -307,6 +312,10 @@ export function AreaField<T extends FieldValues>({
  * picks up `FormItem`'s spacing on top of the dead space `min-h-11` leaves under a one-line label.
  * Measured at 28px, and starting at the checkbox's left edge rather than the label's text, which
  * read as a paragraph about the card rather than the note under that one tick.
+ *
+ * That pull-up is also the reason a note about the tick belongs in `description` rather than in a
+ * block beside it: an element after the tick clears the whole 44px row and then the card's own gap,
+ * which is 40px of space for one grey line.
  */
 export function CheckField<T extends FieldValues>({
   form,

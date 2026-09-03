@@ -52,13 +52,16 @@ import type { FranchiseStepViewProps } from "./types";
  * The nine steps are the server's, and nothing here changes them: `currentStep` is still whatever
  * the record says, `completedSteps` still gates what may be opened, and every step still submits
  * its own call. What changed is that a franchisee is no longer shown a ladder of nine. A **stage**
- * is the screen — its name is the `h1` — and the step being worked on is an `h2` inside it, with
- * the stage's other steps as one-line rows above and below (`PhaseSteps`). Nine destinations became
- * four, and the detail moved from the chrome of every screen to the one place it is a choice.
+ * is the screen, and the stage's other steps are one-line rows above and below (`PhaseSteps`).
+ * Nine destinations became four, and the detail moved from the chrome of every screen to the one
+ * place it is a choice.
  *
- * A stage with a single step has no `h2`, because "Territory approval" over a heading reading
- * "Approval" is one heading too many. That is why `headingRef` lands on whichever of the two is the
- * step on screen: focus after navigating has to arrive at the thing that changed.
+ * **The `h1` is the step, not the stage.** It was the other way round, and it read wrongly: the
+ * stage name is constant across the three screens of `agree`, so 30px of "Your agreement" sat over
+ * an 18px "Operations readiness", and the thing that had actually changed was the smaller of the
+ * two. The stage is now a label above the heading, and it is dropped where the stage is one step,
+ * because "Territory approval" over "Approval" is one heading too many. The stage's blurb appears
+ * only on the stage's first step: it is the same sentence on all three otherwise.
  *
  * ## One difference from the gym flow worth naming
  *
@@ -97,7 +100,8 @@ const STEP_COMPONENTS: Record<
  *
  * The blurb says why the stage exists, not what is in it. The steps are already listed twice on the
  * screen below it, as the collapsed rows and as the step's own blurb, and a stage that is one step
- * gets no blurb at all: approval's would restate step 4's card one line above it.
+ * gets no blurb at all: approval's would restate step 4's card one line above it. It renders on the
+ * stage's first step only, so it is read on the way in rather than repeated on every screen.
  */
 const PHASE_COPY: Record<FranchisePhaseId, { heading: string; blurb?: string }> = {
   apply: {
@@ -176,6 +180,9 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
   const phaseSteps = franchiseStepsInPhase(phase.id).map((m) => m.step);
   const before = phaseSteps.filter((step) => step < viewStep);
   const after = phaseSteps.filter((step) => step > viewStep);
+  // A stage of one step has nothing to distinguish from the step, so it keeps the stage's own
+  // heading and skips the label above it. See `PHASE_COPY`.
+  const isOnlyStep = phaseSteps.length === 1;
   const StepBody = STEP_COMPONENTS[viewStep];
   const isBehind = viewStep < currentStep;
   const showIntro = viewStep === 1 && !state.completedSteps.includes(1);
@@ -241,37 +248,23 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
           ) : (
             <>
               <div>
+                {!isOnlyStep && (
+                  <p className="text-xs font-semibold text-muted-foreground">{phaseCopy.heading}</p>
+                )}
                 <h1
-                  // The step on screen, for a stage that is one step. See this module's header.
-                  ref={phaseSteps.length === 1 ? headingRef : undefined}
+                  ref={headingRef}
                   tabIndex={-1}
                   className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground outline-none"
                 >
-                  {phaseCopy.heading}
+                  {isOnlyStep ? phaseCopy.heading : meta.title}
                 </h1>
-                {phaseCopy.blurb && (
-                  <p className={`${BODY_TEXT} mt-1.5`}>
-                    {phaseCopy.blurb}
-                  </p>
+                {!isOnlyStep && <p className={`${BODY_TEXT} mt-1.5`}>{meta.blurb}</p>}
+                {before.length === 0 && phaseCopy.blurb && (
+                  <p className={`${BODY_TEXT} mt-1`}>{phaseCopy.blurb}</p>
                 )}
               </div>
 
               <PhaseSteps steps={before} state={state} canView={canView} onSelect={goToStep} />
-
-              {phaseSteps.length > 1 && (
-                <div>
-                  <h2
-                    ref={headingRef}
-                    tabIndex={-1}
-                    className="text-lg font-semibold text-foreground outline-none"
-                  >
-                    {meta.title}
-                  </h2>
-                  <p className={`${BODY_TEXT} mt-1`}>
-                    {meta.blurb}
-                  </p>
-                </div>
-              )}
             </>
           )}
 

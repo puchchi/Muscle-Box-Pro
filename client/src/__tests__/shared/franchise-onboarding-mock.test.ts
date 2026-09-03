@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { GOLDEN_TERM_SHEET_V1 } from "@shared/franchise/termsheet/goldenVector";
 import {
+  OPERATIONS_CONTACT_NOT_NOMINATED_DECLARATION,
+  OPERATIONS_CONTACT_PHONE_DEFERRED,
   TERM_SHEET_VALIDITY_DAYS,
   WAREHOUSE_NOT_IDENTIFIED_DECLARATION,
   termSheetValidUntil,
@@ -737,6 +739,28 @@ describe("the term sheet", () => {
     expect(state.termSheet).not.toBeNull();
     const text = renderIssuedTermSheetText(state, state.termSheet!.effectiveDate);
     expect(text).toContain(WAREHOUSE_NOT_IDENTIFIED_DECLARATION);
+  });
+
+  it("issues with a declaration where no operations contact has been nominated", async () => {
+    // Step 6 stopped asking, and `canIssue()` only refuses a token it cannot resolve: an empty
+    // string resolves. So without the substitution this walk would produce a signed document with
+    // two blank cells in Schedule 2 and nothing would have failed.
+    await throughKyc();
+    previewApprove(HANDLE);
+    await expectState(api.ackFranchise(HANDLE));
+    await expectState(
+      api.submitOperations(HANDLE, {
+        ...VALID_OPERATIONS,
+        operationsContactName: "",
+        operationsContactPhone: "",
+      }),
+    );
+
+    const state = await expectState(api.markTermSheetViewed(HANDLE));
+    expect(state.termSheet).not.toBeNull();
+    const text = renderIssuedTermSheetText(state, state.termSheet!.effectiveDate);
+    expect(text).toContain(OPERATIONS_CONTACT_NOT_NOMINATED_DECLARATION);
+    expect(text).toContain(OPERATIONS_CONTACT_PHONE_DEFERRED);
   });
 
   it("is immutable once signed", async () => {

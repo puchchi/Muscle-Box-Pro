@@ -122,19 +122,55 @@ export const GOLDEN_TERM_SHEET_V1: FranchiseTermSheetGoldenVector = {
  * program document fixes — with three values different:
  *
  *   - `tierName`, now "MuscleBoxPro", the spelling the document itself uses. See v1's note.
- *   - `capitalRecoveryThreshold`, ₹29,50,000 rather than ₹25,00,000. §57 makes the threshold the
- *     investment grossed up by the GST the franchisee bore, so it is arithmetic on the recorded
- *     investment rather than a published figure, and it is no longer equal to the investment.
- *     `program.ts`'s `capitalRecoveryPaise` is what produces it.
+ *   - `capitalRecoveryThreshold`, ₹29,50,000 rather than ₹25,00,000, and **as of 2026-09-04 this value
+ *     no longer reaches the 2.0 hash at all**. The document states the threshold as the investment plus
+ *     the levies borne on it rather than as an amount — `v2.ts`'s header has the argument — so the field
+ *     is here because `FranchiseTermSheetFields` requires it and 1.0 renders it, not because 2.0 does.
+ *     Editing it cannot move `contentHash` below, which is worth knowing before trusting it as a probe.
  *   - nothing else. Every other string is byte-identical to v1's, deliberately: two vectors that differ
  *     in more places than the version does make a hash change impossible to attribute.
  *
- * `length` is 69,798 against v1's 20,818 because 2.0 is the whole 72-section programme document rather
+ * `length` is 70,675 against v1's 20,818 because 2.0 is the whole 72-section programme document rather
  * than a 17-clause term sheet. That ratio is the check worth doing by eye if this ever fails: a 2.0 hash
  * that moved with the length roughly unchanged is a wording change, and one whose length collapsed is a
  * generated file that lost sections.
  *
- * ## This hash was re-pinned once, on 2026-09-03, and that is allowed exactly once more than never
+ * ## This hash has been re-pinned twice, and both times only because nothing had signed 2.0
+ *
+ * ### 2026-09-04, the Capital Recovery Threshold and §45
+ *
+ * 69,798 / `a38aedfa…` → 70,675 / `86860f19…`. Two wording changes, both in the source markdown and
+ * therefore through `programToAgreement.ts`, plus the two Schedule 1 and cover rows in `v2.ts`:
+ *
+ *   - the threshold stops being a rupee figure anywhere in the instrument. `v2.ts`'s header has the whole
+ *     argument; the short version is that ₹29,50,000 hard-codes an 18% GST rate into a document that will
+ *     outlive it, and §57 already defined the threshold as what the franchisee actually bore. §20's worked
+ *     example now assumes a round ₹30,00,000 and says so, because an example needs arithmetic and a
+ *     realistic-looking figure there is a figure somebody will quote back at us;
+ *   - §45's "for reasons including:" becomes "for these reasons, and for no others:". §58 keys both the
+ *     capital-protection exclusion and the qualifying cases to "any ground listed in Section 45", so an
+ *     open-ended list left the boundary of a franchisee's capital protection undefined by construction.
+ *
+ * **The freeze check said nothing had signed 2.0, and it was wrong — because it asked our record rather
+ * than the provider.** Sandbox held an `ESIGN#` row against a 2.0 `contentHash` with `providerStatus: SENT`
+ * and `outcome: pending`, and that is what the check read. Leegality's own answer for the same document
+ * (`01M1M9N6P43Z7T9D3KR46BKVQS`) is `COMPLETED`, one invitee `signed: true`, `signDate 04-09-2026 00:21:14`
+ * IST, certificate present. It was signed **three hours before** this re-pin. Our row still said pending
+ * only because every signing callback 500'd on the `content-type` bug in `providers/leegality.ts` — so the
+ * stale field the freeze check trusted was stale *for a reason that had nothing to do with signing*.
+ *
+ * The lesson is narrower than "check the data", which is what the 2026-09-03 note already said. It is that
+ * an `outcome` we write from a webhook is our record of a signature and not the signature, so a freeze
+ * check against a *signed* document must ask the provider. `getDocument` is one call.
+ *
+ * What was signed: `TERMSHEET#001` of franchise `7fcb79be…`, version 2.0, length 69,747,
+ * `contentHash 8b836189…` — 2.0's **pre-edit** bytes, which no version file now reproduces. So the repo
+ * cannot re-render that instrument; the signed PDF Leegality holds, plus the `contentHash` and `pdfHash` on
+ * the row, are its record. Whether that forces a v3 is a decision and not a fact, and it is open in TODO.md:
+ * the franchise is the `test-franchise-3` entity, and `v2.ts`'s rule exists to keep a *franchisee's* signed
+ * text renderable rather than to freeze the document against a test. Nothing else has signed 2.0.
+ *
+ * ### 2026-09-03, §58's scope
  *
  * It was 68,304 / `7d88048e…` for the first day of 2.0's life. §58 (Capital Protection After 24 Months)
  * said the protection applied "where the franchise is terminated for any reason, whether by MuscleBoxPro,
@@ -181,7 +217,7 @@ export const GOLDEN_TERM_SHEET_V2: FranchiseTermSheetGoldenVector = {
     firstInstalmentTrigger: "At franchise registration",
     secondInstalment: "₹12,50,000",
     secondInstalmentTrigger: "When machines are ready at the OEM",
-    // ₹25,00,000 plus 18% GST. Not the investment — see the header note.
+    // 2.0 does not render this. Kept because the type requires it and 1.0 prints it twice. Header note.
     capitalRecoveryThreshold: "₹29,50,000",
 
     proteinShareDuringRecovery: "100%",
@@ -205,6 +241,6 @@ export const GOLDEN_TERM_SHEET_V2: FranchiseTermSheetGoldenVector = {
       phone: "+91 33333 33333",
     },
   },
-  contentHash: "a38aedfa52fcb293d3b91c8a510013e502cbd165e0c009c121fe62d240cd032f",
-  length: 69_798,
+  contentHash: "86860f193f06eae4e8f7e61c578ff1b339a7147df0c0ba55cfc71feb8dda03c8",
+  length: 70_675,
 };
