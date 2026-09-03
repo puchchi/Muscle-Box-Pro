@@ -101,7 +101,9 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "agree",
     title: "Operations readiness",
     shortTitle: "Operations",
-    blurb: "Where you'll store stock, who runs the machines, and how you'll roll them out.",
+    // Not a list of the three cards below it, which is what this said: they are titled and 200px
+    // away. What a franchisee cannot see is why any of it is being asked before they have signed.
+    blurb: "Your agreement refers to these, so we ask before it is issued.",
     estimate: "5 minutes",
   },
   {

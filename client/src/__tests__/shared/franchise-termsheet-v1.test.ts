@@ -16,7 +16,13 @@ import {
 } from "@shared/agreement/render";
 import { verifyGoldenVector } from "@shared/agreement/goldenVector";
 import type { Block, Section } from "@shared/agreement/types";
-import { FRANCHISE, franchiseTier, formatInr } from "@shared/franchise/program";
+import {
+  FRANCHISE,
+  FRANCHISE_TIERS,
+  franchiseTier,
+  formatInr,
+  investmentPlusGstPaise,
+} from "@shared/franchise/program";
 import { rupeesInWords } from "@shared/agreement/amountInWords";
 
 /**
@@ -195,6 +201,17 @@ describe("the commercial terms match the published program", () => {
     // here instead of silently moving the hash of a document a real franchisee signed through Aadhaar.
     expect(FIXTURE.capitalRecoveryThreshold).toBe(formatInr(territory.investmentInr));
     expect(FIXTURE.capitalRecoveryThreshold).not.toBe(ISSUED.capitalRecoveryThreshold);
+  });
+
+  it("publishes every threshold as its own investment plus GST", () => {
+    // Onboarding step 5 writes the threshold as "₹25,00,000 plus GST" rather than printing
+    // ₹29,50,000, on the grounds that a franchisee has seen the first number and not the second.
+    // It is only allowed to do that while §57's arithmetic actually holds for what is published
+    // here, so this is the assertion that copy rests on.
+    for (const tier of FRANCHISE_TIERS) {
+      expect(tier.capitalRecoveryInr).not.toBeNull();
+      expect(tier.capitalRecoveryInr! * 100).toBe(investmentPlusGstPaise(tier.investmentInr * 100));
+    }
   });
 
   it("splits the investment the way the published payment schedule does", () => {

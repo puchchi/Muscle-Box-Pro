@@ -4,7 +4,12 @@ import { useState } from "react";
 import { Building2, Coins, Info, Megaphone, TrendingUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { MACHINE_RIGHTS, formatInr, franchiseTier } from "@shared/franchise/program";
+import {
+  MACHINE_RIGHTS,
+  formatInr,
+  franchiseTier,
+  investmentPlusGstPaise,
+} from "@shared/franchise/program";
 import TerritoryCutNotice from "../TerritoryCutNotice";
 import { BODY_TEXT, HINT_TEXT } from "../shell";
 import type { FranchiseStepViewProps } from "../types";
@@ -57,6 +62,11 @@ export default function StepFranchise({
   const alreadyAcked = state.timestamps.franchiseAckAt !== null;
 
   const investmentInr = terms.investmentPaise / 100;
+  // The threshold is §57's investment-plus-GST for both published tiers, and saying it that way
+  // saves a reader working out where a number they have not seen before came from. It is a stored
+  // per-franchise figure though, so a bespoke one still gets printed rather than described.
+  const recoveryIsInvestmentPlusGst =
+    terms.capitalRecoveryPaise === investmentPlusGstPaise(terms.investmentPaise);
 
   return (
     <div className="space-y-6">
@@ -114,8 +124,11 @@ export default function StepFranchise({
           body={
             terms.capitalRecoveryPaise !== null ? (
               <>
-                That runs until {formatInr(terms.capitalRecoveryPaise / 100)} has reached you. It is
-                how the investment comes back, not a permanent margin.
+                That runs until{" "}
+                {recoveryIsInvestmentPlusGst
+                  ? `${formatInr(investmentInr)} plus GST`
+                  : formatInr(terms.capitalRecoveryPaise / 100)}{" "}
+                has reached you. It is how the investment comes back, not a permanent margin.
               </>
             ) : (
               <Pending what="your recovery threshold" inline />

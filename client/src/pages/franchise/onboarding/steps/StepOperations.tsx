@@ -17,6 +17,7 @@ import {
   SubmitBar,
   useServerFieldErrors,
 } from "../formKit";
+import { BODY_TEXT } from "../shell";
 import { useFranchiseDraftAutosave } from "../useFranchiseDraftAutosave";
 import type { FranchiseStepViewProps } from "../types";
 
@@ -39,15 +40,25 @@ import type { FranchiseStepViewProps } from "../types";
  *
  * **Logistics may be undecided, and that is not a blocker either.** A franchisee who has not
  * contracted transport before signing is normal.
+ *
+ * **The operations contact is not asked for here.** It stays in the record and in Schedule 2, and a
+ * later stage fills it in: the person who refills machines is rarely chosen before signing, so a
+ * required field on this screen was collecting a guess that the schedule would then bind.
+ * `fields.ts` renders an undertaking where it is still empty.
  */
 
-const FIELD_LABELS: Record<keyof OperationsReadiness, string> = {
+/**
+ * Partial, and the two absent keys are the operations contact.
+ *
+ * `useServerFieldErrors` filters on this record, so a field with no control on screen must not be
+ * in it: `setFocus` on a name the form never registered does nothing, and the summary would offer
+ * a link to a field that does not exist.
+ */
+const FIELD_LABELS: Partial<Record<keyof OperationsReadiness, string>> = {
   warehouseNotIdentified: "Warehouse",
   warehouseAddress: "Warehouse address",
   warehouseAreaSqft: "Warehouse area",
   temperatureControl: "Temperature control",
-  operationsContactName: "Operations contact",
-  operationsContactPhone: "Operations phone",
   deploymentPlan: "Deployment plan",
   logisticsArrangement: "Logistics",
 };
@@ -77,11 +88,16 @@ export default function StepOperations({
     // empty and `null`/`""` are values rather than the absence of one. Without them a legacy
     // record spreads in without the flag and `warehouseAreaSqft` starts as `undefined`, which
     // the number input renders as an uncontrolled box.
+    //
+    // The two contact fields have no control on this screen and are here so the submit carries
+    // them: whatever a later stage stored survives a re-edit of the rest of the step.
     defaultValues: {
       warehouseNotIdentified: false,
       warehouseAddress: "",
       warehouseAreaSqft: null,
       temperatureControl: "",
+      operationsContactName: "",
+      operationsContactPhone: "",
       ...(state.operations ?? {}),
       ...(state.drafts.operations ?? {}),
     } as OperationsReadiness,
@@ -126,21 +142,22 @@ export default function StepOperations({
             form={form}
             name="warehouseNotIdentified"
             label="Not decided yet"
-            // Dropped once it is ticked, where "tick this if" is an instruction about something
-            // already done and the paragraph below it is the answer.
+            // Dropped once it is ticked, where the paragraph below is the answer. What is left is
+            // the half a franchisee cannot work out for themselves: the label says what ticking
+            // means, and this says what it costs them.
             description={
               values.warehouseNotIdentified
                 ? undefined
-                : "Tick this if you have not settled on a warehouse. It will not hold up your agreement."
+                : "This will not hold up your agreement."
             }
             onCheckedChange={onWarehouseNotIdentified}
             disabled={readOnly}
           />
 
           {values.warehouseNotIdentified ? (
-            <p className="text-sm text-gray-600">
+            <p className={BODY_TEXT}>
               We will ask for the address, the area and the storage conditions before your first
-              consignment leaves. Your agreement says so in Schedule 2.
+              consignment leaves.
             </p>
           ) : (
             <>
@@ -153,13 +170,15 @@ export default function StepOperations({
                 disabled={readOnly}
               />
               <Row>
+                {/* The unit is in the label rather than a line of its own under the box. It is
+                    two words, and a hint that only says "in square feet" is a hint that trains
+                    somebody to skip the ones carrying a fact. */}
                 <Field
                   form={form}
                   name="warehouseAreaSqft"
-                  label="Warehouse area"
+                  label="Warehouse area (sq ft)"
                   placeholder="1200"
                   numeric
-                  description="In square feet."
                   disabled={readOnly}
                 />
                 <SelectField
@@ -168,36 +187,12 @@ export default function StepOperations({
                   label="Temperature control"
                   placeholder="Choose one"
                   options={TEMPERATURE_OPTIONS}
-                  description="Either answer is fine. It changes how we schedule deliveries."
+                  description="It changes how we schedule deliveries."
                   disabled={readOnly}
                 />
               </Row>
             </>
           )}
-        </Section>
-
-        <Section title="Who runs the machines">
-          <Row>
-            <Field
-              form={form}
-              name="operationsContactName"
-              label="Operations contact"
-              placeholder="Sunil Kumar"
-              description="Whoever refills machines and deals with a fault. Often not the signatory."
-              autoComplete="name"
-              disabled={readOnly}
-            />
-            <Field
-              form={form}
-              name="operationsContactPhone"
-              label="Operations phone"
-              type="tel"
-              inputMode="tel"
-              placeholder="+91 98450 12345"
-              autoComplete="tel"
-              disabled={readOnly}
-            />
-          </Row>
         </Section>
 
         <Section title="How you'll deploy">
@@ -207,16 +202,19 @@ export default function StepOperations({
             label="Deployment plan"
             rows={4}
             placeholder="Three machines into the two Sector 62 chains within the first month, then two more once we see the volumes."
-            description="Which gyms, roughly when, and in what order. A plan, not a commitment. Write NA if you have not worked it out yet."
+            // The "write NA" half is the schema's own message for an empty box, and it arrives at
+            // the moment it is needed rather than sitting under a field somebody is filling in.
+            description="Which gyms, roughly when, and in what order. A plan, not a commitment."
             disabled={readOnly}
           />
+          {/* No description: it said "how stock and machines move around your territory", which is
+              the label, the three options and the error message all over again. */}
           <SelectField
             form={form}
             name="logisticsArrangement"
             label="Logistics"
             placeholder="Choose one"
             options={LOGISTICS_OPTIONS}
-            description="How stock and machines move around your territory."
             disabled={readOnly}
           />
         </Section>

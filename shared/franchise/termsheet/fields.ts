@@ -53,6 +53,20 @@ export const WAREHOUSE_NOT_IDENTIFIED_DECLARATION =
   "Not yet identified. The Franchisee will notify MuscleBox Pro of the warehouse address in writing before the first consignment is dispatched.";
 
 /**
+ * What the same schedule says where no operations contact has been nominated.
+ *
+ * The wizard stopped asking for one before signing, because the person who refills machines is
+ * usually not chosen that early and a required field was collecting a guess. `canIssue()` only
+ * refuses a token it cannot resolve, so an empty string would have issued a signed document with
+ * two blank cells in it. Same treatment as the warehouse: an undertaking in place of a fact.
+ */
+export const OPERATIONS_CONTACT_NOT_NOMINATED_DECLARATION =
+  "Not yet nominated. The Franchisee will notify MuscleBox Pro of the operations contact in writing before the first machine is deployed.";
+
+/** The telephone cell of the same row, which has nothing of its own to say until then. */
+export const OPERATIONS_CONTACT_PHONE_DEFERRED = "As notified with the operations contact.";
+
+/**
  * The date a term sheet issued on `effectiveDateIso` lapses, as an ISO date.
  *
  * Arithmetic in UTC on a date with no time in it, so the answer does not depend on the machine
@@ -149,8 +163,10 @@ export function toTermSheetFields(
     fields.warehouseAddress = operations.warehouseNotIdentified
       ? WAREHOUSE_NOT_IDENTIFIED_DECLARATION
       : operations.warehouseAddress;
-    fields.operationsContactName = operations.operationsContactName;
-    fields.operationsContactPhone = operations.operationsContactPhone;
+    fields.operationsContactName =
+      operations.operationsContactName || OPERATIONS_CONTACT_NOT_NOMINATED_DECLARATION;
+    fields.operationsContactPhone =
+      operations.operationsContactPhone || OPERATIONS_CONTACT_PHONE_DEFERRED;
   }
 
   return fields;

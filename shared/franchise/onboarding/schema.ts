@@ -250,11 +250,21 @@ const operationsFields = z.object({
   temperatureControl: z.enum(["yes", "no", ""], {
     errorMap: () => ({ message: "Tell us whether the warehouse is temperature controlled" }),
   }),
-  operationsContactName: z
+  /**
+   * Not asked for at step 6 any more, and optional for that reason.
+   *
+   * The person who refills machines is usually not known before signing, and a required field on
+   * the screen before a term sheet was collecting a guess. Kept in the record rather than deleted:
+   * Schedule 2 of the term sheet has a row for it, the admin screen reads it, and a later stage
+   * fills it in. Empty is the honest value until then, and `fields.ts` renders an undertaking in
+   * the document instead of a blank cell.
+   */
+  operationsContactName: z.string().trim().max(120).default(""),
+  operationsContactPhone: z
     .string()
     .trim()
-    .min(3, "Who will look after the machines day to day?"),
-  operationsContactPhone: z.string().trim().regex(PHONE, "A valid phone number is required"),
+    .refine((value) => value === "" || PHONE.test(value), "A valid phone number is required")
+    .default(""),
   deploymentPlan: z
     .string()
     .trim()

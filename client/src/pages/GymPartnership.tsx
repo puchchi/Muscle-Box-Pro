@@ -427,17 +427,40 @@ export default function GymPartnership() {
           remove it, and do not bury it below the fold — it is the reason we can
           publish commercials publicly at all.
 
-          Left-aligned rather than centred: it runs to three lines on a phone, and
-          centred ragged text at 13px is the hardest thing on the page to read.
+          One paragraph, in the same shape and order as /franchise: the bold pair, the
+          qualifier, the document, who published it. Address, about and contact belong to
+          the footer; repeating them here is what turns a notice into small print people
+          skip.
+
+          Left-aligned rather than centred: centred ragged text at 13px is the hardest
+          thing on the page to read.
+
+          **The linked PDF is not `shared/agreement/v2_3.ts`, and the sentence about the copy you
+          sign is what covers the gap.** It still states the milestone on cumulative gross sales,
+          an early-termination charge, a ₹2,00,000 liability cap and Bengaluru arbitration; v2_3
+          settled all four the other way (its own note at the top of that file records why).
+          Publishing it regardless was a deliberate call. The first of the four is the one that
+          bites, because gross fires at roughly 4,167 cups where net profit fires at 9,100, so
+          this page advertises a 50:50 milestone sooner than the signed copy grants it. Re-export
+          from v2_3 and the gap closes; until then do not reword that sentence away.
         */}
         <div className="bg-amber-50 border-b border-amber-200 py-3.5 px-4 sm:px-6 lg:px-8" role="note">
           <p className="max-w-4xl mx-auto text-amber-900 text-[13px] leading-relaxed flex items-start gap-2.5">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-700" aria-hidden="true" />
             <span>
-              <strong>Indicative terms. Your signed agreement governs.</strong> Figures on this page
-              are the standard offer and typical volumes as of {INDICATIVE_ECONOMICS.asOf}, not a
-              guarantee of income. Published by BlendBox Innovations LLP, the company behind
-              MuscleBoxPro.
+              <strong>Indicative terms. Your signed agreement governs.</strong> Figures are the
+              standard offer and typical volumes as of {INDICATIVE_ECONOMICS.asOf}, not a guarantee
+              of income. Full terms:{" "}
+              <a
+                href="/assets/gym-partnership-terms-2026-09.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700"
+              >
+                Gym Partnership Program Standard Terms (PDF)
+              </a>
+              . Your own copy is shown clause by clause before you sign, and that copy is the one
+              that binds. Published by BlendBox Innovations LLP.
             </span>
           </p>
         </div>

@@ -13,7 +13,8 @@
  *   2. **The disclaimer stays visible and stays above the fold.** This describes a
  *      proposed program; it is not an offer, not a guarantee of returns and not the
  *      definitive franchise agreement, which is what binds
- *      (docs/MuscleBox_Pro_Franchise_Program.md §56). It is the reason we can publish at all.
+ *      (docs/MuscleBox_Pro_Franchise_Program_final.md §56). It is the reason we can publish at
+ *      all, and the PDF it links is that same document exported.
  *   3. **No projected earnings anywhere on the page.** The only worked figures are §20's
  *      capital-recovery illustration, which is arithmetic on a stated threshold rather
  *      than a forecast of what a machine will earn. A revenue calculator here would be a
@@ -138,7 +139,7 @@ import {
   type FranchiseTierId,
 } from "@shared/franchise/program";
 import { FRANCHISE_FAQ } from "@shared/franchise/faq";
-import { COMPANY, addressOneLine } from "@shared/company";
+import { COMPANY } from "@shared/company";
 import { MACHINE_SPEC, dimensionsSpelled } from "@shared/machine/spec";
 import {
   franchiseApplicationSchema,
@@ -508,8 +509,18 @@ export default function Franchise() {
           fold. It is the reason a proposed franchise program can be published with
           rupee figures on it at all.
 
-          Left-aligned rather than centred: it runs to three lines on a phone, and
-          centred ragged text at 13px is the hardest thing on the page to read.
+          One paragraph, not four. Everything a reader has to be told before they act on
+          the numbers above is here; everything they might merely want (address, about,
+          terms, email) is in the footer, and repeating it here was what turned a notice
+          into a block of small print people skip. Three things earn their place: the
+          two bold sentences, the document, and who is publishing it — a franchise page
+          that never names its legal entity is the shape of every advance-fee scam.
+
+          Re-export the PDF whenever the source markdown changes. A stale copy at a public
+          URL publishes superseded terms under our own name.
+
+          Left-aligned rather than centred: centred ragged text at 13px is the hardest
+          thing on the page to read.
         */}
         <div className="bg-muted/60 border-b border-border px-4 sm:px-6 lg:px-8 py-4">
           <div className="max-w-5xl mx-auto">
@@ -523,42 +534,19 @@ export default function Franchise() {
                   Indicative program terms as of {FRANCHISE.asOf}. Not an offer, and not a
                   guarantee of returns.
                 </strong>{" "}
-                Availability, territory, investment, machine allocation and commercial terms are
-                subject to approval, due diligence and the definitive franchise agreement, which
-                is what governs. Take independent legal, tax and financial advice before
-                committing.
+                Everything here is subject to approval, due diligence and the definitive
+                franchise agreement, which is what governs. Take independent advice before
+                committing. Full terms:{" "}
+                <a
+                  href="/assets/franchise-program-2026-09.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-primary-ink underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  Franchise Disclosure and Term Document (PDF)
+                </a>
+                . Published by {COMPANY.legalName}.
               </span>
-            </p>
-
-            {/*
-              Who is asking for the money, on the page that asks for it. A franchise page
-              that never names its legal entity is the shape of every advance-fee scam, and
-              a reader comparing us against one has nothing here to tell the difference.
-              `pl-6` aligns it under the disclaimer text rather than under its icon.
-            */}
-            <p className="max-w-4xl text-muted-foreground text-[13px] leading-relaxed mt-2 pl-6">
-              Published by {COMPANY.legalName}, {addressOneLine()}.{" "}
-              <Link
-                href="/about"
-                className="font-semibold text-primary-ink underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                About us
-              </Link>
-              ,{" "}
-              <Link
-                href="/terms"
-                className="font-semibold text-primary-ink underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                terms
-              </Link>
-              , or ask us anything at{" "}
-              <a
-                href={`mailto:${COMPANY.email}`}
-                className="font-semibold text-primary-ink underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {COMPANY.email}
-              </a>
-              .
             </p>
           </div>
         </div>

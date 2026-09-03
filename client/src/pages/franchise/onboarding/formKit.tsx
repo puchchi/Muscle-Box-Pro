@@ -90,19 +90,27 @@ const areaClass =
  * `text-base` rather than `text-sm`, which is the size the field labels are: at `text-sm` this
  * title and the first label under it were the same size and the same weight, and the label's
  * darker grey made it the louder of the two. A card title has to outrank the fields it holds.
+ *
+ * `description` is for a note that governs the whole card rather than one field. Hung on the first
+ * field instead, it reads as describing that field: "often not the signatory" under `Operations
+ * contact` and beside an empty `Operations phone` left the row ragged and the note half-scoped.
+ * Above the fields, not below, because it is read before they are answered.
  */
 export function Section({
   title,
+  description,
   children,
 }: {
   title: string;
+  description?: string;
   children: React.ReactNode;
 }) {
   return (
     <fieldset className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
-      <legend className="float-left w-full mb-5">
+      <legend className={`float-left w-full ${description ? "mb-1" : "mb-5"}`}>
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
       </legend>
+      {description && <p className={`${HINT_TEXT} clear-both mb-5`}>{description}</p>}
       <div className="clear-both space-y-5">{children}</div>
     </fieldset>
   );
@@ -293,6 +301,12 @@ export function AreaField<T extends FieldValues>({
  *
  * `onCheckedChange` is for the case this exists for: a box that governs other fields, whose
  * values have to be cleared when it is ticked.
+ *
+ * **The description is pulled up and indented to the label's text.** It cannot go inside the
+ * `<label>`, where it would become part of the checkbox's accessible name, so it follows it and
+ * picks up `FormItem`'s spacing on top of the dead space `min-h-11` leaves under a one-line label.
+ * Measured at 28px, and starting at the checkbox's left edge rather than the label's text, which
+ * read as a paragraph about the card rather than the note under that one tick.
  */
 export function CheckField<T extends FieldValues>({
   form,
@@ -308,7 +322,7 @@ export function CheckField<T extends FieldValues>({
     <FormField
       control={form.control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <FormItem>
           <label className="flex min-h-11 items-start gap-3 py-1 cursor-pointer">
             <FormControl>
@@ -330,7 +344,12 @@ export function CheckField<T extends FieldValues>({
             <span className="text-gray-700 text-sm font-semibold">{label}</span>
           </label>
           <FormMessage className={ERROR_TEXT} />
-          {description && <FormDescription className={HINT_TEXT}>{description}</FormDescription>}
+          {description && (
+            // The pull-up is dropped when there is a message to clear: it sits between the two.
+            <FormDescription className={`${HINT_TEXT} pl-8 ${fieldState.error ? "" : "-mt-4"}`}>
+              {description}
+            </FormDescription>
+          )}
         </FormItem>
       )}
     />

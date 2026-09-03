@@ -10,10 +10,13 @@
  *      Read it from here.
  *   2. This describes the *proposed* program. It is not an offer and it is not the
  *      definitive franchise agreement, which is what binds. The disclaimer the page
- *      renders (§56 of docs/MuscleBox_Pro_Franchise_Program.md) is load-bearing and must
- *      stay visible.
+ *      renders (§56 of docs/MuscleBox_Pro_Franchise_Program_final.md) is load-bearing and
+ *      must stay visible.
  *
- * Section references are to docs/MuscleBox_Pro_Franchise_Program.md.
+ * Section references are to docs/MuscleBox_Pro_Franchise_Program_final.md, which is also
+ * what `shared/franchise/termsheet/v2.generated.ts` is generated from and what
+ * `public/assets/franchise-program-2026-09.pdf` is exported from. Those three move together
+ * or the page, the signed instrument and the published PDF start stating different terms.
  *
  * They used to point at `docs/FranchiseOnboardingPlan.md`, which was an earlier copy of the
  * same document under a name suggesting it was a plan. It has been deleted. The two had
@@ -59,8 +62,9 @@ export type FranchiseTier = {
    * exclusive of GST. So the two differ by the GST rate, by ₹4,50,000 on a Territory Franchise.
    *
    * This is the binding figure and what the agreement, the onboarding API and the dashboard's
-   * recovery progress use. The public page states the threshold in words instead, as the
-   * investment "plus GST", rather than printing the grossed-up number.
+   * recovery progress use. The public page and onboarding step 5 state the threshold in words
+   * instead, as the investment "plus GST", rather than printing the grossed-up number: see
+   * `investmentPlusGstPaise` for the check that earns the wizard that phrasing.
    *
    * Stays nullable. §21 used to defer the City threshold and this was `null` for that reason;
    * the document now fixes both, but "not published" remains a state the page must be able to
@@ -219,6 +223,12 @@ export const FRANCHISE = {
   gymProfitSharingExamples: ["80:20", "50:50"],
 
   /**
+   * §63 makes every investment figure in this programme exclusive of GST, and §57 makes the
+   * recovery threshold inclusive of it. This is the rate that separates the two.
+   */
+  gstRatePct: 18,
+
+  /**
    * The vintage of every term above, rendered in the /franchise disclaimer and emitted as
    * `dateModified` in the page's WebPage schema.
    *
@@ -229,6 +239,20 @@ export const FRANCHISE = {
    */
   asOf: "Q3 2026",
 } as const;
+
+/**
+ * The recovery threshold §57 implies for an investment: the GST-exclusive figure grossed up.
+ *
+ * Integer arithmetic on paise, because `× 1.18` lands ₹25,00,000 a fraction of a paisa out and
+ * then formats as the right number by luck.
+ *
+ * A franchise's stored `capitalRecoveryPaise` is set per record and is not obliged to equal this.
+ * A screen that wants to write the threshold as "your investment plus GST" rather than print the
+ * grossed-up figure has to check that it does, or it understates a bespoke threshold.
+ */
+export function investmentPlusGstPaise(investmentPaise: number): number {
+  return Math.round((investmentPaise * (100 + FRANCHISE.gstRatePct)) / 100);
+}
 
 /**
  * §8. Ownership, as two lists.
