@@ -21,6 +21,25 @@ export type Blank = { label: string; width?: "short" | "long" };
 export type Block =
   /** Body prose with no clause number of its own. */
   | { kind: "paragraph"; text: string }
+  /**
+   * A heading below the section heading — the document's own second level.
+   *
+   * Added for the Franchise Agreement, whose source has two heading levels: §58 carries
+   * "Buy-In Option for Termination Within the First 24 Months" under it, and §51 four more.
+   * Rendering those as prose would put a heading mid-paragraph and lose the boundary a reader
+   * uses to tell where one term stops.
+   *
+   * Deliberately not a `clause`: a clause number is part of the legal text, and manufacturing
+   * "58.1" for a heading the source does not number would put a reference in the document that
+   * nothing else in it can cite.
+   *
+   * `level` is 2 by default and 3 for a heading nested inside one. Two levels are needed rather
+   * than one because §6 puts "Payment Schedule" under "Territory Franchise" and states a second
+   * schedule under "City Franchise": flattened, the first schedule reads as applying to both
+   * tiers. `level` is deliberately **not** part of the plain-text rendering, so it does not enter
+   * the hash — it is how the heading is set, not what it says.
+   */
+  | { kind: "subheading"; text: string; level?: 2 | 3 }
   /** A numbered clause, e.g. `5.4`. */
   | { kind: "clause"; number: string; text: string }
   /** A bulleted list, optionally introduced by a lead-in line. */

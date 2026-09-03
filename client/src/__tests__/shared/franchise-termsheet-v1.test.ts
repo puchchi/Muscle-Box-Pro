@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { FRANCHISE_TERM_SHEET_V1 } from "@shared/franchise/termsheet/v1";
 import {
   GOLDEN_TERM_SHEET_V1,
+  GOLDEN_TERM_SHEET_V2,
   type FranchiseTermSheetGoldenVector,
 } from "@shared/franchise/termsheet/goldenVector";
 import type { FranchiseTermSheetFields } from "@shared/franchise/termsheet/types";
@@ -161,38 +162,63 @@ describe("what the term sheet says about itself", () => {
 describe("the commercial terms match the published program", () => {
   const territory = franchiseTier("territory");
 
-  it("prices the fixture at the published Territory investment, in figures and in words", () => {
+  /**
+   * **These read v2's vector, not `FIXTURE`, and the distinction is the point of the whole file.**
+   *
+   * Every other test here asks "what does the document a franchisee signed in 1.0 say", and for that
+   * `FIXTURE` — v1's pinned fields — is the only correct answer. This block asks a different question:
+   * "does the vector we issue *today* carry the figures `program.ts` publishes today". Those diverged the
+   * moment §57 made the Capital Recovery Threshold the investment grossed up by GST: `capitalRecoveryInr`
+   * moved from ₹25,00,000 to ₹29,50,000, and v1's vector still says ₹25,00,000 because it is frozen
+   * against the figures published when it was signed. Correcting it would move a hash that is evidence.
+   *
+   * So pointing this block at `FIXTURE` asserted that a superseded document matches a current program,
+   * which is a thing that must be allowed to be false.
+   */
+  const ISSUED = GOLDEN_TERM_SHEET_V2.fields;
+
+  it("prices the issued vector at the published Territory investment, in figures and in words", () => {
     // The document tokenises every figure, so this checks the *vector* against
     // program.ts. A term sheet issued with the wrong instalment is a term sheet that
     // renders a number nobody published.
-    expect(FIXTURE.investment).toBe(formatInr(territory.investmentInr));
-    expect(FIXTURE.investmentInWords).toBe(rupeesInWords(territory.investmentInr));
-    expect(FIXTURE.machineAllocation).toBe(String(territory.initialMachines));
-    expect(FIXTURE.capitalRecoveryThreshold).toBe(formatInr(territory.capitalRecoveryInr!));
+    expect(ISSUED.investment).toBe(formatInr(territory.investmentInr));
+    expect(ISSUED.investmentInWords).toBe(rupeesInWords(territory.investmentInr));
+    expect(ISSUED.machineAllocation).toBe(String(territory.initialMachines));
+    expect(ISSUED.capitalRecoveryThreshold).toBe(formatInr(territory.capitalRecoveryInr!));
+    // And the two are not the same number, which is the §57/§63 reading rather than a typo.
+    expect(ISSUED.capitalRecoveryThreshold).not.toBe(ISSUED.investment);
+  });
+
+  it("keeps 1.0's threshold at the figure published when it was signed", () => {
+    // The counterpart of the note above, asserted rather than left as prose: v1's vector is *expected*
+    // to disagree with today's program on this one field, so a well-meaning edit that "fixes" it fails
+    // here instead of silently moving the hash of a document a real franchisee signed through Aadhaar.
+    expect(FIXTURE.capitalRecoveryThreshold).toBe(formatInr(territory.investmentInr));
+    expect(FIXTURE.capitalRecoveryThreshold).not.toBe(ISSUED.capitalRecoveryThreshold);
   });
 
   it("splits the investment the way the published payment schedule does", () => {
     const schedule = territory.paymentSchedule!;
     expect(schedule).toHaveLength(2);
-    expect(FIXTURE.firstInstalment).toBe(
+    expect(ISSUED.firstInstalment).toBe(
       formatInr((territory.investmentInr * schedule[0].pct) / 100),
     );
-    expect(FIXTURE.firstInstalmentTrigger).toBe(schedule[0].trigger);
-    expect(FIXTURE.secondInstalment).toBe(
+    expect(ISSUED.firstInstalmentTrigger).toBe(schedule[0].trigger);
+    expect(ISSUED.secondInstalment).toBe(
       formatInr((territory.investmentInr * schedule[1].pct) / 100),
     );
-    expect(FIXTURE.secondInstalmentTrigger).toBe(schedule[1].trigger);
+    expect(ISSUED.secondInstalmentTrigger).toBe(schedule[1].trigger);
   });
 
   it("carries the protein and advertising splits from program.ts", () => {
-    expect(FIXTURE.proteinShareDuringRecovery).toBe(
+    expect(ISSUED.proteinShareDuringRecovery).toBe(
       `${FRANCHISE.proteinProfitSharePct.duringRecovery}%`,
     );
-    expect(FIXTURE.proteinShareAfterRecoveryFranchisee).toBe(
+    expect(ISSUED.proteinShareAfterRecoveryFranchisee).toBe(
       `${FRANCHISE.proteinProfitSharePct.afterRecovery}%`,
     );
-    expect(FIXTURE.advertisingShareFranchisee).toBe(`${FRANCHISE.advertising.franchiseeSharePct}%`);
-    expect(FIXTURE.advertisingShareMbp).toBe(`${FRANCHISE.advertising.mbpSharePct}%`);
+    expect(ISSUED.advertisingShareFranchisee).toBe(`${FRANCHISE.advertising.franchiseeSharePct}%`);
+    expect(ISSUED.advertisingShareMbp).toBe(`${FRANCHISE.advertising.mbpSharePct}%`);
   });
 
   it("says advertising does not count toward capital recovery, in a callout rather than a clause", () => {

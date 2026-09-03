@@ -185,6 +185,9 @@ function* allStrings(agreement: Agreement): Generator<string> {
       case "paragraph":
         yield block.text;
         break;
+      case "subheading":
+        yield block.text;
+        break;
       case "clause":
         yield block.text;
         break;
@@ -235,6 +238,11 @@ function blockToLines<F extends object>(
   const r = (s: string) => renderText<F>(s, fields, opts);
   switch (block.kind) {
     case "paragraph":
+      return [r(block.text)];
+    case "subheading":
+      // The bare text, with no marker around it. A decoration here — "## x" or an underline —
+      // would be in the hashed bytes, so the plain-text rendering would carry punctuation the
+      // signed document does not contain.
       return [r(block.text)];
     case "clause":
       // The trim matters: clause 6.1 has an empty body, and "6.1" is a different

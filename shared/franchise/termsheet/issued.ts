@@ -1,6 +1,20 @@
 /**
- * The term sheet version this flow issues, and the one function that turns franchise state
+ * The document version this flow issues, and the one function that turns franchise state
  * into the exact text that gets hashed.
+ *
+ * ## What "term sheet" means in these names, since 2.0
+ *
+ * It means the record, not the document. `ISSUED_TERM_SHEET` is now the **Franchise Agreement** — a
+ * self-executing instrument, not a term sheet — because 2.0 is the program document itself and §56
+ * makes signing it the grant rather than a step towards one. Nothing about that is visible in the
+ * identifiers here, and it should be read before touching anything downstream of them: a signature
+ * against this is the franchise, and there is no second signing event to correct it at. In
+ * particular, `TermSheetReader` now renders a 28-page binding agreement.
+ *
+ * The names did not move with the document, on purpose. `IssuedTermSheet`, `state.termSheet` and the
+ * `termSheet*` route names are the storage and API contract, shared with the backend, so renaming
+ * would be a migration and a cross-repo breaking change bought for a word. `v2.ts`'s header is where
+ * the document's nature is recorded, and `version` on every issued row is what tells the two apart.
  *
  * `shared/agreement/issued.ts` and `shared/onboarding/issuedAgreement.ts` merged into one
  * file, because there is one document and one bridge and splitting them bought the gym flow
@@ -23,9 +37,23 @@ import type { Agreement } from "../../agreement/types";
 import type { FranchiseOnboardingState, IssuedTermSheet } from "../onboarding/types";
 import { termSheetValidUntil, toTermSheetFields } from "./fields";
 import type { FranchiseTermSheetFields } from "./types";
-import { FRANCHISE_TERM_SHEET_V1 } from "./v1";
+import { FRANCHISE_AGREEMENT_V2 } from "./v2";
 
-export const ISSUED_TERM_SHEET: Agreement = FRANCHISE_TERM_SHEET_V1;
+/**
+ * 2.0 as of 2026-09-03.
+ *
+ * `v1.ts` is deliberately **not imported here any more**, and is deliberately still in the repo: a
+ * franchisee has signed 1.0 through real Aadhaar eSign, so its bytes have to stay renderable to prove
+ * what that signature was against. The golden-vector suite imports it directly for that, and
+ * `goldenVector.ts` pins it. Nothing else may.
+ *
+ * Switching this constant is the whole cutover, and it must land in the same commit as the backend's
+ * copy of this module. Split across two commits, this reader would render one version while the server
+ * hashed another, and the franchisee would be shown a hash mismatch on the signing screen — the worst
+ * possible place to discover it. Records already pinned at 1.0 are unaffected: an issued row carries its
+ * own `version`, and nothing re-pins a row that has a signature.
+ */
+export const ISSUED_TERM_SHEET: Agreement = FRANCHISE_AGREEMENT_V2;
 
 /**
  * Read off the document rather than written out again, so the string stored on an e-sign
@@ -84,8 +112,8 @@ export function renderIssuedTermSheetText(
  * `unresolvedTokens` means *this franchise's* record is incomplete — an unapproved territory,
  * or a City tier whose commercials an admin has not set — and the fix is a write to the
  * record. `blockers` are the document's own `todo` markers: they are the same for every
- * franchise, and the fix is a decision by us. v1 carries one, and it is about the money (§11,
- * phase 3).
+ * franchise, and the fix is a decision by us. 2.0 carries one, `needs-review`, and it is counsel
+ * review of the addendum — so it does not block issuing.
  */
 export function canIssueTermSheet(
   state: FranchiseOnboardingState,

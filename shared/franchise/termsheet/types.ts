@@ -42,7 +42,14 @@ export type FranchiseTermSheetFields = {
    */
   validUntil: string;
 
-  /** "MuscleBox Pro Territory Franchise" — `FranchiseTier.name`. */
+  /**
+   * "MuscleBoxPro Territory Franchise" — `FranchiseTier.name`.
+   *
+   * The spelling is not incidental: this renders onto the cover of the executed agreement, next to §1's
+   * own table of franchise structures, so it has to be the spelling the document uses. See the note on
+   * `name` in `franchiseApplication.ts`, and the one on `tierName` in `goldenVector.ts` for why v1's
+   * pinned vector still carries the old one.
+   */
   tierName: string;
   territory: string;
   territoryBoundary: string;

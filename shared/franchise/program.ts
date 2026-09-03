@@ -28,7 +28,20 @@ export type FranchiseTierId = "territory" | "city";
 
 export type FranchiseTier = {
   id: FranchiseTierId;
-  /** Full name, as it appears in the agreement. */
+  /**
+   * Full name, as it appears in the agreement — literally: `tierName` renders onto the cover of the
+   * executed Franchise Agreement.
+   *
+   * **One word, and it was a real defect.** This read "MuscleBox Pro Territory Franchise" while the
+   * program document spells the brand "MuscleBoxPro" throughout, including in §1's own table of
+   * franchise structures — which agreement 2.0 transcribes verbatim. So the executed instrument named
+   * the same tier two ways five lines apart, the cover from here and §1 from the reviewed markdown, and
+   * a party reading that has to guess whether they are two products. The document is the authority, so
+   * this moved to match it.
+   *
+   * The wider "MuscleBox Pro" → "MuscleBoxPro" rename across marketing copy is a separate decision and
+   * has not been made. Only this field moved, because only this field is in a signed document.
+   */
   name: string;
   /** Short name for chips, table headers and the tier selector. */
   shortName: string;
@@ -39,16 +52,26 @@ export type FranchiseTier = {
   /** One line on who the tier is for. §2, §3. */
   positioning: string;
   /**
-   * The recovery threshold, or `null` where the program does not fix one publicly.
+   * The recovery threshold — **inclusive of GST**, and therefore not equal to `investmentInr`.
    *
-   * §21: the City Franchise threshold is set in the definitive agreement rather than
-   * here. `null` is not "no recovery". It is "not published", and the page must say
-   * so rather than render a figure or imply the model does not apply.
+   * §57 defines it as what the franchisee actually paid towards the investment "inclusive of
+   * GST and other statutory levies", and §63 makes every investment figure in the document
+   * exclusive of GST. So the two differ by the GST rate, and a page that showed the investment
+   * as the threshold would understate what the franchisee has to earn back by ₹4,50,000 on a
+   * Territory Franchise.
+   *
+   * Stays nullable. §21 used to defer the City threshold and this was `null` for that reason;
+   * the document now fixes both, but "not published" remains a state the page must be able to
+   * render rather than fill in.
    */
   capitalRecoveryInr: number | null;
   /**
-   * The staged payments, or `null` where the schedule is agreement-specific (§6, City).
-   * Percentages, so a change to `investmentInr` cannot leave a stale instalment behind.
+   * The staged payments, or `null` where no schedule is published.
+   *
+   * Percentages, so a change to `investmentInr` cannot leave a stale instalment behind. §6 used
+   * to defer the City schedule and this was `null` for it; §6 now publishes it as mirroring the
+   * Territory structure at double the amount, subject to the Parties agreeing otherwise in
+   * writing at Franchise Registration.
    */
   paymentSchedule: { pct: number; trigger: string }[] | null;
   /** §2, §3. Everything the investment includes. */
@@ -58,13 +81,14 @@ export type FranchiseTier = {
 export const FRANCHISE_TIERS: readonly FranchiseTier[] = [
   {
     id: "territory",
-    name: "MuscleBox Pro Territory Franchise",
+    name: "MuscleBoxPro Territory Franchise",
     shortName: "Territory Franchise",
     investmentInr: 25_00_000,
     initialMachines: 5,
     marketRights: "A defined geographic territory",
     positioning: "For partners who want to develop a defined geographical territory.",
-    capitalRecoveryInr: 25_00_000,
+    // ₹25,00,000 plus 18% GST. §57, §53.
+    capitalRecoveryInr: 29_50_000,
     paymentSchedule: [
       { pct: 50, trigger: "At franchise registration" },
       { pct: 50, trigger: "When machines are ready at the OEM" },
@@ -88,15 +112,19 @@ export const FRANCHISE_TIERS: readonly FranchiseTier[] = [
   },
   {
     id: "city",
-    name: "MuscleBox Pro City Franchise",
+    name: "MuscleBoxPro City Franchise",
     shortName: "City Franchise",
     investmentInr: 50_00_000,
     initialMachines: 10,
     marketRights: "A defined city",
     positioning:
       "For partners who want responsibility for developing the network across an entire defined city.",
-    capitalRecoveryInr: null,
-    paymentSchedule: null,
+    // ₹50,00,000 plus 18% GST. §57, §54, §69.
+    capitalRecoveryInr: 59_00_000,
+    paymentSchedule: [
+      { pct: 50, trigger: "At franchise registration" },
+      { pct: 50, trigger: "When machines are ready at the OEM" },
+    ],
     includes: [
       "Exclusive city-level development rights, subject to performance requirements",
       "Access to the complete MuscleBox Pro technology ecosystem",

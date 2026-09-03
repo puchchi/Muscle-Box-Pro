@@ -617,39 +617,42 @@ describe("the term sheet", () => {
     expect((await expectError(api.markTermSheetViewed(HANDLE))).code).toBe("not_approved");
   });
 
-  it("refuses when the terms record leaves a token unresolved", async () => {
-    // The City tier's schedule and recovery threshold are deferred to the definitive agreement
-    // (§6, §21 of the program document) and set per franchise by an admin. Until one does, the
-    // document has tokens with no value, and this is the mechanism that stops it being issued.
+  it("issues a City franchise, now that the program document publishes its schedule", async () => {
+    // **This assertion is inverted from what it used to be, and the inversion is the point.** §6 and
+    // §21 deferred the City tier's payment schedule and recovery threshold, so a City franchise had
+    // tokens with no value and could not be issued at all. §6 now publishes the City schedule outright,
+    // and §57 makes the recovery threshold the recorded investment grossed up by GST — arithmetic rather
+    // than a figure an admin sets. So both tokens resolve, and a City franchisee can reach a document.
+    //
+    // Kept as a test rather than deleted because it is the one place a regression would be silent: if
+    // `program.ts` went back to `null` for either City field, the flow would refuse every City franchise
+    // and the only symptom would be a franchisee stuck on step 7.
     await expectState(api.submitDetails(HANDLE, VALID_DETAILS));
-    await expectState(
-      api.submitTerritory(HANDLE, { ...VALID_TERRITORY, tier: "city" }),
-    );
-    for (const docType of [
-      "pan_card",
-      "entity_proof",
-      "address_proof",
-      "signatory_id",
-    ] as const) {
-      await expectState(
-        api.uploadDocument(HANDLE, { docType, fileName: `${docType}.pdf`, file: pdf() }),
-      );
-    }
+    await expectState(api.submitTerritory(HANDLE, { ...VALID_TERRITORY, tier: "city" }));
+    await uploadRequiredDocuments();
     await expectState(api.submitKyc(HANDLE));
     previewApprove(HANDLE);
     await expectState(api.ackFranchise(HANDLE));
     await expectState(api.submitOperations(HANDLE, VALID_OPERATIONS));
 
-    const error = await expectError(api.markTermSheetViewed(HANDLE));
-    expect(error.code).toBe("not_issuable");
+    const state = await expectState(api.markTermSheetViewed(HANDLE));
+    expect(state.termSheet).not.toBeNull();
+    expect(canIssueTermSheet(state, "2026-09-01")).toEqual({ ok: true });
+  });
 
+  it("refuses while the territory is unapproved, because that is what exclusivity attaches to", async () => {
+    // The mechanism the City case used to demonstrate, on a token that can still legitimately be
+    // absent. `territory` and `territoryBoundary` come from the approval record and never from the
+    // franchisee's proposal, so before a decision there is nothing to render — and rendering the request
+    // would grant whatever was asked for. An unresolved token is the whole gate; there is no second list
+    // of preconditions.
+    await throughKyc();
     const state = await expectState(api.getState(HANDLE));
-    expect(state.termSheet).toBeNull();
     const check = canIssueTermSheet(state, "2026-09-01");
     expect(check.ok).toBe(false);
     if (!check.ok) {
-      expect(check.unresolvedTokens).toContain("firstInstalment");
-      expect(check.unresolvedTokens).toContain("capitalRecoveryThreshold");
+      expect(check.unresolvedTokens).toContain("territory");
+      expect(check.unresolvedTokens).toContain("territoryBoundary");
     }
   });
 
