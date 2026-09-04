@@ -9,7 +9,7 @@ import type { FranchiseOnboardingStep } from "@shared/franchise/onboarding/types
 import { franchiseStepMeta } from "@shared/franchise/onboarding/steps";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
-import { Card, Empty, ErrorPanel, Field, Fields, Notice, Pill } from "./AdminUi";
+import { Card, Empty, ErrorPanel, Field, Fields, Pill, Subhead } from "./AdminUi";
 import {
   FranchiseDecisionSection,
   FranchiseInstalmentsSection,
@@ -135,6 +135,8 @@ function FranchiseView({
   onChanged: () => void;
 }) {
   const owed = whatWeOwe(franchise);
+  const owedDays = daysSince(owed?.since ?? null);
+  const quietDays = daysSince(franchise.updatedAt);
 
   return (
     <div className="space-y-5">
@@ -166,15 +168,27 @@ function FranchiseView({
       {owed && (
         <a
           href={`#${owed.section}`}
-          className="block rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hover:bg-amber-100 transition-colors"
+          className="block rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
           data-testid="franchise-owed"
         >
-          <span className="font-semibold">Waiting on us: {owed.what}.</span> {owed.detail}
+          {/* How long, not just what. Two of these is a queue; the one that is eleven days old is
+              the one to open first, and nothing else on the page dates the silence. */}
+          <span className="font-semibold">
+            Waiting on us{owedDays !== null && owedDays > 0 ? ` for ${plural(owedDays)}` : ""}:{" "}
+            {owed.what}.
+          </span>{" "}
+          {owed.detail}
         </a>
       )}
 
+      {/*
+        Sticky from `md` up and no lower, because the offset has to clear the shell's header and that
+        header is not one height: its nav wraps below 768px, so it stands 157px tall on a phone and
+        57px here. Pinned at 57px on a phone this bar was painted under the header and could not be
+        clicked, which is worse than scrolling away with the page.
+      */}
       <nav
-        className="sticky top-[3.4rem] z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-white/80"
+        className="z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-white/80 md:sticky md:top-[57px]"
         aria-label="Sections of this franchise"
       >
         {SECTIONS.map((section) => (
@@ -196,11 +210,12 @@ function FranchiseView({
         testId="card-progress"
       >
         <Timeline franchise={franchise} />
-        <div className="px-4 sm:px-5 pb-4 space-y-1.5">
+        <div className="px-4 sm:px-5 pb-4 space-y-1.5 border-t border-gray-100 pt-3">
           <p className="text-xs text-muted-foreground">
             Steps completed:{" "}
             {franchise.completedSteps.length > 0 ? franchise.completedSteps.join(", ") : "none"}. On
-            step {franchise.currentStep}.
+            step {franchise.currentStep}. Last activity {formatIstDateTime(franchise.updatedAt)}
+            {quietDays === null ? "" : quietDays === 0 ? ", today" : `, ${plural(quietDays)} ago`}.
           </p>
           {/*
             The one thing about this figure that will otherwise be read as a bug: an approved
@@ -259,14 +274,15 @@ function FranchiseView({
       <Card
         id="kyc"
         title="Documents"
-        note="Uploads only. There is no viewer here, and the reason is on purpose."
+        note="Uploads only. There is no viewer here, and the note at the foot says why."
         testId="card-kyc"
       >
         {franchise.documents.length === 0 ? (
           <Empty testId="documents-none">Nothing uploaded yet. Step 3 is where these arrive.</Empty>
         ) : (
           /* Five columns, one of them a filename: the filename is the only shrinkable one, and
-             without a floor it collapses to a character per line on a phone. */
+             without a floor it collapses to a character per line, both on a phone and beside the
+             `w-full` date column that packs the other four to the left. */
           <div className="overflow-x-auto">
             <table className="w-full min-w-[42rem] text-sm" data-testid="table-documents">
               <tbody className="divide-y divide-gray-100">
@@ -279,13 +295,13 @@ function FranchiseView({
                     >
                       {FRANCHISE_DOC_TYPE_LABEL[document.docType]}
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground break-all">
+                    <td className="min-w-[16rem] px-4 py-2.5 text-muted-foreground break-all">
                       {document.originalFilename}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                       {formatBytes(document.bytes)}
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       {document.removedAt ? (
                         /* Withdrawal is orthogonal to `uploadState` rather than a third value of it,
                            so both facts are shown. The franchisee's own view drops these rows, which
@@ -306,7 +322,9 @@ function FranchiseView({
                         <span className="text-amber-700 font-semibold">Started, never arrived</span>
                       )}
                     </td>
-                    <td className="px-4 sm:px-5 py-2.5 text-right text-muted-foreground whitespace-nowrap">
+                    {/* The last column takes the slack, so the five pack left rather than spreading a
+                        500px gap between each pair of them. */}
+                    <td className="w-full px-4 sm:px-5 py-2.5 text-muted-foreground whitespace-nowrap">
                       {formatIstDateTime(document.uploadedAt ?? document.requestedAt)}
                     </td>
                   </tr>
@@ -457,10 +475,8 @@ function FranchiseView({
         )}
 
         {franchise.firstOpen && (
-          <div className="border-t border-gray-100">
-            <p className="px-4 sm:px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              First opened
-            </p>
+          <>
+            <Subhead>First opened</Subhead>
             <Fields>
               {/* On this page because the weight of an e-signed term sheet rests on the franchisee
                   having walked the flow themselves, and this is the only record of that. */}
@@ -468,7 +484,7 @@ function FranchiseView({
               <Field label="From" value={franchise.firstOpen.ip} mono />
               <Field label="Browser" value={franchise.firstOpen.userAgent} />
             </Fields>
-          </div>
+          </>
         )}
       </Card>
 
@@ -531,23 +547,28 @@ function TermsCard({ franchise }: { franchise: AdminFranchiseView }) {
       </Fields>
 
       {terms.paymentSchedule ? (
-        <table className="w-full text-sm border-t border-gray-100" data-testid="table-schedule">
-          <tbody className="divide-y divide-gray-100">
-            {terms.paymentSchedule.map((instalment, index) => (
-              <tr key={`${instalment.pct}-${index}`}>
-                <td className="px-4 sm:px-5 py-2.5 whitespace-nowrap font-semibold tabular-nums">
-                  {instalment.pct}%
-                </td>
-                <td className="px-4 py-2.5 text-muted-foreground">{instalment.trigger}</td>
-                {/* Derived from the two figures beside it rather than stored, which is why the
-                    schedule holds percentages: an edited investment cannot leave a stale amount. */}
-                <td className="px-4 sm:px-5 py-2.5 text-right tabular-nums whitespace-nowrap">
-                  {formatPaiseExact(Math.round((terms.investmentPaise * instalment.pct) / 100))}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <Subhead>Instalment schedule</Subhead>
+          <table className="w-full text-sm" data-testid="table-schedule">
+            <tbody className="divide-y divide-gray-100">
+              {terms.paymentSchedule.map((instalment, index) => (
+                <tr key={`${instalment.pct}-${index}`}>
+                  <td className="pl-4 sm:pl-5 py-2 whitespace-nowrap font-semibold tabular-nums">
+                    {instalment.pct}%
+                  </td>
+                  {/* Derived from the two figures beside it rather than stored, which is why the
+                      schedule holds percentages: an edited investment cannot leave a stale amount. */}
+                  <td className="px-4 py-2 tabular-nums whitespace-nowrap">
+                    {formatPaiseExact(Math.round((terms.investmentPaise * instalment.pct) / 100))}
+                  </td>
+                  <td className="w-full pr-4 sm:pr-5 py-2 text-muted-foreground">
+                    {instalment.trigger}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       ) : (
         <p
           className="border-t border-gray-100 px-4 sm:px-5 py-3.5 text-xs text-amber-800 leading-relaxed"
@@ -571,12 +592,13 @@ function TermsCard({ franchise }: { franchise: AdminFranchiseView }) {
  */
 function whatWeOwe(
   franchise: AdminFranchiseView,
-): { section: string; what: string; detail: string } | null {
+): { section: string; what: string; detail: string; since: string | null } | null {
   if (franchise.status === "kyc_submitted" || franchise.status === "under_review") {
     return {
       section: "decision",
       what: "a decision on step 4",
       detail: "They have submitted everything they can and cannot go further until we answer.",
+      since: franchise.timestamps.kycSubmittedAt,
     };
   }
   if (franchise.status === "payment_claimed") {
@@ -584,6 +606,7 @@ function whatWeOwe(
       section: "instalments",
       what: "a bank check on step 8",
       detail: "They say the first instalment has been sent. Nobody has looked at a statement yet.",
+      since: franchise.timestamps.paymentClaimedAt,
     };
   }
   return null;
@@ -620,35 +643,68 @@ const TIMELINE: Array<{
   { key: "activatedAt", label: "Activated", step: 9 },
 ];
 
+/**
+ * The date first and the event after it, both packed to the left.
+ *
+ * The dates were a column flushed against the right edge, which put them 1,400px from the stage they
+ * belonged to. Leading with the date also makes the axis this list is actually read along the scannable
+ * one: the question is "where did it stop", and that is answered by the point the dates run out.
+ */
 function Timeline({ franchise }: { franchise: AdminFranchiseView }) {
   return (
-    <ol className="px-4 sm:px-5 py-4 space-y-2" data-testid="franchise-timeline">
-      {TIMELINE.map(({ key, label, step }) => {
+    <ol className="px-4 sm:px-5 py-3" data-testid="franchise-timeline">
+      {TIMELINE.map(({ key, label, step }, index) => {
         const at = franchise.timestamps[key];
         return (
           <li
             key={key}
-            className="flex items-baseline gap-3 text-sm"
+            className="relative flex flex-wrap items-baseline gap-x-3 pb-1.5 pl-5"
             data-testid={`timeline-${key}`}
           >
+            {index < TIMELINE.length - 1 && (
+              <span className="absolute left-[3px] top-2 bottom-0 w-px bg-gray-200" aria-hidden />
+            )}
             <span
-              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${at ? "bg-green-500" : "bg-gray-300"}`}
+              className={`absolute left-0 top-[0.3rem] h-[7px] w-[7px] rounded-full ${
+                at ? "bg-green-500" : "bg-white ring-1 ring-gray-300"
+              }`}
               aria-hidden
             />
-            <span className={at ? "text-foreground" : "text-muted-foreground"}>{label}</span>
+            <span className="w-[7.5rem] shrink-0 text-xs tabular-nums text-muted-foreground">
+              {formatIstDateTime(at)}
+            </span>
+            {/* `flex-1` below `sm` so a long stage wraps inside its own box. Left to itself, flex
+                wrapping drops the whole label onto the next line, where it sits under the dot with no
+                date beside it and reads as a stage of its own. */}
+            <span
+              className={`min-w-0 flex-1 sm:flex-none text-sm ${
+                at ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {label}
+            </span>
             {step && (
-              <span className="text-xs text-gray-400 whitespace-nowrap">
+              <span className="w-full sm:w-auto text-xs text-gray-400 whitespace-nowrap">
                 step {step}, {franchiseStepMeta(step).shortTitle.toLowerCase()}
               </span>
             )}
-            <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">
-              {formatIstDateTime(at)}
-            </span>
           </li>
         );
       })}
     </ol>
   );
+}
+
+/** Whole days between then and now, or null when there is no date to measure. */
+function daysSince(iso: string | null): number | null {
+  if (!iso) return null;
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return null;
+  return Math.max(0, Math.floor((Date.now() - at) / 86_400_000));
+}
+
+function plural(days: number): string {
+  return `${days} ${days === 1 ? "day" : "days"}`;
 }
 
 function formatBytes(bytes: number): string {

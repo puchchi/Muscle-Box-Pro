@@ -38,13 +38,13 @@ export function Card({
   return (
     <section
       id={id}
+      // The scroll margin clears the sticky header, whose height is not one number: the shell's
+      // nav wraps, so it is 157px at 390px wide and 57px from `md` up, where the detail page's
+      // section nav also becomes sticky and adds its own 42px.
       className={`rounded-2xl border bg-white overflow-hidden ${
         alert ? "border-red-200" : "border-gray-200"
-      }`}
+      } ${id ? "scroll-mt-[10.5rem] md:scroll-mt-28" : ""}`}
       data-testid={testId}
-      // Anchored sections would otherwise land under the sticky header *and* the detail page's
-      // sticky section nav, which together are about 6rem.
-      style={id ? { scrollMarginTop: "7rem" } : undefined}
     >
       <div
         className={`px-4 sm:px-5 py-3 border-b flex items-start justify-between gap-4 ${
@@ -82,6 +82,14 @@ export function Fields({ children }: { children: React.ReactNode }) {
  * An empty string renders as an em dash rather than as nothing, because a row with no value is
  * information ("this gym has no FSSAI number") and a row that collapses to whitespace looks like a
  * rendering bug. Optional fields on `GymDetails` arrive as `""`, not as null.
+ *
+ * ## Why a fixed label column rather than a label and value pushed apart
+ *
+ * These cards run to twenty rows, and on a 1100px page a value flushed to the right edge sits
+ * roughly 900px from the label it belongs to. Pairing the two is the whole job of the row, so the
+ * label gets a column and the value starts immediately after it, left-aligned. The width is fixed
+ * rather than fitted to the content so that the values line up down the card, which is what makes a
+ * missing one visible.
  */
 export function Field({
   label,
@@ -98,21 +106,36 @@ export function Field({
 }) {
   const shown = value === null || value.trim().length === 0 ? "—" : value;
   return (
-    <div className="flex items-baseline justify-between gap-6 px-4 sm:px-5 py-2.5">
-      <dt className="text-sm text-muted-foreground flex-shrink-0">
+    <div className="grid items-baseline gap-x-4 px-4 sm:px-5 py-2 sm:grid-cols-[14rem_minmax(0,1fr)]">
+      <dt className="text-sm text-muted-foreground">
         {label}
-        {hint && <span className="block text-xs text-gray-400">{hint}</span>}
+        {hint && <span className="block text-xs leading-snug text-gray-400">{hint}</span>}
       </dt>
       <dd
-        // `min-w-0` is what lets `break-words` do anything: without it a flex item is at least as
+        // `min-w-0` is what lets `break-words` do anything: without it a grid item is at least as
         // wide as its longest unbreakable token, so a 64-character hash pushes off the right edge of
-        // a phone instead of wrapping.
-        className={`min-w-0 text-sm text-foreground text-right break-words ${mono ? "font-mono text-xs" : ""}`}
+        // a phone instead of wrapping. `max-w-[70ch]` is for the other extreme, an internal note
+        // that would otherwise set as one 900px line.
+        className={`min-w-0 max-w-[70ch] break-words text-sm text-foreground ${mono ? "font-mono text-xs" : ""}`}
         data-testid={testId}
       >
         {shown}
       </dd>
     </div>
+  );
+}
+
+/**
+ * A heading for a block of `Field`s inside a card, where the card's own title is not enough.
+ *
+ * Tinted rather than plain text: the three places this replaces set a bare paragraph above a `dl`,
+ * and on a card that is already a stack of rows a bare paragraph reads as another row.
+ */
+export function Subhead({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="border-t border-gray-100 bg-gray-50/70 px-4 sm:px-5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+      {children}
+    </p>
   );
 }
 

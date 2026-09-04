@@ -34,7 +34,7 @@ import {
   refuseFranchisePayment,
   verifyFranchisePayment,
 } from "@/lib/adminFranchiseApi";
-import { Card, Empty, ErrorPanel, Field, Fields, Pill, SuccessPanel } from "./AdminUi";
+import { Card, Empty, ErrorPanel, Field, Fields, Pill, Subhead, SuccessPanel } from "./AdminUi";
 import { AreaField, NumberField, SelectField, TextField } from "./adminFields";
 import { formatCalendarDate, formatIstDateTime, formatPaiseExact } from "./adminFormat";
 import {
@@ -169,10 +169,8 @@ export function FranchiseDecisionSection({
         was granted.
       */}
       {territory?.grantedAt && (
-        <div className="border-t border-gray-100">
-          <p className="px-4 sm:px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Granted
-          </p>
+        <>
+          <Subhead>Granted</Subhead>
           <Fields>
             <Field
               label="Tier"
@@ -187,11 +185,13 @@ export function FranchiseDecisionSection({
             />
             <Field label="Granted" value={formatIstDateTime(territory.grantedAt)} />
           </Fields>
-        </div>
+        </>
       )}
 
       {approval && (
-        <div className="border-t border-gray-100">
+        <>
+          {/* Its own heading, because without one "Decided by" reads as part of the grant above it. */}
+          <Subhead>Decision</Subhead>
           <Fields>
             <Field label="Decided" value={formatIstDateTime(approval.decidedAt)} />
             <Field label="Decided by" value={approval.decidedByEmail} />
@@ -202,14 +202,14 @@ export function FranchiseDecisionSection({
                 hint="The freeze point step 2 reads"
               />
             )}
-            <ProseField
+            <Field
               label="Internal note"
               hint="Ours. The franchisee never sees this."
               value={approval.internalReason}
               testId="decision-internal-note"
             />
           </Fields>
-        </div>
+        </>
       )}
 
       {open ? (
@@ -614,10 +614,8 @@ function Instalment({
 
   return (
     <div className="border-t border-gray-100 first:border-t-0">
-      <div className="flex items-center justify-between gap-4 px-4 sm:px-5 pt-4">
-        <p className="text-sm font-semibold text-foreground">
-          Instalment {payment.instalmentNo}
-        </p>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 sm:px-5 pt-4 pb-1">
+        <p className="text-sm font-semibold text-foreground">Instalment {payment.instalmentNo}</p>
         <Pill
           className={FRANCHISE_PAYMENT_STATE_CLASS[payment.state]}
           testId={`payment-state-${payment.instalmentNo}`}
@@ -641,7 +639,14 @@ function Instalment({
         {claim ? (
           <>
             <Field label="UTR they gave" value={claim.utr} mono />
-            <Field label="Claimed" value={formatPaiseExact(claim.amountPaise)} />
+            {/* The same arithmetic as the confirmed figure below, said here too: this is the number
+                on screen when somebody decides whether to confirm, and a 590-rupee shortfall is
+                invisible if it has to be worked out against a row two lines up. */}
+            <Field
+              label="Claimed"
+              value={formatPaiseExact(claim.amountPaise)}
+              hint={differenceHint(claim.amountPaise, payment.expectedPaise)}
+            />
             <Field label="Paid on" value={formatCalendarDate(claim.paidOn)} hint="Their date" />
             <Field label="Claimed at" value={formatIstDateTime(claim.claimedAt)} />
             {/* Only when there is one. Step 8 stopped asking for a proof, so on every claim made
@@ -653,7 +658,7 @@ function Instalment({
           <Field
             label="Received"
             value={formatPaiseExact(payment.receivedPaise)}
-            hint={shortfallHint(payment)}
+            hint={differenceHint(payment.receivedPaise, payment.expectedPaise)}
             testId={`payment-received-${payment.instalmentNo}`}
           />
         )}
@@ -667,7 +672,7 @@ function Instalment({
         {payment.rejectedAt && (
           <>
             <Field label="Refused" value={formatIstDateTime(payment.rejectedAt)} />
-            <ProseField
+            <Field
               label="Reason given"
               hint="Shown to the franchisee verbatim"
               value={payment.reason}
@@ -732,9 +737,8 @@ function Instalment({
 }
 
 /** "₹1,180 short of the expected figure", or nothing when the two agree. */
-function shortfallHint(payment: AdminFranchisePayment): string | undefined {
-  if (payment.receivedPaise === null) return undefined;
-  const difference = payment.receivedPaise - payment.expectedPaise;
+function differenceHint(amountPaise: number, expectedPaise: number): string {
+  const difference = amountPaise - expectedPaise;
   if (difference === 0) return "Exactly as expected";
   return difference < 0
     ? `${formatPaiseExact(-difference)} short of the expected figure`
@@ -883,37 +887,6 @@ function RefuseForm({
 }
 
 // ── Shared bits ─────────────────────────────────────────────────────────────
-
-/**
- * A `Field` for a paragraph: label above, value below, left-aligned.
- *
- * `Field` right-aligns its value against a label that will not shrink, and both rows this
- * replaces have a hint under the label. On a phone that leaves the paragraph about ten
- * characters wide, set ragged against the right edge.
- */
-function ProseField({
-  label,
-  hint,
-  value,
-  testId,
-}: {
-  label: string;
-  hint: string;
-  value: string | null;
-  testId: string;
-}) {
-  return (
-    <div className="px-4 sm:px-5 py-2.5">
-      <dt className="text-sm text-muted-foreground">
-        {label}
-        <span className="block text-xs text-gray-400">{hint}</span>
-      </dt>
-      <dd className="mt-1 text-sm text-foreground leading-relaxed" data-testid={testId}>
-        {value === null || value.trim() === "" ? "—" : value}
-      </dd>
-    </div>
-  );
-}
 
 function FormFrame({
   children,
