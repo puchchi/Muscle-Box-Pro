@@ -10,12 +10,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  *
  * Two things here have no counterpart on the gym side, and they are the reason this suite exists:
  *
- * 1. **`api: "franchiseAdmin"` on every call.** These eight routes are a different API. On
+ * 1. **`api: "franchiseAdmin"` on every call.** These eleven routes are a different API. On
  *    `api.muscleboxpro.com` a missing target is a wrong base path and a 403 that reads like an
  *    undeployed route; in sandbox it is a request sent to the onboarding host entirely. Neither
  *    failure names the mistake, so each call asserts it.
  * 2. **The writes are schema-parsed too**, since they answer with the whole franchise record. A
  *    write whose response fails the schema must not read like a write that failed.
+ * 3. **Three writes answer the record *and something else*,** and the something else is stripped by
+ *    the view schema rather than rejected by it. `onboardingUrl` is the one that cannot be recovered
+ *    once dropped, so the resend has a test whose whole subject is that the field survives.
  */
 
 const { mockApiRequest } = vi.hoisted(() => ({ mockApiRequest: vi.fn() }));
@@ -27,9 +30,12 @@ import {
   fetchAdminFranchiseList,
   fetchAdminFranchiseView,
   fetchFranchiseApplications,
+  patchFranchiseTerms,
   refuseFranchisePayment,
+  resendFranchiseInvite,
   triageFranchiseApplication,
   verifyFranchisePayment,
+  voidFranchiseInvite,
   ADMIN_FRANCHISES_QUERY_KEY,
   adminFranchiseQueryKey,
 } from "@/lib/adminFranchiseApi";
@@ -77,7 +83,7 @@ beforeEach(() => {
 });
 
 describe("every route names the franchise admin API", () => {
-  it("sends api: franchiseAdmin on all eight calls, reads and writes alike", async () => {
+  it("sends api: franchiseAdmin on all eleven calls, reads and writes alike", async () => {
     const calls: [string, () => Promise<unknown>][] = [
       ["list", () => fetchAdminFranchiseList()],
       ["view", () => fetchAdminFranchiseView(FRANCHISE_ID)],
@@ -90,6 +96,9 @@ describe("every route names the franchise admin API", () => {
       ],
       ["verify", () => verifyFranchisePayment(FRANCHISE_ID, 1, { receivedPaise: 124_941_000 })],
       ["refuse", () => refuseFranchisePayment(FRANCHISE_ID, 1, { reason: "No such UTR." })],
+      ["terms", () => patchFranchiseTerms(FRANCHISE_ID, { machineAllocation: 6 })],
+      ["resend", () => resendFranchiseInvite(FRANCHISE_ID, { sendInvite: true })],
+      ["void", () => voidFranchiseInvite(FRANCHISE_ID)],
     ];
 
     for (const [label, call] of calls) {
@@ -576,6 +585,191 @@ describe("the two payment decisions", () => {
     expect(result.issues.join(" ")).toContain("payments.0.expectedPaise");
   });
 });
+
+describe("patchFranchiseTerms", () => {
+  it("patches only the keys it was given, in paise", async () => {
+    resolves(termsPatchResult(["investment", "machines"]));
+    await patchFranchiseTerms(FRANCHISE_ID, {
+      investmentPaise: 260_000_000,
+      machineAllocation: 6,
+    });
+    expect(method()).toBe("PATCH");
+    expect(path()).toBe(`/admin/franchises/${FRANCHISE_ID}/terms`);
+    expect(options().body).toEqual({ investmentPaise: 260_000_000, machineAllocation: 6 });
+  });
+
+  it("sends null for a cleared figure rather than omitting it", async () => {
+    // Omitting means "leave it alone" and null means "not agreed". The second makes the franchise
+    // unissuable, which is the point of choosing it.
+    resolves(termsPatchResult(["capital recovery threshold"]));
+    await patchFranchiseTerms(FRANCHISE_ID, { capitalRecoveryPaise: null, paymentSchedule: null });
+    expect(options().body).toEqual({ capitalRecoveryPaise: null, paymentSchedule: null });
+  });
+
+  it("keeps `changed` off the response, which the view schema would have stripped", async () => {
+    // The whole reason this route has a parse of its own. `franchisesSchema.ts` is plain
+    // `z.object()`s, so the shared view parser answers `ok: true` and hands back a record with no
+    // `changed` on it, and the screen then reports "0 terms changed" after a successful save.
+    resolves(termsPatchResult(["investment", "instalment schedule"]));
+    const result = await patchFranchiseTerms(FRANCHISE_ID, { investmentPaise: 260_000_000 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.changed).toEqual(["investment", "instalment schedule"]);
+    expect(result.data.franchiseId).toBe(FRANCHISE_ID);
+  });
+
+  it("fails the parse when `changed` is missing entirely", async () => {
+    resolves(adminFranchiseFixture());
+    const result = await patchFranchiseTerms(FRANCHISE_ID, { machineAllocation: 6 });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toContain("may have been saved");
+    expect(result.issues.join(" ")).toContain("changed");
+  });
+
+  it("passes a refusal after signing through as the server's own words", async () => {
+    // `conflict()` uses one code for several refusals, so the message is the only thing telling
+    // `already_signed` apart from the rest.
+    fails("wrong_step", "These terms have been signed and can no longer be changed.");
+    const result = await patchFranchiseTerms(FRANCHISE_ID, { machineAllocation: 6 });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toBe("These terms have been signed and can no longer be changed.");
+    expect(result.error.message).not.toContain("may have been saved");
+  });
+
+  it("carries the route's field error for tier, which names no input on the form", async () => {
+    mockApiRequest.mockResolvedValue({
+      ok: false,
+      error: {
+        code: "validation",
+        message: "Some fields need fixing.",
+        fieldErrors: { tier: "The tier is set with the territory grant, not here." },
+      },
+    });
+    const result = await patchFranchiseTerms(FRANCHISE_ID, { machineAllocation: 6 });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.fieldErrors?.tier).toContain("territory grant");
+  });
+});
+
+describe("resendFranchiseInvite", () => {
+  it("posts to the invite route with the name and the mail choice", async () => {
+    resolves(resendResult());
+    await resendFranchiseInvite(FRANCHISE_ID, { invitedByName: "Anurag", sendInvite: true });
+    expect(method()).toBe("POST");
+    expect(path()).toBe(`/admin/franchises/${FRANCHISE_ID}/invite`);
+    expect(options().body).toEqual({ invitedByName: "Anurag", sendInvite: true });
+  });
+
+  it("omits invitedByName so the server inherits it from the token being superseded", async () => {
+    // Blank is the ordinary case: the name is the franchisee's named contact through a months-long
+    // onboarding, and a colleague clicking resend must not silently become that contact.
+    resolves(resendResult());
+    await resendFranchiseInvite(FRANCHISE_ID, { sendInvite: false });
+    expect(options().body).toEqual({ sendInvite: false });
+  });
+
+  it("keeps onboardingUrl on the response, which is the only copy that will ever exist", async () => {
+    // The test this file exists for. The server stores `sha256(handle)` and no handle, so a parse
+    // that stripped this field would leave the franchisee with a dead link and no replacement.
+    resolves(resendResult());
+    const result = await resendFranchiseInvite(FRANCHISE_ID, { sendInvite: true });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.onboardingUrl).toContain("/franchise/onboarding/");
+    expect(result.data.expiresAt).toBe("2026-10-04T05:12:00.000Z");
+    expect(result.data.emailed).toBe(true);
+  });
+
+  it("reports a minted link whose mail failed as a success carrying the reason", async () => {
+    resolves({ ...resendResult(), emailed: false, emailReason: "SES rejected the recipient." });
+    const result = await resendFranchiseInvite(FRANCHISE_ID, { sendInvite: true });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.emailed).toBe(false);
+    expect(result.data.emailReason).toBe("SES rejected the recipient.");
+    expect(result.data.onboardingUrl).toBeTruthy();
+  });
+
+  it("says the link cannot be recovered when the response fails the schema", async () => {
+    // Not "reload before trying again", which is what every other write says: a resend that landed
+    // and then failed to parse has revoked the working link and thrown away its replacement.
+    const body = resendResult() as unknown as Record<string, any>;
+    delete body.onboardingUrl;
+    resolves(body);
+    const result = await resendFranchiseInvite(FRANCHISE_ID, { sendInvite: true });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.message).toContain("cannot be recovered");
+    expect(result.issues.join(" ")).toContain("onboardingUrl");
+  });
+
+  it("fails the parse when onboardingUrl arrives as a bare handle rather than a URL", async () => {
+    // A relative path would render in the copy box and be unusable, and an admin has no second
+    // chance to notice. `z.string().url()` is deliberately stricter than the field's own type.
+    resolves({ ...resendResult(), onboardingUrl: "/franchise/onboarding/northline-nutrition/3f7c" });
+    const result = await resendFranchiseInvite(FRANCHISE_ID, { sendInvite: true });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.join(" ")).toContain("onboardingUrl");
+  });
+});
+
+describe("voidFranchiseInvite", () => {
+  it("deletes the invite route and sends no body of its own", async () => {
+    // `apiRequest` supplies `Content-Type: application/json` and `{}` on every non-GET, which this
+    // route requires. There is nothing for the caller to add.
+    resolves({ ...adminFranchiseFixture(), wasLive: true });
+    await voidFranchiseInvite(FRANCHISE_ID);
+    expect(method()).toBe("DELETE");
+    expect(path()).toBe(`/admin/franchises/${FRANCHISE_ID}/invite`);
+    expect(options().body).toBeUndefined();
+  });
+
+  it("reports a revoked link", async () => {
+    resolves({ ...adminFranchiseFixture(), wasLive: true });
+    const result = await voidFranchiseInvite(FRANCHISE_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.wasLive).toBe(true);
+  });
+
+  it("reports wasLive: false as a success, not as an error", async () => {
+    // A franchise created before the server began storing the token pointer has a working link we
+    // cannot address. That is the honest outcome and the admin needs to be told the exposure is
+    // still open, which a thrown error would not do.
+    resolves({ ...adminFranchiseFixture(), wasLive: false });
+    const result = await voidFranchiseInvite(FRANCHISE_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.wasLive).toBe(false);
+  });
+
+  it("fails the parse when wasLive is missing, rather than reading it as false", async () => {
+    resolves(adminFranchiseFixture());
+    const result = await voidFranchiseInvite(FRANCHISE_ID);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.join(" ")).toContain("wasLive");
+  });
+});
+
+function termsPatchResult(changed: string[]) {
+  return { ...adminFranchiseFixture(), changed };
+}
+
+function resendResult() {
+  return {
+    ...adminFranchiseFixture(),
+    onboardingUrl:
+      "https://muscleboxpro.com/franchise/onboarding/northline-nutrition/7d1e4b93c2a86045f9b3e7c1a5d20468",
+    tokenId: "1f93b8c4-52ea-4d07-9b16-8c40a5e71d29",
+    expiresAt: "2026-10-04T05:12:00.000Z",
+    emailed: true,
+  };
+}
 
 describe("the query keys", () => {
   it("nest under the same admin prefix the gym keys use", () => {

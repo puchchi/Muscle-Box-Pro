@@ -14,12 +14,9 @@ import {
   FranchiseDecisionSection,
   FranchiseInstalmentsSection,
 } from "./AdminFranchiseActions";
-import {
-  formatCalendarDate,
-  formatIstDateTime,
-  formatPaiseAsInr,
-  formatPaiseExact,
-} from "./adminFormat";
+import { AdminFranchiseTermsEditor } from "./AdminFranchiseTermsEditor";
+import { FranchiseInviteActions } from "./AdminFranchiseInviteActions";
+import { formatCalendarDate, formatIstDateTime } from "./adminFormat";
 import {
   FRANCHISE_DOC_TYPE_LABEL,
   FRANCHISE_STATUS_CLASS,
@@ -28,7 +25,6 @@ import {
   TEMPERATURE_LABEL,
   franchiseEntityLabel,
   franchiseStepLabel,
-  franchiseTierLabel,
 } from "./adminFranchiseFormat";
 
 /**
@@ -51,8 +47,6 @@ import {
  * - **No term sheet text.** The card carries the hash and the dates, not the document. It is
  *   rendered from live state on the franchisee's side, so the only faithful way to read what they
  *   are reading is their own step 7.
- * - **No editable terms.** `PATCH …/terms` exists for the gym and has no franchise equivalent, so
- *   the figures on this page are read-only even before signing.
  */
 
 export default function AdminFranchiseDetail({ franchiseId }: { franchiseId: string }) {
@@ -269,7 +263,7 @@ function FranchiseView({
         </Fields>
       </Card>
 
-      <TermsCard franchise={franchise} />
+      <AdminFranchiseTermsEditor franchise={franchise} onSaved={onChanged} />
 
       <Card
         id="kyc"
@@ -473,9 +467,9 @@ function FranchiseView({
           </Fields>
         ) : (
           <Empty testId="invite-none">
-            No link on record. That is not the same as no link: a franchise invited from this panel is
-            sent one, and only an approval at step 4 records it here. Nothing can void a franchise
-            link yet, and a URL that was issued cannot be recovered. Ask whoever invited them for it.
+            No link on record, which is not the same as no link. A franchise created before we began
+            storing the link's fingerprint has a working one we cannot address, so nothing can revoke
+            it and no URL can be recovered. Sending a new link is the way to supersede it.
           </Empty>
         )}
 
@@ -491,6 +485,8 @@ function FranchiseView({
             </Fields>
           </>
         )}
+
+        <FranchiseInviteActions franchise={franchise} onChanged={onChanged} />
       </Card>
 
       {franchise.sourceApplicationId && (
@@ -517,73 +513,6 @@ function FranchiseView({
         </Card>
       )}
     </div>
-  );
-}
-
-function TermsCard({ franchise }: { franchise: AdminFranchiseView }) {
-  const { terms } = franchise;
-
-  return (
-    <Card
-      id="terms"
-      title="Terms"
-      note="Read-only. There is no franchise equivalent of the gym's terms editor."
-      testId="card-terms"
-    >
-      <Fields>
-        <Field label="Tier" value={franchiseTierLabel(terms.tier)} />
-        <Field label="Investment" value={formatPaiseAsInr(terms.investmentPaise)} />
-        <Field label="Machines to start" value={String(terms.machineAllocation)} />
-        <Field
-          label="Capital recovery threshold"
-          value={terms.capitalRecoveryPaise === null ? null : formatPaiseAsInr(terms.capitalRecoveryPaise)}
-          hint={terms.capitalRecoveryPaise === null ? "Agreement-specific" : undefined}
-        />
-        <Field
-          label="Protein share"
-          value={`${terms.proteinSharePctDuringRecovery}% until recovery, then ${terms.proteinSharePctAfterRecovery}%`}
-        />
-        <Field
-          label="Advertising split"
-          value={`${terms.advertisingFranchiseeSharePct}% them, ${terms.advertisingMbpSharePct}% us`}
-        />
-        <Field label="Terms last written" value={formatIstDateTime(franchise.termsUpdatedAt)} />
-        <Field label="By" value={franchise.termsUpdatedByEmail} />
-      </Fields>
-
-      {terms.paymentSchedule ? (
-        <>
-          <Subhead>Instalment schedule</Subhead>
-          <table className="w-full text-sm" data-testid="table-schedule">
-            <tbody className="divide-y divide-gray-100">
-              {terms.paymentSchedule.map((instalment, index) => (
-                <tr key={`${instalment.pct}-${index}`}>
-                  <td className="pl-4 sm:pl-5 py-2 whitespace-nowrap font-semibold tabular-nums">
-                    {instalment.pct}%
-                  </td>
-                  {/* Derived from the two figures beside it rather than stored, which is why the
-                      schedule holds percentages: an edited investment cannot leave a stale amount. */}
-                  <td className="px-4 py-2 tabular-nums whitespace-nowrap">
-                    {formatPaiseExact(Math.round((terms.investmentPaise * instalment.pct) / 100))}
-                  </td>
-                  <td className="w-full pr-4 sm:pr-5 py-2 text-muted-foreground">
-                    {instalment.trigger}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      ) : (
-        <p
-          className="border-t border-gray-100 px-4 sm:px-5 py-3.5 text-xs text-amber-800 leading-relaxed"
-          data-testid="schedule-none"
-        >
-          No instalment schedule on this tier, so the term sheet has unresolved figures in it and
-          cannot be issued until somebody agrees a schedule.
-        </p>
-      )}
-    </Card>
   );
 }
 
