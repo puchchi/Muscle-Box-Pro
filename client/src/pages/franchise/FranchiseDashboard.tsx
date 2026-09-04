@@ -21,6 +21,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryClient } from "@/lib/queryClient";
 import {
   FRANCHISE_PORTAL_QUERY_KEY,
@@ -64,6 +65,17 @@ import { formatIstDate, formatIstDateTime } from "../gym/istDates";
  * What is here is the record itself, which is answerable today and is the reason someone signs
  * in: the terms that bind, the territory that was granted, the instalments as claimed and as
  * confirmed, and the executed agreement.
+ *
+ * ## Three tabs, not one page
+ *
+ * Same split as `GymDashboard`, for the same reason. The money and the terms are what a
+ * franchisee signs in for; the agreement reference, the warehouse address and the list of
+ * documents we hold are looked up perhaps twice a year, and while they sat under the figures they
+ * took up two thirds of the screen every day to do it. Only the selected panel is mounted, so
+ * they are genuinely not rendered rather than merely scrolled past.
+ *
+ * The third tab exists only while something is unbuilt, and it disappears on the day the last
+ * section arrives rather than becoming an empty panel.
  *
  * **The protein share is never presented as a margin.** `program.ts` says of the 100% figure
  * that it "is a capital recovery mechanism, not a margin, and the page must not present it as a
@@ -286,6 +298,8 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
     0,
   );
 
+  const unbuilt = unbuiltSections(snapshot).filter((entry) => !entry.section.available);
+
   return (
     <>
       <div className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
@@ -298,69 +312,128 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
             {territory ? ` · ${territory.territory}` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <StatusPill status={snapshot.onboardingStatus} />
+        <StatusPill status={snapshot.onboardingStatus} />
+      </div>
+
+      <Tabs defaultValue="figures" className="mt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* The strip scrolls rather than wraps. Three labels and the chip do not fit 390px, and
+              a tab strip on two lines pushes the figures off the first screen. */}
+          <div className="min-w-0 max-w-full overflow-x-auto">
+            <TabsList className="h-auto w-max rounded-xl border border-border bg-card p-1 text-muted-foreground">
+              <PortalTab value="figures" testId="tab-figures">
+                Figures
+              </PortalTab>
+              <PortalTab value="record" testId="tab-record">
+                Your record
+              </PortalTab>
+              {unbuilt.length > 0 && (
+                <PortalTab value="later" testId="tab-later">
+                  Sales and payouts
+                  <span className="ml-2 rounded-md bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                    Soon
+                  </span>
+                </PortalTab>
+              )}
+            </TabsList>
+          </div>
           <LastUpdated asOf={snapshot.asOf} />
         </div>
-      </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={IndianRupee} label="Investment agreed" testId="metric-investment">
-          <Figure
-            value={inr(terms.investmentPaise)}
-            caption={`Your ${franchiseTier(terms.tier).shortName}, as signed`}
-          />
-        </MetricCard>
+        <TabsContent value="figures" className="mt-6">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard icon={IndianRupee} label="Investment agreed" testId="metric-investment">
+              <Figure
+                value={inr(terms.investmentPaise)}
+                caption={`Your ${franchiseTier(terms.tier).shortName}, as signed`}
+              />
+            </MetricCard>
 
-        {/* Accented, because it is the one figure a franchisee who has just transferred money
-            signs in to check. A total of confirmed receipts is not a settlement figure: these
-            are rows an admin read off a bank statement, so zero here is true rather than
-            missing, and the caption says which of the instalments it covers. */}
-        <MetricCard icon={BadgeCheck} label="Confirmed by us" testId="metric-confirmed" accent>
-          <Figure
-            value={inr(confirmedPaise)}
-            caption={
-              payments.length === 0
-                ? "No instalment is due yet"
-                : `${count(confirmed.length)} of ${count(payments.length)} ${
-                    payments.length === 1 ? "instalment" : "instalments"
-                  } confirmed against our bank`
-            }
-          />
-        </MetricCard>
+            {/* Accented, because it is the one figure a franchisee who has just transferred money
+                signs in to check. A total of confirmed receipts is not a settlement figure: these
+                are rows an admin read off a bank statement, so zero here is true rather than
+                missing, and the caption says which of the instalments it covers. */}
+            <MetricCard icon={BadgeCheck} label="Confirmed by us" testId="metric-confirmed" accent>
+              <Figure
+                value={inr(confirmedPaise)}
+                caption={
+                  payments.length === 0
+                    ? "No instalment is due yet"
+                    : `${count(confirmed.length)} of ${count(payments.length)} ${
+                        payments.length === 1 ? "instalment" : "instalments"
+                      } confirmed against our bank`
+                }
+              />
+            </MetricCard>
 
-        <MetricCard icon={Cpu} label="Machines allocated" testId="metric-machines">
-          <Figure
-            value={count(terms.machineAllocation)}
-            caption="Under your terms. Deployment is planned with you."
-          />
-        </MetricCard>
+            <MetricCard icon={Cpu} label="Machines allocated" testId="metric-machines">
+              <Figure
+                value={count(terms.machineAllocation)}
+                caption="Under your terms. Deployment is planned with you."
+              />
+            </MetricCard>
 
-        <MetricCard icon={Wallet} label="Capital to recover" testId="metric-recovery">
-          <Figure
-            value={
-              terms.capitalRecoveryPaise === null
-                ? "Set in your agreement"
-                : inr(terms.capitalRecoveryPaise)
-            }
-            caption="What comes back to you first, before the protein share changes"
-            muted={terms.capitalRecoveryPaise === null}
-            words={terms.capitalRecoveryPaise === null}
-          />
-        </MetricCard>
-      </div>
+            <MetricCard icon={Wallet} label="Capital to recover" testId="metric-recovery">
+              <Figure
+                value={
+                  terms.capitalRecoveryPaise === null
+                    ? "Set in your agreement"
+                    : inr(terms.capitalRecoveryPaise)
+                }
+                caption="What comes back to you first, before the protein share changes"
+                muted={terms.capitalRecoveryPaise === null}
+                words={terms.capitalRecoveryPaise === null}
+              />
+            </MetricCard>
+          </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <PaymentsCard payments={payments} className="lg:col-span-2" />
-        <TermsCard terms={terms} />
-        {agreement && <AgreementCard agreement={agreement} />}
-        {territory && <TerritoryCard territory={territory} />}
-        {operations && <OperationsCard operations={operations} />}
-        <DocumentsCard documents={documents} />
-      </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            <PaymentsCard payments={payments} className="lg:col-span-2" />
+            <TermsCard terms={terms} />
+          </div>
+        </TabsContent>
 
-      <ComingSoon snapshot={snapshot} />
+        {/* Packed into three columns by hand rather than laid out as four grid items. These four
+            cards are 190px to 390px tall, so a plain grid stretches each row to its tallest card
+            and leaves the territory card as one line of text above a hole. */}
+        <TabsContent value="record" className="mt-6">
+          <div className="grid items-start gap-4 lg:grid-cols-3">
+            {agreement && <AgreementCard agreement={agreement} />}
+            <div className="flex flex-col gap-4">
+              {territory && <TerritoryCard territory={territory} />}
+              <DocumentsCard documents={documents} />
+            </div>
+            {operations && <OperationsCard operations={operations} />}
+          </div>
+        </TabsContent>
+
+        {unbuilt.length > 0 && (
+          <TabsContent value="later" className="mt-6">
+            <ComingSoon sections={unbuilt} />
+          </TabsContent>
+        )}
+      </Tabs>
     </>
+  );
+}
+
+function PortalTab({
+  value,
+  testId,
+  children,
+}: {
+  value: string;
+  testId: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="cursor-pointer whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+      data-testid={testId}
+    >
+      {children}
+    </TabsTrigger>
   );
 }
 
@@ -444,7 +517,11 @@ function PortalLoading() {
         <div className="mt-3 h-4 w-80 max-w-full animate-pulse rounded bg-secondary/60" />
       </div>
       <p className="sr-only">Loading your franchise record</p>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+        <div className="h-11 w-56 animate-pulse rounded-xl bg-secondary/70" aria-hidden="true" />
+        <div className="h-9 w-52 animate-pulse rounded-xl bg-secondary/50" aria-hidden="true" />
+      </div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <div
             key={index}
@@ -457,18 +534,17 @@ function PortalLoading() {
           </div>
         ))}
       </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        {Array.from({ length: 3 }, (_, index) => (
-          <div
-            key={index}
-            className="animate-pulse rounded-2xl border border-border bg-card p-5"
-            aria-hidden="true"
-          >
-            <div className="mb-6 h-3 w-32 rounded bg-secondary/70" />
-            <div className="mb-3 h-7 w-28 rounded bg-secondary" />
-            <div className="h-3 w-4/5 rounded bg-secondary/60" />
-          </div>
-        ))}
+      <div className="mt-4 grid gap-4 lg:grid-cols-3" aria-hidden="true">
+        <div className="animate-pulse rounded-2xl border border-border bg-card p-5 lg:col-span-2">
+          <div className="mb-6 h-3 w-32 rounded bg-secondary/70" />
+          <div className="mb-3 h-20 rounded-xl bg-secondary" />
+          <div className="h-3 w-4/5 rounded bg-secondary/60" />
+        </div>
+        <div className="animate-pulse rounded-2xl border border-border bg-card p-5">
+          <div className="mb-6 h-3 w-28 rounded bg-secondary/70" />
+          <div className="mb-3 h-7 w-24 rounded bg-secondary" />
+          <div className="h-3 w-4/5 rounded bg-secondary/60" />
+        </div>
       </div>
     </div>
   );
@@ -913,7 +989,7 @@ function DocumentsCard({ documents }: { documents: FranchisePortalSnapshot["docu
 }
 
 /**
- * The ten sections that have no answer yet, in one panel.
+ * The ten sections that have no answer yet, in one panel behind its own tab.
  *
  * **Not ten cards.** `GymDashboard` renders an `UnavailableCard` per absent section, and that is
  * right there because it is three or four cards among nine that carry figures, so the empty one
@@ -926,22 +1002,15 @@ function DocumentsCard({ documents }: { documents: FranchisePortalSnapshot["docu
  * `not_implemented` are opposite claims: one says the pipeline works and there is nothing to
  * report, the other says we have not built it.
  */
-function ComingSoon({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
-  const sections = unbuiltSections(snapshot).filter((entry) => !entry.section.available);
-
-  if (sections.length === 0) return null;
-
+function ComingSoon({ sections }: { sections: { label: string; section: UnbuiltSection }[] }) {
   return (
-    <section
-      className="mt-4 rounded-2xl border border-border bg-secondary/30 p-5"
-      data-testid="coming-soon"
-    >
+    <section className="rounded-2xl border border-border bg-secondary/30 p-5" data-testid="coming-soon">
       <p className="flex items-start gap-2.5 text-sm font-semibold text-foreground">
         <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground/80" aria-hidden="true" />
-        Not on this page yet
+        Nothing to show here yet
       </p>
       <p className="mt-2 max-w-[80ch] text-[13px] leading-relaxed text-muted-foreground">
-        The trading side of this page is still being built. Rather than show you a zero, we show
+        The trading side of your portal is still being built. Rather than show you a zero, we show
         you nothing: none of these is a figure we can state today, and none of them affects what
         your agreement entitles you to.
       </p>

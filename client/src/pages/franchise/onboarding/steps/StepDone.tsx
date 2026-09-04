@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Clock, Eye, EyeOff, KeyRound, Wallet } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, CheckCircle2, Clock, Eye, EyeOff, KeyRound, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { franchisePasswordSchema } from "@shared/franchise/onboarding/schema";
@@ -28,11 +29,16 @@ import type { FranchiseStepViewProps } from "../types";
  * against machine readiness, which is months out, and a franchisee who first hears about it in an
  * invoice heard about it too late (§7.6).
  *
- * **No dashboard link.** The franchise portal is not built yet, so there is nowhere to send
- * anyone. The password is still set here rather than in a later email, for the gym flow's reason:
- * a second email is a second chance to lose somebody, and the handle in this URL has already
- * proved what a magic link would. Saying "we'll email you when it opens" is the honest version,
- * and the same discipline as not offering a PDF nothing generates yet.
+ * **The way in is the sign-in page, not the dashboard.** `POST /franchise/account` mints no
+ * session cookie, and its header says why: the handle in this URL lasts thirty days and can be
+ * forwarded, so a session issued here would be that handle quietly becoming a login on whatever
+ * laptop the form was finished on. A link straight to `/franchise/dashboard` would meet the guard
+ * there and be sent to the sign-in form anyway, so this sends them there directly, where the
+ * password they just chose is asked for and thereby proved typed as intended.
+ *
+ * The password is still set here rather than in a later email, for the gym flow's reason: a second
+ * email is a second chance to lose somebody, and the handle in this URL has already proved what a
+ * magic link would.
  */
 export default function StepDone({
   state,
@@ -139,8 +145,19 @@ export default function StepDone({
           </h3>
           <p className="text-sm text-gray-700 leading-relaxed mt-1">
             It is <strong className="text-foreground">{email}</strong> with the password you just
-            chose. We'll email you the moment the franchise portal opens.
+            chose. Your portal holds your agreement, your territory and every instalment we have
+            confirmed.
           </p>
+          <Button
+            asChild
+            variant="outline"
+            className="min-h-11 rounded-lg text-sm font-semibold mt-4 cursor-pointer"
+          >
+            <Link href="/franchise/login" data-testid="link-franchise-portal">
+              Sign in to your portal
+              <ArrowRight className="w-4 h-4 ml-1.5" aria-hidden="true" />
+            </Link>
+          </Button>
         </section>
       ) : (
         <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">

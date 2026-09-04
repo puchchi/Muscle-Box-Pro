@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, LogIn, Mail, MailCheck, RotateCcw, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, Mail, MailCheck, RotateCcw, ShieldCheck } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,12 +46,6 @@ const resetFacts = [
   { icon: Mail, text: "The link goes to the address on your franchise account" },
   { icon: ShieldCheck, text: "It works once, and only for setting a password" },
   { icon: RotateCcw, text: "Ask again any time. The newest link is the one that works" },
-];
-
-/** What happens after the request, one line each, so the panel is not a paragraph. */
-const afterRequestFacts = [
-  { icon: ShieldCheck, text: "The link works once." },
-  { icon: LogIn, text: "Setting a password will not sign you in. Sign in with the new one." },
 ];
 
 export default function FranchiseForgotPassword() {
@@ -168,15 +162,6 @@ function ResetRequested({ onRetry }: { onRetry: () => void }) {
         <p className="text-sm text-foreground leading-relaxed mt-3">
           If we have an account for that address, a link to set a new password is on its way.
         </p>
-
-        <ul className="mt-4 space-y-2 border-t border-gray-200 pt-4">
-          {afterRequestFacts.map((fact, i) => (
-            <li key={i} className="flex items-start gap-2.5">
-              <fact.icon className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-              <span className="text-sm text-muted-foreground leading-relaxed">{fact.text}</span>
-            </li>
-          ))}
-        </ul>
       </div>
 
       {/* A typo in the address is the likeliest reason nothing arrives, and this screen is
