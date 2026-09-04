@@ -148,16 +148,17 @@ export default function StepDone({
             chose. Your portal holds your agreement, your territory and every instalment we have
             confirmed.
           </p>
-          <Button
-            asChild
-            variant="outline"
-            className="min-h-11 rounded-lg text-sm font-semibold mt-4 cursor-pointer"
-          >
-            <Link href="/franchise/login" data-testid="link-franchise-portal">
-              Sign in to your portal
-              <ArrowRight className="w-4 h-4 ml-1.5" aria-hidden="true" />
-            </Link>
-          </Button>
+          <div className="mt-4 flex sm:justify-end">
+            <Button
+              asChild
+              className="h-11 px-6 rounded-lg text-sm font-semibold w-full sm:w-auto cursor-pointer"
+            >
+              <Link href="/franchise/login" data-testid="link-franchise-portal">
+                Sign in to your portal
+                <ArrowRight className="w-4 h-4 ml-1.5" aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
         </section>
       ) : (
         <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
