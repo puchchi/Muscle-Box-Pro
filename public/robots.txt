@@ -6,6 +6,10 @@ Disallow: /auth/
 Disallow: /admin/
 Disallow: /franchise/onboarding/
 Disallow: /franchise/esign-return
+Disallow: /franchise/login
+Disallow: /franchise/forgot-password
+Disallow: /franchise/set-password/
+Disallow: /franchise/dashboard
 
 # Google
 User-agent: Googlebot
