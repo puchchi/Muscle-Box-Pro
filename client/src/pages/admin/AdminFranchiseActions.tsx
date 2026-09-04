@@ -644,10 +644,9 @@ function Instalment({
             <Field label="Claimed" value={formatPaiseExact(claim.amountPaise)} />
             <Field label="Paid on" value={formatCalendarDate(claim.paidOn)} hint="Their date" />
             <Field label="Claimed at" value={formatIstDateTime(claim.claimedAt)} />
-            <Field
-              label="Proof attached"
-              value={claim.proofDocId ? "Yes, under documents" : "No"}
-            />
+            {/* Only when there is one. Step 8 stopped asking for a proof, so on every claim made
+                since then this row would say "No" and read as a franchisee who skipped something. */}
+            {claim.proofDocId && <Field label="Proof attached" value="Yes, under documents" />}
           </>
         ) : null}
         {payment.receivedPaise !== null && (

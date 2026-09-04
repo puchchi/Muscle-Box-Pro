@@ -11,17 +11,11 @@ import {
   CheckCircle2,
   Clock,
   Copy,
-  Loader2,
-  Paperclip,
-  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  ALLOWED_DOCUMENT_CONTENT_TYPES,
-  MAX_DOCUMENT_BYTES,
-  paymentClaimSchema,
-} from "@shared/franchise/onboarding/schema";
+import { COMPANY } from "@shared/company";
+import { paymentClaimSchema } from "@shared/franchise/onboarding/schema";
 import { formatInr } from "@shared/franchise/program";
 import type {
   PaymentClaimInput,
@@ -53,7 +47,10 @@ import type { FranchiseStepViewProps } from "../types";
  * Four states, and the distinction that matters is between the last two.
  *
  * *Instructions and a claim form.* Where to send it, what reference to put on it, and a box for
- * the UTR afterwards.
+ * the UTR afterwards. **No screenshot upload**, though the contract still carries `proofDocId` and
+ * the bucket still accepts `payment_proof`. Verification is an admin finding the UTR on our
+ * statement, and a screenshot is not evidence of that, so asking for one bought a file store and a
+ * fifth thing to fill in on the screen that asks for ₹12,50,000.
  *
  * *Claimed, with us.* Polled, because the thing that moves this step is an admin elsewhere. The
  * poll stops and says it has stopped rather than pretending to watch all afternoon.
@@ -78,11 +75,11 @@ import type { FranchiseStepViewProps } from "../types";
  */
 const WATCH = { intervalMs: 10_000, maxPolls: 30 };
 
-const FIELD_LABELS: Record<keyof PaymentClaimInput, string> = {
+/** No `proofDocId`: it is sent as null and has no input, so it cannot carry a message to one. */
+const FIELD_LABELS: Partial<Record<keyof PaymentClaimInput, string>> = {
   utr: "UTR or reference",
   amountPaise: "Amount transferred",
   paidOn: "Date of transfer",
-  proofDocId: "Transfer proof",
 };
 
 export default function StepInstalment({
@@ -322,7 +319,6 @@ function ClaimForm({
   expectedPaise: number | null;
 }) {
   const existing = state.payments.find((p) => p.instalment === 1)?.claim ?? null;
-  const proof = state.documents.find((doc) => doc.docType === "payment_proof") ?? null;
 
   const form = useForm<PaymentClaimInput>({
     resolver: zodResolver(paymentClaimSchema),
@@ -330,8 +326,11 @@ function ClaimForm({
       utr: existing?.utr ?? "",
       amountPaise: existing?.amountPaise ?? expectedPaise ?? Number.NaN,
       paidOn: existing?.paidOn ?? "",
-      proofDocId: existing?.proofDocId ?? null,
       ...(state.drafts.paymentClaim ?? {}),
+      // After the draft, not before: the contract still carries the field and the route still
+      // accepts an id, but nothing on this screen produces one, so a draft saved by an older
+      // build must not send one either.
+      proofDocId: null,
     },
     mode: "onBlur",
   });
@@ -348,15 +347,6 @@ function ClaimForm({
     if (!Number.isNaN(form.getValues("amountPaise"))) return;
     form.setValue("amountPaise", expectedPaise);
   }, [expectedPaise, form]);
-
-  // The document is uploaded before the claim is submitted, so the id it produced is what the
-  // claim has to carry. Kept in sync here rather than at the upload, because a proof removed
-  // between two submits would otherwise leave a dead id on the claim.
-  useEffect(() => {
-    const current = form.getValues("proofDocId");
-    const next = proof?.docId ?? null;
-    if (current !== next) form.setValue("proofDocId", next);
-  }, [proof, form]);
 
   async function onSubmit(claim: PaymentClaimInput) {
     await draft.flush();
@@ -403,22 +393,6 @@ function ClaimForm({
           />
         </Section>
 
-        <Section title="Proof of the transfer">
-          <ProofUpload
-            fileName={proof?.fileName ?? null}
-            sizeBytes={proof?.sizeBytes ?? null}
-            error={fieldErrors?.payment_proof ?? null}
-            onUpload={(file) =>
-              actions.uploadDocument({ docType: "payment_proof", fileName: file.name, file })
-            }
-            onRemove={() => (proof ? actions.removeDocument(proof.docId) : Promise.resolve(false))}
-          />
-          <p className={HINT_TEXT}>
-            We check this against our statement, usually within a working day. Nothing else waits on
-            it.
-          </p>
-        </Section>
-
         <SubmitBar
           nextHint="Then we check it against our statement."
           draftStatus={draft.status}
@@ -428,117 +402,6 @@ function ClaimForm({
         />
       </form>
     </Form>
-  );
-}
-
-/**
- * One optional file.
- *
- * `StepDocuments`' row without the list around it: the same local type and size checks so a bad
- * file is refused before it is uploaded rather than after, and the same rule that a held file
- * shows its name and never a link, because this handle travels in a URL.
- */
-function ProofUpload({
-  fileName,
-  sizeBytes,
-  error,
-  onUpload,
-  onRemove,
-}: {
-  fileName: string | null;
-  sizeBytes: number | null;
-  error: string | null;
-  onUpload(file: File): Promise<boolean>;
-  onRemove(): Promise<boolean>;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
-
-  async function onPick(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    setLocalError(null);
-    if (!ALLOWED_DOCUMENT_CONTENT_TYPES.includes(file.type)) {
-      setLocalError("That file type isn't accepted. Send a PDF, a JPEG or a PNG.");
-      return;
-    }
-    if (file.size > MAX_DOCUMENT_BYTES) {
-      setLocalError(
-        `That file is over the ${Math.round(MAX_DOCUMENT_BYTES / (1024 * 1024))} MB limit, so a screenshot may need resizing.`,
-      );
-      return;
-    }
-
-    setBusy(true);
-    try {
-      await onUpload(file);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const message = localError ?? error;
-
-  return (
-    <div>
-      <p className={BODY_TEXT}>
-        A screenshot or PDF of the transfer, if you have one to hand.
-      </p>
-      {message && (
-        <p className="text-xs text-red-700 font-medium mt-2 flex items-start gap-1.5" role="alert">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
-          {message}
-        </p>
-      )}
-      <div className="flex items-center gap-2 mt-3">
-        <input
-          ref={inputRef}
-          type="file"
-          className="sr-only"
-          accept={ALLOWED_DOCUMENT_CONTENT_TYPES.join(",")}
-          aria-label={fileName ? "Replace the transfer proof" : "Upload the transfer proof"}
-          onChange={(event) => void onPick(event)}
-          data-testid="input-file-payment_proof"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          disabled={busy}
-          onClick={() => inputRef.current?.click()}
-          className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
-          data-testid="button-upload-payment_proof"
-        >
-          {busy ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-          ) : (
-            <Paperclip className="w-3.5 h-3.5" aria-hidden="true" />
-          )}
-          <span className="ml-1.5">{fileName ? "Replace" : "Attach"}</span>
-        </Button>
-        {fileName && (
-          <>
-            <p className={`${HINT_TEXT} truncate`} data-testid="payment-proof-name">
-              {fileName}
-              {sizeBytes !== null ? ` · ${Math.max(1, Math.round(sizeBytes / 1024))} KB` : ""}
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={busy}
-              onClick={() => void onRemove()}
-              className="min-h-11 w-11 rounded-lg text-muted-foreground hover:text-red-700 cursor-pointer flex-shrink-0"
-              data-testid="button-remove-payment_proof"
-            >
-              <Trash2 className="w-4 h-4" aria-hidden="true" />
-              <span className="sr-only">Remove the transfer proof</span>
-            </Button>
-          </>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -568,26 +431,43 @@ function ClaimedPanel({
         </div>
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-amber-900">
-            Checking this against our statement
+            We're checking your transfer
           </h3>
-          <p className="text-sm text-amber-900 leading-relaxed mt-1" role="status">
-            {/* Their transfer date rather than the moment they told us. It is the one figure here
-                they can check against their own statement. */}
-            You told us you sent {formatInr(amountPaise / 100)} on {formatIstDate(paidOn)},
-            reference {utr}. A person confirms it against our statement, usually within a working
-            day.
+          <p className="text-sm text-amber-900 leading-relaxed mt-1">
+            Nothing more is needed from you. A person matches it against our bank statement, usually
+            within a working day.
           </p>
         </div>
       </div>
-      <p className="text-[13px] text-amber-900 leading-relaxed">
+
+      {/* "What you told us", not a receipt: none of it is confirmed yet, and the heading is what
+          keeps three figures in a bordered box from reading as our own record of the money. */}
+      <div className="rounded-lg border border-amber-200 bg-white/70 px-3.5 py-3">
+        <p className="text-xs font-semibold text-amber-800">What you told us</p>
+        <dl className="mt-2 space-y-1.5">
+          <ClaimRow label="Amount" value={formatInr(amountPaise / 100)} />
+          {/* Their transfer date rather than the moment they told us. It is the one figure here
+              they can check against their own statement. */}
+          <ClaimRow label="Sent on" value={formatIstDate(paidOn)} />
+          <ClaimRow label="Reference" value={utr} />
+        </dl>
+      </div>
+
+      <p className="text-[13px] text-amber-900 leading-relaxed" role="status">
         {watching
           ? `This page updates on its own when it is confirmed, and we email ${email || "you"} either way.`
           : `We've stopped checking on this page. Reload it to look again, or leave it: we email ${email || "you"} when it is confirmed.`}
       </p>
-      <p className="text-[13px] text-amber-900 leading-relaxed">
-        Nothing is on hold while we check. Your portal account can be set up now.
-      </p>
     </section>
+  );
+}
+
+function ClaimRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="text-[13px] text-amber-800 flex-shrink-0">{label}</dt>
+      <dd className="text-[13px] font-semibold text-amber-900 text-right break-words">{value}</dd>
+    </div>
   );
 }
 
@@ -597,22 +477,43 @@ function ClaimedPanel({
  * Says what to do and does not accuse: the common causes are a mistyped reference and a transfer
  * that has not settled yet, and the franchisee is the one person who can tell the difference. It
  * appears above a reopened form rather than replacing it.
+ *
+ * `refusal` is typed by an admin in a hurry, so it is set apart under a label rather than run on
+ * from our heading. Unlabelled it reads as product copy, and an admin's "we didnt recieve money"
+ * is then our sentence about somebody's ₹12,50,000.
  */
 function RefusalPanel({ refusal }: { refusal: string }) {
   return (
     <section
-      className="rounded-xl border border-red-300 bg-red-50 p-4 sm:p-5"
+      className="rounded-xl border border-red-300 bg-red-50 p-4 sm:p-5 space-y-3"
       data-testid="payment-refused"
     >
       <h3 className="text-base font-semibold text-red-800 flex items-center gap-2">
         <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
         We couldn't confirm that transfer
       </h3>
-      <p className="text-sm text-red-800 leading-relaxed mt-1">{refusal}</p>
-      <p className="text-sm text-red-800 leading-relaxed mt-2">
+
+      <div className="rounded-lg border border-red-200 bg-white/70 px-3.5 py-3">
+        <p className="text-xs font-semibold text-red-700">What we found</p>
+        <p className="text-sm text-red-900 leading-relaxed mt-1" data-testid="payment-refusal-reason">
+          {refusal}
+        </p>
+      </div>
+
+      <p className="text-sm text-red-800 leading-relaxed">
         Check the reference against your statement and send it to us again below. If you are sure of
-        the details, reply to our email and we will look again ourselves. Do not send the money
-        twice.
+        the details, email{" "}
+        <a
+          href={`mailto:${COMPANY.email}?subject=${encodeURIComponent("First instalment we couldn't confirm")}`}
+          className="font-semibold underline decoration-red-300 underline-offset-2 hover:decoration-red-800"
+        >
+          {COMPANY.email}
+        </a>{" "}
+        and we will look again ourselves.
+      </p>
+
+      <p className="text-sm font-semibold text-red-800 leading-relaxed">
+        Do not send the money twice.
       </p>
     </section>
   );
