@@ -251,13 +251,13 @@ function TermsForm({
           />
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="rounded-xl border border-border bg-secondary/50 p-4">
           {/*
             A plain heading, not `FormLabel` — that component reads error state off a `FormField`
             context via `useFormField`, and this sits above three radios and a conditionally
             rendered number field rather than inside one field.
           */}
-          <p className="text-gray-700 text-sm font-semibold">Early-termination charge</p>
+          <p className="text-muted-foreground text-sm font-semibold">Early-termination charge</p>
           <p className="text-xs text-muted-foreground mt-0.5 mb-2.5">
             §36.1: the standard term is nil if the gym gives 30 days' written notice. Zero and "not
             agreed" are different answers. A blank must not print as ₹0 in the agreement.

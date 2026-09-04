@@ -220,13 +220,13 @@ export default function AdminLeads() {
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${
               kind === value
                 ? "border-primary bg-primary text-primary-foreground"
-                : "border-gray-200 bg-white text-muted-foreground hover:border-gray-300 hover:text-foreground"
+                : "border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
             }`}
             data-testid={`tab-leads-${value}`}
           >
             {TAB_LABEL[value]}
             {pages[value] !== undefined && (
-              <span className={`tabular-nums ${kind === value ? "opacity-80" : "text-gray-400"}`}>
+              <span className={`tabular-nums ${kind === value ? "opacity-80" : "text-muted-foreground/70"}`}>
                 {pages[value]?.rows.length ?? 0}
               </span>
             )}
@@ -258,7 +258,7 @@ export default function AdminLeads() {
         <div className="mb-4">
           <div className="relative max-w-sm">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70"
               aria-hidden
             />
             <Input
@@ -266,7 +266,7 @@ export default function AdminLeads() {
               onChange={(event) => setFilter(event.target.value)}
               placeholder="Filter by name, email, place or reference"
               aria-label="Filter loaded enquiries"
-              className="bg-white border-gray-200 h-10 rounded-xl pl-9"
+              className="bg-card border-border h-10 rounded-xl pl-9"
               data-testid="input-filter-leads"
             />
           </div>
@@ -284,14 +284,14 @@ export default function AdminLeads() {
       )}
 
       {visible.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white overflow-x-auto">
+        <div className="rounded-2xl border border-border bg-card overflow-x-auto">
           {/*
             `min-w-` with the scroller above it, rather than letting five columns share whatever width
             there is. On a phone the shared width collapses the Message column to one word per line and
             a single enquiry becomes a screen and a half; a sideways scroll is the lesser evil.
           */}
           <table className={`w-full text-sm ${showsTriage ? "min-w-[54rem]" : "min-w-[46rem]"}`}>
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-secondary/50 border-b border-border">
               <tr>
                 <Th>Who</Th>
                 <Th>Contact</Th>
@@ -301,7 +301,7 @@ export default function AdminLeads() {
                 {showsTriage && <Th align="right">Where it stands</Th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border/70">
               {visible.map((lead) => {
                 const message = lead.message?.trim() ?? "";
                 const open = expanded.has(lead.id);
@@ -355,12 +355,12 @@ export default function AdminLeads() {
                       {lead.place && <p className="text-xs text-muted-foreground">{lead.place}</p>}
                       {lead.detail && <p className="text-xs text-muted-foreground">{lead.detail}</p>}
                       {!lead.organisation && !lead.place && !lead.detail && (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-muted-foreground/70">—</span>
                       )}
                     </td>
                     <td className="px-4 py-2.5 max-w-[38ch]">
                       {message === "" ? (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-muted-foreground/70">—</span>
                       ) : message.length <= 160 ? (
                         <p className="whitespace-pre-wrap break-words text-muted-foreground">
                           {message}

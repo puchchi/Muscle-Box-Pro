@@ -156,7 +156,7 @@ function TermsReadOnly({ franchise }: { franchise: AdminFranchiseView }) {
         <>
           <Subhead>Instalment schedule</Subhead>
           <table className="w-full text-sm" data-testid="table-schedule">
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border/70">
               {terms.paymentSchedule.map((instalment, index) => (
                 <tr key={`${instalment.pct}-${index}`}>
                   <td className="pl-4 sm:pl-5 py-2 whitespace-nowrap font-semibold tabular-nums">
@@ -177,7 +177,7 @@ function TermsReadOnly({ franchise }: { franchise: AdminFranchiseView }) {
         </>
       ) : (
         <p
-          className="border-t border-gray-100 px-4 sm:px-5 py-3.5 text-xs text-amber-800 leading-relaxed"
+          className="border-t border-border/70 px-4 sm:px-5 py-3.5 text-xs text-amber-200 leading-relaxed"
           data-testid="schedule-none"
         >
           No instalment schedule agreed, so the term sheet has unresolved figures in it and cannot be
@@ -251,7 +251,7 @@ function TermsForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="border-t border-gray-100 p-4 sm:p-5 space-y-4"
+        className="border-t border-border/70 p-4 sm:p-5 space-y-4"
       >
         {problem && <ErrorPanel message={problem} testId="franchise-terms-error" />}
 
@@ -290,10 +290,10 @@ function TermsForm({
           />
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="rounded-xl border border-border bg-secondary/50 p-4">
           {/* A plain heading rather than `FormLabel`, which reads error state off a `FormField`
               context: this sits above two radios and a conditionally rendered number field. */}
-          <p className="text-gray-700 text-sm font-semibold">Capital recovery threshold</p>
+          <p className="text-muted-foreground text-sm font-semibold">Capital recovery threshold</p>
           <p className="text-xs text-muted-foreground mt-0.5 mb-2.5">
             The protein share steps down once this much has been recovered. On the City tier §21
             leaves it to the definitive agreement, so "not agreed" is a real answer. It is not the
@@ -392,9 +392,9 @@ function ScheduleEditor({
 
   if (stages === null) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-        <p className="text-gray-700 text-sm font-semibold">Instalment schedule</p>
-        <p className="text-xs text-amber-800 mt-0.5 mb-3 leading-relaxed">
+      <div className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-4">
+        <p className="text-muted-foreground text-sm font-semibold">Instalment schedule</p>
+        <p className="text-xs text-amber-200 mt-0.5 mb-3 leading-relaxed">
           No schedule agreed. The term sheet renders its instalment figures from this, so it cannot
           be issued at all until there is one.
         </p>
@@ -416,14 +416,14 @@ function ScheduleEditor({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+    <div className="rounded-xl border border-border bg-secondary/50 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-gray-700 text-sm font-semibold">Instalment schedule</p>
+        <p className="text-muted-foreground text-sm font-semibold">Instalment schedule</p>
         {/* The running total, coloured, because "adds up to 90%" is a refusal the admin can fix
             before submitting and 10% of the consideration is what it costs to miss it. */}
         <p
           className={`text-xs font-semibold tabular-nums ${
-            total === 100 ? "text-green-700" : "text-amber-800"
+            total === 100 ? "text-emerald-200" : "text-amber-200"
           }`}
           data-testid="schedule-total"
         >

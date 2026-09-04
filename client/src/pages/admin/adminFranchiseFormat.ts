@@ -68,23 +68,23 @@ export const FRANCHISE_STATUS_LABEL: Record<FranchiseOnboardingStatus, string> =
  * mechanics, green is the finish line, and red is the one terminal rung.
  */
 export const FRANCHISE_STATUS_CLASS: Record<FranchiseOnboardingStatus, string> = {
-  invited: "bg-gray-100 text-gray-700",
-  opened: "bg-gray-100 text-gray-700",
-  details_submitted: "bg-gray-100 text-gray-700",
-  territory_submitted: "bg-gray-100 text-gray-700",
-  kyc_submitted: "bg-amber-50 text-amber-800",
-  under_review: "bg-amber-50 text-amber-800",
-  approved: "bg-gray-100 text-gray-700",
-  on_hold: "bg-orange-50 text-orange-700",
-  declined: "bg-red-50 text-red-700",
-  franchise_ack: "bg-gray-100 text-gray-700",
-  operations_submitted: "bg-gray-100 text-gray-700",
-  termsheet_viewed: "bg-gray-100 text-gray-700",
-  esign_requested: "bg-gray-100 text-gray-700",
-  signed: "bg-blue-50 text-blue-700",
-  payment_claimed: "bg-amber-50 text-amber-800",
-  payment_verified: "bg-blue-50 text-blue-700",
-  active: "bg-green-50 text-green-700",
+  invited: "bg-secondary text-muted-foreground",
+  opened: "bg-secondary text-muted-foreground",
+  details_submitted: "bg-secondary text-muted-foreground",
+  territory_submitted: "bg-secondary text-muted-foreground",
+  kyc_submitted: "bg-amber-400/10 text-amber-200",
+  under_review: "bg-amber-400/10 text-amber-200",
+  approved: "bg-secondary text-muted-foreground",
+  on_hold: "bg-orange-400/10 text-orange-200",
+  declined: "bg-rose-400/10 text-rose-200",
+  franchise_ack: "bg-secondary text-muted-foreground",
+  operations_submitted: "bg-secondary text-muted-foreground",
+  termsheet_viewed: "bg-secondary text-muted-foreground",
+  esign_requested: "bg-secondary text-muted-foreground",
+  signed: "bg-sky-400/10 text-sky-200",
+  payment_claimed: "bg-amber-400/10 text-amber-200",
+  payment_verified: "bg-sky-400/10 text-sky-200",
+  active: "bg-emerald-400/10 text-emerald-200",
 };
 
 /**
@@ -332,9 +332,9 @@ export const FRANCHISE_PAYMENT_STATE_LABEL: Record<"pending" | "verified" | "rej
 };
 
 export const FRANCHISE_PAYMENT_STATE_CLASS: Record<"pending" | "verified" | "rejected", string> = {
-  pending: "bg-amber-50 text-amber-800",
-  verified: "bg-green-50 text-green-700",
-  rejected: "bg-red-50 text-red-700",
+  pending: "bg-amber-400/10 text-amber-200",
+  verified: "bg-emerald-400/10 text-emerald-200",
+  rejected: "bg-rose-400/10 text-rose-200",
 };
 
 /** `""` maps to `""` so `Field` renders its em dash: there is no warehouse to ask the question about. */
@@ -381,10 +381,10 @@ export const FRANCHISE_TRIAGE_LABEL: Record<FranchiseTriageStatus, string> = {
 };
 
 export const FRANCHISE_TRIAGE_CLASS: Record<FranchiseTriageStatus, string> = {
-  new: "bg-amber-50 text-amber-800",
-  reviewed: "bg-blue-50 text-blue-700",
-  rejected: "bg-gray-100 text-gray-600",
-  converted: "bg-green-50 text-green-700",
+  new: "bg-amber-400/10 text-amber-200",
+  reviewed: "bg-sky-400/10 text-sky-200",
+  rejected: "bg-secondary text-muted-foreground",
+  converted: "bg-emerald-400/10 text-emerald-200",
 };
 
 /**

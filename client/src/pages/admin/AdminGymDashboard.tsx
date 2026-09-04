@@ -99,7 +99,7 @@ export function AdminGymDashboard({ gym }: { gym: AdminGymView }) {
               caption={DEPOSIT_STATUS_LABEL[gym.depositStatus].toLowerCase()}
             />
             {gym.depositWaiver && (
-              <p className="mt-2 text-xs font-semibold text-amber-700">
+              <p className="mt-2 text-xs font-semibold text-amber-300">
                 Waived by {gym.depositWaiver.byEmail}
               </p>
             )}

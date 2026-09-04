@@ -162,7 +162,7 @@ function FranchiseView({
       {owed && (
         <a
           href={`#${owed.section}`}
-          className="block rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+          className="block rounded-2xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-200 hover:bg-amber-400/20 transition-colors cursor-pointer"
           data-testid="franchise-owed"
         >
           {/* How long, not just what. Two of these is a queue; the one that is eleven days old is
@@ -182,14 +182,14 @@ function FranchiseView({
         clicked, which is worse than scrolling away with the page.
       */}
       <nav
-        className="z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-white/80 md:sticky md:top-[57px]"
+        className="z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:sticky md:top-[57px]"
         aria-label="Sections of this franchise"
       >
         {SECTIONS.map((section) => (
           <a
             key={section.id}
             href={`#${section.id}`}
-            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-muted-foreground hover:bg-gray-100 hover:text-foreground transition-colors"
+            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             data-testid={`jump-${section.id}`}
           >
             {section.label}
@@ -204,7 +204,7 @@ function FranchiseView({
         testId="card-progress"
       >
         <Timeline franchise={franchise} />
-        <div className="px-4 sm:px-5 pb-4 space-y-1.5 border-t border-gray-100 pt-3">
+        <div className="px-4 sm:px-5 pb-4 space-y-1.5 border-t border-border/70 pt-3">
           <p className="text-xs text-muted-foreground">
             Steps completed:{" "}
             {franchise.completedSteps.length > 0 ? franchise.completedSteps.join(", ") : "none"}. On
@@ -215,7 +215,7 @@ function FranchiseView({
             The one thing about this figure that will otherwise be read as a bug: an approved
             franchise whose `completedSteps` omits 4.
           */}
-          <p className="text-xs text-gray-400 leading-relaxed">
+          <p className="text-xs text-muted-foreground/70 leading-relaxed">
             These are the stored steps. The franchisee's own screen adds 4 and 8 from our approval
             and payment records, so their count can legitimately be ahead of this one.
           </p>
@@ -279,7 +279,7 @@ function FranchiseView({
              `w-full` date column that packs the other four to the left. */
           <div className="overflow-x-auto">
             <table className="w-full min-w-[42rem] text-sm" data-testid="table-documents">
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border/70">
                 {franchise.documents.map((document) => (
                   <tr key={document.docId}>
                     <td
@@ -313,7 +313,7 @@ function FranchiseView({
                       ) : (
                         /* A row that exists with no file behind it: the upload was started and
                            abandoned, which looks identical to a missing document unless it is said. */
-                        <span className="text-amber-700 font-semibold">Started, never arrived</span>
+                        <span className="text-amber-300 font-semibold">Started, never arrived</span>
                       )}
                     </td>
                     {/* The last column takes the slack, so the five pack left rather than spreading a
@@ -327,7 +327,7 @@ function FranchiseView({
             </table>
           </div>
         )}
-        <p className="px-4 sm:px-5 py-3.5 text-xs text-muted-foreground leading-relaxed border-t border-gray-100">
+        <p className="px-4 sm:px-5 py-3.5 text-xs text-muted-foreground leading-relaxed border-t border-border/70">
           These are identity documents, so nothing on this page links to the files themselves.
           Reading one needs a short-lived presigned link behind an admin session, and that route is
           not built yet.
@@ -425,7 +425,7 @@ function FranchiseView({
             approval on the decision card above.
           </Empty>
         )}
-        <p className="px-4 sm:px-5 py-3.5 text-xs text-muted-foreground leading-relaxed border-t border-gray-100">
+        <p className="px-4 sm:px-5 py-3.5 text-xs text-muted-foreground leading-relaxed border-t border-border/70">
           No signature record. Leegality is the platform and nothing writes an e-sign row yet, so this
           stays empty even for a franchise the ladder has already moved past signing.
         </p>
@@ -596,11 +596,11 @@ function Timeline({ franchise }: { franchise: AdminFranchiseView }) {
             data-testid={`timeline-${key}`}
           >
             {index < TIMELINE.length - 1 && (
-              <span className="absolute left-[3px] top-2 bottom-0 w-px bg-gray-200" aria-hidden />
+              <span className="absolute left-[3px] top-2 bottom-0 w-px bg-secondary" aria-hidden />
             )}
             <span
               className={`absolute left-0 top-[0.3rem] h-[7px] w-[7px] rounded-full ${
-                at ? "bg-green-500" : "bg-white ring-1 ring-gray-300"
+                at ? "bg-emerald-400" : "ring-1 ring-muted-foreground/40"
               }`}
               aria-hidden
             />
@@ -618,7 +618,7 @@ function Timeline({ franchise }: { franchise: AdminFranchiseView }) {
               {label}
             </span>
             {step && (
-              <span className="w-full sm:w-auto text-xs text-gray-400 whitespace-nowrap">
+              <span className="w-full sm:w-auto text-xs text-muted-foreground/70 whitespace-nowrap">
                 step {step}, {franchiseStepMeta(step).shortTitle.toLowerCase()}
               </span>
             )}

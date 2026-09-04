@@ -134,7 +134,7 @@ export function FranchiseInviteActions({
   }
 
   return (
-    <div className="border-t border-gray-100 px-4 sm:px-5 py-4 space-y-3">
+    <div className="border-t border-border/70 px-4 sm:px-5 py-4 space-y-3">
       {problem && (
         <ErrorPanel
           message={problem.message}
@@ -153,7 +153,7 @@ export function FranchiseInviteActions({
           <SuccessPanel testId="invite-voided">{voided.message}</SuccessPanel>
         ) : (
           <p
-            className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 leading-relaxed"
+            className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 text-xs text-amber-200 leading-relaxed"
             data-testid="invite-voided"
           >
             {voided.message}
@@ -176,14 +176,14 @@ export function FranchiseInviteActions({
           testId="resend"
         >
           <label className="block">
-            <span className="text-xs font-semibold text-gray-700">
+            <span className="text-xs font-semibold text-muted-foreground">
               Invited by, as the email signs it
             </span>
             <Input
               value={invitedByName}
               onChange={(event) => setInvitedByName(event.target.value)}
               placeholder={franchise.invite?.invitedByName ?? "Leave blank to keep the same name"}
-              className="mt-1 h-10 rounded-xl bg-white border-gray-200"
+              className="mt-1 h-10 rounded-xl bg-card border-border"
               data-testid="input-invited-by-name"
             />
             {/* Why blank is the right default nine times out of ten. The name is the franchisee's
@@ -286,16 +286,16 @@ function IssuedLink({
 
   return (
     <div
-      className="rounded-xl border border-green-200 bg-green-50 p-4"
+      className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-4"
       data-testid="invite-resent"
     >
-      <p className="text-sm font-semibold text-green-800">
+      <p className="text-sm font-semibold text-emerald-200">
         {issued.emailed
           ? "Sent. Their new link is below."
           : "Minted, and not emailed. Copy the link and send it to them yourself."}
       </p>
       {!issued.emailed && (
-        <p className="mt-1 text-xs text-amber-800" data-testid="invite-email-failed">
+        <p className="mt-1 text-xs text-amber-200" data-testid="invite-email-failed">
           {issued.emailReason
             ? `The email did not go: ${issued.emailReason}. The link itself is live.`
             : "No email was sent. The link itself is live."}
@@ -309,7 +309,7 @@ function IssuedLink({
           readOnly
           value={issued.onboardingUrl}
           onFocus={(event) => event.currentTarget.select()}
-          className="h-10 rounded-xl bg-white border-green-200 font-mono text-xs"
+          className="h-10 rounded-xl bg-card border-emerald-400/25 font-mono text-xs"
           data-testid="input-onboarding-url"
         />
         <Button
@@ -317,7 +317,7 @@ function IssuedLink({
           variant="outline"
           size="sm"
           onClick={copy}
-          className="h-10 w-full sm:w-auto rounded-xl cursor-pointer flex-shrink-0 bg-white"
+          className="h-10 w-full sm:w-auto rounded-xl cursor-pointer flex-shrink-0 bg-card"
           data-testid="button-copy-onboarding-url"
         >
           <Copy className="w-3.5 h-3.5" aria-hidden />
@@ -325,7 +325,7 @@ function IssuedLink({
         </Button>
       </div>
 
-      <p className="mt-2 flex items-start gap-2 text-xs text-amber-800 leading-relaxed">
+      <p className="mt-2 flex items-start gap-2 text-xs text-amber-200 leading-relaxed">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
         <span>
           This is the only time this link can be read. We store a fingerprint of it and not the link
@@ -338,7 +338,7 @@ function IssuedLink({
         variant="ghost"
         size="sm"
         onClick={onDismiss}
-        className="mt-1.5 h-8 rounded-xl cursor-pointer text-green-800"
+        className="mt-1.5 h-8 rounded-xl cursor-pointer text-emerald-200"
         data-testid="button-dismiss-invite-url"
       >
         I have it
@@ -370,12 +370,12 @@ function Confirm({
 }) {
   return (
     <div
-      className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3"
+      className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 space-y-3"
       data-testid={`confirm-${testId}`}
     >
       <div>
-        <p className="text-sm font-semibold text-amber-900">{heading}</p>
-        <p className="mt-0.5 text-xs text-amber-800 leading-relaxed">{body}</p>
+        <p className="text-sm font-semibold text-amber-100">{heading}</p>
+        <p className="mt-0.5 text-xs text-amber-200 leading-relaxed">{body}</p>
       </div>
       {children}
       <div className="flex items-center gap-2.5">
@@ -392,7 +392,7 @@ function Confirm({
           type="button"
           variant="outline"
           onClick={onCancel}
-          className="h-9 px-4 rounded-xl cursor-pointer bg-white"
+          className="h-9 px-4 rounded-xl cursor-pointer bg-card"
           data-testid={`button-cancel-${testId}`}
         >
           Cancel

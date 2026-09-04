@@ -153,7 +153,7 @@ export default function AdminInbox() {
       {messages.length > 0 && (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] items-start">
           <ul
-            className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden"
+            className="rounded-2xl border border-border bg-card divide-y divide-border/70 overflow-hidden"
             data-testid="inbox-list"
           >
             {messages.map((summary) => (
@@ -163,7 +163,7 @@ export default function AdminInbox() {
                   onClick={() => void open(summary.uid)}
                   aria-current={selected === summary.uid ? "true" : undefined}
                   className={`w-full text-left px-4 py-3 cursor-pointer transition-colors ${
-                    selected === summary.uid ? "bg-gray-100" : "hover:bg-gray-50"
+                    selected === summary.uid ? "bg-secondary" : "hover:bg-secondary/50"
                   }`}
                   data-testid={`inbox-row-${summary.uid}`}
                 >
@@ -184,7 +184,7 @@ export default function AdminInbox() {
                   </p>
                   {(summary.answered || answered.has(summary.uid)) && (
                     <span
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 mt-1"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-200 mt-1"
                       data-testid={`inbox-answered-${summary.uid}`}
                     >
                       <Reply className="w-3 h-3" aria-hidden />
@@ -199,10 +199,10 @@ export default function AdminInbox() {
           <div className="space-y-5">
             {selected === null && (
               <div
-                className="rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center"
+                className="rounded-2xl border border-border bg-card px-5 py-10 text-center"
                 data-testid="inbox-nothing-selected"
               >
-                <Mail className="w-5 h-5 text-gray-300 mx-auto mb-2" aria-hidden />
+                <Mail className="w-5 h-5 text-muted-foreground/50 mx-auto mb-2" aria-hidden />
                 <p className="text-sm text-muted-foreground">
                   Pick a message. Its body is fetched when you open it, not before.
                 </p>
@@ -256,7 +256,7 @@ export default function AdminInbox() {
                     />
                   </Fields>
 
-                  <div className="border-t border-gray-100 px-4 sm:px-5 py-4 space-y-3">
+                  <div className="border-t border-border/70 px-4 sm:px-5 py-4 space-y-3">
                     {current.message.html !== null && (
                       <div className="flex gap-1.5" role="group" aria-label="How to show the body">
                         <ViewTab active={view === "html"} onClick={() => setView("html")} testId="tab-html">
@@ -353,7 +353,7 @@ function ViewTab({
       className={`rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer transition-colors ${
         active
           ? "border-primary bg-primary text-primary-foreground"
-          : "border-gray-200 bg-white text-muted-foreground hover:border-gray-300 hover:text-foreground"
+          : "border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
       }`}
       data-testid={testId}
     >

@@ -190,9 +190,10 @@
 /*
  * The gym dashboard is a dark surface, so both ends invert: the magenta lifts to clear #1C1C1C
  * (5.56:1) and the ink fill becomes near-white with a dark label, which is what "ink" means when
- * the page is already black. `--primary-foreground` flips with it — safe here because the only
- * things reading it are the default `Button` variant and three admin segmented controls, and
- * those three are on light surfaces.
+ * the page is already black. `--primary-foreground` flips with it, which is safe because it only
+ * ever flips together with `--primary-fill`: white on 10% here, 10% on 97% there. The light
+ * `.theme-console` surfaces that read it — both onboarding flows and the four sign-in screens —
+ * are not under this block at all and keep the white label from `:root`.
  */
 .theme-console.dark,
 .dark .theme-console {

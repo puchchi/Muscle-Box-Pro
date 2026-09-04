@@ -80,10 +80,10 @@ export function MessageHtml({
     <div className="space-y-2">
       {hasRemoteContent(html) && (
         <div
-          className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5"
+          className="flex items-center gap-3 rounded-xl border border-border bg-secondary/50 px-3.5 py-2.5"
           data-testid={`${testId}-images-blocked`}
         >
-          <ImageOff className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" aria-hidden />
+          <ImageOff className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" aria-hidden />
           <span className="text-xs text-muted-foreground">
             Remote images are not shown. Loading one would tell the sender this address is read by a
             person.
@@ -98,7 +98,10 @@ export function MessageHtml({
         referrerPolicy="no-referrer"
         srcDoc={documentFor(html)}
         style={{ height }}
-        className="w-full rounded-xl border border-gray-200 bg-white"
+        // White on a dark panel, and not a leftover: the frame holds a stranger's inline-styled
+        // markup written for a white client, so `FRAME_STYLE` pins the background. Theming it to
+        // `bg-card` would leave every dark-on-transparent email unreadable.
+        className="w-full rounded-xl border border-border bg-white"
         data-testid={testId}
       />
     </div>

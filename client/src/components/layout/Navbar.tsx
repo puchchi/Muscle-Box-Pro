@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Dumbbell, MapPin, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -42,13 +42,14 @@ import {
  * reachable at all.
  */
 /**
- * The hint lines are not decoration. Someone who hosts a machine and someone who owns a
- * territory are different agreements with different portals, and the wrong guess ends at a
- * login form their password does not open.
+ * The icons carry what a sub-label used to say in words. A gym hosting a machine and a
+ * franchisee running a territory are different agreements with different credentials, so the
+ * two rows have to be told apart at a glance; `Dumbbell` and `MapPin` are the same marks the
+ * franchise page already uses for those two ideas.
  */
 const PORTALS = [
-  { href: "/gym/login", label: "Gym portal", hint: "A machine hosted at your gym" },
-  { href: "/franchise/login", label: "Franchise portal", hint: "A territory you operate" },
+  { href: "/gym/login", label: "Gym portal", icon: Dumbbell },
+  { href: "/franchise/login", label: "Franchise portal", icon: MapPin },
 ] as const;
 
 export default function Navbar() {
@@ -110,15 +111,18 @@ export default function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="default"
-                  className="bg-primary text-background hover:bg-primary/90 font-bold cursor-pointer"
+                  className="bg-primary-fill text-primary-foreground hover:bg-primary-fill/90 font-bold cursor-pointer group"
                   data-testid="button-login-menu"
                 >
                   LOGIN
-                  <ChevronDown className="ml-1 h-4 w-4" aria-hidden="true" />
+                  <ChevronDown
+                    className="ml-1 h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180"
+                    aria-hidden="true"
+                  />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60">
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              <DropdownMenuContent align="end" className="w-56 p-1.5">
+                <DropdownMenuLabel className="px-2 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                   Partner sign in
                 </DropdownMenuLabel>
                 {PORTALS.map((portal) => (
@@ -129,11 +133,10 @@ export default function Navbar() {
                       The highlight has to be overridden, not inherited. `DropdownMenuItem`
                       ships `focus:bg-accent`, and `--accent` in this theme is the brand
                       magenta rather than the subtle hover grey shadcn assumes, so the
-                      default paints a saturated pink band and leaves the hint line
-                      unreadable on it. A low-alpha primary tint is what the rest of the
-                      site hovers with.
+                      default paints a saturated pink band over the row. A low-alpha primary
+                      tint is what the rest of the site hovers with.
                     */
-                    className="min-h-11 cursor-pointer focus:bg-primary/10 focus:text-foreground"
+                    className="group min-h-11 gap-3 rounded-lg px-2 cursor-pointer focus:bg-primary/10 focus:text-foreground"
                   >
                     {/*
                       `nofollow` because robots.txt disallows both paths. This bar is on every
@@ -143,10 +146,14 @@ export default function Navbar() {
                       footer carry it for the same reason.
                     */}
                     <Link href={portal.href} rel="nofollow">
-                      <span className="flex flex-col gap-0.5 py-1">
-                        <span className="font-semibold text-sm">{portal.label}</span>
-                        <span className="text-xs text-muted-foreground">{portal.hint}</span>
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-primary-ink transition-colors group-data-[highlighted]:bg-primary-fill group-data-[highlighted]:text-primary-foreground">
+                        <portal.icon className="h-4 w-4" aria-hidden="true" />
                       </span>
+                      <span className="text-sm font-semibold">{portal.label}</span>
+                      <ChevronRight
+                        className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-data-[highlighted]:opacity-100"
+                        aria-hidden="true"
+                      />
                     </Link>
                   </DropdownMenuItem>
                 ))}

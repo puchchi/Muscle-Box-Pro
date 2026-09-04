@@ -163,7 +163,7 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
       {gym.offboarding && (
         <a
           href="#offboarding"
-          className="block rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 hover:bg-red-100 transition-colors"
+          className="block rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-3 text-sm text-rose-200 hover:bg-rose-400/20 transition-colors"
           data-testid="gym-ended"
         >
           <span className="font-semibold">
@@ -174,14 +174,14 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
       )}
 
       <nav
-        className="sticky top-[3.4rem] z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-white/80"
+        className="sticky top-[3.4rem] z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80"
         aria-label="Sections of this gym"
       >
         {SECTIONS.map((section) => (
           <a
             key={section.id}
             href={`#${section.id}`}
-            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-muted-foreground hover:bg-gray-100 hover:text-foreground transition-colors"
+            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             data-testid={`jump-${section.id}`}
           >
             {section.label}
@@ -287,12 +287,12 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
         )}
 
         {gym.agreements.length > 0 && (
-          <div className="border-t border-gray-100">
+          <div className="border-t border-border/70">
             <p className="px-4 sm:px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Documents issued
             </p>
             <table className="w-full text-sm" data-testid="table-agreements">
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border/70">
                 {gym.agreements.map((agreement) => (
                   <tr key={agreement.contentHash}>
                     <td className="px-4 sm:px-5 py-2.5 font-semibold">{agreement.version}</td>
@@ -327,7 +327,7 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
 
         {gym.depositWaiver && (
           <div
-            className="mx-4 sm:mx-5 mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3"
+            className="mx-4 sm:mx-5 mb-4 rounded-xl bg-amber-400/10 border border-amber-400/25 px-4 py-3"
             data-testid="deposit-waiver"
           >
             {/*
@@ -335,8 +335,8 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
               This record is the difference, and it matters once the gym is already trading —
               which is why activation takes a reason and a name rather than a checkbox.
             */}
-            <p className="text-xs font-semibold text-amber-800 mb-0.5">Deposit waived</p>
-            <p className="text-xs text-amber-700">
+            <p className="text-xs font-semibold text-amber-200 mb-0.5">Deposit waived</p>
+            <p className="text-xs text-amber-300">
               {gym.depositWaiver.reason}. By {gym.depositWaiver.byEmail},{" "}
               {formatIstDateTime(gym.depositWaiver.at)}
             </p>
@@ -344,9 +344,9 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
         )}
 
         {gym.deposits.length > 0 ? (
-          <div className="border-t border-gray-100">
+          <div className="border-t border-border/70">
             <table className="w-full text-sm" data-testid="table-deposits">
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border/70">
                 {gym.deposits.map((deposit) => (
                   <tr key={deposit.depositId}>
                     <td className="px-4 sm:px-5 py-2.5 font-semibold">
@@ -426,7 +426,7 @@ function Timeline({ timestamps }: { timestamps: OnboardingTimestamps }) {
             data-testid={`timeline-${key}`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${at ? "bg-green-500" : "bg-gray-300"}`}
+              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${at ? "bg-emerald-400" : "bg-muted-foreground/30"}`}
               aria-hidden
             />
             <span className={at ? "text-foreground" : "text-muted-foreground"}>{label}</span>
