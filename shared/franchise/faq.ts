@@ -8,7 +8,13 @@
  * leave a stale figure buried in prose.
  */
 import type { FaqEntry } from "../partnership/faq";
-import { FRANCHISE, formatInr, franchiseTier } from "./program";
+import {
+  CITY_SCHEDULE_CAVEAT,
+  FRANCHISE,
+  formatInr,
+  franchiseTier,
+  tierPaymentStages,
+} from "./program";
 
 const territory = franchiseTier("territory");
 const city = franchiseTier("city");
@@ -36,13 +42,18 @@ export const FRANCHISE_FAQ: FaqEntry[] = [
       `${city.initialMachines} machines and city-level development rights. Larger regional structures may be ` +
       `introduced later.`,
   },
+  /*
+   * This answer used to say the City schedule was "set in the definitive agreement", which was
+   * true when §6 deferred it and stopped being true when §6 published it. Both tiers now come
+   * from `paymentSchedule` via `tierPaymentStages`, so the FAQ cannot fall behind the document
+   * again the way it did here.
+   */
   {
     question: "When do I pay?",
     answer:
-      `For the ${territory.shortName}, in two equal halves: ${formatInr(territory.investmentInr / 2)} at franchise ` +
-      `registration and ${formatInr(territory.investmentInr / 2)} when your machines are ready at the OEM. The ` +
-      `${city.shortName} follows the agreed commercial structure, generally linked to the same two milestones, with ` +
-      `the exact schedule set in the definitive agreement.`,
+      `${tierPaymentStages(territory)} ${tierPaymentStages(city)} ${CITY_SCHEDULE_CAVEAT} Both ` +
+      `schedules are in the program document, and the first instalment falls due at Franchise ` +
+      `Registration, which is when your application is accepted and the document is executed.`,
   },
   {
     question: "How does capital recovery work?",

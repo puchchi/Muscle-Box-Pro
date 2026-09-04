@@ -443,6 +443,10 @@ function FranchiseView({
         testId="card-invite"
         note="Where they came in, and what we know about it."
       >
+        {/* The empty state below is deliberately not the gym card's, which offers "issued or voided"
+            as the two cases. Neither is the common one here: only the approval at step 4 writes the
+            pointer this card reads, so a franchise invited from this panel has a working link and an
+            empty card, and "First opened" can appear directly underneath. */}
         {franchise.invite ? (
           <Fields>
             <Field label="Token" value={franchise.invite.tokenId} mono />
@@ -469,8 +473,9 @@ function FranchiseView({
           </Fields>
         ) : (
           <Empty testId="invite-none">
-            No live link. Either none was issued or it was voided, and there is no way to recover the
-            URL of one that was.
+            No link on record. That is not the same as no link: a franchise invited from this panel is
+            sent one, and only an approval at step 4 records it here. Nothing can void a franchise
+            link yet, and a URL that was issued cannot be recovered. Ask whoever invited them for it.
           </Empty>
         )}
 

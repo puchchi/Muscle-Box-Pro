@@ -424,7 +424,11 @@ export function Th<K extends string>({
       <button
         type="button"
         onClick={() => onSort(sortKey)}
-        className={`inline-flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors ${
+        // `uppercase` is repeated here even though the `th` above already has it. Tailwind's
+        // Preflight resets `text-transform` on form controls, so the inherited value stops at the
+        // button and a sortable heading rendered in title case beside its unsortable neighbours in
+        // caps — "Gym" and "Last change" next to "CONTACT" on the gyms table.
+        className={`group inline-flex items-center gap-1 uppercase cursor-pointer hover:text-foreground transition-colors ${
           active ? "text-foreground" : ""
         } ${align === "right" ? "flex-row-reverse" : ""}`}
         data-testid={`sort-${sortKey}`}
@@ -434,7 +438,15 @@ export function Th<K extends string>({
           <ArrowUp className="w-3 h-3" aria-hidden />
         ) : active === "desc" ? (
           <ArrowDown className="w-3 h-3" aria-hidden />
-        ) : null}
+        ) : (
+          // An unsorted column gave no sign it could be sorted, so the arrow appears on hover. It
+          // is transparent rather than absent so that sorting a column does not change the width of
+          // its heading and shift every column beside it.
+          <ArrowDown
+            className="w-3 h-3 text-gray-300 opacity-0 transition-opacity group-hover:opacity-100"
+            aria-hidden
+          />
+        )}
       </button>
     </th>
   );

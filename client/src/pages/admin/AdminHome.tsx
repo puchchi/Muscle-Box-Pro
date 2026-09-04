@@ -45,9 +45,14 @@ import {
  * onboarding invites the conclusion that onboarding *is* the business. It is not: gyms sell cups, and
  * none of that reaches us. `GET /gym/portal` answers `sales`, `adRevenue`, `electricity` and
  * `statements` with `not_implemented`, `AdminGymListRow` carries no money at all, and there is no
- * admin rollup route to ask. So `Trading` sits above the funnel saying which figures do not exist,
- * and nothing on this page invents one — a plausible total on an overview is the number that gets
- * quoted to a partner or an investor.
+ * admin rollup route to ask. So `Trading` is on the page naming which figures do not exist, and
+ * nothing here invents one — a plausible total on an overview is the number that gets quoted to a
+ * partner or an investor.
+ *
+ * It sits *below* the funnel and the nudge list, where it used to sit above them. Naming the gap is
+ * the job; occupying the best real estate on the page to do it is not. Those two panels are the only
+ * things here anybody acts on, and a third of a screen of dashes above them put the to-do list below
+ * the fold of a laptop.
  *
  * The money arithmetic is not what is missing. `shared/settlement/compute.ts` already turns cup
  * counts into each side's share; what is missing is the cup counts, and then a route that totals
@@ -185,13 +190,15 @@ export default function AdminHome() {
         />
       </div>
 
-      <div className="mb-6">
-        <Trading live={funnel.active} isLoading={isLoading} />
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+      {/* `items-start` so each card ends where its content does. Stretched to match its taller
+          neighbour, the funnel carried 200px of empty white below its last rung. */}
+      <div className="grid items-start lg:grid-cols-2 gap-6 mb-6">
         <Funnel summary={funnel} isLoading={isLoading} />
         <Stalled gyms={stalled} isLoading={isLoading} counted={funnel.counted} />
+      </div>
+
+      <div className="mb-6">
+        <Trading live={funnel.active} isLoading={isLoading} />
       </div>
 
       <div className="mb-6">
@@ -203,21 +210,28 @@ export default function AdminHome() {
           ) : (
             <ul className="divide-y divide-gray-100" data-testid="list-recent">
               {recent.map((row) => (
-                <li
-                  key={row.gymId}
-                  className="flex items-center gap-3 px-4 sm:px-5 py-2.5 hover:bg-gray-50 transition-colors"
-                >
+                <li key={row.gymId}>
+                  {/*
+                    The link is the row rather than just the name. The row already lit up on hover,
+                    and a highlight that spans 1300px over a click target of 100 is a promise the
+                    page was not keeping.
+                  */}
                   <Link
                     href={`/admin/gyms/${row.gymId}`}
-                    className="text-sm font-semibold text-foreground hover:underline truncate"
+                    className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 sm:px-5 py-2.5 hover:bg-gray-50 transition-colors"
                     data-testid={`recent-gym-${row.gymId}`}
                   >
-                    {row.tradeName || row.legalEntityName || row.slug}
+                    <span className="text-sm font-semibold text-foreground truncate">
+                      {row.tradeName || row.legalEntityName || row.slug}
+                    </span>
+                    <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
+                    {/* Its own line on a phone. Held on one line beside the name it took 130px and
+                        truncated "Anytime Fitness Sector 18" to "Anytime Fitnes…", which loses the
+                        one thing in the row that identifies the gym. */}
+                    <span className="w-full sm:w-auto sm:ml-auto text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                      {formatIstDateTime(row.updatedAt)}
+                    </span>
                   </Link>
-                  <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
-                  <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">
-                    {formatIstDateTime(row.updatedAt)}
-                  </span>
                 </li>
               ))}
             </ul>
@@ -282,7 +296,9 @@ function Trading({ live, isLoading }: { live: number; isLoading: boolean }) {
       testId="card-trading"
     >
       <div className="p-4 sm:p-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Two across on a phone rather than four stacked. Each of these cards holds one dash, and
+            stacked they were 270px of nothing before the sentence that explains them. */}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           <Unavailable
             icon={BarChart3}
             label="Cups sold"
@@ -318,10 +334,10 @@ function Trading({ live, isLoading }: { live: number; isLoading: boolean }) {
                   ? "No gym is live yet, so there would be nothing to report even with the pipeline built."
                   : `${live} ${live === 1 ? "gym is" : "gyms are"} live. We hold no sales figures for any of them.`}
             </span>{" "}
-            These four are blanks rather than zeros. Nothing is ingested from the machines and no
-            settlement has ever been computed, so a figure here would be invented. Filling them in
-            needs per-period cup counts arriving from the machines, then one route that totals them
-            across gyms. The same four cards, per gym, are on each gym&apos;s own page.
+            These four are blanks rather than zeros, and a figure in any of them would be invented.
+            Filling them in needs per-period cup counts arriving from the machines, then one route
+            that totals them across gyms. The same four cards, per gym, are on each gym&apos;s own
+            page.
           </Notice>
         </div>
       </div>
@@ -422,26 +438,28 @@ function Stalled({
       ) : (
         <ul className="divide-y divide-gray-100" data-testid="list-stalled">
           {gyms.map(({ row, days }) => (
-            <li
-              key={row.gymId}
-              className="flex items-center gap-3 px-4 sm:px-5 py-2.5 hover:bg-gray-50 transition-colors"
-              data-testid={`stalled-gym-${row.gymId}`}
-            >
-              <div className="min-w-0">
-                <Link
-                  href={`/admin/gyms/${row.gymId}`}
-                  className="block text-sm font-semibold text-foreground hover:underline truncate"
-                >
-                  {row.tradeName || row.legalEntityName || row.slug}
-                </Link>
-                <p className="text-xs text-muted-foreground truncate">{row.noticesEmail}</p>
-              </div>
-              <div className="ml-auto text-right flex-shrink-0">
-                <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
-                <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
-                  {days} {days === 1 ? "day" : "days"} quiet
-                </p>
-              </div>
+            <li key={row.gymId} data-testid={`stalled-gym-${row.gymId}`}>
+              {/* The whole row, for the reason given on the recent list. This one is a to-do list,
+                  so it is the row an admin means to click. */}
+              <Link
+                href={`/admin/gyms/${row.gymId}`}
+                className="flex items-center gap-3 px-4 sm:px-5 py-2.5 hover:bg-gray-50 transition-colors"
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-foreground truncate">
+                    {row.tradeName || row.legalEntityName || row.slug}
+                  </span>
+                  <span className="block text-xs text-muted-foreground truncate">
+                    {row.noticesEmail}
+                  </span>
+                </span>
+                <span className="ml-auto text-right flex-shrink-0">
+                  <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
+                  <span className="block text-xs text-muted-foreground mt-0.5 tabular-nums">
+                    {days} {days === 1 ? "day" : "days"} quiet
+                  </span>
+                </span>
+              </Link>
             </li>
           ))}
         </ul>

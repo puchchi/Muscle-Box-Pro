@@ -177,6 +177,40 @@ export function tierIncludes(): {
   return { shared, unique };
 }
 
+/**
+ * §6's schedule for one tier, as a sentence.
+ *
+ * Exists because the /franchise FAQ was rendering this from `investmentInr / 2` and the words
+ * "two equal halves", which is not what `paymentSchedule` says — it only happened to agree.
+ * Three stages, or an uneven split, would have printed two confident wrong figures rather than
+ * failing, and the same prose is now needed in the FAQ and in `shared/seo/llmDocs.ts`.
+ */
+export function tierPaymentStages(tier: FranchiseTier): string {
+  if (tier.paymentSchedule === null) {
+    return `The ${tier.shortName} schedule is set in the definitive agreement.`;
+  }
+  const stages = tier.paymentSchedule
+    .map(
+      (stage) =>
+        `${stage.pct}% (${formatInr((tier.investmentInr * stage.pct) / 100)}) ` +
+        // First character only, so the trigger joins mid-sentence without "OEM" becoming "oem".
+        `${stage.trigger.charAt(0).toLowerCase()}${stage.trigger.slice(1)}`,
+    )
+    .join(", then ");
+  return `The ${tier.shortName} is ${stages}.`;
+}
+
+/**
+ * §6 attaches this to the City schedule and not the Territory one, so it is a separate string
+ * rather than folded into `tierPaymentStages`.
+ *
+ * Not optional wherever the City schedule is printed. §6 publishes that schedule but lets the
+ * Parties vary it in writing at Franchise Registration, so stating the stages without this
+ * states a fixed schedule the document does not fix.
+ */
+export const CITY_SCHEDULE_CAVEAT =
+  "The City Franchise schedule applies unless the Parties agree a different one in writing at Franchise Registration.";
+
 export const FRANCHISE = {
   /**
    * §17, §19. The protein-business split, before and after capital recovery.
