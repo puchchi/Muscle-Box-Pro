@@ -71,10 +71,14 @@ export default function StepDone({
         data-testid="franchise-signed-confirmation"
       >
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 className="w-5 h-5 text-primary-ink" aria-hidden="true" />
+          </div>
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-foreground">
-              Signed. {state.franchiseDisplayName} is on board.
+            {/* The one heading on the flow that is a welcome rather than a label. Everything after
+                it is administration, and this is the moment the franchisee is owed. */}
+            <h3 className="text-base sm:text-lg font-semibold text-foreground">
+              Welcome aboard, {state.franchiseDisplayName}.
             </h3>
             <p className="text-sm text-gray-700 leading-relaxed mt-1">
               {executed
@@ -105,14 +109,8 @@ export default function StepDone({
                 {state.termSheet.version}
               </dd>
             </div>
-            <div>
-              <dt className="text-xs font-semibold text-muted-foreground">
-                Open until
-              </dt>
-              <dd className="text-sm text-foreground font-semibold mt-0.5">
-                {formatIstDate(state.termSheet.validUntil)}
-              </dd>
-            </div>
+            {/* No "open until" here, though step 7 shows it. It is the date the offer would have
+                lapsed, and beside a signature it reads as the date the franchise expires. */}
             <div className="min-w-0">
               <dt className="text-xs font-semibold text-muted-foreground">
                 Reference
@@ -147,10 +145,13 @@ export default function StepDone({
       ) : (
         <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-3">
           <div>
+            {/* The same weight as the three cards around it, because it is the only one asking for
+                anything. At `text-sm` the one thing left to do was the quietest thing on the page. */}
             <label
               htmlFor="franchise-password"
-              className="text-sm font-semibold text-foreground block mb-1"
+              className="text-base font-semibold text-foreground flex items-center gap-2 mb-1"
             >
+              <KeyRound className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
               Choose a password for your portal
             </label>
             <p id="franchise-password-hint" className="text-sm text-gray-700 leading-relaxed">
@@ -283,7 +284,7 @@ function InstalmentCard({
           centred icon then floats beside the gap between them. */}
       <h3 className="text-base font-semibold text-foreground flex items-start gap-2">
         <Wallet
-          className={`w-4 h-4 flex-shrink-0 mt-1 ${verified ? "text-emerald-600" : "text-muted-foreground"}`}
+          className={`w-4 h-4 flex-shrink-0 mt-1 ${verified ? "text-primary-ink" : "text-muted-foreground"}`}
           aria-hidden="true"
         />
         {verified && payment?.receivedPaise !== null && payment?.receivedPaise !== undefined
@@ -293,10 +294,12 @@ function InstalmentCard({
             : "First instalment still to send"}
       </h3>
       <p className="text-sm text-gray-700 leading-relaxed mt-1">
+        {/* Not "the next instalment falls due when your machines are ready" as well: that is the
+            third item of the list below, under its own heading. */}
         {verified
-          ? `Confirmed on ${payment?.verifiedAt ? formatIstDate(payment.verifiedAt) : "our record"}. The next instalment falls due when your machines are ready.`
+          ? `Confirmed against our bank statement on ${payment?.verifiedAt ? formatIstDate(payment.verifiedAt) : "our record"}.`
           : claimed
-            ? "We're checking your transfer against our statement, usually within a working day. We'll email you when it is confirmed."
+            ? "We're matching your transfer against our bank statement, usually within a working day. We'll email you when it is confirmed."
             : "We order your machines once the first instalment reaches us. Everything else is done."}
       </p>
       {shortfall > 0 && (
