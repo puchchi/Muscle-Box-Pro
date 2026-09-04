@@ -117,9 +117,16 @@ export const IS_PRODUCTION_API = hostnameOf(MBP_API_BASE_URL) === PRODUCTION_API
  * transfer. See `mbp-backend` `infra/lib/stacks/franchise-wizard-stack.ts`.
  *
  * In production all three are one origin: API Gateway base path mappings put them on
- * `api.muscleboxpro.com`, at `/`, `/franchise` and `/franchise-wizard`. That is the arrangement the
+ * `api.muscleboxpro.com`, at `/`, `/franchise-admin` and `/franchise-wizard`. That is the arrangement the
  * session cookie needs and it is why the paths look doubled — `/franchise-wizard/franchise/onboarding`
  * is the wizard's own route under the wizard stack's base path.
+ *
+ * **The admin base path was `/franchise` until 2026-09-04.** A custom domain matches the longest base
+ * path before it falls through to the root mapping, so `/franchise` swallowed every onboarding route
+ * beginning `/franchise/` — in practice one, `POST /franchise/applications`, the enquiry form in
+ * [franchiseApi.ts](./franchiseApi.ts). It answered 403 from the gateway with no
+ * `Access-Control-Allow-Origin`, which reaches the browser as a CORS error about a route whose CORS is
+ * fine. If a franchise screen 403s after a base path changes here, that is the shape of it.
  *
  * In sandbox they are three different `execute-api` hosts, which cannot be derived from each other.
  */
@@ -128,7 +135,7 @@ export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard";
 /** The base path each stack is mapped onto where there is a custom domain to map onto. */
 const BASE_PATHS: Record<ApiTarget, string> = {
   onboarding: "",
-  franchiseAdmin: "/franchise",
+  franchiseAdmin: "/franchise-admin",
   franchiseWizard: "/franchise-wizard",
 };
 
