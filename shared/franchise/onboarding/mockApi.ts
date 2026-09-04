@@ -121,6 +121,7 @@ const MOCK_BANK_ACCOUNT = {
   accountName: "BlendBox Innovations LLP (MOCK)",
   accountNumber: "0000 0000 0000",
   ifsc: "MOCK0000000",
+  accountType: "Current",
   bankName: "Mock Bank, Preview Branch",
 } as const;
 

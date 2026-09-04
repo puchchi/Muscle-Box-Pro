@@ -99,9 +99,13 @@ const STEP_COMPONENTS: Record<
  * email lists.
  *
  * The blurb says why the stage exists, not what is in it. The steps are already listed twice on the
- * screen below it, as the collapsed rows and as the step's own blurb, and a stage that is one step
- * gets no blurb at all: approval's would restate step 4's card one line above it. It renders on the
- * stage's first step only, so it is read on the way in rather than repeated on every screen.
+ * screen below it, as the collapsed rows and as the step's own blurb, and it renders on the stage's
+ * first step only, so it is read on the way in rather than repeated on every screen.
+ *
+ * Two stages have none. Approval's would restate step 4's card one line above it, and funding's was
+ * step 8's own blurb again in different words: both sentences opened on the transfer, so a
+ * franchisee arriving at the screen that asks for ₹12,50,000 read the same thing twice in two greys
+ * of equal weight. One sentence under a heading, or none.
  */
 const PHASE_COPY: Record<FranchisePhaseId, { heading: string; blurb?: string }> = {
   apply: {
@@ -117,7 +121,6 @@ const PHASE_COPY: Record<FranchisePhaseId, { heading: string; blurb?: string }> 
   },
   fund: {
     heading: "Funding and setup",
-    blurb: "The transfer that gets your machines on order, and the login that comes with it.",
   },
 };
 
@@ -249,7 +252,9 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
             <>
               <div>
                 {!isOnlyStep && (
-                  <p className="text-xs font-semibold text-muted-foreground">{phaseCopy.heading}</p>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">
+                    {phaseCopy.heading}
+                  </p>
                 )}
                 <h1
                   ref={headingRef}
@@ -258,9 +263,9 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
                 >
                   {isOnlyStep ? phaseCopy.heading : meta.title}
                 </h1>
-                {!isOnlyStep && <p className={`${BODY_TEXT} mt-1.5`}>{meta.blurb}</p>}
+                {!isOnlyStep && <p className={`${BODY_TEXT} mt-2`}>{meta.blurb}</p>}
                 {before.length === 0 && phaseCopy.blurb && (
-                  <p className={`${BODY_TEXT} mt-1`}>{phaseCopy.blurb}</p>
+                  <p className={`${BODY_TEXT} mt-1.5`}>{phaseCopy.blurb}</p>
                 )}
               </div>
 

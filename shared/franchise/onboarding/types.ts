@@ -428,6 +428,9 @@ export type BankAccount = {
   accountName: string;
   accountNumber: string;
   ifsc: string;
+  /** Free text rather than a union: an LLP may hold a cash credit or overdraft account, not only
+   *  the current or savings a two-value type would allow. */
+  accountType: string;
   bankName: string;
 };
 

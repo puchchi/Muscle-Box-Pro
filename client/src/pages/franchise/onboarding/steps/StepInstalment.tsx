@@ -225,6 +225,12 @@ function InstructionsPanel({
         <CopyRow label="Account name" value={bankAccount.accountName} testId="bank-account-name" />
         <CopyRow label="Account number" value={bankAccount.accountNumber} testId="bank-account-number" />
         <CopyRow label="IFSC" value={bankAccount.ifsc} testId="bank-ifsc" />
+        {/* Typed as required because the route validates it, but an API deployed before `accountType`
+            existed sends nothing, and a labelled blank with a copy button beside it is worse than no
+            row. Safe to inline once no such deployment is left. */}
+        {bankAccount.accountType && (
+          <CopyRow label="Account type" value={bankAccount.accountType} testId="bank-account-type" />
+        )}
         <CopyRow label="Bank" value={bankAccount.bankName} testId="bank-name" />
       </div>
 
@@ -267,7 +273,9 @@ function CopyRow({ label, value, testId }: { label: string; value: string; testI
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
         <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-        <p className="text-sm font-semibold text-foreground break-all" data-testid={testId}>
+        {/* `break-words`, not `break-all`: an 18-digit account number still wraps rather than
+            overflowing, but a bank name is not split mid-word into "Noida Sec / tor 12". */}
+        <p className="text-sm font-semibold text-foreground break-words" data-testid={testId}>
           {value}
         </p>
       </div>

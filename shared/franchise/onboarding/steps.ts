@@ -119,7 +119,9 @@ export const FRANCHISE_STEP_META: readonly FranchiseStepMeta[] = [
     phase: "fund",
     title: "First instalment",
     shortTitle: "First instalment",
-    blurb: "How to make the transfer, and the reference to put on it.",
+    // Why it matters, not what is on the screen. Where to send it and what reference to use are
+    // the card directly below this line, labelled.
+    blurb: "The transfer that puts your machines on order.",
     estimate: "10 minutes",
   },
   {
