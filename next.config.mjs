@@ -311,6 +311,14 @@ const nextConfig = {
         source: "/franchise/esign-return",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
+      {
+        // An emailed franchise set-password link, with the gym set-password page's reasoning: the
+        // handle is single-use, so whoever receives a leaked referrer can spend it before the
+        // franchisee does, and the franchisee then reads "already used" on a link they never
+        // got to click.
+        source: "/franchise/set-password/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
     ];
   },
   webpack: (config, { isServer }) => {

@@ -110,14 +110,14 @@ export const STATUS_LABEL: Record<OnboardingStatus, string> = {
  * thing, which they are not.
  */
 export const STATUS_CLASS: Record<OnboardingStatus, string> = {
-  invited: "bg-gray-100 text-gray-700",
-  opened: "bg-gray-100 text-gray-700",
-  details_submitted: "bg-gray-100 text-gray-700",
-  partnership_ack: "bg-gray-100 text-gray-700",
-  agreement_viewed: "bg-gray-100 text-gray-700",
-  signed: "bg-blue-50 text-blue-700",
-  deposit_paid: "bg-blue-50 text-blue-700",
-  active: "bg-green-50 text-green-700",
+  invited: "bg-secondary text-muted-foreground",
+  opened: "bg-secondary text-muted-foreground",
+  details_submitted: "bg-secondary text-muted-foreground",
+  partnership_ack: "bg-secondary text-muted-foreground",
+  agreement_viewed: "bg-secondary text-muted-foreground",
+  signed: "bg-sky-400/10 text-sky-200",
+  deposit_paid: "bg-sky-400/10 text-sky-200",
+  active: "bg-emerald-400/10 text-emerald-200",
 };
 
 export const DEPOSIT_STATUS_LABEL: Record<DepositStatus, string> = {
@@ -187,10 +187,10 @@ export const OFFBOARDING_STATE_LABEL: Record<OffboardingState, string> = {
  * is work left* rather than progress toward a goal nobody wants.
  */
 export const OFFBOARDING_STATE_CLASS: Record<OffboardingState, string> = {
-  notice_served: "bg-amber-50 text-amber-800",
-  terminated: "bg-red-50 text-red-700",
-  machine_recovered: "bg-red-50 text-red-700",
-  settled: "bg-gray-200 text-gray-700",
+  notice_served: "bg-amber-400/10 text-amber-200",
+  terminated: "bg-rose-400/10 text-rose-200",
+  machine_recovered: "bg-rose-400/10 text-rose-200",
+  settled: "bg-secondary text-muted-foreground",
 };
 
 /**

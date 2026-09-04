@@ -173,7 +173,7 @@ function Actions({
   if (state === "settled") {
     return (
       <p
-        className="border-t border-red-100 px-4 sm:px-5 py-3.5 text-xs text-muted-foreground"
+        className="border-t border-rose-400/20 px-4 sm:px-5 py-3.5 text-xs text-muted-foreground"
         data-testid="offboarding-complete"
       >
         Settled. This is the end of the ladder, and of the relationship.
@@ -191,7 +191,7 @@ function Actions({
           : ["settlement"];
 
   return (
-    <div className="border-t border-gray-100 px-4 sm:px-5 py-3.5 flex flex-wrap gap-2.5">
+    <div className="border-t border-border/70 px-4 sm:px-5 py-3.5 flex flex-wrap gap-2.5">
       {rungs.map((rung) => (
         <Button
           key={rung}
@@ -199,7 +199,7 @@ function Actions({
           size="sm"
           onClick={() => onOpen(rung)}
           className={`rounded-xl cursor-pointer h-9 ${
-            rung === "terminate" ? "border-red-200 text-red-700 hover:bg-red-50" : ""
+            rung === "terminate" ? "border-rose-400/25 text-rose-200 hover:bg-rose-400/10" : ""
           }`}
           data-testid={`button-open-${rung}`}
         >
@@ -289,8 +289,8 @@ function Settlement({
   return (
     <>
       {settlement.deductions.length > 0 && (
-        <table className="w-full text-sm border-t border-gray-100" data-testid="table-deductions">
-          <tbody className="divide-y divide-gray-100">
+        <table className="w-full text-sm border-t border-border/70" data-testid="table-deductions">
+          <tbody className="divide-y divide-border/70">
             {settlement.deductions.map((line, index) => (
               <tr key={`${line.kind}-${index}`}>
                 <td className="px-4 sm:px-5 py-2.5 whitespace-nowrap">
@@ -331,7 +331,7 @@ function Settlement({
       </Fields>
 
       <p
-        className="mx-4 sm:mx-5 mb-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800"
+        className="mx-4 sm:mx-5 mb-4 flex items-start gap-2.5 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-xs leading-relaxed text-amber-200"
         data-testid="settlement-not-paid"
       >
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
@@ -364,10 +364,10 @@ function FormFrame({
   testId: string;
 }) {
   return (
-    <form onSubmit={onSubmit} className="border-t border-gray-100 p-4 sm:p-5 space-y-4">
+    <form onSubmit={onSubmit} className="border-t border-border/70 p-4 sm:p-5 space-y-4">
       {problem && <ErrorPanel message={problem} testId={`${testId}-error`} />}
       {children}
-      <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 leading-relaxed">
+      <p className="text-xs text-amber-200 bg-amber-400/10 border border-amber-400/25 rounded-xl px-4 py-3 leading-relaxed">
         {warning}
       </p>
       <div className="flex items-center gap-3">
@@ -712,7 +712,7 @@ function SettlementForm({
         testId="settlement"
         warning="This records the split and closes the offboarding. It does not pay anybody: the payable has to be paid from the Razorpay dashboard afterwards."
       >
-        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="rounded-xl border border-border bg-secondary/50 px-4 py-3">
           <p className="text-xs text-muted-foreground leading-relaxed">
             {/*
               There is no field for the deposit, and the note says why rather than leaving its
@@ -735,7 +735,7 @@ function SettlementForm({
             {lines.fields.map((line, index) => (
               <div
                 key={line.id}
-                className="rounded-xl border border-gray-200 p-3.5"
+                className="rounded-xl border border-border p-3.5"
                 data-testid={`deduction-${index}`}
               >
                 <div className="grid sm:grid-cols-[1fr_160px_auto] gap-3 items-start">
@@ -756,7 +756,7 @@ function SettlementForm({
                     variant="ghost"
                     size="sm"
                     onClick={() => lines.remove(index)}
-                    className="mt-6 h-9 px-2.5 rounded-xl text-muted-foreground hover:text-red-700 cursor-pointer"
+                    className="mt-6 h-9 px-2.5 rounded-xl text-muted-foreground hover:text-rose-200 cursor-pointer"
                     aria-label={`Remove deduction ${index + 1}`}
                     data-testid={`button-remove-deduction-${index}`}
                   >

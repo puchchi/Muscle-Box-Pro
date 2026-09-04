@@ -111,13 +111,13 @@ function InviteCreated({ result }: { result: AdminInviteResult }) {
         mechanism.
       </p>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 mb-4">
+      <div className="rounded-2xl border border-border bg-card p-4 mb-4">
         <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
           Onboarding link
         </p>
         <div className="flex items-center gap-2">
           <code
-            className="flex-1 text-xs bg-gray-50 rounded-lg px-3 py-2.5 break-all"
+            className="flex-1 text-xs bg-secondary/50 rounded-lg px-3 py-2.5 break-all"
             data-testid="invite-url"
           >
             {result.onboardingUrl}
@@ -143,7 +143,7 @@ function InviteCreated({ result }: { result: AdminInviteResult }) {
         </p>
       </div>
 
-      <dl className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 mb-6">
+      <dl className="rounded-2xl border border-border bg-card divide-y divide-border/70 mb-6">
         <Row label="Expires" value={formatIstDateTime(result.expiresAt)} />
       </dl>
 
@@ -269,16 +269,16 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {serverError && (
             <div
-              className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5"
+              className="flex items-start gap-3 rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-3.5"
               data-testid="invite-error"
             >
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-red-600 leading-relaxed">{serverError}</p>
+              <AlertCircle className="w-4 h-4 text-rose-300 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-rose-200 leading-relaxed">{serverError}</p>
             </div>
           )}
 
           <div
-            className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4"
+            className="rounded-2xl border border-sky-400/25 bg-sky-400/10 p-4"
             data-testid="deferred-fields-note"
           >
             <p className="text-sm text-foreground leading-relaxed">
@@ -325,7 +325,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
                 `FormField` context via `useFormField`, and this heading sits above three
                 radios and a conditionally-rendered number field rather than inside one field.
               */}
-              <p className="text-gray-700 text-sm font-semibold mb-0">Early-termination charge</p>
+              <p className="text-muted-foreground text-sm font-semibold mb-0">Early-termination charge</p>
               <p className="text-xs text-muted-foreground mb-2">
                 §36.1: the standard term is nil if the gym gives 30 days' written notice. Zero and
                 "not agreed" are different answers. A blank must not print as ₹0 in the agreement.
@@ -453,11 +453,11 @@ function useEarlyTerminationChoice(form: ReturnType<typeof useForm<AdminInviteFo
 // ── Local helpers ───────────────────────────────────────────────────────────
 
 const inputClass =
-  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl";
+  "bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:bg-card transition-colors h-11 rounded-xl";
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <fieldset className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
+    <fieldset className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
       <legend className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">{title}</legend>
       {note && <p className="text-xs text-muted-foreground -mt-2">{note}</p>}
       {children}
@@ -484,7 +484,7 @@ function TextField({ form, name, label, placeholder, description, hideLabel, typ
       name={name}
       render={({ field }) => (
         <FormItem>
-          {!hideLabel && <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>}
+          {!hideLabel && <FormLabel className="text-muted-foreground text-sm font-semibold">{label}</FormLabel>}
           <FormControl>
             <Input
               {...field}
@@ -510,13 +510,13 @@ function AreaField({ form, name, label, description }: FieldProps) {
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>
+          <FormLabel className="text-muted-foreground text-sm font-semibold">{label}</FormLabel>
           <FormControl>
             <Textarea
               {...field}
               value={typeof field.value === "string" ? field.value : ""}
               rows={3}
-              className="bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors rounded-xl resize-none"
+              className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:bg-card transition-colors rounded-xl resize-none"
               data-testid={`input-${name}`}
             />
           </FormControl>
@@ -541,7 +541,7 @@ function NumberField({ form, name, label, description, hideLabel }: FieldProps) 
       name={name}
       render={({ field }) => (
         <FormItem>
-          {!hideLabel && <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>}
+          {!hideLabel && <FormLabel className="text-muted-foreground text-sm font-semibold">{label}</FormLabel>}
           <FormControl>
             <Input
               ref={field.ref}

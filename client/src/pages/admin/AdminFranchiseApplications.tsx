@@ -17,7 +17,12 @@ import {
 import { fetchFranchiseApplications, triageFranchiseApplication } from "@/lib/adminFranchiseApi";
 import { Chip, ErrorPanel, Notice, Pill, StatCard, SuccessPanel } from "./AdminUi";
 import { AreaField } from "./adminFields";
-import { formatIstDateTime, formatPaiseAsInr } from "./adminFormat";
+import { formatIstDateTime } from "./adminFormat";
+import {
+  FRANCHISE_TRIAGE_CLASS,
+  FRANCHISE_TRIAGE_LABEL,
+  franchiseEnquiryWants,
+} from "./adminFranchiseFormat";
 import { inviteHrefForApplication } from "./franchiseInviteLink";
 
 /**
@@ -50,20 +55,6 @@ import { inviteHrefForApplication } from "./franchiseInviteLink";
  * granted territory: a field that arrives holding what somebody asked for is a value nobody chose the
  * moment they click past it. The applicant's own answers are shown on the invite form instead.
  */
-
-const STATUS_LABEL: Record<FranchiseTriageStatus, string> = {
-  new: "New",
-  reviewed: "Reviewed",
-  rejected: "Rejected",
-  converted: "Converted",
-};
-
-const STATUS_CLASS: Record<FranchiseTriageStatus, string> = {
-  new: "bg-amber-50 text-amber-800",
-  reviewed: "bg-blue-50 text-blue-700",
-  rejected: "bg-gray-100 text-gray-600",
-  converted: "bg-green-50 text-green-700",
-};
 
 const STATUS_NOTE: Record<FranchiseTriageStatus, string> = {
   new: "Nobody has looked at this yet.",
@@ -145,7 +136,7 @@ export default function AdminFranchiseApplications({
         {(page?.statuses ?? []).map((option) => (
           <Chip
             key={option}
-            label={STATUS_LABEL[option]}
+            label={FRANCHISE_TRIAGE_LABEL[option]}
             selected={status === option}
             onClick={() => switchTo(option)}
             testId={`app-status-${option}`}
@@ -203,7 +194,7 @@ export default function AdminFranchiseApplications({
           <StatCard
             label="Loaded"
             value={String(rows.length)}
-            hint={status === "all" ? "Every status, newest first." : STATUS_LABEL[status] + " only."}
+            hint={status === "all" ? "Every status, newest first." : FRANCHISE_TRIAGE_LABEL[status] + " only."}
             testId="stat-applications-loaded"
           />
           <StatCard
@@ -232,14 +223,14 @@ export default function AdminFranchiseApplications({
         <p className="text-sm text-muted-foreground" data-testid="applications-empty">
           {status === "all"
             ? "No franchise enquiries yet. They arrive from the form on /franchise."
-            : `No enquiries are ${STATUS_LABEL[status].toLowerCase()}.`}
+            : `No enquiries are ${FRANCHISE_TRIAGE_LABEL[status].toLowerCase()}.`}
         </p>
       )}
 
       {rows.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white overflow-x-auto">
+        <div className="rounded-2xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-secondary/50 border-b border-border">
               <tr>
                 <th scope="col" className="w-10" />
                 <th
@@ -274,7 +265,7 @@ export default function AdminFranchiseApplications({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border/70">
               {rows.map((row) => (
                 <ApplicationRows
                   key={row.applicationId}
@@ -314,7 +305,7 @@ function ApplicationRows({
   return (
     <>
       <tr
-        className="hover:bg-gray-50 transition-colors"
+        className="hover:bg-secondary/50 transition-colors"
         data-testid={`row-application-${row.applicationId}`}
       >
         <td className="pl-3">
@@ -322,7 +313,7 @@ function ApplicationRows({
             type="button"
             onClick={onToggle}
             aria-expanded={isOpen}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             data-testid={`toggle-application-${row.applicationId}`}
           >
             <span className="sr-only">
@@ -344,16 +335,16 @@ function ApplicationRows({
           {/* Four columns do not fit a phone. Status rides under the name there, and keeps the
               testid off so the one on the Status column stays the only match. */}
           <div className="sm:hidden mt-1.5">
-            <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
+            <Pill className={FRANCHISE_TRIAGE_CLASS[row.status]}>{FRANCHISE_TRIAGE_LABEL[row.status]}</Pill>
           </div>
         </td>
         <td className="hidden sm:table-cell px-4 py-2.5 sm:min-w-[10rem]">
           <p className="text-foreground">{row.targetMarket}</p>
-          <p className="text-xs text-muted-foreground">{wants(row)}</p>
+          <p className="text-xs text-muted-foreground">{franchiseEnquiryWants(row)}</p>
         </td>
         <td className="hidden sm:table-cell px-4 py-2.5">
-          <Pill className={STATUS_CLASS[row.status]} testId={`app-status-${row.applicationId}`}>
-            {STATUS_LABEL[row.status]}
+          <Pill className={FRANCHISE_TRIAGE_CLASS[row.status]} testId={`app-status-${row.applicationId}`}>
+            {FRANCHISE_TRIAGE_LABEL[row.status]}
           </Pill>
           {/* An email has no break opportunity, so on a phone this line alone would set the column
               wide enough to push the table into a sideways scroll. It is in the panel instead. */}
@@ -397,12 +388,12 @@ function ApplicationRows({
       </tr>
 
       {isOpen && (
-        <tr className="bg-gray-50/60">
+        <tr className="bg-secondary/40">
           <td colSpan={6} className="px-4 sm:px-5 py-4">
             <div className="grid gap-5 lg:grid-cols-2">
               <div className="space-y-3">
                 <div className="sm:hidden">
-                  <Detail label="Wants" value={`${row.targetMarket}\n${wants(row)}`} />
+                  <Detail label="Wants" value={`${row.targetMarket}\n${franchiseEnquiryWants(row)}`} />
                 </div>
                 <Detail label="Mobile" value={row.mobile} />
                 <Detail label="Company" value={row.company?.trim() || "Not given"} />
@@ -427,7 +418,7 @@ function ApplicationRows({
                     and printing them twice reads as two separate decisions. */}
                 {terminal && row.triage && row.triage.note.trim() !== "" && (
                   <blockquote
-                    className="mb-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-700 leading-relaxed"
+                    className="mb-3 rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-muted-foreground leading-relaxed"
                     data-testid={`triage-note-${row.applicationId}`}
                   >
                     {row.triage.note}
@@ -448,10 +439,6 @@ function ApplicationRows({
       )}
     </>
   );
-}
-
-function wants(row: FranchiseApplicationRow): string {
-  return `${row.tierName ?? row.tier} · ${formatPaiseAsInr(row.investmentPaise)} · ${row.initialMachines} machines`;
 }
 
 function Detail({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
@@ -504,7 +491,7 @@ function TriageForm({
         return;
       }
       onTriaged(
-        `${row.reference} marked ${STATUS_LABEL[values.status].toLowerCase()}. Nothing was sent to ${row.name}.`,
+        `${row.reference} marked ${FRANCHISE_TRIAGE_LABEL[values.status].toLowerCase()}. Nothing was sent to ${row.name}.`,
       );
     } finally {
       setIsSubmitting(false);
@@ -529,7 +516,7 @@ function TriageForm({
                 className={`inline-flex items-center gap-2 rounded-xl border px-3.5 min-h-11 cursor-pointer transition-colors ${
                   status === option
                     ? "border-primary bg-primary/5 text-foreground"
-                    : "border-gray-200 bg-white text-muted-foreground hover:border-gray-300"
+                    : "border-border bg-card text-muted-foreground hover:border-muted-foreground/40"
                 }`}
               >
                 <input
@@ -540,7 +527,7 @@ function TriageForm({
                   className="w-4 h-4 accent-primary cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   data-testid={`triage-${option}-${row.applicationId}`}
                 />
-                <span className="text-sm font-semibold">{STATUS_LABEL[option]}</span>
+                <span className="text-sm font-semibold">{FRANCHISE_TRIAGE_LABEL[option]}</span>
               </label>
             ))}
           </div>
@@ -569,7 +556,7 @@ function TriageForm({
           className="min-h-11 px-5 rounded-xl font-semibold text-sm cursor-pointer"
           data-testid={`button-triage-${row.applicationId}`}
         >
-          {isSubmitting ? "Saving…" : `Mark ${STATUS_LABEL[status].toLowerCase()}`}
+          {isSubmitting ? "Saving…" : `Mark ${FRANCHISE_TRIAGE_LABEL[status].toLowerCase()}`}
         </Button>
       </form>
     </Form>

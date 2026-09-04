@@ -103,10 +103,10 @@ export function FranchiseDecisionSection({
           <Pill
             className={
               approval.outcome === "approved"
-                ? "bg-green-50 text-green-700"
+                ? "bg-emerald-400/10 text-emerald-200"
                 : approval.outcome === "declined"
-                  ? "bg-red-50 text-red-700"
-                  : "bg-orange-50 text-orange-700"
+                  ? "bg-rose-400/10 text-rose-200"
+                  : "bg-orange-400/10 text-orange-200"
             }
             testId="decision-outcome"
           >
@@ -215,7 +215,7 @@ export function FranchiseDecisionSection({
       {open ? (
         forms[open]
       ) : decidable ? (
-        <div className="border-t border-gray-100 px-4 sm:px-5 py-3.5 flex flex-wrap gap-2.5">
+        <div className="border-t border-border/70 px-4 sm:px-5 py-3.5 flex flex-wrap gap-2.5">
           <Button
             size="sm"
             onClick={() => setOpen("approved")}
@@ -237,7 +237,7 @@ export function FranchiseDecisionSection({
             variant="outline"
             size="sm"
             onClick={() => setOpen("declined")}
-            className="h-9 rounded-xl cursor-pointer border-red-200 text-red-700 hover:bg-red-50"
+            className="h-9 rounded-xl cursor-pointer border-rose-400/25 text-rose-200 hover:bg-rose-400/10"
             data-testid="button-open-decline"
           >
             Decline
@@ -245,7 +245,7 @@ export function FranchiseDecisionSection({
         </div>
       ) : (
         <p
-          className="border-t border-gray-100 px-4 sm:px-5 py-3.5 text-xs text-muted-foreground leading-relaxed"
+          className="border-t border-border/70 px-4 sm:px-5 py-3.5 text-xs text-muted-foreground leading-relaxed"
           data-testid="decision-unavailable"
         >
           {franchise.status === "on_hold"
@@ -333,7 +333,7 @@ function ApproveForm({
         warning="The territory is granted exactly as written here, not as it was proposed. This is the text the term sheet renders and the grant we are bound to."
       >
         {proposal && proposal.proposedTerritory !== "" && (
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+          <div className="rounded-xl border border-border bg-secondary/50 px-4 py-3">
             <p className="text-xs text-muted-foreground leading-relaxed">
               They asked for{" "}
               <span className="font-semibold text-foreground">{proposal.proposedTerritory}</span>.
@@ -613,7 +613,7 @@ function Instalment({
   const claim = payment.claim;
 
   return (
-    <div className="border-t border-gray-100 first:border-t-0">
+    <div className="border-t border-border/70 first:border-t-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 sm:px-5 pt-4 pb-1">
         <p className="text-sm font-semibold text-foreground">Instalment {payment.instalmentNo}</p>
         <Pill
@@ -725,7 +725,7 @@ function Instalment({
             variant="outline"
             size="sm"
             onClick={() => onOpen("refuse")}
-            className="h-9 rounded-xl cursor-pointer border-red-200 text-red-700 hover:bg-red-50"
+            className="h-9 rounded-xl cursor-pointer border-rose-400/25 text-rose-200 hover:bg-rose-400/10"
             data-testid={`button-open-refuse-${payment.instalmentNo}`}
           >
             Refuse the claim
@@ -810,7 +810,7 @@ function VerifyForm({
         />
         {difference !== 0 && (
           <p
-            className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3"
+            className="text-xs text-amber-200 bg-amber-400/10 border border-amber-400/25 rounded-xl px-4 py-3"
             data-testid="verify-difference"
           >
             {difference < 0
@@ -908,10 +908,10 @@ function FormFrame({
   testId: string;
 }) {
   return (
-    <form onSubmit={onSubmit} className="border-t border-gray-100 p-4 sm:p-5 space-y-4">
+    <form onSubmit={onSubmit} className="border-t border-border/70 p-4 sm:p-5 space-y-4">
       {problem && <ErrorPanel message={problem} testId={`${testId}-error`} />}
       {children}
-      <p className="flex items-start gap-2.5 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 leading-relaxed">
+      <p className="flex items-start gap-2.5 text-xs text-amber-200 bg-amber-400/10 border border-amber-400/25 rounded-xl px-4 py-3 leading-relaxed">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
         <span>{warning}</span>
       </p>

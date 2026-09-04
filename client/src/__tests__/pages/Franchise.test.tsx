@@ -11,10 +11,9 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn() })),
 }));
 
+// Passes the rest of the props through: `rel` and `data-testid` are asserted below.
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  ),
+  default: ({ children, ...props }: React.ComponentProps<"a">) => <a {...props}>{children}</a>,
 }));
 
 vi.mock("framer-motion", () => import("@/test/framerMotion"));
@@ -255,6 +254,19 @@ describe("Franchise page", () => {
     expect(href).toMatch(/^mailto:/);
     expect(decodeURIComponent(href)).toContain("rahul@example.com");
     expect(decodeURIComponent(href)).toContain("Indore");
+  });
+
+  /**
+   * The page selling the territory is the one an existing franchisee lands on when they
+   * come back and cannot remember the portal URL. Every other link to `/franchise/login`
+   * is mid-flow (the last onboarding step, the set-password page), so removing this one
+   * leaves a signed partner with an enquiry form and no way in.
+   */
+  it("offers an existing franchisee the portal instead of the enquiry form", () => {
+    render(<Franchise />);
+    const login = screen.getByTestId("link-franchise-login");
+    expect(login).toHaveAttribute("href", "/franchise/login");
+    expect(login).toHaveAttribute("rel", "nofollow");
   });
 
   it("links to the gym side of the network and not to a payment route", () => {

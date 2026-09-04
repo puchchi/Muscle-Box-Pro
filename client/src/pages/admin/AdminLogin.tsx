@@ -86,7 +86,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="theme-console min-h-screen flex items-center justify-center bg-gray-50 px-6 py-12">
+    <div className="dark theme-console min-h-screen flex items-center justify-center bg-background text-foreground px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <h1
@@ -105,14 +105,14 @@ export default function AdminLogin() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 text-sm font-semibold">Email</FormLabel>
+                  <FormLabel className="text-muted-foreground text-sm font-semibold">Email</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="you@muscleboxpro.com"
                       type="email"
                       autoComplete="username"
                       {...field}
-                      className="bg-white border-gray-200 h-11 rounded-xl"
+                      className="bg-card border-border h-11 rounded-xl"
                       data-testid="input-email"
                     />
                   </FormControl>
@@ -126,14 +126,14 @@ export default function AdminLogin() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700 text-sm font-semibold">Password</FormLabel>
+                  <FormLabel className="text-muted-foreground text-sm font-semibold">Password</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="••••••••"
                       type="password"
                       autoComplete="current-password"
                       {...field}
-                      className="bg-white border-gray-200 h-11 rounded-xl"
+                      className="bg-card border-border h-11 rounded-xl"
                       data-testid="input-password"
                     />
                   </FormControl>
@@ -144,11 +144,11 @@ export default function AdminLogin() {
 
             {notice && (
               <div
-                className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5"
+                className="flex items-start gap-3 rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-3.5"
                 data-testid="admin-login-error"
               >
-                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-red-600 leading-relaxed">{notice}</p>
+                <AlertCircle className="w-4 h-4 text-rose-300 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-rose-200 leading-relaxed">{notice}</p>
               </div>
             )}
 

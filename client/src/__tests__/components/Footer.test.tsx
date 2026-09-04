@@ -1,10 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
+// Passes the rest of the props through, so the `rel` on the two portal links is visible here.
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  ),
+  default: ({ children, ...props }: React.ComponentProps<"a">) => <a {...props}>{children}</a>,
 }));
 
 import Footer from "@/components/footer/index";
@@ -75,5 +74,21 @@ describe("Footer component", () => {
     render(<Footer />);
     const termsLink = screen.getByRole("link", { name: /terms & conditions/i });
     expect(termsLink).toHaveAttribute("href", "/terms");
+  });
+
+  /**
+   * This footer is the only public entry to either portal. The franchise one especially:
+   * every other link to it sits inside a flow the partner has already finished.
+   */
+  it("shows a sign-in link for both portals, and keeps crawlers off them", () => {
+    render(<Footer />);
+    for (const [name, href] of [
+      [/gym portal/i, "/gym/login"],
+      [/franchise portal/i, "/franchise/login"],
+    ] as const) {
+      const link = screen.getByRole("link", { name });
+      expect(link).toHaveAttribute("href", href);
+      expect(link).toHaveAttribute("rel", "nofollow");
+    }
   });
 });

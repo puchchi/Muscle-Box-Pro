@@ -3,10 +3,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Dumbbell, MapPin, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 /**
  * The marketing site's nav bar.
@@ -22,12 +29,29 @@ import { Button } from "@/components/ui/button";
  * partners. A mirrored non-`HttpOnly` cookie is a second copy of the truth that goes stale in
  * the one case that matters, a session revoked server-side.
  *
- * So the button always reads "GYM LOGIN" and always points at `/gym/login`, which forwards an
- * existing session straight to the dashboard. A signed-in gym gets one extra hop and lands
- * where the old label promised; the destination is right even though the wording is
- * conservative. **That forwarding effect in `GymLogin` is what makes this correct** — remove
- * it and this button starts sending partners to a login form they do not need.
+ * So the trigger always reads "LOGIN" and the menu always offers both portals, whoever is
+ * looking. Each destination forwards an existing session straight to its dashboard, so a
+ * signed-in partner gets one extra hop and lands where a "DASHBOARD" label would have
+ * promised. **That forwarding effect in `GymLogin` and `FranchiseLogin` is what makes this
+ * correct** — remove it and this menu starts sending partners to a login form they do not
+ * need.
+ *
+ * It is a menu rather than two buttons because six labels plus one button already overflow a
+ * 768px bar (see `navLinks`); a second button would push the same problem into the `lg`
+ * breakpoint. The one extra click it costs a gym is the price of the franchise portal being
+ * reachable at all.
  */
+/**
+ * The icons carry what a sub-label used to say in words. A gym hosting a machine and a
+ * franchisee running a territory are different agreements with different credentials, so the
+ * two rows have to be told apart at a glance; `Dumbbell` and `MapPin` are the same marks the
+ * franchise page already uses for those two ideas.
+ */
+const PORTALS = [
+  { href: "/gym/login", label: "Gym portal", icon: Dumbbell },
+  { href: "/franchise/login", label: "Franchise portal", icon: MapPin },
+] as const;
+
 export default function Navbar() {
   const location = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -83,11 +107,58 @@ export default function Navbar() {
                 </span>
               </Link>
             ))}
-            <Link href="/gym/login">
-              <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
-                GYM LOGIN
-              </Button>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="default"
+                  className="bg-primary-fill text-primary-foreground hover:bg-primary-fill/90 font-bold cursor-pointer group"
+                  data-testid="button-login-menu"
+                >
+                  LOGIN
+                  <ChevronDown
+                    className="ml-1 h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180"
+                    aria-hidden="true"
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-1.5">
+                <DropdownMenuLabel className="px-2 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  Partner sign in
+                </DropdownMenuLabel>
+                {PORTALS.map((portal) => (
+                  <DropdownMenuItem
+                    key={portal.href}
+                    asChild
+                    /*
+                      The highlight has to be overridden, not inherited. `DropdownMenuItem`
+                      ships `focus:bg-accent`, and `--accent` in this theme is the brand
+                      magenta rather than the subtle hover grey shadcn assumes, so the
+                      default paints a saturated pink band over the row. A low-alpha primary
+                      tint is what the rest of the site hovers with.
+                    */
+                    className="group min-h-11 gap-3 rounded-lg px-2 cursor-pointer focus:bg-primary/10 focus:text-foreground"
+                  >
+                    {/*
+                      `nofollow` because robots.txt disallows both paths. This bar is on every
+                      indexable page, so without it every one of them points at a blocked path:
+                      crawl budget spent on a fetch that returns nothing, and a "blocked by
+                      robots.txt" discovery in Search Console per page. The same links in the
+                      footer carry it for the same reason.
+                    */}
+                    <Link href={portal.href} rel="nofollow">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-primary-ink transition-colors group-data-[highlighted]:bg-primary-fill group-data-[highlighted]:text-primary-foreground">
+                        <portal.icon className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <span className="text-sm font-semibold">{portal.label}</span>
+                      <ChevronRight
+                        className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-data-[highlighted]:opacity-100"
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Nav */}
@@ -112,16 +183,25 @@ export default function Navbar() {
                       </span>
                     </Link>
                   ))}
-                  {/* The desktop bar carries this as a button; the sheet only
-                      renders navLinks, so it needs its own entry. */}
-                  <Link href="/gym/login">
-                    <span
-                      className="text-lg font-display tracking-wider text-primary transition-colors hover:text-primary/80 cursor-pointer block"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      GYM LOGIN
+                  {/* The desktop bar carries these in a menu; the sheet only renders
+                      navLinks, so they need their own entries. A menu inside a sheet is
+                      two layers of disclosure for two links, so they are listed flat.
+                      `nofollow` for the reason given on the desktop pair. */}
+                  <div className="border-t border-gray-200 pt-6 flex flex-col gap-4">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
+                      Partner sign in
                     </span>
-                  </Link>
+                    {PORTALS.map((portal) => (
+                      <Link key={portal.href} href={portal.href} rel="nofollow">
+                        <span
+                          className="text-lg font-display tracking-wider text-primary transition-colors hover:text-primary/80 cursor-pointer block"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          {portal.label.toUpperCase()}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>

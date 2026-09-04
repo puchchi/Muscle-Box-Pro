@@ -41,26 +41,26 @@ export function Card({
       // The scroll margin clears the sticky header, whose height is not one number: the shell's
       // nav wraps, so it is 157px at 390px wide and 57px from `md` up, where the detail page's
       // section nav also becomes sticky and adds its own 42px.
-      className={`rounded-2xl border bg-white overflow-hidden ${
-        alert ? "border-red-200" : "border-gray-200"
+      className={`rounded-2xl border bg-card overflow-hidden ${
+        alert ? "border-rose-400/25" : "border-border"
       } ${id ? "scroll-mt-[10.5rem] md:scroll-mt-28" : ""}`}
       data-testid={testId}
     >
       <div
         className={`px-4 sm:px-5 py-3 border-b flex items-start justify-between gap-4 ${
-          alert ? "border-red-100 bg-red-50" : "border-gray-100 bg-gray-50"
+          alert ? "border-rose-400/20 bg-rose-400/10" : "border-border/70 bg-secondary/50"
         }`}
       >
         <div>
           <h2
             className={`text-xs font-semibold uppercase tracking-wide ${
-              alert ? "text-red-700" : "text-muted-foreground"
+              alert ? "text-rose-200" : "text-muted-foreground"
             }`}
           >
             {title}
           </h2>
           {note && (
-            <p className={`text-xs mt-0.5 ${alert ? "text-red-600" : "text-muted-foreground"}`}>
+            <p className={`text-xs mt-0.5 ${alert ? "text-rose-200/80" : "text-muted-foreground"}`}>
               {note}
             </p>
           )}
@@ -73,7 +73,7 @@ export function Card({
 }
 
 export function Fields({ children }: { children: React.ReactNode }) {
-  return <dl className="divide-y divide-gray-100">{children}</dl>;
+  return <dl className="divide-y divide-border/70">{children}</dl>;
 }
 
 /**
@@ -109,7 +109,7 @@ export function Field({
     <div className="grid items-baseline gap-x-4 px-4 sm:px-5 py-2 sm:grid-cols-[14rem_minmax(0,1fr)]">
       <dt className="text-sm text-muted-foreground">
         {label}
-        {hint && <span className="block text-xs leading-snug text-gray-400">{hint}</span>}
+        {hint && <span className="block text-xs leading-snug text-muted-foreground/70">{hint}</span>}
       </dt>
       <dd
         // `min-w-0` is what lets `break-words` do anything: without it a grid item is at least as
@@ -133,7 +133,7 @@ export function Field({
  */
 export function Subhead({ children }: { children: React.ReactNode }) {
   return (
-    <p className="border-t border-gray-100 bg-gray-50/70 px-4 sm:px-5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+    <p className="border-t border-border/70 bg-secondary/40 px-4 sm:px-5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
       {children}
     </p>
   );
@@ -167,17 +167,17 @@ export function ErrorPanel({
 }) {
   return (
     <div
-      className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5"
+      className="flex items-start gap-3 rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-3.5"
       data-testid={testId}
       role="alert"
     >
-      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" aria-hidden />
+      <AlertCircle className="w-4 h-4 text-rose-300 flex-shrink-0 mt-0.5" aria-hidden />
       <div className="min-w-0">
-        <p className="text-xs text-red-600 leading-relaxed">{message}</p>
+        <p className="text-xs text-rose-200 leading-relaxed">{message}</p>
         {issues.length > 0 && (
           <ul className="mt-2 space-y-0.5" data-testid={issuesTestId}>
             {issues.map((issue) => (
-              <li key={issue} className="text-xs text-red-500 font-mono break-all">
+              <li key={issue} className="text-xs text-rose-300 font-mono break-all">
                 {issue}
               </li>
             ))}
@@ -192,11 +192,11 @@ export function ErrorPanel({
 export function SuccessPanel({ children, testId }: { children: React.ReactNode; testId: string }) {
   return (
     <div
-      className="rounded-xl border border-green-200 bg-green-50 px-4 py-3"
+      className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3"
       data-testid={testId}
       role="status"
     >
-      <p className="text-xs text-green-800 leading-relaxed">{children}</p>
+      <p className="text-xs text-emerald-200 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -221,11 +221,11 @@ export function StatCard({
   testId: string;
 }) {
   const ring =
-    tone === "good" ? "border-green-200" : tone === "warn" ? "border-amber-200" : "border-gray-200";
+    tone === "good" ? "border-emerald-400/25" : tone === "warn" ? "border-amber-400/25" : "border-border";
   const ink =
-    tone === "good" ? "text-green-700" : tone === "warn" ? "text-amber-700" : "text-foreground";
+    tone === "good" ? "text-emerald-200" : tone === "warn" ? "text-amber-300" : "text-foreground";
   return (
-    <div className={`rounded-2xl border bg-white px-4 py-3.5 ${ring}`} data-testid={testId}>
+    <div className={`rounded-2xl border bg-card px-4 py-3.5 ${ring}`} data-testid={testId}>
       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={`mt-1 text-2xl font-display font-black tabular-nums leading-none ${ink}`}>
         {value}
@@ -253,9 +253,9 @@ export function Metric({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-4 py-3.5" data-testid={testId}>
+    <div className="rounded-xl border border-border bg-card px-4 py-3.5" data-testid={testId}>
       <div className="flex items-center gap-2">
-        <Icon className="h-3.5 w-3.5 text-gray-400" aria-hidden />
+        <Icon className="h-3.5 w-3.5 text-muted-foreground/70" aria-hidden />
         <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
           {label}
         </p>
@@ -278,7 +278,7 @@ export function Figure({
     <>
       <p
         className={`font-display text-xl font-black leading-none tabular-nums ${
-          muted ? "text-gray-400" : "text-foreground"
+          muted ? "text-muted-foreground/70" : "text-foreground"
         }`}
       >
         {value}
@@ -327,10 +327,10 @@ export function Unavailable({
 export function Notice({ children, testId }: { children: React.ReactNode; testId: string }) {
   return (
     <p
-      className="flex items-start gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[13px] leading-relaxed text-muted-foreground"
+      className="flex items-start gap-2.5 rounded-xl border border-border bg-secondary/50 px-4 py-3 text-[13px] leading-relaxed text-muted-foreground"
       data-testid={testId}
     >
-      <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400" aria-hidden />
+      <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/70" aria-hidden />
       <span className="max-w-[80ch]">{children}</span>
     </p>
   );
@@ -368,13 +368,13 @@ export function Chip({
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${
         selected
           ? "border-primary bg-primary text-primary-foreground"
-          : "border-gray-200 bg-white text-muted-foreground hover:border-gray-300 hover:text-foreground"
+          : "border-border bg-card text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
       }`}
       data-testid={testId}
     >
       {label}
       {count !== undefined && (
-        <span className={`tabular-nums ${selected ? "opacity-80" : "text-gray-400"}`}>{count}</span>
+        <span className={`tabular-nums ${selected ? "opacity-80" : "text-muted-foreground/70"}`}>{count}</span>
       )}
     </button>
   );
@@ -443,7 +443,7 @@ export function Th<K extends string>({
           // is transparent rather than absent so that sorting a column does not change the width of
           // its heading and shift every column beside it.
           <ArrowDown
-            className="w-3 h-3 text-gray-300 opacity-0 transition-opacity group-hover:opacity-100"
+            className="w-3 h-3 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100"
             aria-hidden
           />
         )}
@@ -455,7 +455,7 @@ export function Th<K extends string>({
 /** A status chip. Colour comes from `adminFormat`, which is where the grouping is justified. */
 export function Pill({
   children,
-  className = "bg-gray-100 text-gray-700",
+  className = "bg-secondary text-muted-foreground",
   testId,
 }: {
   children: React.ReactNode;

@@ -1793,6 +1793,23 @@ function ApplicationSection({
               </Link>
               .
             </p>
+            {/*
+              A signed franchisee reaching this section otherwise files a second enquiry,
+              which is the same reason the paragraph above names the two other destinations.
+              `nofollow` because robots.txt disallows /franchise/login.
+            */}
+            <p className="text-muted-foreground text-[14px] leading-relaxed mt-3">
+              Already a franchise partner?{" "}
+              <Link
+                href="/franchise/login"
+                rel="nofollow"
+                className="text-primary-ink font-semibold underline underline-offset-2 hover:text-primary-fill rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                data-testid="link-franchise-login"
+              >
+                Sign in to your portal
+              </Link>
+              .
+            </p>
           </div>
         </div>
 

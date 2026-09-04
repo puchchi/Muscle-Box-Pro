@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
  */
 
 const inputClass =
-  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl";
+  "bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:bg-card transition-colors h-11 rounded-xl";
 
 type Base<T extends FieldValues> = {
   control: Control<T>;
@@ -52,7 +52,7 @@ export function TextField<T extends FieldValues>({
       render={({ field }) => (
         <FormItem>
           {!hideLabel && (
-            <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>
+            <FormLabel className="text-muted-foreground text-sm font-semibold">{label}</FormLabel>
           )}
           <FormControl>
             <Input
@@ -94,7 +94,7 @@ export function NumberField<T extends FieldValues>({
       render={({ field }) => (
         <FormItem>
           {!hideLabel && (
-            <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>
+            <FormLabel className="text-muted-foreground text-sm font-semibold">{label}</FormLabel>
           )}
           <FormControl>
             <div className="relative">
@@ -146,14 +146,14 @@ export function AreaField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>
+          <FormLabel className="text-muted-foreground text-sm font-semibold">{label}</FormLabel>
           <FormControl>
             <Textarea
               {...field}
               value={typeof field.value === "string" ? field.value : ""}
               rows={rows}
               placeholder={placeholder}
-              className="bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors rounded-xl resize-none"
+              className="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:bg-card transition-colors rounded-xl resize-none"
               data-testid={`input-${name}`}
             />
           </FormControl>
@@ -186,7 +186,7 @@ export function DateField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>
+          <FormLabel className="text-muted-foreground text-sm font-semibold">{label}</FormLabel>
           <FormControl>
             <Input
               {...field}
@@ -225,7 +225,7 @@ export function SelectField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-gray-700 text-sm font-semibold">{label}</FormLabel>
+          <FormLabel className="text-muted-foreground text-sm font-semibold">{label}</FormLabel>
           <FormControl>
             <select
               {...field}

@@ -1,5 +1,6 @@
 /**
- * Runtime validation of the two admin franchise reads.
+ * Runtime validation of the two admin franchise reads, and of the three writes that answer more
+ * than the view.
  *
  * `gymsSchema.ts`'s reason applies here unchanged and it is worth restating, because the franchise
  * routes are newer and the temptation to trust them is stronger: **the server has no type for
@@ -25,7 +26,13 @@
 
 import * as z from "zod";
 import { toParse, type AdminParse } from "./parse";
-import type { AdminFranchiseList, AdminFranchiseView } from "./franchises";
+import type {
+  AdminFranchiseInviteResendResult,
+  AdminFranchiseInviteVoidResult,
+  AdminFranchiseList,
+  AdminFranchiseTermsPatchResult,
+  AdminFranchiseView,
+} from "./franchises";
 
 export type { AdminParse };
 
@@ -370,4 +377,75 @@ export function parseAdminFranchiseList(value: unknown): AdminParse<AdminFranchi
 
 export function parseAdminFranchiseView(value: unknown): AdminParse<AdminFranchiseView> {
   return toParse(adminFranchiseViewSchema.safeParse(value));
+}
+
+// ── The three writes that answer more than the view ─────────────────────────
+
+/**
+ * `.extend()` rather than a second parse of the same body, and this is the file's stripping rule
+ * turned into a hazard.
+ *
+ * Every object here is a plain `z.object()`, which **discards unknown keys**. That is right for the
+ * reads — the backend adding a field must not break the panel — and it is exactly wrong for these
+ * three responses, because their extra fields are the reason the route was called. Parsing a resend
+ * through `parseAdminFranchiseView` would answer `ok: true` and hand back a view with no
+ * `onboardingUrl` on it, and that URL exists in that response and nowhere else for the rest of time.
+ */
+export const adminFranchiseTermsPatchSchema = adminFranchiseViewSchema.extend({
+  changed: z.array(label),
+});
+
+export const adminFranchiseInviteVoidSchema = adminFranchiseViewSchema.extend({
+  wasLive: z.boolean(),
+});
+
+export const adminFranchiseInviteResendSchema = adminFranchiseViewSchema.extend({
+  /**
+   * Required, and required to be a URL rather than merely a string.
+   *
+   * The one field on this surface where a schema failure is better than a pass. A blank or malformed
+   * value here is an onboarding link that has already superseded the franchisee's working one and
+   * cannot be recovered from anywhere, so the panel has to say so loudly instead of rendering an
+   * empty box beside "copy this and send it to them".
+   */
+  onboardingUrl: z.string().url(),
+  tokenId: label,
+  expiresAt: label,
+  emailed: z.boolean(),
+  /** Absent when the mail went. `.optional()`, not `.nullable()`: the server omits the key. */
+  emailReason: z.string().optional(),
+});
+
+export const _franchiseTermsPatchTypeCheck = adminFranchiseTermsPatchSchema satisfies z.ZodType<
+  AdminFranchiseTermsPatchResult,
+  z.ZodTypeDef,
+  unknown
+>;
+export const _franchiseInviteVoidTypeCheck = adminFranchiseInviteVoidSchema satisfies z.ZodType<
+  AdminFranchiseInviteVoidResult,
+  z.ZodTypeDef,
+  unknown
+>;
+export const _franchiseInviteResendTypeCheck = adminFranchiseInviteResendSchema satisfies z.ZodType<
+  AdminFranchiseInviteResendResult,
+  z.ZodTypeDef,
+  unknown
+>;
+
+export function parseAdminFranchiseTermsPatch(
+  value: unknown,
+): AdminParse<AdminFranchiseTermsPatchResult> {
+  return toParse(adminFranchiseTermsPatchSchema.safeParse(value));
+}
+
+export function parseAdminFranchiseInviteVoid(
+  value: unknown,
+): AdminParse<AdminFranchiseInviteVoidResult> {
+  return toParse(adminFranchiseInviteVoidSchema.safeParse(value));
+}
+
+export function parseAdminFranchiseInviteResend(
+  value: unknown,
+): AdminParse<AdminFranchiseInviteResendResult> {
+  return toParse(adminFranchiseInviteResendSchema.safeParse(value));
 }

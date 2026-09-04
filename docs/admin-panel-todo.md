@@ -42,6 +42,17 @@ table — link to it instead of restating it.
   fills a `PENDING-`-prefixed placeholder `deviceNo` — see `shared/admin/gyms.ts`'s
   `isPendingDeviceNo`).
 
+- The franchise detail page's three writes (2026-09-04) — `AdminFranchiseTermsEditor`
+  (`PATCH /admin/franchises/{franchiseId}/terms`) and `AdminFranchiseInviteActions`
+  (`POST`/`DELETE …/invite`). Three things about them are not obvious from the gym equivalents:
+  the terms lock reads `timestamps.signedAt` rather than `status`, because the ladder moves past
+  `signed` at step 8; the resend response carries the only copy of the URL that will ever exist, so
+  it is parsed with its own schema and a stripped `onboardingUrl` is reported as unrecoverable
+  rather than as retryable; and clearing the instalment schedule sends `null`, never `[]`, because
+  those are different claims to the server. The routes are written in `mbp-backend` and **not yet
+  deployed to either environment** (`.claude/TODO.md`, "three missing writes"), so the UI is ahead
+  of sandbox until the three stacks go out in the order Onboarding → Admin → Wizard.
+
 ## The biggest gap — the panel reports onboarding, not the business
 
 Raised 2026-08-28, looking at `/admin`: it shows where gyms are in onboarding and nothing about
@@ -80,6 +91,9 @@ routes with no admin UI in front of them yet:
       the previous handle. **Priority**: only `sha256(handle)` is stored, so a link is recoverable
       exactly once, in the response that minted it. Resending is the only way to get a working
       link to a gym that lost theirs, and the detail page currently says so without offering it.
+      `AdminFranchiseInviteActions` is the same two writes on the franchise side and is the screen
+      to copy: the confirm-first shape, the show-once URL panel and the honest `wasLive: false`
+      outcome all apply unchanged.
 - [ ] **Void invite** — `DELETE /admin/gyms/{gymId}/invite`.
 - [ ] **Activate** — `POST /admin/gyms/{gymId}/activate`. `deposit_paid` → `active`. Needs
       `installationDate` set first (`docs/onboarding-build-progress.md`, deviation found during

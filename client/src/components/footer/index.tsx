@@ -71,6 +71,37 @@ export default function Footer() {
           <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em]">
             © 2026 MUSCLE BOX PRO. ALL RIGHTS RESERVED.
           </p>
+          {/*
+            The only public way back into either portal. A franchisee's other routes to
+            /franchise/login are all mid-flow (the last onboarding step, the set-password
+            page), so without this a returning partner needs a bookmark or an old email.
+
+            `nofollow` on both because robots.txt disallows /gym/ and /franchise/login. This
+            footer is on every indexable page, so an ordinary link here would put a
+            "blocked by robots.txt" discovery in Search Console once per page.
+          */}
+          <div className="flex flex-wrap items-center justify-center gap-x-2">
+            <span className="text-gray-400 text-[10px] uppercase tracking-[0.2em]">
+              Partner sign in
+            </span>
+            <Link
+              href="/gym/login"
+              rel="nofollow"
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-gray-600 underline underline-offset-2 hover:text-primary transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Gym portal
+            </Link>
+            <span aria-hidden="true" className="text-gray-300">
+              ·
+            </span>
+            <Link
+              href="/franchise/login"
+              rel="nofollow"
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-gray-600 underline underline-offset-2 hover:text-primary transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Franchise portal
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

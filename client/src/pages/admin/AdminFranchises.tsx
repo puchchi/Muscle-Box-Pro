@@ -305,7 +305,7 @@ export default function AdminFranchises() {
             <div>
               <div className="relative max-w-sm">
                 <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70"
                   aria-hidden
                 />
                 <Input
@@ -313,7 +313,7 @@ export default function AdminFranchises() {
                   onChange={(event) => setFilter(event.target.value)}
                   placeholder="Filter by name or email"
                   aria-label="Filter loaded franchises by name or email"
-                  className="bg-white border-gray-200 h-10 rounded-xl pl-9"
+                  className="bg-card border-border h-10 rounded-xl pl-9"
                   data-testid="input-filter"
                 />
               </div>
@@ -336,9 +336,9 @@ export default function AdminFranchises() {
       )}
 
       {visible.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white overflow-x-auto">
+        <div className="rounded-2xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-secondary/50 border-b border-border">
               <tr>
                 <Th sortKey="name" sort={sort} onSort={toggleSort}>
                   Franchise
@@ -364,13 +364,13 @@ export default function AdminFranchises() {
                 </Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border/70">
               {visible.map((row) => {
                 const quiet = franchiseStalledFor(row, now);
                 return (
                   <tr
                     key={row.franchiseId}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-secondary/50 transition-colors"
                     data-testid={`row-franchise-${row.franchiseId}`}
                   >
                     {/* A minimum width, unlike the gym list: every other column here is
@@ -416,7 +416,7 @@ export default function AdminFranchises() {
                           which franchises are stuck. */}
                       {quiet !== null && quiet >= 5 && (
                         <span
-                          className="block text-xs font-semibold text-amber-700 tabular-nums"
+                          className="block text-xs font-semibold text-amber-300 tabular-nums"
                           data-testid={`quiet-${row.franchiseId}`}
                         >
                           {quiet} {quiet === 1 ? "day" : "days"} quiet

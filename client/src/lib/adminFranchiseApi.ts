@@ -4,7 +4,7 @@
  * [adminApi.ts](./adminApi.ts) for the franchise half of the dashboard, and the same rule holds:
  * nothing under `pages/admin/` talks to an API except through this file.
  *
- * ## Eight routes, on their own API
+ * ## Eleven routes, on their own API
  *
  * These live in `MbpFranchiseAdmin-<env>` rather than in the onboarding stack, which had 484 of
  * CloudFormation's 500 resources when the franchise routes were written (docs/franchise-onboarding.md
@@ -24,12 +24,20 @@
  * [adminMailApi.ts](./adminMailApi.ts)'s reasoning, unchanged: these writes answer with the whole
  * franchise record rather than an acknowledgement, so a write can fail the schema the same way a
  * read can, and `issues` is the only thing that would tell an operator which of the two happened.
+ *
+ * Three of them answer the record **and something else**, and those get their own parse rather than
+ * going through `reparse`. `z.object()` strips unknown keys, so the shared view parser would quietly
+ * discard `changed`, `wasLive` and — the one that matters — `onboardingUrl`, which exists in that one
+ * response and nowhere else for the rest of time.
  */
 
 import type { AdminReadResult } from "./adminApi";
 import { apiRequest } from "./apiClient";
 import {
+  parseAdminFranchiseInviteResend,
+  parseAdminFranchiseInviteVoid,
   parseAdminFranchiseList,
+  parseAdminFranchiseTermsPatch,
   parseAdminFranchiseView,
 } from "@shared/admin/franchisesSchema";
 import { parseFranchiseApplicationPage } from "@shared/admin/franchiseApplicationsSchema";
@@ -41,9 +49,13 @@ import type {
 } from "@shared/admin/franchiseApplications";
 import type {
   AdminFranchiseApprovalBody,
+  AdminFranchiseInviteResendResult,
+  AdminFranchiseInviteVoidResult,
   AdminFranchiseList,
   AdminFranchisePaymentRefuseBody,
   AdminFranchisePaymentVerifyBody,
+  AdminFranchiseTermsPatchBody,
+  AdminFranchiseTermsPatchResult,
   AdminFranchiseView,
 } from "@shared/admin/franchises";
 import type {
@@ -241,6 +253,86 @@ export async function refuseFranchisePayment(
 }
 
 /**
+ * Re-price the terms — refused once the term sheet is signed.
+ *
+ * The refusal is a `ConditionCheck` inside the server's transaction rather than an `if`, because the
+ * race it exists for is an admin saving this patch while the franchisee is on the signing screen,
+ * and only the database can arbitrate that. It arrives as `already_signed`, and the caller shows the
+ * server's own message: `conflict()` uses that code for several refusals and the message is the only
+ * thing telling them apart.
+ *
+ * An edit **between approval and signature is safe by design** and is the ordinary case this route
+ * serves. The server appends a new term sheet pin per issuance, so a franchisee who read an older
+ * version and clicks through to e-sign is stopped by `content_mismatch` rather than signing figures
+ * they never read.
+ */
+export async function patchFranchiseTerms(
+  franchiseId: string,
+  patch: AdminFranchiseTermsPatchBody,
+): Promise<AdminReadResult<AdminFranchiseTermsPatchResult>> {
+  const result = await apiRequest<unknown>(
+    "PATCH",
+    `${FRANCHISES}/${encodeURIComponent(franchiseId)}/terms`,
+    { ...FRANCHISE_ADMIN, body: patch },
+  );
+  if (!result.ok) return { ok: false, error: result.error, issues: [] };
+  const parsed = parseAdminFranchiseTermsPatch(result.data);
+  if (!parsed.ok) return { ok: false, error: MALFORMED_AFTER_WRITE, issues: parsed.issues };
+  return { ok: true, data: parsed.data };
+}
+
+/**
+ * Mint a fresh onboarding link, revoking the current one in the same transaction.
+ *
+ * **`onboardingUrl` in the response is the only copy that will ever exist.** The server stores
+ * `sha256(handle)` and no handle, so a caller that discards this response has destroyed the
+ * franchisee's working link and replaced it with one nobody can read. Hence the dedicated parse: the
+ * view schema would strip the field and answer `ok: true`.
+ *
+ * Deliberately allowed after signing, which looks wrong and is not: `signedAt` freezes what a
+ * franchisee may *change*, and steps 8 and 9 come after the signature. A resend refused at that
+ * point would strand a franchise at exactly the moment money is about to move.
+ */
+export async function resendFranchiseInvite(
+  franchiseId: string,
+  body: { invitedByName?: string; sendInvite: boolean },
+): Promise<AdminReadResult<AdminFranchiseInviteResendResult>> {
+  const result = await apiRequest<unknown>(
+    "POST",
+    `${FRANCHISES}/${encodeURIComponent(franchiseId)}/invite`,
+    { ...FRANCHISE_ADMIN, body },
+  );
+  if (!result.ok) return { ok: false, error: result.error, issues: [] };
+  const parsed = parseAdminFranchiseInviteResend(result.data);
+  if (!parsed.ok) return { ok: false, error: MALFORMED_AFTER_RESEND, issues: parsed.issues };
+  return { ok: true, data: parsed.data };
+}
+
+/**
+ * Revoke the live link and clear the pointer. No mail is sent.
+ *
+ * 200 whether or not there was anything to void, and `wasLive` carries the difference without
+ * making it an error: an admin who voids an already-void link got the outcome they asked for.
+ *
+ * `apiRequest` sends `Content-Type: application/json` and a `{}` body on every non-GET, which this
+ * route requires — it refuses a state-changing request that arrives without the header. So there is
+ * no body argument here and none is needed.
+ */
+export async function voidFranchiseInvite(
+  franchiseId: string,
+): Promise<AdminReadResult<AdminFranchiseInviteVoidResult>> {
+  const result = await apiRequest<unknown>(
+    "DELETE",
+    `${FRANCHISES}/${encodeURIComponent(franchiseId)}/invite`,
+    FRANCHISE_ADMIN,
+  );
+  if (!result.ok) return { ok: false, error: result.error, issues: [] };
+  const parsed = parseAdminFranchiseInviteVoid(result.data);
+  if (!parsed.ok) return { ok: false, error: MALFORMED_AFTER_WRITE, issues: parsed.issues };
+  return { ok: true, data: parsed.data };
+}
+
+/**
  * `instalmentNo` is a path segment, so it is stringified from a number the caller cannot make into
  * anything else. The handler answers 404 rather than 400 for a segment that does not parse.
  */
@@ -275,4 +367,17 @@ const MALFORMED_AFTER_WRITE: OnboardingError = {
   code: "network",
   message:
     "The change may have been saved, but the record came back in a shape this page does not recognise. Reload before trying again.",
+};
+
+/**
+ * The worst outcome on this surface, said plainly.
+ *
+ * A resend that lands and then fails to parse has revoked the franchisee's working link and thrown
+ * away the only copy of its replacement. Nothing can recover it, and the remedy is another resend,
+ * so the message says that rather than "reload before trying again".
+ */
+const MALFORMED_AFTER_RESEND: OnboardingError = {
+  code: "network",
+  message:
+    "A new link was almost certainly issued, and this page could not read it. The old link has stopped working and the new one cannot be recovered. Send another one.",
 };

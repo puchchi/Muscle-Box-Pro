@@ -208,7 +208,7 @@ export default function AdminHome() {
               {isLoading ? "Loading…" : "No gyms yet. Inviting one is the first step of onboarding."}
             </p>
           ) : (
-            <ul className="divide-y divide-gray-100" data-testid="list-recent">
+            <ul className="divide-y divide-border/70" data-testid="list-recent">
               {recent.map((row) => (
                 <li key={row.gymId}>
                   {/*
@@ -218,7 +218,7 @@ export default function AdminHome() {
                   */}
                   <Link
                     href={`/admin/gyms/${row.gymId}`}
-                    className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 sm:px-5 py-2.5 hover:bg-gray-50 transition-colors"
+                    className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 sm:px-5 py-2.5 hover:bg-secondary/50 transition-colors"
                     data-testid={`recent-gym-${row.gymId}`}
                   >
                     <span className="text-sm font-semibold text-foreground truncate">
@@ -236,7 +236,7 @@ export default function AdminHome() {
               ))}
             </ul>
           )}
-          <div className="border-t border-gray-100 px-4 sm:px-5 py-2.5">
+          <div className="border-t border-border/70 px-4 sm:px-5 py-2.5">
             <Link
               href="/admin/gyms"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground hover:underline"
@@ -391,9 +391,9 @@ function Funnel({ summary, isLoading }: { summary: FunnelSummary; isLoading: boo
                 `aria-hidden` with the figures already beside it: the same information twice is
                 noise in a screen reader, and the numbers are the authoritative copy.
               */}
-              <div className="mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden" aria-hidden>
+              <div className="mt-1 h-1.5 rounded-full bg-secondary overflow-hidden" aria-hidden>
                 <div
-                  className={`h-full rounded-full ${row.status === "active" ? "bg-green-500" : "bg-primary"}`}
+                  className={`h-full rounded-full ${row.status === "active" ? "bg-emerald-400" : "bg-primary"}`}
                   style={{ width: `${row.pct}%` }}
                 />
               </div>
@@ -436,14 +436,14 @@ function Stalled({
             : "Nothing stalled. Every unfinished gym has moved in the last three days."}
         </p>
       ) : (
-        <ul className="divide-y divide-gray-100" data-testid="list-stalled">
+        <ul className="divide-y divide-border/70" data-testid="list-stalled">
           {gyms.map(({ row, days }) => (
             <li key={row.gymId} data-testid={`stalled-gym-${row.gymId}`}>
               {/* The whole row, for the reason given on the recent list. This one is a to-do list,
                   so it is the row an admin means to click. */}
               <Link
                 href={`/admin/gyms/${row.gymId}`}
-                className="flex items-center gap-3 px-4 sm:px-5 py-2.5 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 px-4 sm:px-5 py-2.5 hover:bg-secondary/50 transition-colors"
               >
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-foreground truncate">

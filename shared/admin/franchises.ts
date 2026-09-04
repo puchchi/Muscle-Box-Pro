@@ -385,3 +385,73 @@ export type AdminFranchisePaymentVerifyBody = {
 export type AdminFranchisePaymentRefuseBody = {
   reason: string;
 };
+
+/**
+ * `PATCH /admin/franchises/{franchiseId}/terms` — every key optional, because the route patches.
+ *
+ * Paise on this wire where the gym's `AdminTermsPatchBody` carries rupees, and that asymmetry is
+ * deliberate on the backend's side rather than an oversight on ours: `GET /admin/franchises/{id}`
+ * answers in paise, so a write route taking rupees is the arrangement that produces a hundredfold
+ * error in the field every instalment on a signed term sheet is a percentage of.
+ *
+ * **`tier` is absent and is refused rather than ignored.** §3 finalises the tier with the territory
+ * and the grant is recorded on the `TERRITORY` row, so a tier editable here would be free to
+ * disagree with the tier the franchise was actually granted, which is the tier the term sheet names.
+ *
+ * **Only two fields accept `null`, and both mean "not agreed".** They are the two `termsAreComplete`
+ * gates, so clearing either makes the franchise unissuable — the honest state for a schedule under
+ * renegotiation, and better than a plausible figure nobody agreed. A null investment or a null
+ * machine count is not a state the design has, so the route refuses those like any other non-number.
+ */
+export type AdminFranchiseTermsPatchBody = {
+  investmentPaise?: number;
+  machineAllocation?: number;
+  paymentSchedule?: { pct: number; trigger: string }[] | null;
+  capitalRecoveryPaise?: number | null;
+  proteinSharePctDuringRecovery?: number;
+  proteinSharePctAfterRecovery?: number;
+  advertisingFranchiseeSharePct?: number;
+  advertisingMbpSharePct?: number;
+};
+
+/**
+ * The three franchise writes that answer the whole view plus fields of their own.
+ *
+ * Every franchise write answers `AdminFranchiseView`, which is why `reparse` exists. These three
+ * answer it **and something else**, and the something else cannot be dropped: `z.object()` strips
+ * unknown keys, so parsing a resend through `parseAdminFranchiseView` would silently discard the
+ * only copy of the onboarding URL that will ever exist. Hence a schema per route.
+ */
+export type AdminFranchiseTermsPatchResult = AdminFranchiseView & {
+  /** Which keys the server applied. Echoed so the panel confirms the edit rather than the intent. */
+  changed: string[];
+};
+
+/**
+ * What a void answers.
+ *
+ * `wasLive: false` is not a failure and the route still answers 200. It means one of two things the
+ * caller cannot act on differently: the link was already void, or the franchise was created before
+ * the server began storing `sha256(handle)` at creation, in which case there is no address to revoke
+ * by and their original link keeps working to its own expiry.
+ */
+export type AdminFranchiseInviteVoidResult = AdminFranchiseView & {
+  wasLive: boolean;
+};
+
+/**
+ * What a resend answers, and the only place `onboardingUrl` is ever readable.
+ *
+ * The server stores `sha256(handle)` and no handle, so this URL exists in this response and nowhere
+ * else, forever. `emailed: false` is not an error here: it is the instruction to copy the URL and
+ * relay it by hand, and unlike the first invite it is not a dead end, because the link in this
+ * response is live.
+ */
+export type AdminFranchiseInviteResendResult = AdminFranchiseView & {
+  onboardingUrl: string;
+  tokenId: string;
+  expiresAt: string;
+  emailed: boolean;
+  /** Why the mail did not go, when it did not. Absent on success. */
+  emailReason?: string;
+};

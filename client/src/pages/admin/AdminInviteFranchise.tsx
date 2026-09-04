@@ -103,13 +103,13 @@ function InviteCreated({ result }: { result: AdminFranchiseInviteResult }) {
           : "The email did not go out. Send this link to the franchisee yourself."}
       </p>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 mb-4">
+      <div className="rounded-2xl border border-border bg-card p-4 mb-4">
         <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
           Onboarding link
         </p>
         <div className="flex items-center gap-2">
           <code
-            className="flex-1 text-xs bg-gray-50 rounded-lg px-3 py-2.5 break-all"
+            className="flex-1 text-xs bg-secondary/50 rounded-lg px-3 py-2.5 break-all"
             data-testid="franchise-invite-url"
           >
             {result.onboardingUrl}
@@ -130,7 +130,7 @@ function InviteCreated({ result }: { result: AdminFranchiseInviteResult }) {
         </p>
       </div>
 
-      <dl className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 mb-4">
+      <dl className="rounded-2xl border border-border bg-card divide-y divide-border/70 mb-4">
         <Row label="Expires" value={formatIstDateTime(result.expiresAt)} />
         <Row label="Emailed" value={result.emailed ? "Yes" : "No, send it yourself"} />
       </dl>
@@ -238,17 +238,17 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {serverError && (
             <div
-              className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5"
+              className="flex items-start gap-3 rounded-2xl border border-rose-400/25 bg-rose-400/10 px-4 py-3.5"
               data-testid="franchise-invite-error"
               role="alert"
             >
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" aria-hidden />
-              <p className="text-xs text-red-600 leading-relaxed">{serverError}</p>
+              <AlertCircle className="w-4 h-4 text-rose-300 flex-shrink-0 mt-0.5" aria-hidden />
+              <p className="text-xs text-rose-200 leading-relaxed">{serverError}</p>
             </div>
           )}
 
           <div
-            className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4"
+            className="rounded-2xl border border-sky-400/25 bg-sky-400/10 p-4"
             data-testid="franchise-deferred-note"
           >
             <p className="text-sm text-foreground leading-relaxed">
@@ -269,7 +269,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
                   className={`rounded-xl border p-4 text-left cursor-pointer transition-colors ${
                     tier === option.id
                       ? "border-primary bg-primary/5"
-                      : "border-gray-200 bg-white hover:border-gray-300"
+                      : "border-border bg-card hover:border-muted-foreground/40"
                   }`}
                   data-testid={`tier-${option.id}`}
                 >
@@ -397,7 +397,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
 function FromEnquiry({ source }: { source: InviteSource }) {
   return (
     <div
-      className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+      className="rounded-xl border border-border bg-secondary/50 px-4 py-3"
       data-testid="franchise-invite-source"
     >
       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -436,7 +436,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <fieldset className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
+    <fieldset className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
       <legend className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground px-1">
         {title}
       </legend>

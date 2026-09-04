@@ -45,10 +45,10 @@ import { MessageHtml } from "./AdminMessageHtml";
  */
 
 const inputClass =
-  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl";
+  "bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:bg-card transition-colors h-11 rounded-xl";
 
 const areaClass =
-  "bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors rounded-xl";
+  "bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:bg-card transition-colors rounded-xl";
 
 /** The freeform option's value in the template picker. Not a template key, so it cannot collide. */
 const FREEFORM = "";
@@ -382,11 +382,11 @@ function Labelled({
 }) {
   return (
     <label className="block">
-      <span className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</span>
+      <span className="block text-sm font-semibold text-muted-foreground mb-1.5">{label}</span>
       {children}
       {hint && <span className="block text-xs text-muted-foreground mt-1.5">{hint}</span>}
       {error && (
-        <span className="block text-xs font-semibold text-red-600 mt-1.5" role="alert">
+        <span className="block text-xs font-semibold text-rose-200 mt-1.5" role="alert">
           {error}
         </span>
       )}

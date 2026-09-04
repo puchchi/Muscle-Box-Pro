@@ -189,7 +189,7 @@ export default function AdminGyms() {
 
             <div className="relative w-full sm:ml-auto sm:w-64">
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70"
                 aria-hidden
               />
               <Input
@@ -197,7 +197,7 @@ export default function AdminGyms() {
                 onChange={(event) => setFilter(event.target.value)}
                 placeholder="Filter by name or email"
                 aria-label="Filter loaded gyms by name or email"
-                className="bg-white border-gray-200 h-10 rounded-xl pl-9"
+                className="bg-card border-border h-10 rounded-xl pl-9"
                 data-testid="input-filter"
               />
             </div>
@@ -221,7 +221,7 @@ export default function AdminGyms() {
       )}
 
       {visible.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 bg-white overflow-x-auto">
+        <div className="rounded-2xl border border-border bg-card overflow-x-auto">
           {/*
             Two renderings of the same rows, one per width, rather than a table that scrolls
             sideways. Five columns do not fit a phone: at 390px the gym name wrapped to three lines
@@ -231,14 +231,14 @@ export default function AdminGyms() {
             The split is at `lg` rather than `md` because the table needs 807px and `md` grants it
             718, which is the same sideways scroll one breakpoint up.
           */}
-          <ul className="divide-y divide-gray-100 lg:hidden" data-testid="list-gyms-cards">
+          <ul className="divide-y divide-border/70 lg:hidden" data-testid="list-gyms-cards">
             {visible.map((row) => {
               const quiet = stalledFor(row, now);
               return (
                 <li key={row.gymId}>
                   <Link
                     href={`/admin/gyms/${row.gymId}`}
-                    className="block px-4 py-3 hover:bg-gray-50 transition-colors"
+                    className="block px-4 py-3 hover:bg-secondary/50 transition-colors"
                     data-testid={`card-gym-${row.gymId}`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -264,7 +264,7 @@ export default function AdminGyms() {
                       )}
                     </p>
                     {quiet !== null && quiet >= 3 && (
-                      <p className="text-xs font-semibold tabular-nums text-amber-700">
+                      <p className="text-xs font-semibold tabular-nums text-amber-300">
                         {quiet} {quiet === 1 ? "day" : "days"} quiet
                       </p>
                     )}
@@ -275,7 +275,7 @@ export default function AdminGyms() {
           </ul>
 
           <table className="hidden w-full text-sm lg:table">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-secondary/50 border-b border-border">
               <tr>
                 {/* The floor matters: `w-full` on the contact column below forces every other one
                     to its min-content width, and min-content for a wrapping name is its longest
@@ -298,7 +298,7 @@ export default function AdminGyms() {
                 </Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border/70">
               {visible.map((row) => {
                 const quiet = stalledFor(row, now);
                 return (
@@ -307,7 +307,7 @@ export default function AdminGyms() {
                     // `relative` positions the name link's stretched overlay below. The row already
                     // highlighted on hover, which promised a click target the 100px name link did
                     // not deliver.
-                    className="relative hover:bg-gray-50 transition-colors"
+                    className="relative hover:bg-secondary/50 transition-colors"
                     data-testid={`row-gym-${row.gymId}`}
                   >
                     <td className="px-4 py-2.5">
@@ -353,7 +353,7 @@ export default function AdminGyms() {
                       */}
                       {quiet !== null && quiet >= 3 && (
                         <span
-                          className="block text-xs font-semibold text-amber-700"
+                          className="block text-xs font-semibold text-amber-300"
                           data-testid={`quiet-${row.gymId}`}
                         >
                           {quiet} {quiet === 1 ? "day" : "days"} quiet

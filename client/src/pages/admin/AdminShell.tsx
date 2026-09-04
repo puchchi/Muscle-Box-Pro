@@ -13,6 +13,12 @@ import { BEARER_SESSION_ALLOWED, MBP_API_BASE_URL } from "@/lib/apiClient";
  * One component rather than a copy per page, because sign-out has an ordering requirement that
  * is invisible if you get it wrong — see `handleSignOut` — and because the API host in the
  * footer is the first thing to check when the panel is mysteriously empty.
+ *
+ * `dark theme-console` is unconditional and belongs on this element specifically: nothing under
+ * `admin/` renders in a portal, so every page, card and pill inherits from here. It is not a
+ * preference and there is no light variant to fall back to — the whole tree was converted off
+ * `bg-white` and `text-gray-700` onto the semantic tokens to make this work, so removing the
+ * class leaves near-white cards under near-white text rather than the old light panel.
  */
 export function AdminShell({
   session,
@@ -39,8 +45,8 @@ export function AdminShell({
   }
 
   return (
-    <div className="theme-console min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <div className="dark theme-console min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         {/*
           `flex-wrap` on both rows, because four tabs plus the brand and the sign-out button no longer
           fit a 390px viewport: without it the right-hand group lands off-screen and the whole document
@@ -140,8 +146,8 @@ function NavLink({
       aria-current={active ? "page" : undefined}
       className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
         active
-          ? "bg-gray-100 text-foreground"
-          : "text-muted-foreground hover:bg-gray-50 hover:text-foreground"
+          ? "bg-secondary text-foreground"
+          : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
       }`}
       data-testid={testId}
     >
@@ -153,7 +159,7 @@ function NavLink({
 /** What every admin page shows while `useAdminGuard` is still asking. */
 export function AdminChecking() {
   return (
-    <div className="theme-console min-h-screen flex items-center justify-center text-muted-foreground">
+    <div className="dark theme-console min-h-screen flex items-center justify-center bg-background text-muted-foreground">
       Checking your session…
     </div>
   );

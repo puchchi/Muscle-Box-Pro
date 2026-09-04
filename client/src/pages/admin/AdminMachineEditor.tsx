@@ -134,12 +134,12 @@ export function AdminMachineEditor({ gym, onSaved }: { gym: AdminGymView; onSave
       )}
 
       {gym.machines.length > 0 && (
-        <div className="border-t border-gray-100">
+        <div className="border-t border-border/70">
           <p className="px-4 sm:px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             All units, including replaced
           </p>
           <table className="w-full text-sm" data-testid="table-machines">
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border/70">
               {gym.machines.map((row) => (
                 <tr key={row.deviceNo}>
                   <td className="px-4 sm:px-5 py-2.5 font-mono text-xs">
@@ -242,10 +242,10 @@ function MachineForm({
 
         {willReplace && (
           <div
-            className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"
+            className="rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3"
             data-testid="machine-replace-warning"
           >
-            <p className="text-xs text-amber-800 leading-relaxed">
+            <p className="text-xs text-amber-200 leading-relaxed">
               This is a different device number to the one on file, so saving replaces the unit.{" "}
               <span className="font-mono">{current.deviceNo}</span> will be kept and marked replaced,
               because §4.1 dates the term from installation and which unit was here when has to stay
