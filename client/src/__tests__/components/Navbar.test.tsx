@@ -7,14 +7,9 @@ vi.mock("next/navigation", () => ({
   usePathname: vi.fn(() => "/"),
 }));
 
+// Passes the rest of the props through, so the `rel` on the two portal links is visible here.
 vi.mock("next/link", () => ({
-  default: ({
-    children,
-    href,
-  }: {
-    children: React.ReactNode;
-    href: string;
-  }) => <a href={href}>{children}</a>,
+  default: ({ children, ...props }: React.ComponentProps<"a">) => <a {...props}>{children}</a>,
 }));
 
 // framer-motion is not used in Navbar, but mock sheet open/close via Radix
@@ -54,9 +49,30 @@ describe("Navbar", () => {
     expect(accountLink).toBeUndefined();
   });
 
-  it("shows the GYM LOGIN button", () => {
+  it("shows the LOGIN menu trigger", () => {
     render(<Navbar />);
-    expect(screen.getByRole("button", { name: /gym login/i })).toBeInTheDocument();
+    expect(screen.getByTestId("button-login-menu")).toHaveTextContent(/login/i);
+  });
+
+  /**
+   * The bar is where people look for a way in, and for a long while the only thing it
+   * offered was the gym portal. A franchisee's other routes to `/franchise/login` are all
+   * inside a flow they have already finished, so this menu and the footer are the whole of
+   * the public answer to "how do I sign in?".
+   */
+  it("offers both portals, and keeps crawlers off both", async () => {
+    const user = userEvent.setup();
+    render(<Navbar />);
+    await user.click(screen.getByTestId("button-login-menu"));
+
+    for (const [name, href] of [
+      [/gym portal/i, "/gym/login"],
+      [/franchise portal/i, "/franchise/login"],
+    ] as const) {
+      const link = await screen.findByRole("menuitem", { name });
+      expect(link).toHaveAttribute("href", href);
+      expect(link).toHaveAttribute("rel", "nofollow");
+    }
   });
 
   it("marks the active route link with text-primary class", () => {
@@ -102,12 +118,15 @@ describe("Navbar", () => {
     expect(logoLinks.length).toBeGreaterThan(0);
   });
 
-  it("the GYM LOGIN button links to '/gym/login'", () => {
+  it("keeps both portals reachable from the mobile sheet", async () => {
+    const user = userEvent.setup();
     render(<Navbar />);
-    const loginLink = screen
-      .getAllByRole("link")
-      .find((el) => el.getAttribute("href") === "/gym/login");
-    expect(loginLink).toBeInTheDocument();
+    const triggers = screen.getAllByRole("button");
+    await user.click(triggers[triggers.length - 1]);
+
+    const hrefs = (await screen.findAllByRole("link")).map((el) => el.getAttribute("href"));
+    expect(hrefs).toContain("/gym/login");
+    expect(hrefs).toContain("/franchise/login");
   });
 
   /**
