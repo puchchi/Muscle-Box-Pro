@@ -1,5 +1,25 @@
+# One group, and it has to be one group.
+#
+# A crawler obeys only its most specific User-agent match and ignores every other group
+# (RFC 9309 section 2.2.1). Googlebot, Googlebot-Image, Bingbot, GPTBot, ChatGPT-User,
+# ClaudeBot, Claude-Web, PerplexityBot, Applebot, YouBot, anthropic-ai, OAI-SearchBot and
+# Google-Extended each used to have a block of their own saying "Allow: /" and nothing else,
+# which meant not one of them was bound by a single Disallow below. Naming a crawler here is
+# how you exempt it from these rules, not how you welcome it.
+#
+# AI crawlers are still welcome, deliberately, and this is what welcomes them: a path with no
+# Disallow is allowed. Do not re-add a per-crawler block to say so.
+#
+# No blanket "Allow: /" either. The standard is longest-match-wins, so "Allow: /" alongside
+# "Disallow: /admin/" is decided correctly by Google and Bing, but a naive parser that reads in
+# order sees permission to fetch everything, and the cost of that reading is the admin panel.
+
 User-agent: *
-Allow: /
+
+# Signed-in areas, and the paths that carry a credential in the URL. These stop the fetch and
+# nothing more: robots.txt cannot de-index. Every page below also sets
+# `robots: { index: false }` in its own metadata, and that is the control that keeps it out of
+# search results. Both are wanted, and neither substitutes for the other.
 Disallow: /gym/
 Disallow: /onboarding/
 Disallow: /auth/
@@ -11,47 +31,9 @@ Disallow: /franchise/forgot-password
 Disallow: /franchise/set-password/
 Disallow: /franchise/dashboard
 
-# Google
-User-agent: Googlebot
-Allow: /
-
-# Google Image
-User-agent: Googlebot-Image
-Allow: /
-
-# Bing
-User-agent: Bingbot
-Allow: /
-
-# AI crawlers: allow for brand visibility in AI search
-User-agent: GPTBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: Claude-Web
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Applebot
-Allow: /
-
-User-agent: YouBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: OAI-SearchBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
+# `/gym/login` and `/admin/login` are covered by the prefixes above; `/franchise/login` needs its
+# own line because `/franchise` itself is indexed. The trailing slash on `/gym/` matters: it does
+# not match `/gym-demo`, `/gym-partnership` or `/gym-protein-shake-machine`, all three of which are
+# in the sitemap.
 
 Sitemap: https://www.muscleboxpro.com/sitemap.xml

@@ -72,6 +72,19 @@ import type { FranchiseStepViewProps } from "./types";
  *
  * The route is `noindex`, and `Disallow: /franchise/onboarding/` in robots.txt. The handle
  * grants access to a PAN, a registered address and a ₹25 lakh term sheet.
+ *
+ * ## `theme-console`, and deliberately without `dark`
+ *
+ * Every other franchise screen carries it, so a flow left without it ran coral into a sign-in page
+ * and a portal that are magenta. The class only retargets the `--primary*` tokens, which is why it
+ * is safe to add here: the surfaces in this tree are hard-coded `bg-white` and `border-gray-200`
+ * rather than `bg-card`, so they do not move with a theme.
+ *
+ * That is also the reason **`dark` must not be added beside it**. It would flip `--foreground` to
+ * white while those cards stayed white, and every heading in the flow would go invisible. Making
+ * this tree dark is a rewrite of ~250 hard-coded utilities, not a class. The console theme is
+ * documented as signed-in surfaces only, the gym flow's shell is light for the same reason, and
+ * `StepReviewSign` hands the whole page to Leegality's white signing page mid-flow anyway.
  */
 
 const STEP_COMPONENTS: Record<
@@ -210,7 +223,7 @@ export default function FranchiseOnboardingFlow({ handle }: { handle: string }) 
 
   return (
     <div
-      className="min-h-screen bg-gray-50 flex flex-col"
+      className="theme-console min-h-screen bg-gray-50 flex flex-col"
       style={{ "--onboarding-chrome": `${chromeHeight}px` } as React.CSSProperties}
     >
       <a
@@ -416,7 +429,7 @@ function Footer() {
 function LoadingScreen() {
   return (
     <div
-      className="min-h-screen bg-gray-50 flex flex-col"
+      className="theme-console min-h-screen bg-gray-50 flex flex-col"
       data-testid="franchise-onboarding-loading"
     >
       <div className="bg-white border-b border-gray-200">
@@ -572,7 +585,7 @@ function HandleProblem({ error }: { error: FranchiseOnboardingError }) {
   const { title, body, cta } = copy[error.code] ?? copy.network;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="theme-console min-h-screen bg-gray-50 flex flex-col">
       <Header franchiseName="" />
       <main className="flex-1 flex items-center justify-center px-5 py-12">
         <div
@@ -599,7 +612,7 @@ function HandleProblem({ error }: { error: FranchiseOnboardingError }) {
           <p className="text-xs text-muted-foreground mt-4">
             Already a franchisee?{" "}
             <Link
-              href="/gym/login"
+              href="/franchise/login"
               className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Sign in to your dashboard

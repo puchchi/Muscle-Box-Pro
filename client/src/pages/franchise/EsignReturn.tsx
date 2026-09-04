@@ -45,7 +45,7 @@ export default function EsignReturn() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6 py-12">
+    <div className="theme-console min-h-screen bg-gray-50 flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/">

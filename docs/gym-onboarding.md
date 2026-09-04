@@ -1752,8 +1752,13 @@ Two deliberate asymmetries with the partner login, both of which look like overs
   the seeder.
 
 `robots: { index: false, follow: false }` on both routes is the control that keeps them out of search
-— **not** the `Disallow: /admin/` added to robots.txt, because several crawlers there are given a
-blanket `Allow: /` in their own block that overrides the wildcard.
+results, and it is still the control that matters: `Disallow` stops a fetch and cannot de-index.
+
+The reason originally given for that — that the per-crawler `Allow: /` blocks overrode the wildcard,
+so `Disallow: /admin/` bound nobody — was true and is fixed as of 2026-09-04. Those blocks are gone
+and `public/robots.txt` is a single `User-agent: *` group, so the disallow list now binds Googlebot
+and the AI crawlers as well. Read the comment at the top of that file before adding a named group
+back.
 
 ### Verified
 

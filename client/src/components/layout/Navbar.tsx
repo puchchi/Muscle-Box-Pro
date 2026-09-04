@@ -83,7 +83,13 @@ export default function Navbar() {
                 </span>
               </Link>
             ))}
-            <Link href="/gym/login">
+            {/*
+              `nofollow` because robots.txt disallows `/gym/`. This bar is on every indexable
+              page, so without it every one of them points at a blocked path: crawl budget spent
+              on a fetch that returns nothing, and a "blocked by robots.txt" discovery in Search
+              Console per page. The same link on /gym-partnership carries it for the same reason.
+            */}
+            <Link href="/gym/login" rel="nofollow">
               <Button variant="default" className="bg-primary text-background hover:bg-primary/90 font-bold">
                 GYM LOGIN
               </Button>
@@ -113,8 +119,9 @@ export default function Navbar() {
                     </Link>
                   ))}
                   {/* The desktop bar carries this as a button; the sheet only
-                      renders navLinks, so it needs its own entry. */}
-                  <Link href="/gym/login">
+                      renders navLinks, so it needs its own entry. `nofollow` for the
+                      reason given on that one. */}
+                  <Link href="/gym/login" rel="nofollow">
                     <span
                       className="text-lg font-display tracking-wider text-primary transition-colors hover:text-primary/80 cursor-pointer block"
                       onClick={() => setIsOpen(false)}

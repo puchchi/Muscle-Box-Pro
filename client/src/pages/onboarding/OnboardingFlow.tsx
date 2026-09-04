@@ -33,6 +33,19 @@ import type { StepViewProps } from "./types";
  *
  * The route is `noindex` and `Disallow: /onboarding/` in robots.txt — the token
  * grants access to a gym's legal and financial details.
+ *
+ * ## `theme-console`, and deliberately without `dark`
+ *
+ * The portal a gym lands in from here carries it, as do the login, the set-password screen and
+ * `DepositReturn`, so this flow was the one surface left running coral into a magenta portal. The
+ * class only retargets the `--primary*` tokens, which is what makes it safe to add over markup
+ * this old: the surfaces here are hard-coded `bg-white` and `border-gray-200` rather than
+ * `bg-card`, so none of them move with a theme.
+ *
+ * That is also why **`dark` must not be added beside it**. It would flip `--foreground` to white
+ * while those cards stayed white, and every heading in the flow would go invisible. Making this
+ * tree dark is a rewrite of ~250 hard-coded utilities, not a class. The console theme is
+ * documented as signed-in surfaces only, and this is a form somebody fills in for twenty minutes.
  */
 
 const STEP_COMPONENTS: Record<number, ComponentType<StepViewProps>> = {
@@ -159,7 +172,7 @@ export default function OnboardingFlow({ token }: { token: string }) {
 
   return (
     <div
-      className="min-h-screen bg-gray-50 flex flex-col"
+      className="theme-console min-h-screen bg-gray-50 flex flex-col"
       /*
         Read by anything that has to sit below the sticky rail — the agreement
         reader's own contents bar, and the `scroll-mt` on every clause anchor. Measured
@@ -398,7 +411,10 @@ function Footer() {
  */
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col" data-testid="onboarding-loading">
+    <div
+      className="theme-console min-h-screen bg-gray-50 flex flex-col"
+      data-testid="onboarding-loading"
+    >
       <div className="bg-white border-b border-gray-200">
         <div className={`${SHELL} h-14 sm:h-16 flex items-center`}>
           <div className="h-8 w-32 rounded-lg bg-gray-100 animate-pulse" />
@@ -570,7 +586,7 @@ function TokenProblem({ error }: { error: OnboardingError }) {
   const { title, body, cta } = copy[error.code] ?? copy.network;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="theme-console min-h-screen bg-gray-50 flex flex-col">
       <Header gymName="" />
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div
