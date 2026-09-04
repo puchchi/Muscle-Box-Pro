@@ -46,7 +46,16 @@ export const metadata: Metadata = {
     "gym profit sharing machine placement",
     "protein shake machine for gym owners",
   ],
-  alternates: { canonical: "/gym-partnership" },
+  /*
+   * `types` emits `<link rel="alternate" type="text/markdown">` for `/gym-partnership.md`,
+   * which is the only thing that makes that route discoverable to a fetcher holding this URL.
+   * Nothing appends `.md` speculatively, so without this and the entry in `app/llms.txt` the
+   * mirror exists and is never asked for.
+   */
+  alternates: {
+    canonical: "/gym-partnership",
+    types: { "text/markdown": "/gym-partnership.md" },
+  },
   openGraph: {
     type: "website",
     url: "/gym-partnership",

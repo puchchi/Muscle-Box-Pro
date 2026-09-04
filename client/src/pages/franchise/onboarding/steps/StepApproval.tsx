@@ -1,0 +1,245 @@
+"use client";
+
+import { ArrowRight, CheckCircle2, Clock, MapPin, Pencil } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { franchiseTerritoryLabel } from "@shared/franchise/onboarding/schema";
+import { formatIstDate } from "../../../gym/istDates";
+import TerritoryCutNotice from "../TerritoryCutNotice";
+import { BODY_TEXT, HINT_TEXT } from "../shell";
+import type { FranchiseStepViewProps } from "../types";
+
+/**
+ * Step 4 — Approval. Ours, not the franchisee's.
+ *
+ * There is no method that completes this step and there must not be: it completes on read from
+ * the approval record, the way the gym flow's installation step does. So this screen has no
+ * button that advances anything. It has four states, and each one is a different situation
+ * rather than a different amount of the same one.
+ *
+ * *Waiting.* The application is in. What is on screen is what we have, and when it arrived.
+ *
+ * *Approved.* The granted territory, and the requested one beside it **whenever they differ**.
+ * That comparison is the reason the two are stored separately: approving three suburbs of five
+ * and showing only the three would hide the fact that anything was cut, and the first time a
+ * franchisee should learn that is not after signing. It lives in `TerritoryCutNotice` rather than
+ * here because approval completes this step on read, so nobody lands on this screen and step 5
+ * has to carry the same comparison.
+ *
+ * *On hold.* What we still need, who is in touch, and the steps to go and fix. A hold reopens
+ * steps 1 to 3, which is why the buttons are here rather than a sentence asking them to email.
+ *
+ * *Declined.* One screen, no reason, and no support address dressed up as an appeal. The reason
+ * is on our own record deliberately: a generated sentence explaining a commercial judgment is
+ * the kind of text that gets quoted back, and territory availability is often the real reason
+ * and is not ours to publish. What this does give is the one honest thing left, which is that
+ * the market can change and we will say so if it does.
+ */
+export default function StepApproval({ state, goToStep }: FranchiseStepViewProps) {
+  const approval = state.approval;
+  const requested = franchiseTerritoryLabel(state.territory);
+
+  if (!approval) {
+    return (
+      <Card
+        icon={<Clock className="w-5 h-5 text-amber-700" aria-hidden="true" />}
+        tint="amber"
+        title="With us for review"
+        testId="approval-waiting"
+      >
+        <p className={BODY_TEXT}>
+          Your application arrived
+          {state.timestamps.kycSubmittedAt
+            ? ` on ${formatIstDate(state.timestamps.kycSubmittedAt)}`
+            : ""}
+          . Checking the territory usually takes a few working days. Nothing is needed from you,
+          and we will email {state.details.noticesEmail || "you"} either way.
+        </p>
+        <Detail label="You asked for" value={requested} />
+      </Card>
+    );
+  }
+
+  if (approval.outcome === "approved") {
+    return (
+      <Card
+        icon={<CheckCircle2 className="w-5 h-5 text-primary-ink" aria-hidden="true" />}
+        tint="primary"
+        title="Territory approved"
+        testId="approval-approved"
+      >
+        <p className={BODY_TEXT}>
+          Approved on {formatIstDate(approval.decidedAt)}. This is the territory your agreement is
+          written against.
+        </p>
+
+        <div
+          className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3 space-y-2"
+          data-testid="granted-territory"
+        >
+          <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+            <MapPin className="w-3 h-3" aria-hidden="true" />
+            Granted
+          </p>
+          <p className="text-sm font-semibold text-foreground">{approval.territory}</p>
+          <p className={`${BODY_TEXT} whitespace-pre-line`}>
+            {approval.territoryBoundary}
+          </p>
+        </div>
+
+        {/* Shown only when it changed, by the component itself. Repeating an unchanged request
+            under the grant is two identical paragraphs, and the reader learns nothing from the
+            second. No `onSeeBoundary`: the boundary is in the box above this one. */}
+        <TerritoryCutNotice state={state} />
+
+        {state.currentStep > 4 && (
+          <Button
+            onClick={() => goToStep(state.currentStep)}
+            className="min-h-11 rounded-lg font-semibold text-sm cursor-pointer"
+            data-testid="button-continue-from-approval"
+          >
+            Carry on
+            <ArrowRight className="w-4 h-4 ml-1.5" aria-hidden="true" />
+          </Button>
+        )}
+      </Card>
+    );
+  }
+
+  if (approval.outcome === "on_hold") {
+    return (
+      <Card
+        icon={<Pencil className="w-5 h-5 text-amber-700" aria-hidden="true" />}
+        tint="amber"
+        title="We need a bit more"
+        testId="approval-on-hold"
+      >
+        <p className={BODY_TEXT}>
+          {approval.contactName} needs the following before we can decide. Your earlier steps are
+          open again.
+        </p>
+
+        <ul role="list" className="space-y-2" data-testid="approval-outstanding">
+          {approval.outstanding.map((item) => (
+            <li key={item} className="text-sm text-foreground flex items-start gap-2.5">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1.5"
+                aria-hidden="true"
+              />
+              {item}
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex flex-wrap gap-2">
+          {/* The three steps a hold reopens, as buttons, because "please update your
+              application" with nothing to press is a dead end. `freezeReason` returns null for
+              all three while the record is on hold, so these are genuinely editable. */}
+          <Button
+            variant="outline"
+            onClick={() => goToStep(1)}
+            className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
+            data-testid="button-hold-to-details"
+          >
+            Your details
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => goToStep(2)}
+            className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
+            data-testid="button-hold-to-territory"
+          >
+            Your territory
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => goToStep(3)}
+            className="min-h-11 rounded-lg text-xs font-semibold cursor-pointer"
+            data-testid="button-hold-to-documents"
+          >
+            Documents
+          </Button>
+        </div>
+
+        <p className={HINT_TEXT}>
+          Submit your documents again when you have dealt with these, and the review restarts.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card
+      icon={<Clock className="w-5 h-5 text-gray-600" aria-hidden="true" />}
+      tint="gray"
+      title="We're not able to take this forward"
+      testId="approval-declined"
+    >
+      <p className={BODY_TEXT}>
+        We reviewed your application on {formatIstDate(approval.decidedAt)} and cannot offer this
+        territory. That is our decision on this application rather than a judgment about you.
+      </p>
+      <p className={BODY_TEXT}>
+        Territories open up as the network grows. If you would like us to come back to you when this
+        one does, reply to the email that brought you here and say so.
+      </p>
+    </Card>
+  );
+}
+
+const TINTS = {
+  primary: "border-primary/20",
+  amber: "border-amber-200",
+  gray: "border-gray-200",
+} as const;
+
+const ICON_TINTS = {
+  primary: "bg-primary/10",
+  amber: "bg-amber-100",
+  gray: "bg-gray-100",
+} as const;
+
+function Card({
+  icon,
+  tint,
+  title,
+  testId,
+  children,
+}: {
+  icon: React.ReactNode;
+  tint: keyof typeof TINTS;
+  title: string;
+  testId: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={`rounded-xl border bg-white p-5 sm:p-6 space-y-4 ${TINTS[tint]}`}
+      data-testid={testId}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${ICON_TINTS[tint]}`}
+        >
+          {icon}
+        </div>
+        {/* `h2`, where every other step's panels are `h3`. Approval is the one stage that is a
+            single step, so the shell prints the stage `h1` and no step `h2`, and an `h3` here
+            would skip a level. */}
+        <h2 className="text-base font-semibold text-foreground pt-2">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3">
+      <p className="text-xs font-semibold text-muted-foreground mb-1">
+        {label}
+      </p>
+      <p className="text-sm text-foreground">{value}</p>
+    </div>
+  );
+}

@@ -61,21 +61,28 @@ vi.mock("@shared/gym/fixtures", async (importOriginal) => {
 });
 
 /**
- * Lets a test replace the reporting call for the failure and in-flight paths, while
- * every other test keeps the real one — which reads the fixture above and, importantly,
- * validates it. Two different things are worth proving: that a *thrown* fetch reaches
- * the error state, and that a fetch which succeeds but returns a malformed snapshot
- * reaches the same place. Only the second needs the real function.
+ * The reporting call. There is no fixture behind the real one — it is an HTTP request to
+ * the deployed endpoint — so the default here serves `DEMO_GYM_PORTAL` *through the seam's
+ * own validator*, which is the half worth keeping: two different things are proved in this
+ * file, that a thrown fetch reaches the error state and that a fetch which succeeds with a
+ * malformed snapshot reaches the same place. `portalOverride` is what a test sets for the
+ * first.
  */
 const { portalOverride } = vi.hoisted(() => ({
   portalOverride: { value: null as null | (() => Promise<never>) },
 }));
 vi.mock("@/lib/gymPortalApi", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/gymPortalApi")>();
+  const fixtures = await import("@shared/gym/fixtures");
+  const { parseGymPortalSnapshot } = await import("@shared/gym/portalSchema");
   return {
     ...actual,
-    fetchGymPortalSnapshot: () =>
-      portalOverride.value ? portalOverride.value() : actual.fetchGymPortalSnapshot(),
+    fetchGymPortalSnapshot: async () => {
+      if (portalOverride.value) return portalOverride.value();
+      const parsed = parseGymPortalSnapshot(fixtures.DEMO_GYM_PORTAL);
+      if (!parsed.ok) throw new actual.GymPortalResponseError(parsed.issues);
+      return parsed.snapshot;
+    },
   };
 });
 

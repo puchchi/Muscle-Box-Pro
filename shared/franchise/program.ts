@@ -10,10 +10,19 @@
  *      Read it from here.
  *   2. This describes the *proposed* program. It is not an offer and it is not the
  *      definitive franchise agreement, which is what binds. The disclaimer the page
- *      renders (§55 of docs/FranchiseOnboardingPlan.md) is load-bearing and must stay
- *      visible.
+ *      renders (§56 of docs/MuscleBox_Pro_Franchise_Program_final.md) is load-bearing and
+ *      must stay visible.
  *
- * Section references are to docs/FranchiseOnboardingPlan.md.
+ * Section references are to docs/MuscleBox_Pro_Franchise_Program_final.md, which is also
+ * what `shared/franchise/termsheet/v2.generated.ts` is generated from and what
+ * `public/assets/franchise-program-2026-09.pdf` is exported from. Those three move together
+ * or the page, the signed instrument and the published PDF start stating different terms.
+ *
+ * They used to point at `docs/FranchiseOnboardingPlan.md`, which was an earlier copy of the
+ * same document under a name suggesting it was a plan. It has been deleted. The two had
+ * diverged: the current document inserts §28, Franchisee Operational Responsibilities, so
+ * every reference above 27 shifted by one when they were repointed. If a reference here ever
+ * looks off by one against the document, that is the reason.
  */
 
 import { formatInr } from "../partnership/summary";
@@ -22,7 +31,20 @@ export type FranchiseTierId = "territory" | "city";
 
 export type FranchiseTier = {
   id: FranchiseTierId;
-  /** Full name, as it appears in the agreement. */
+  /**
+   * Full name, as it appears in the agreement — literally: `tierName` renders onto the cover of the
+   * executed Franchise Agreement.
+   *
+   * **One word, and it was a real defect.** This read "MuscleBox Pro Territory Franchise" while the
+   * program document spells the brand "MuscleBoxPro" throughout, including in §1's own table of
+   * franchise structures — which agreement 2.0 transcribes verbatim. So the executed instrument named
+   * the same tier two ways five lines apart, the cover from here and §1 from the reviewed markdown, and
+   * a party reading that has to guess whether they are two products. The document is the authority, so
+   * this moved to match it.
+   *
+   * The wider "MuscleBox Pro" → "MuscleBoxPro" rename across marketing copy is a separate decision and
+   * has not been made. Only this field moved, because only this field is in a signed document.
+   */
   name: string;
   /** Short name for chips, table headers and the tier selector. */
   shortName: string;
@@ -33,16 +55,29 @@ export type FranchiseTier = {
   /** One line on who the tier is for. §2, §3. */
   positioning: string;
   /**
-   * The recovery threshold, or `null` where the program does not fix one publicly.
+   * The recovery threshold — **inclusive of GST**, and therefore not equal to `investmentInr`.
    *
-   * §21: the City Franchise threshold is set in the definitive agreement rather than
-   * here. `null` is not "no recovery". It is "not published", and the page must say
-   * so rather than render a figure or imply the model does not apply.
+   * §57 defines it as what the franchisee actually paid towards the investment "inclusive of
+   * GST and other statutory levies", and §63 makes every investment figure in the document
+   * exclusive of GST. So the two differ by the GST rate, by ₹4,50,000 on a Territory Franchise.
+   *
+   * This is the binding figure and what the agreement, the onboarding API and the dashboard's
+   * recovery progress use. The public page and onboarding step 5 state the threshold in words
+   * instead, as the investment "plus GST", rather than printing the grossed-up number: see
+   * `investmentPlusGstPaise` for the check that earns the wizard that phrasing.
+   *
+   * Stays nullable. §21 used to defer the City threshold and this was `null` for that reason;
+   * the document now fixes both, but "not published" remains a state the page must be able to
+   * render rather than fill in.
    */
   capitalRecoveryInr: number | null;
   /**
-   * The staged payments, or `null` where the schedule is agreement-specific (§6, City).
-   * Percentages, so a change to `investmentInr` cannot leave a stale instalment behind.
+   * The staged payments, or `null` where no schedule is published.
+   *
+   * Percentages, so a change to `investmentInr` cannot leave a stale instalment behind. §6 used
+   * to defer the City schedule and this was `null` for it; §6 now publishes it as mirroring the
+   * Territory structure at double the amount, subject to the Parties agreeing otherwise in
+   * writing at Franchise Registration.
    */
   paymentSchedule: { pct: number; trigger: string }[] | null;
   /** §2, §3. Everything the investment includes. */
@@ -52,13 +87,14 @@ export type FranchiseTier = {
 export const FRANCHISE_TIERS: readonly FranchiseTier[] = [
   {
     id: "territory",
-    name: "MuscleBox Pro Territory Franchise",
+    name: "MuscleBoxPro Territory Franchise",
     shortName: "Territory Franchise",
     investmentInr: 25_00_000,
     initialMachines: 5,
     marketRights: "A defined geographic territory",
     positioning: "For partners who want to develop a defined geographical territory.",
-    capitalRecoveryInr: 25_00_000,
+    // ₹25,00,000 plus 18% GST. §57, §53.
+    capitalRecoveryInr: 29_50_000,
     paymentSchedule: [
       { pct: 50, trigger: "At franchise registration" },
       { pct: 50, trigger: "When machines are ready at the OEM" },
@@ -82,15 +118,19 @@ export const FRANCHISE_TIERS: readonly FranchiseTier[] = [
   },
   {
     id: "city",
-    name: "MuscleBox Pro City Franchise",
+    name: "MuscleBoxPro City Franchise",
     shortName: "City Franchise",
     investmentInr: 50_00_000,
     initialMachines: 10,
     marketRights: "A defined city",
     positioning:
       "For partners who want responsibility for developing the network across an entire defined city.",
-    capitalRecoveryInr: null,
-    paymentSchedule: null,
+    // ₹50,00,000 plus 18% GST. §57, §54, §69.
+    capitalRecoveryInr: 59_00_000,
+    paymentSchedule: [
+      { pct: 50, trigger: "At franchise registration" },
+      { pct: 50, trigger: "When machines are ready at the OEM" },
+    ],
     includes: [
       "Exclusive city-level development rights, subject to performance requirements",
       "Access to the complete MuscleBox Pro technology ecosystem",
@@ -137,6 +177,40 @@ export function tierIncludes(): {
   return { shared, unique };
 }
 
+/**
+ * §6's schedule for one tier, as a sentence.
+ *
+ * Exists because the /franchise FAQ was rendering this from `investmentInr / 2` and the words
+ * "two equal halves", which is not what `paymentSchedule` says — it only happened to agree.
+ * Three stages, or an uneven split, would have printed two confident wrong figures rather than
+ * failing, and the same prose is now needed in the FAQ and in `shared/seo/llmDocs.ts`.
+ */
+export function tierPaymentStages(tier: FranchiseTier): string {
+  if (tier.paymentSchedule === null) {
+    return `The ${tier.shortName} schedule is set in the definitive agreement.`;
+  }
+  const stages = tier.paymentSchedule
+    .map(
+      (stage) =>
+        `${stage.pct}% (${formatInr((tier.investmentInr * stage.pct) / 100)}) ` +
+        // First character only, so the trigger joins mid-sentence without "OEM" becoming "oem".
+        `${stage.trigger.charAt(0).toLowerCase()}${stage.trigger.slice(1)}`,
+    )
+    .join(", then ");
+  return `The ${tier.shortName} is ${stages}.`;
+}
+
+/**
+ * §6 attaches this to the City schedule and not the Territory one, so it is a separate string
+ * rather than folded into `tierPaymentStages`.
+ *
+ * Not optional wherever the City schedule is printed. §6 publishes that schedule but lets the
+ * Parties vary it in writing at Franchise Registration, so stating the stages without this
+ * states a fixed schedule the document does not fix.
+ */
+export const CITY_SCHEDULE_CAVEAT =
+  "The City Franchise schedule applies unless the Parties agree a different one in writing at Franchise Registration.";
+
 export const FRANCHISE = {
   /**
    * §17, §19. The protein-business split, before and after capital recovery.
@@ -148,7 +222,7 @@ export const FRANCHISE = {
   proteinProfitSharePct: { duringRecovery: 100, afterRecovery: 50 },
 
   /**
-   * §18, §41. Advertising is permanent and it never counts toward capital recovery.
+   * §18, §42. Advertising is permanent and it never counts toward capital recovery.
    * That separation is the single most misread term in the program, so it is stated
    * on the split itself rather than only in prose.
    */
@@ -183,6 +257,12 @@ export const FRANCHISE = {
   gymProfitSharingExamples: ["80:20", "50:50"],
 
   /**
+   * §63 makes every investment figure in this programme exclusive of GST, and §57 makes the
+   * recovery threshold inclusive of it. This is the rate that separates the two.
+   */
+  gstRatePct: 18,
+
+  /**
    * The vintage of every term above, rendered in the /franchise disclaimer and emitted as
    * `dateModified` in the page's WebPage schema.
    *
@@ -193,6 +273,20 @@ export const FRANCHISE = {
    */
   asOf: "Q3 2026",
 } as const;
+
+/**
+ * The recovery threshold §57 implies for an investment: the GST-exclusive figure grossed up.
+ *
+ * Integer arithmetic on paise, because `× 1.18` lands ₹25,00,000 a fraction of a paisa out and
+ * then formats as the right number by luck.
+ *
+ * A franchise's stored `capitalRecoveryPaise` is set per record and is not obliged to equal this.
+ * A screen that wants to write the threshold as "your investment plus GST" rather than print the
+ * grossed-up figure has to check that it does, or it understates a bespoke threshold.
+ */
+export function investmentPlusGstPaise(investmentPaise: number): number {
+  return Math.round((investmentPaise * (100 + FRANCHISE.gstRatePct)) / 100);
+}
 
 /**
  * §8. Ownership, as two lists.
@@ -218,7 +312,7 @@ export const MACHINE_RIGHTS = {
   ],
 } as const;
 
-/** §9, §24, §26, §27, §28. Who does what, once the machines land. */
+/** §9, §24, §26, §27, §29. Who does what, once the machines land. */
 export const RESPONSIBILITIES = {
   mbp: [
     "The machines, built and delivered",
@@ -243,7 +337,7 @@ export const RESPONSIBILITIES = {
 } as const;
 
 /**
- * §38. The upkeep loop at each machine, once deployed.
+ * §28. The upkeep loop at each machine, once deployed.
  *
  * Everything here is downstream of the warehouse. Storage conditions, local transport
  * and gym coordination are stated in `RESPONSIBILITIES.franchisee` and must not be
@@ -272,7 +366,7 @@ export const DASHBOARD_VISIBILITY = [
   "Machine status and operational alerts",
 ] as const;
 
-/** §30. What territorial exclusivity is conditional on (§4). */
+/** §31. What territorial exclusivity is conditional on (§4). */
 export const PERFORMANCE_REQUIREMENTS = [
   "Minimum number of machines deployed",
   "Deployment deadlines",
@@ -292,7 +386,7 @@ export const RESERVED_ACCOUNTS = [
 ] as const;
 
 /**
- * §51. Application through to the long-term partnership.
+ * §52. Application through to the long-term partnership.
  *
  * `phase` groups the eleven steps into the four stages of `JOURNEY_PHASES`. Eleven
  * equally-weighted steps read as a list to get through; four stages read as a process,
@@ -367,7 +461,7 @@ export const JOURNEY_PHASES: readonly { id: FranchiseJourneyPhaseId; title: stri
 
 /**
  * The journey grouped for rendering, with each step keeping its position in the full
- * eleven so the numbering on the page matches the order in §51.
+ * eleven so the numbering on the page matches the order in §52.
  */
 export function journeyByPhase() {
   return JOURNEY_PHASES.map((phase) => ({
@@ -385,13 +479,20 @@ export function journeyByPhase() {
  * recovery does not reduce the remaining amount, and profit that arrives *past* the
  * threshold is split rather than paid out whole. Both were wrong in every hand-written
  * version of this example, in opposite directions.
+ *
+ * It illustrates the mechanism in base rupees, against `investmentInr` rather than the
+ * GST-inclusive `capitalRecoveryInr`, because the page states the threshold once as "the
+ * investment plus GST" and grossing up only this block would leave a reader subtracting
+ * ₹20,00,000 from a figure the page no longer shows. Still refuses to run for a tier with
+ * no published threshold: an illustration of a term that has not been fixed is a
+ * representation about money that nothing backs.
  */
 export function recoveryExample(tierId: FranchiseTierId = "territory") {
   const tier = franchiseTier(tierId);
-  const threshold = tier.capitalRecoveryInr;
-  if (threshold === null) {
+  if (tier.capitalRecoveryInr === null) {
     throw new Error(`No published capital recovery threshold for tier: ${tierId}`);
   }
+  const threshold = tier.investmentInr;
 
   const alreadyReceivedInr = 20_00_000;
   const nextDistributionInr = 8_00_000;

@@ -269,7 +269,7 @@ export default function GymDashboard() {
   // in the cache and the first thing on screen is the portal itself.
   if (isCheckingSession || signedOut || sessionGone) {
     return (
-      <div className="dark flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+      <div className="dark theme-console flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Loading your portal...
       </div>
     );
@@ -625,7 +625,7 @@ function PortalChrome({
   children: React.ReactNode;
 }) {
   return (
-    <div className="dark relative min-h-screen bg-background text-foreground">
+    <div className="dark theme-console relative min-h-screen bg-background text-foreground">
       {/* Deliberately not `overflow-hidden` anywhere above the header: an overflow
           ancestor makes `position: sticky` stick to a box that never scrolls. The glow is
           a background on a full-width box for the same reason, rather than a blurred blob

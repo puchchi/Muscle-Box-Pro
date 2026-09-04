@@ -3,10 +3,9 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AlertCircle, ArrowLeft, Info, Lock, Pencil, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, Lock, Pencil, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scrollIntoViewGently } from "@/lib/motion";
-import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
 import { STEP_META, stepMeta } from "@shared/onboarding/steps";
 import type { GymDetails, OnboardingError } from "@shared/onboarding/types";
 import OnboardingIntro from "./OnboardingIntro";
@@ -195,7 +194,6 @@ export default function OnboardingFlow({ token }: { token: string }) {
           canView={canView}
           onSelect={goToStep}
         />
-        {IS_MOCK_ONBOARDING && <MockBanner />}
       </div>
 
       {/*
@@ -384,22 +382,6 @@ function Footer() {
         </a>
       </div>
     </footer>
-  );
-}
-
-/*
- * Visible on purpose while the wizard runs on the in-memory mock. Anything that
- * looks like a real onboarding but silently discards its data on reload has to say
- * so, or someone will demo it to a gym and lose their details.
- */
-function MockBanner() {
-  return (
-    <div className="bg-amber-50 border-b border-amber-200 py-2">
-      <p className={`${SHELL} text-[11px] text-amber-900 flex items-center gap-1.5`}>
-        <Info className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-        Preview mode: nothing here is saved to the database yet, and reloading the page starts over.
-      </p>
-    </div>
   );
 }
 

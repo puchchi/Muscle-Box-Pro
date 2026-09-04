@@ -13,6 +13,7 @@ import {
   type InvestorEnquiryReceipt,
 } from "@/lib/investorApi";
 import { MACHINE_SPEC } from "@shared/machine/spec";
+import { INVESTOR_MARKET } from "@shared/investor/market";
 import {
   TrendingUp,
   IndianRupee,
@@ -29,9 +30,9 @@ import {
 } from "lucide-react";
 
 const marketStats = [
-  { val: "75,000+", label: "Gyms in India", sub: "Addressable market", color: "from-accent to-primary" },
-  { val: "16–18%", label: "Annual growth", sub: "Indian fitness industry", color: "from-primary to-blue-500" },
-  { val: "₹1,100 Cr+", label: "Annual TAM", sub: "Gym nutrition spend", color: "from-accent to-primary" },
+  { ...INVESTOR_MARKET.gyms, color: "from-accent to-primary" },
+  { ...INVESTOR_MARKET.growth, color: "from-primary to-blue-500" },
+  { ...INVESTOR_MARKET.tam, color: "from-accent to-primary" },
 ];
 
 const tractionStats = [
@@ -200,10 +201,10 @@ export default function Invest() {
                 className={`font-display font-black text-transparent bg-clip-text bg-gradient-to-r ${s.color} leading-none mb-1.5`}
                 style={{ fontSize: "clamp(1.6rem, 2.5vw, 2.1rem)" }}
               >
-                {s.val}
+                {s.value}
               </p>
               <p className="text-gray-800 font-semibold text-sm mb-0.5">{s.label}</p>
-              <p className="text-gray-400 text-xs">{s.sub}</p>
+              <p className="text-gray-400 text-xs">{s.note}</p>
             </motion.div>
           ))}
         </div>

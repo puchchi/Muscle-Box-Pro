@@ -155,7 +155,7 @@ export default function PayoutAccountCard({
             centred with a transform, so once it outgrows the viewport it is clipped at the top
             *and* the bottom: the title and the save button go at the same time, leaving five
             fields and no way to submit them. */}
-        <DialogContent className="dark max-h-[calc(100dvh-2rem)] overflow-y-auto border-border bg-card sm:max-w-[480px]">
+        <DialogContent className="dark theme-console max-h-[calc(100dvh-2rem)] overflow-y-auto border-border bg-card sm:max-w-[480px]">
           <PayoutAccountForm
             existing={onFile}
             onCancel={() => onFormOpenChange(false)}
@@ -174,7 +174,7 @@ export default function PayoutAccountCard({
           if (!open) removal.reset();
         }}
       >
-        <AlertDialogContent className="dark border-border bg-card">
+        <AlertDialogContent className="dark theme-console border-border bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Remove this bank account?</AlertDialogTitle>
             <AlertDialogDescription>

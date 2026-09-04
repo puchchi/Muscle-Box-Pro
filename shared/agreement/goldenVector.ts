@@ -30,11 +30,16 @@
 import type { Agreement, AgreementFields } from "./types";
 import { fingerprint } from "./render";
 
-export type AgreementGoldenVector = {
+/**
+ * `F` is the document's field record, defaulting to the gym `AgreementFields`. The franchise
+ * term sheet pins its own vector through this same type and `verifyGoldenVector`, so there is
+ * one implementation of *what* is compared and two sets of pinned bytes.
+ */
+export type AgreementGoldenVector<F extends object = AgreementFields> = {
   /** The `Agreement.version` these values belong to. */
   version: string;
   /** Fixed inputs. NOT example values to be freshened — see the header. */
-  fields: AgreementFields;
+  fields: F;
   /** SHA-256 of `renderPlainText(agreement, fields)`, lowercase hex. */
   contentHash: string;
   /** Character length of the same rendering — a corruption check independent of the hash. */
@@ -105,11 +110,11 @@ export type GoldenVectorVerdict =
  * test is then one assertion against this verdict, and the two repos cannot disagree
  * about *what* is being compared, only about the answer.
  */
-export async function verifyGoldenVector(
+export async function verifyGoldenVector<F extends object>(
   agreement: Agreement,
-  vector: AgreementGoldenVector,
+  vector: AgreementGoldenVector<F>,
 ): Promise<GoldenVectorVerdict> {
-  const actual = await fingerprint(agreement, vector.fields);
+  const actual = await fingerprint<F>(agreement, vector.fields);
   const problems: string[] = [];
 
   if (actual.version !== vector.version) {

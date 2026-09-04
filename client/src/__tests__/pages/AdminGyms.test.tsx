@@ -173,6 +173,44 @@ describe("AdminGyms", () => {
     expect(screen.queryByTestId("button-load-more")).not.toBeInTheDocument();
   });
 
+  it("renders each gym a second time as a card, for the widths the table does not fit", async () => {
+    // Below `lg` the five columns become a stacked card instead of a table that scrolls sideways,
+    // and the two renderings are separate markup. A field dropped from one of them is invisible at
+    // the width that uses it, so this checks the card carries what the row carries — the name, the
+    // status, the contact, and the "quiet" count that is the reason to read the list.
+    mockFetchList.mockResolvedValue({ ok: true, data: adminGymListFixture() });
+    render(<AdminGyms />);
+
+    const card = await screen.findByTestId("card-gym-gym_01HQZX9K2M4N6P8R");
+    expect(card).toHaveAttribute("href", "/admin/gyms/gym_01HQZX9K2M4N6P8R");
+    expect(card).toHaveTextContent("Iron House Gym");
+    expect(card).toHaveTextContent("Iron House Fitness Private Limited");
+    expect(card).toHaveTextContent("Signed");
+    expect(card).toHaveTextContent("rohit@ironhousegym.in");
+    expect(card).toHaveTextContent("days quiet");
+  });
+
+  it("stops telling an admin to load more once there is nothing left to load", async () => {
+    // The caveat is true only while a cursor remains. On the last page it sends whoever reads it
+    // looking for a button that is not on the screen.
+    mockFetchList.mockResolvedValueOnce({
+      ok: true,
+      data: { gyms: adminGymListFixture().gyms.slice(0, 1), nextCursor: "page-2" },
+    });
+    render(<AdminGyms />);
+    expect(await screen.findByTestId("filter-scope")).toHaveTextContent("load more");
+
+    mockFetchList.mockResolvedValueOnce({
+      ok: true,
+      data: { gyms: adminGymListFixture().gyms.slice(1), nextCursor: null },
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("button-load-more"));
+
+    await waitFor(() => expect(screen.queryByTestId("filter-scope")).not.toBeInTheDocument());
+    expect(screen.getByTestId("input-filter")).toBeInTheDocument();
+  });
+
   it("shows the server's message and the failed field paths on a malformed page", async () => {
     // The audience is us: a field path is the whole answer to "what changed on the backend?"
     mockFetchList.mockResolvedValue({

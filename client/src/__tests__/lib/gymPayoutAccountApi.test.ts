@@ -1,15 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
- * The payout-account seam, on its live path.
+ * The payout-account seam.
  *
  * Mocked at `apiRequest`, so what is under test is this file's own judgement rather than the
  * transport: which verb and route it uses, what it puts on the wire, and what it does with an
  * answer. The real schema runs, because the property worth proving is that a response leaking
  * a full account number is rejected *here*, before any component can render it.
- *
- * Every case is on the live path. The mock store is exercised through the card's own tests,
- * and asserting on it here would only pin a fixture in place.
  */
 
 const { mockApiRequest } = vi.hoisted(() => ({ mockApiRequest: vi.fn() }));
@@ -18,12 +15,7 @@ vi.mock("@/lib/apiClient", () => ({ apiRequest: mockApiRequest }));
 import type { PayoutAccount } from "@shared/gym/payoutAccount";
 import type { PayoutAccountFormValues } from "@shared/gym/payoutAccountSchema";
 import type { OnboardingErrorCode } from "@shared/onboarding/types";
-
-async function live() {
-  vi.stubEnv("NEXT_PUBLIC_MBP_API_MODE", "live");
-  vi.resetModules();
-  return await import("@/lib/gymPayoutAccountApi");
-}
+import * as payoutApi from "@/lib/gymPayoutAccountApi";
 
 const ACCOUNT: PayoutAccount = {
   accountHolderName: "Iron Temple Fitness Pvt Ltd",
@@ -67,15 +59,10 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.resetModules();
-});
-
 describe("fetchPayoutAccount", () => {
   it("reads the one route", async () => {
     resolves({ account: ACCOUNT });
-    const { fetchPayoutAccount } = await live();
+    const { fetchPayoutAccount } = payoutApi;
 
     expect(await fetchPayoutAccount()).toEqual(ACCOUNT);
     expect(call()).toMatchObject({ method: "GET", path: "/gym/payout-account" });
@@ -86,7 +73,7 @@ describe("fetchPayoutAccount", () => {
     // route that decides where money goes would be an authorisation decision made in the
     // one process that cannot be trusted to make it.
     resolves({ account: ACCOUNT });
-    const { fetchPayoutAccount, savePayoutAccount, removePayoutAccount } = await live();
+    const { fetchPayoutAccount, savePayoutAccount, removePayoutAccount } = payoutApi;
 
     await fetchPayoutAccount();
     await savePayoutAccount(FORM);
@@ -102,14 +89,14 @@ describe("fetchPayoutAccount", () => {
 
   it("returns null for a gym that has not given us one", async () => {
     resolves({ account: null });
-    const { fetchPayoutAccount } = await live();
+    const { fetchPayoutAccount } = payoutApi;
 
     expect(await fetchPayoutAccount()).toBeNull();
   });
 
   it("throws a request error with the server's message", async () => {
     fails("expired_token", "Your session has expired.");
-    const { fetchPayoutAccount, PayoutAccountRequestError } = await live();
+    const { fetchPayoutAccount, PayoutAccountRequestError } = payoutApi;
 
     await expect(fetchPayoutAccount()).rejects.toBeInstanceOf(PayoutAccountRequestError);
     await expect(fetchPayoutAccount()).rejects.toMatchObject({ code: "expired_token" });
@@ -124,7 +111,7 @@ describe("fetchPayoutAccount", () => {
    */
   it("refuses a response carrying the full account number", async () => {
     resolves({ account: { ...ACCOUNT, accountNumberLast4: "50100234564417" } });
-    const { fetchPayoutAccount, PayoutAccountResponseError } = await live();
+    const { fetchPayoutAccount, PayoutAccountResponseError } = payoutApi;
 
     await expect(fetchPayoutAccount()).rejects.toBeInstanceOf(PayoutAccountResponseError);
   });
@@ -135,7 +122,7 @@ describe("savePayoutAccount", () => {
     // Not `PATCH`. There is one account per gym and a change is the whole set of details, so
     // a partial update would have nothing to merge the account number into.
     resolves({ account: ACCOUNT });
-    const { savePayoutAccount } = await live();
+    const { savePayoutAccount } = payoutApi;
 
     await savePayoutAccount(FORM);
     expect(call().method).toBe("PUT");
@@ -143,7 +130,7 @@ describe("savePayoutAccount", () => {
 
   it("normalises what it sends and drops the confirmation", async () => {
     resolves({ account: ACCOUNT });
-    const { savePayoutAccount } = await live();
+    const { savePayoutAccount } = payoutApi;
 
     await savePayoutAccount(FORM);
     expect(call().body).toEqual({
@@ -158,7 +145,7 @@ describe("savePayoutAccount", () => {
     // So the form can mark the field the handler objected to. Without them a rule we do not
     // know about shows only as a banner, leaving the gym to guess which of five boxes it meant.
     fails("validation", "Please check your details.", { ifsc: "No branch with that IFSC" });
-    const { savePayoutAccount, PayoutAccountRequestError } = await live();
+    const { savePayoutAccount, PayoutAccountRequestError } = payoutApi;
 
     await expect(savePayoutAccount(FORM)).rejects.toMatchObject({
       fieldErrors: { ifsc: "No branch with that IFSC" },
@@ -170,7 +157,7 @@ describe("savePayoutAccount", () => {
     // A handler answering `{ account: null }` to a PUT saved nothing and said it did. Passing
     // that through would replace a filled-in form with the empty state and no explanation.
     resolves({ account: null });
-    const { savePayoutAccount, PayoutAccountResponseError } = await live();
+    const { savePayoutAccount, PayoutAccountResponseError } = payoutApi;
 
     await expect(savePayoutAccount(FORM)).rejects.toBeInstanceOf(PayoutAccountResponseError);
   });
@@ -181,7 +168,7 @@ describe("removePayoutAccount", () => {
     // `{ account: null }` rather than a bodyless 204, because `apiRequest` reads an empty 2xx
     // body as a truncated response.
     resolves({ account: null });
-    const { removePayoutAccount } = await live();
+    const { removePayoutAccount } = payoutApi;
 
     await expect(removePayoutAccount()).resolves.toBeUndefined();
     expect(call().method).toBe("DELETE");
@@ -191,7 +178,7 @@ describe("removePayoutAccount", () => {
     // A resolved promise here would close the confirmation and leave the card showing an
     // account the gym believes it has removed.
     fails("network", "We could not remove it just now.");
-    const { removePayoutAccount, PayoutAccountRequestError } = await live();
+    const { removePayoutAccount, PayoutAccountRequestError } = payoutApi;
 
     await expect(removePayoutAccount()).rejects.toBeInstanceOf(PayoutAccountRequestError);
   });
@@ -199,7 +186,7 @@ describe("removePayoutAccount", () => {
 
 describe("payoutAccountErrorMessage", () => {
   it("keeps the server's wording, which is written for a gym owner", async () => {
-    const { payoutAccountErrorMessage, PayoutAccountRequestError } = await live();
+    const { payoutAccountErrorMessage, PayoutAccountRequestError } = payoutApi;
 
     expect(
       payoutAccountErrorMessage(
@@ -209,7 +196,7 @@ describe("payoutAccountErrorMessage", () => {
   });
 
   it("says nothing about our field names when the fault is ours", async () => {
-    const { payoutAccountErrorMessage, PayoutAccountResponseError } = await live();
+    const { payoutAccountErrorMessage, PayoutAccountResponseError } = payoutApi;
 
     const message = payoutAccountErrorMessage(
       new PayoutAccountResponseError(["account.accountNumberLast4: must be the last four"]),

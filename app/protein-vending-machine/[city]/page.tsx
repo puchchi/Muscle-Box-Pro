@@ -175,6 +175,19 @@ function getCityFromSlug(slug: string) {
  */
 export const CITY_SLUGS = Object.keys(cityConfig);
 
+/**
+ * The same cities with their display names, for `app/llms.txt`, which lists them as prose
+ * links rather than as URLs.
+ *
+ * A separate export rather than widening `cityConfig`'s visibility, because that object also
+ * carries every city's page copy and nothing outside this file has a reason to reach it.
+ * Deriving the name from the slug would work for all eleven today and break on the first
+ * two-word city.
+ */
+export const CITY_NAMES: { slug: string; name: string }[] = Object.entries(cityConfig).map(
+  ([slug, { name }]) => ({ slug, name }),
+);
+
 export function generateStaticParams() {
   return CITY_SLUGS.map((city) => ({ city }));
 }

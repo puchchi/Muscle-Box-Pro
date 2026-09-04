@@ -14,6 +14,12 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+/** The in-memory double, as in [OnboardingFlow.test.tsx](./OnboardingFlow.test.tsx). */
+vi.mock("@/lib/onboardingApi", async () => {
+  const { createMockOnboardingApi } = await import("@shared/onboarding/mockApi");
+  return { onboardingApi: createMockOnboardingApi() };
+});
+
 import { DEMO_TOKEN, resetMockOnboarding } from "@shared/onboarding/mockApi";
 import { onboardingApi } from "@/lib/onboardingApi";
 import OnboardingFlow from "@/pages/onboarding/OnboardingFlow";
@@ -21,8 +27,8 @@ import OnboardingFlow from "@/pages/onboarding/OnboardingFlow";
 /**
  * What step 1 does when the *server* rejects it.
  *
- * The rest of the suite runs against the mock, which validates with the same schema the
- * form does — so by construction it cannot produce the case this file is about: a submit
+ * Every other case in the suite runs against the in-memory double, which validates with the
+ * same schema the form does — so by construction it cannot produce the case this file is about: a submit
  * the client was happy with and the API was not. That is not a hypothetical. Both of
  * 2026-08-24's schema changes (a blank GSTIN, an `unregistered` entity type) reached the
  * frontend before the deployed API, and the sandbox refused them with exactly the payload

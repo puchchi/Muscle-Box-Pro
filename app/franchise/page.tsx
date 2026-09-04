@@ -61,7 +61,11 @@ export const metadata: Metadata = {
     "gym vending machine franchise",
     "franchise territory rights India",
   ],
-  alternates: { canonical: "/franchise" },
+  /* `types` emits the `rel="alternate"` link for `/franchise.md`. See /gym-partnership. */
+  alternates: {
+    canonical: "/franchise",
+    types: { "text/markdown": "/franchise.md" },
+  },
   openGraph: {
     type: "website",
     url: "/franchise",
@@ -122,11 +126,12 @@ const webPageSchema = {
 /**
  * One `Offer` per tier, priced.
  *
- * Only what `FRANCHISE_TIERS` publishes. The City tier's `capitalRecoveryInr` and
- * `paymentSchedule` are deliberately `null` because §21 and §6 set them in the definitive
- * agreement, and `null` means "not published" rather than "does not apply" — so neither
- * appears here for either tier. An invented threshold in structured data is a priced
- * representation about money that no document behind it supports.
+ * `price` and nothing else about the money. `capitalRecoveryInr` and `paymentSchedule` are
+ * omitted even though §21 and §6 now publish both for both tiers — an earlier version of this
+ * comment said the City ones were `null`, which was the reason then and is no longer true.
+ * The reason now is that neither has a faithful `Offer` field: instalments are not a
+ * `priceSpecification` and a recovery threshold is not a price, so putting them here means
+ * inventing structure for figures about money. The page states both in prose instead.
  */
 function tierOffer(tier: FranchiseTier) {
   return {

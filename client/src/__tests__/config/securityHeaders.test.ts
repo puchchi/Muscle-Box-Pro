@@ -33,6 +33,21 @@ async function directive(name: string): Promise<string[]> {
   return found.split(/\s+/).slice(1);
 }
 
+/** `connect-src` from a re-imported config, for the cases that stub the build's env. */
+async function connectSrcOfAFreshConfig(): Promise<string[]> {
+  const fresh = await import("../../../../next.config.mjs");
+  const rules = await fresh.default.headers!();
+  const csp = rules
+    .find((rule) => rule.source === "/(.*)")!
+    .headers.find((header) => header.key === "Content-Security-Policy")!.value;
+  const found = csp
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("connect-src "));
+  if (!found) throw new Error("expected a connect-src directive in the CSP");
+  return found.split(/\s+/).slice(1);
+}
+
 describe("connect-src and the onboarding API", () => {
   it("allows the origin the API client actually calls", async () => {
     // The one assertion that matters: if these two drift, every wizard and dashboard
@@ -53,6 +68,10 @@ describe("connect-src and the onboarding API", () => {
     // sandbox needs that host and gets it from `nonProductionApiOrigin()`, which returns
     // null here; the next test is the other half of that pair. The two together are the
     // point: the entry exists where the requests do and nowhere else.
+    //
+    // The documents bucket is the one `amazonaws.com` host a production build may add, because
+    // a presigned `PUT` cannot go through our domain. It is nothing to do with cookies, and it
+    // has its own pair of tests below.
     const sources = await directive("connect-src");
     expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
   });
@@ -79,6 +98,90 @@ describe("connect-src and the onboarding API", () => {
     // production host stays: a build can be pointed elsewhere without losing it.
     expect(csp).toContain(new URL(sandbox).origin);
     expect(csp).toContain("https://api.muscleboxpro.com");
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("allows the franchise stacks' own hosts, which are not derivable from the onboarding one", async () => {
+    // Three stacks, one origin in production and three unrelated API Gateway ids anywhere else. So
+    // setting `NEXT_PUBLIC_MBP_FRANCHISE_API_URL` is not enough on its own: without the origin here
+    // the browser blocks every franchise admin call, and the console says CSP while the screen says
+    // the routes are not deployed.
+    const onboarding = "https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox";
+    const admin = "https://a1b2c3d4e5.execute-api.ap-south-1.amazonaws.com/sandbox";
+    const wizard = "https://f6g7h8i9j0.execute-api.ap-south-1.amazonaws.com/sandbox";
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", onboarding);
+    vi.stubEnv("NEXT_PUBLIC_MBP_FRANCHISE_API_URL", admin);
+    vi.stubEnv("NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL", wizard);
+    vi.resetModules();
+
+    expect(await connectSrcOfAFreshConfig()).toEqual(
+      expect.arrayContaining([
+        new URL(onboarding).origin,
+        new URL(admin).origin,
+        new URL(wizard).origin,
+      ]),
+    );
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("still allows nothing extra in production, whatever the franchise variables say", async () => {
+    // The gate is the onboarding build, not each variable on its own. A franchise variable left
+    // pointing at the sandbox in a production build must not put an `execute-api` host in front of
+    // real visitors, because the entry is what says the cookie's registrable domain was bypassed.
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "");
+    vi.stubEnv(
+      "NEXT_PUBLIC_MBP_FRANCHISE_API_URL",
+      "https://a1b2c3d4e5.execute-api.ap-south-1.amazonaws.com/sandbox",
+    );
+    vi.resetModules();
+
+    const sources = await connectSrcOfAFreshConfig();
+    expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /**
+   * The documents bucket, which is the one `amazonaws.com` host production is allowed to keep.
+   *
+   * A franchisee's PAN scan is `PUT` straight to S3 from the browser, so this entry has to exist
+   * wherever uploads happen — production included, since the bytes bypassing our Lambdas is the
+   * design rather than a sandbox shortcut. That makes it the only variable that can widen a
+   * production CSP, which is why the shape check below matters more than the happy path.
+   */
+  const DOCS_BUCKET = "https://mbp-franchise-docs-sandbox-000000000000.s3.ap-south-1.amazonaws.com";
+
+  it("allows the documents bucket even with no sandbox API configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN", DOCS_BUCKET);
+    vi.resetModules();
+
+    expect(await connectSrcOfAFreshConfig()).toContain(DOCS_BUCKET);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it.each([
+    ["some other bucket", "https://someone-elses-bucket.s3.ap-south-1.amazonaws.com"],
+    ["a host that merely ends in ours", "https://evil.com/mbp-franchise-docs-prod.s3.ap-south-1.amazonaws.com"],
+    ["plain http", "http://mbp-franchise-docs-sandbox-000000000000.s3.ap-south-1.amazonaws.com"],
+    ["nonsense", "not-a-url"],
+  ])("ignores %s rather than allowing it", async (_label, value) => {
+    // A typo in a Vercel production variable must widen nothing. Every rejection is silent and
+    // total: the entry is absent, uploads fail visibly in the console, and no other host is
+    // reachable as a side effect of getting this wrong.
+    vi.stubEnv("NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN", value);
+    vi.resetModules();
+
+    const sources = await connectSrcOfAFreshConfig();
+    expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
+    expect(sources).not.toContain(new URL(value, "https://placeholder.invalid").origin);
 
     vi.unstubAllEnvs();
     vi.resetModules();

@@ -1,10 +1,12 @@
 /**
  * The gym portal's session, behind one seam.
  *
- * Two implementations of three operations — sign in, sign out, who am I — chosen by the same
- * build-time flag as [onboardingApi.ts](./onboardingApi.ts): the cookie sessions on
- * `api.muscleboxpro.com`, or Supabase Auth, which is what the portal runs on today and what
- * TODO A2 exists to remove. Nothing in `pages/gym/` knows which is active.
+ * Three operations — sign in, sign out, who am I — against the cookie sessions on
+ * `api.muscleboxpro.com`. Nothing in `pages/gym/` reaches past this file.
+ *
+ * Supabase Auth was the other half of this seam and is gone. If it ever returns, nothing here
+ * may read `user_metadata`: the account holder can write to it, so business state taken from it
+ * is a figure the gym can edit.
  *
  * ## The one thing that changes for callers
  *
@@ -46,21 +48,14 @@
  */
 
 import { apiRequest, forgetBearerSession, rememberBearerSession } from "./apiClient";
-import { supabase } from "./supabase";
 import type { OnboardingResult } from "@shared/onboarding/types";
-
-/** Same build-time switch as the wizard's — see `onboardingApi.ts` for why it is opt-in. */
-const USE_LIVE_API = process.env.NEXT_PUBLIC_MBP_API_MODE === "live";
-
-/** True while the portal is signing in through Supabase rather than the cookie sessions. */
-export const IS_SUPABASE_SESSION = !USE_LIVE_API;
 
 /**
  * Who is signed in.
  *
  * `gymStatus` is the onboarding ladder — a gym that signed but has not paid its deposit is
- * `signed`, not a lapsed lead — and it is optional because Supabase has no equivalent to
- * report while that path is still live.
+ * `signed`, not a lapsed lead. Nullable because a body that omits it is a body we render
+ * without rather than refuse.
  */
 export type GymSession = {
   email: string;
@@ -103,15 +98,6 @@ type GymSessionResponse = {
  * dashboard shell with no data in it.
  */
 export async function fetchGymSession(): Promise<GymSession | null> {
-  if (!USE_LIVE_API) {
-    const { data } = await supabase.auth.getSession();
-    const email = data.session?.user.email;
-    if (!email) return null;
-    // Deliberately not reading `user_metadata` for the rest. It is writable by the account
-    // holder, so anything business-relevant taken from it is a figure the gym can edit.
-    return { email, gymId: null, role: null, gymStatus: null };
-  }
-
   const result = await apiRequest<GymSessionResponse>("GET", "/gym/session");
   if (!result.ok || typeof result.data?.email !== "string") return null;
   return asSession(result.data, result.data.email);
@@ -143,15 +129,6 @@ export async function signInToPortal(
   email: string,
   password: string,
 ): Promise<OnboardingResult<GymSession>> {
-  if (!USE_LIVE_API) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.session) return { ok: false, error: SIGN_IN_FAILED };
-    return {
-      ok: true,
-      data: { email: data.session.user.email ?? email, gymId: null, role: null, gymStatus: null },
-    };
-  }
-
   const result = await apiRequest<GymSessionResponse>("POST", "/gym/login", {
     body: { email, password },
   });
@@ -190,10 +167,6 @@ const SIGN_IN_FAILED = {
  * failed is worse than one whose cookie outlives the redirect.
  */
 export async function signOutOfPortal(): Promise<void> {
-  if (!USE_LIVE_API) {
-    await supabase.auth.signOut();
-    return;
-  }
   await apiRequest("POST", "/gym/logout");
   // The sandbox half of the same act. The route above expires the cookie; this drops the
   // bearer copy, which is the only credential a `localhost` tab actually had.
@@ -234,8 +207,8 @@ export async function setPortalPassword(
 /**
  * Whether the portal may offer a self-service reset.
  *
- * Two conditions, and the second one is the point. `POST /gym/password-reset` is the only
- * route in this module that does not exist yet: it needs a lookup from email to account,
+ * `POST /gym/password-reset` is the only route in this module that does not exist yet: it
+ * needs a lookup from email to account,
  * which the deployed admin API cannot do — `GET /admin/gyms` has no server-side search and
  * its rows carry `noticesEmail`, the formal-notice address, not the portal login. So the
  * lookup belongs in `mbp-backend` next to the account index, and until it ships this flag
@@ -245,8 +218,7 @@ export async function setPortalPassword(
  * an account exists, a link has been sent" is the exact page §9.2 removed for lying, and the
  * failure it caused was a locked-out gym owner waiting instead of calling us.
  */
-export const SELF_SERVE_RESET_ENABLED =
-  USE_LIVE_API && process.env.NEXT_PUBLIC_MBP_SELF_SERVE_RESET === "on";
+export const SELF_SERVE_RESET_ENABLED = process.env.NEXT_PUBLIC_MBP_SELF_SERVE_RESET === "on";
 
 /**
  * Ask for a set-password link by email.

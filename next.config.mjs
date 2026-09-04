@@ -16,9 +16,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * `api.muscleboxpro.com` share one registrable domain, so the session cookies are
  * same-*site* and `SameSite=Lax` keeps its CSRF protection. Behind an
  * `execute-api.<region>.amazonaws.com` URL the requests are cross-site, the cookies would
- * need `SameSite=None`, and that protection is gone. So an `amazonaws.com` entry appearing
- * in this list is not routine housekeeping — it means something bypassed the domain that is
- * doing the security work. See `mbp-backend` docs/gym-onboarding-api-design.md §4.2.
+ * need `SameSite=None`, and that protection is gone. So an `execute-api` entry appearing in
+ * this list is not routine housekeeping — it means something bypassed the domain that is
+ * doing the security work. See `mbp-backend` docs/gym-onboarding-api-design.md §4.2. The one
+ * `amazonaws.com` host that is *not* that is the documents bucket, for the reasons at
+ * `franchiseDocsOrigin()`: nothing cookie-authenticated ever goes there.
  *
  * An earlier version of this comment said the browser would never connect to AWS at all,
  * because the design of the day put a Supabase edge function in front as a BFF. That design
@@ -28,18 +30,34 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  */
 const PRODUCTION_API_ORIGIN = "https://api.muscleboxpro.com";
 
+function originOf(configured) {
+  if (!configured) return null;
+  try {
+    return new URL(configured).origin;
+  } catch {
+    // Unparseable is a misconfiguration, and the safe reading of one is "allow nothing extra".
+    return null;
+  }
+}
+
 /**
- * A non-production API origin to allow, or `null` — which is what production returns.
+ * The non-production API origins to allow, empty in production.
  *
  * The sandbox stack answers on `https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox`
  * and a browser has to reach it to test the integration at all. Rather than adding that host
  * to the list above — where it would ship to production and quietly widen the CSP for every
- * real visitor — it is **derived from the API origin this build was configured with.** So the
+ * real visitor — it is **derived from the API origins this build was configured with.** So the
  * entry exists exactly where the requests do:
  *
- *   - Env unset, or set to the production host → `null`. Production's `connect-src` contains
+ *   - Env unset, or set to the production host → empty. Production's `connect-src` contains
  *     no `amazonaws.com` entry, which is the property `securityHeaders.test.ts` pins.
- *   - Env set to the sandbox → that origin, and nothing else, is allowed.
+ *   - Env set to the sandbox → those origins, and nothing else, are allowed.
+ *
+ * There are three because there are three stacks, and in production all three are one origin
+ * mapped at `/`, `/franchise` and `/franchise-wizard`. Off that domain they are three unrelated
+ * API Gateway ids, so a franchise origin cannot be derived from the onboarding one and has to be
+ * named. **Both franchise entries are gated on the onboarding build being non-production**, so a
+ * production build allows nothing extra whatever those two variables are left set to.
  *
  * `NEXT_PUBLIC_*` is read at build time, so this is decided when the bundle is built and
  * cannot be flipped by a runtime variable. It is the same rule as `BEARER_SESSION_ALLOWED`
@@ -49,19 +67,46 @@ const PRODUCTION_API_ORIGIN = "https://api.muscleboxpro.com";
  * Loosening the CSP is not the dangerous part of pointing a build at `execute-api`; losing
  * `SameSite=Lax` is, and that is why the bearer hatch is confined to the same condition.
  */
-function nonProductionApiOrigin() {
-  const configured = process.env.NEXT_PUBLIC_MBP_API_URL;
-  if (!configured) return null;
-  try {
-    const origin = new URL(configured).origin;
-    return origin === PRODUCTION_API_ORIGIN ? null : origin;
-  } catch {
-    // Unparseable is a misconfiguration, and the safe reading of one is "allow nothing extra".
-    return null;
-  }
+function nonProductionApiOrigins() {
+  const onboarding = originOf(process.env.NEXT_PUBLIC_MBP_API_URL);
+  if (onboarding === null || onboarding === PRODUCTION_API_ORIGIN) return [];
+  const franchise = [
+    originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_API_URL),
+    originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL),
+  ].filter((origin) => origin !== null && origin !== PRODUCTION_API_ORIGIN);
+  return [...new Set([onboarding, ...franchise])];
 }
 
-const NON_PRODUCTION_API_ORIGIN = nonProductionApiOrigin();
+const NON_PRODUCTION_API_ORIGINS = nonProductionApiOrigins();
+
+/**
+ * The franchise documents bucket, which a browser `PUT`s identity documents straight into.
+ *
+ * **Not gated on the environment, unlike everything above**, and the difference is the point. A
+ * presigned `PUT` goes to S3 by definition — the bytes deliberately never pass through a Lambda, so
+ * an Aadhaar scan is never in a function's memory or an access log — and there is therefore no
+ * version of this that routes through `api.muscleboxpro.com`. Production needs the entry as much as
+ * the sandbox does.
+ *
+ * It does not trade away what the entries above are guarding. The upload sends
+ * `credentials: "omit"` and S3 refuses a credentialed cross-origin request anyway, so no session
+ * cookie reaches this host and no `SameSite` promise is involved. The signature is the whole
+ * authorisation, and it expires in five minutes.
+ *
+ * The bucket is `mbp-franchise-docs-<env>-<account>`, so this cannot be derived: the account id is
+ * not something the frontend knows. Hence a variable — and hence the shape check, because this is
+ * the one entry a *production* build can add, and a mistyped value must widen nothing rather than
+ * allow some other host. `ap-south-1` is pinned because both environments pin that region.
+ */
+function franchiseDocsOrigin() {
+  const origin = originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN);
+  if (origin === null) return [];
+  const { protocol, hostname } = new URL(origin);
+  const ours = /^mbp-franchise-docs-[a-z0-9-]+\.s3\.ap-south-1\.amazonaws\.com$/.test(hostname);
+  return protocol === "https:" && ours ? [origin] : [];
+}
+
+const FRANCHISE_DOCS_ORIGIN = franchiseDocsOrigin();
 
 const CONNECT_SRC = [
   "'self'",
@@ -74,7 +119,8 @@ const CONNECT_SRC = [
   // Supabase auth, still carrying the gym login until it moves onto the cookie sessions
   // above (TODO A2). Nothing else in the app depends on this origin any more.
   "https://esyfzbcoufjcnakloahc.supabase.co",
-  ...(NON_PRODUCTION_API_ORIGIN ? [NON_PRODUCTION_API_ORIGIN] : []),
+  ...NON_PRODUCTION_API_ORIGINS,
+  ...FRANCHISE_DOCS_ORIGIN,
 ];
 
 const INDEXNOW_KEY = "a3f7b2e8d4c1f9a6b5e0d7c3f2a8b1e4";
@@ -223,7 +269,7 @@ const nextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         ],
       },
-      // The two routes that carry a live credential in the URL, so they get the strictest
+      // The routes that carry a live credential in the URL, so they get the strictest
       // referrer policy we have. The global `strict-origin-when-cross-origin` above already
       // strips the path — and therefore the handle — before it reaches Razorpay in step 4 of
       // onboarding, which is why `mbp-backend` §4.3 records that leak as closed rather than
@@ -243,6 +289,26 @@ const nextConfig = {
         // gym owner does, and the gym owner then sees "already used" on a link they never got
         // to click.
         source: "/gym/set-password/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        // Franchise onboarding, whose step 7 leaves for Leegality. The handle in this path is the
+        // credential for a flow that signs a ₹25 lakh term sheet, and the thing it would leak to
+        // is a signing session in a named person's identity.
+        //
+        // Load-bearing as of the e-sign routes going in, not theoretical: step 7 navigates this tab
+        // to `*.leegality.com` with `window.location.assign`, and the URL it leaves is
+        // `/franchise/onboarding/<slug>/<handle>`. Without this header the 30-day handle arrives at
+        // a third party in a `Referer`, which is the same leak `mbp-backend` §4.3 refuses to put in
+        // an access log.
+        source: "/franchise/onboarding/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        // Leegality's return path. It carries no handle by design, but it does carry Leegality's own
+        // request identifiers, and it is the one page in this flow whose next navigation is
+        // back into a credential-bearing URL.
+        source: "/franchise/esign-return",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
     ];

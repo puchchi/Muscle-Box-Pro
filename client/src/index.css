@@ -153,6 +153,68 @@
   --sidebar-ring: 10 100% 59%;
 }
 
+/*
+ * THE CONSOLE THEME — signed-in surfaces only (admin panel, gym partner portal).
+ *
+ * A class rather than an edit to the tokens above, because the marketing site keeps the orange
+ * and the logo is the orange: `logo.svg` is a #DC2476 -> #FF512F gradient, so `--primary` is
+ * literally the right-hand end of the wordmark. Only the dashboards go quiet.
+ *
+ * This works at all because `@theme inline` compiles `bg-primary` to `hsl(var(--primary))`
+ * rather than baking the value in, so redefining the variable on an ancestor retargets every
+ * utility beneath it. Roughly 90 colour usages across the two dashboards move with these six
+ * lines. Do not "simplify" `@theme inline` to `@theme`: it would freeze the values and this
+ * whole block would silently stop working.
+ *
+ * Ink is the action, magenta is the state. Measured against white and #F9FAFB:
+ *
+ *   ink #1A1A1A      white label on it     17.40:1  ✓
+ *   magenta #AD144C  on white               7.04:1  ✓   on gray-50  6.74:1  ✓
+ *
+ * One magenta at 7:1 does the job the light coral needed three tokens to do, so `--primary`,
+ * `--primary-ink` and `--primary-fill` no longer have to disagree here. `--primary-fill` still
+ * differs, but for a design reason rather than a contrast one: filled buttons are ink.
+ *
+ * These blocks must stay after `.dark`. `.theme-console` and `.dark` are both one class, the
+ * gym dashboard carries both on the same element, and so the later rule is the one that wins.
+ */
+.theme-console {
+  --primary: 338 79% 38%;
+  --primary-ink: 338 79% 38%;
+  --primary-fill: 0 0% 10%;
+  --ring: 338 79% 38%;
+  --sidebar-primary: 0 0% 10%;
+  --sidebar-ring: 338 79% 38%;
+}
+
+/*
+ * The gym dashboard is a dark surface, so both ends invert: the magenta lifts to clear #1C1C1C
+ * (5.56:1) and the ink fill becomes near-white with a dark label, which is what "ink" means when
+ * the page is already black. `--primary-foreground` flips with it — safe here because the only
+ * things reading it are the default `Button` variant and three admin segmented controls, and
+ * those three are on light surfaces.
+ */
+.theme-console.dark,
+.dark .theme-console {
+  --primary: 338 85% 66%;
+  --primary-ink: 338 85% 66%;
+  --primary-fill: 0 0% 97%;
+  --primary-foreground: 0 0% 10%;
+  --ring: 338 85% 66%;
+}
+
+/*
+ * `--ring` is magenta because it has to be visible on the inputs and cards where focus usually
+ * lands, but on an ink button that is 2.47:1 and SC 1.4.11 wants 3:1. An outline sitting 2px
+ * clear of the control is measured against the page instead, where the same magenta is 7.04:1.
+ * Not a regression being fixed so much as an old one: `--ring` and `--primary-fill` were the
+ * same colour before this, so the focus ring on a primary button was 1:1 and invisible.
+ */
+.theme-console :is(a, button, [role="button"], [role="tab"]):focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
 @layer base {
   * {
     @apply border-border;

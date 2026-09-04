@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchAdminGymList } from "@/lib/adminApi";
@@ -10,7 +10,7 @@ import type { AdminGymListRow } from "@shared/admin/gyms";
 import type { OnboardingStatus } from "@shared/onboarding/types";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
-import { ErrorPanel, Pill } from "./AdminUi";
+import { Chip, ErrorPanel, Pill, Th, type TableSort } from "./AdminUi";
 import { formatIstDateTime, STATUS_CLASS, STATUS_LABEL } from "./adminFormat";
 import { STATUS_LADDER, stalledFor } from "./adminFunnel";
 
@@ -37,7 +37,7 @@ import { STATUS_LADDER, stalledFor } from "./adminFunnel";
  */
 
 type SortKey = "name" | "status" | "createdAt" | "updatedAt";
-type Sort = { key: SortKey; dir: "asc" | "desc" };
+type Sort = TableSort<SortKey>;
 
 export default function AdminGyms() {
   const guard = useAdminGuard();
@@ -139,7 +139,7 @@ export default function AdminGyms() {
                 : `${rows.length} loaded, newest first.`}
           </p>
         </div>
-        <Button asChild className="rounded-xl cursor-pointer bg-primary text-white font-bold">
+        <Button asChild className="rounded-xl cursor-pointer bg-primary-fill text-primary-foreground font-bold">
           <Link href="/admin/gyms/new" data-testid="link-invite-gym">
             <Plus className="w-4 h-4" aria-hidden />
             Invite a gym
@@ -159,33 +159,35 @@ export default function AdminGyms() {
       )}
 
       {rows.length > 0 && (
-        <div className="mb-4 space-y-3">
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
-            <Chip
-              label="All"
-              count={rows.length}
-              selected={status === "all"}
-              onClick={() => setStatus("all")}
-              testId="chip-all"
-            />
-            {/*
-              Only the statuses actually present. A chip reading "Signed 0" invites the reading
-              that no gym has ever signed, when what it means is that none of the loaded ones has.
-            */}
-            {STATUS_LADDER.filter((value) => (counts.get(value) ?? 0) > 0).map((value) => (
+        <div className="mb-4">
+          {/* The search box beside the chips rather than under them: they are one control between
+              them, and stacked they pushed the first gym below the fold on a laptop. */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
               <Chip
-                key={value}
-                label={STATUS_LABEL[value]}
-                count={counts.get(value) ?? 0}
-                selected={status === value}
-                onClick={() => setStatus(status === value ? "all" : value)}
-                testId={`chip-${value}`}
+                label="All"
+                count={rows.length}
+                selected={status === "all"}
+                onClick={() => setStatus("all")}
+                testId="chip-all"
               />
-            ))}
-          </div>
+              {/*
+                Only the statuses actually present. A chip reading "Signed 0" invites the reading
+                that no gym has ever signed, when what it means is that none of the loaded ones has.
+              */}
+              {STATUS_LADDER.filter((value) => (counts.get(value) ?? 0) > 0).map((value) => (
+                <Chip
+                  key={value}
+                  label={STATUS_LABEL[value]}
+                  count={counts.get(value) ?? 0}
+                  selected={status === value}
+                  onClick={() => setStatus(status === value ? "all" : value)}
+                  testId={`chip-${value}`}
+                />
+              ))}
+            </div>
 
-          <div>
-            <div className="relative max-w-sm">
+            <div className="relative w-full sm:ml-auto sm:w-64">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
                 aria-hidden
@@ -199,11 +201,16 @@ export default function AdminGyms() {
                 data-testid="input-filter"
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-1.5">
-              Filters the {rows.length} loaded {rows.length === 1 ? "gym" : "gyms"} only. The API
-              has no search, so load more to widen it.
-            </p>
           </div>
+
+          {/* Only worth saying while a page remains. Told to "load more to widen it" with no more
+              to load, an admin goes looking for a button that is not there. */}
+          {cursor !== null && (
+            <p className="text-xs text-muted-foreground mt-2" data-testid="filter-scope">
+              These filter the {rows.length} gyms loaded so far. The API has no search of its own,
+              so load more to widen them.
+            </p>
+          )}
         </div>
       )}
 
@@ -215,16 +222,74 @@ export default function AdminGyms() {
 
       {visible.length > 0 && (
         <div className="rounded-2xl border border-gray-200 bg-white overflow-x-auto">
-          <table className="w-full text-sm">
+          {/*
+            Two renderings of the same rows, one per width, rather than a table that scrolls
+            sideways. Five columns do not fit a phone: at 390px the gym name wrapped to three lines
+            and both date columns — including the "quiet" warning that is the reason to read this
+            list at all — sat off the right edge of a scroll container that announced itself
+            nowhere.
+            The split is at `lg` rather than `md` because the table needs 807px and `md` grants it
+            718, which is the same sideways scroll one breakpoint up.
+          */}
+          <ul className="divide-y divide-gray-100 lg:hidden" data-testid="list-gyms-cards">
+            {visible.map((row) => {
+              const quiet = stalledFor(row, now);
+              return (
+                <li key={row.gymId}>
+                  <Link
+                    href={`/admin/gyms/${row.gymId}`}
+                    className="block px-4 py-3 hover:bg-gray-50 transition-colors"
+                    data-testid={`card-gym-${row.gymId}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-foreground">{row.tradeName}</p>
+                        {row.legalEntityName !== "" &&
+                          row.legalEntityName !== row.tradeName && (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {row.legalEntityName}
+                            </p>
+                          )}
+                      </div>
+                      <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
+                    </div>
+                    <p className="mt-1.5 truncate text-sm text-muted-foreground">
+                      {row.noticesEmail}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{row.noticesPhone}</p>
+                    <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">
+                      Invited {formatIstDateTime(row.createdAt)}
+                      {row.updatedAt !== row.createdAt && (
+                        <>, last change {formatIstDateTime(row.updatedAt)}</>
+                      )}
+                    </p>
+                    {quiet !== null && quiet >= 3 && (
+                      <p className="text-xs font-semibold tabular-nums text-amber-700">
+                        {quiet} {quiet === 1 ? "day" : "days"} quiet
+                      </p>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          <table className="hidden w-full text-sm lg:table">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <Th sortKey="name" sort={sort} onSort={toggleSort}>
+                {/* The floor matters: `w-full` on the contact column below forces every other one
+                    to its min-content width, and min-content for a wrapping name is its longest
+                    word. Without this, "Password Floor Probe" sets as three lines. */}
+                <Th sortKey="name" sort={sort} onSort={toggleSort} className="min-w-[13rem]">
                   Gym
                 </Th>
                 <Th sortKey="status" sort={sort} onSort={toggleSort}>
                   Status
                 </Th>
-                <Th>Contact</Th>
+                {/* The slack column. Left to the browser the surplus width was shared out evenly
+                    and every row read as five islands with rivers between them; here it lands in
+                    the one column whose content is genuinely long. */}
+                <Th className="w-full">Contact</Th>
                 <Th sortKey="createdAt" sort={sort} onSort={toggleSort} align="right">
                   Invited
                 </Th>
@@ -239,13 +304,16 @@ export default function AdminGyms() {
                 return (
                   <tr
                     key={row.gymId}
-                    className="hover:bg-gray-50 transition-colors"
+                    // `relative` positions the name link's stretched overlay below. The row already
+                    // highlighted on hover, which promised a click target the 100px name link did
+                    // not deliver.
+                    className="relative hover:bg-gray-50 transition-colors"
                     data-testid={`row-gym-${row.gymId}`}
                   >
                     <td className="px-4 py-2.5">
                       <Link
                         href={`/admin/gyms/${row.gymId}`}
-                        className="font-semibold text-foreground hover:underline"
+                        className="font-semibold text-foreground hover:underline after:absolute after:inset-0"
                         data-testid={`link-gym-${row.gymId}`}
                       >
                         {row.tradeName}
@@ -266,14 +334,16 @@ export default function AdminGyms() {
                         {STATUS_LABEL[row.status]}
                       </Pill>
                     </td>
-                    <td className="px-4 py-2.5">
+                    {/* Above the row's overlay, so an address can still be selected and copied.
+                        Nothing in here is a link, so lifting it costs no click. */}
+                    <td className="relative z-10 px-4 py-2.5">
                       <p className="text-foreground">{row.noticesEmail}</p>
                       <p className="text-xs text-muted-foreground">{row.noticesPhone}</p>
                     </td>
-                    <td className="px-4 py-2.5 text-right text-muted-foreground whitespace-nowrap">
+                    <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground whitespace-nowrap">
                       {formatIstDateTime(row.createdAt)}
                     </td>
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    <td className="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
                       <span className="text-muted-foreground">
                         {formatIstDateTime(row.updatedAt)}
                       </span>
@@ -283,7 +353,7 @@ export default function AdminGyms() {
                       */}
                       {quiet !== null && quiet >= 3 && (
                         <span
-                          className="block text-xs font-semibold text-amber-700 tabular-nums"
+                          className="block text-xs font-semibold text-amber-700"
                           data-testid={`quiet-${row.gymId}`}
                         >
                           {quiet} {quiet === 1 ? "day" : "days"} quiet
@@ -357,89 +427,4 @@ function sortRows(rows: AdminGymListRow[], sort: Sort): AdminGymListRow[] {
 
 function nameOf(row: AdminGymListRow): string {
   return row.tradeName || row.legalEntityName || row.slug;
-}
-
-function Chip({
-  label,
-  count,
-  selected,
-  onClick,
-  testId,
-}: {
-  label: string;
-  count: number;
-  selected: boolean;
-  onClick: () => void;
-  testId: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${
-        selected
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-gray-200 bg-white text-muted-foreground hover:border-gray-300 hover:text-foreground"
-      }`}
-      data-testid={testId}
-    >
-      {label}
-      <span className={`tabular-nums ${selected ? "opacity-80" : "text-gray-400"}`}>{count}</span>
-    </button>
-  );
-}
-
-/**
- * A column header, sortable when given a key.
- *
- * `aria-sort` on the cell rather than a class on the arrow, because the arrow is the only thing
- * saying which column the table is ordered by and an icon is not something a screen reader reads.
- * "Contact" has no key: it holds two values, and sorting on "whichever of the email and the phone
- * came first in the markup" is an order nobody asked for.
- */
-function Th({
-  children,
-  sortKey,
-  sort,
-  onSort,
-  align = "left",
-}: {
-  children: React.ReactNode;
-  sortKey?: SortKey;
-  sort?: Sort | null;
-  onSort?: (key: SortKey) => void;
-  align?: "left" | "right";
-}) {
-  const active = sortKey && sort?.key === sortKey ? sort.dir : null;
-  const base = `px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${
-    align === "right" ? "text-right" : "text-left"
-  }`;
-
-  if (!sortKey || !onSort) {
-    return <th className={base}>{children}</th>;
-  }
-
-  return (
-    <th
-      className={base}
-      aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(sortKey)}
-        className={`inline-flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors ${
-          active ? "text-foreground" : ""
-        } ${align === "right" ? "flex-row-reverse" : ""}`}
-        data-testid={`sort-${sortKey}`}
-      >
-        {children}
-        {active === "asc" ? (
-          <ArrowUp className="w-3 h-3" aria-hidden />
-        ) : active === "desc" ? (
-          <ArrowDown className="w-3 h-3" aria-hidden />
-        ) : null}
-      </button>
-    </th>
-  );
 }

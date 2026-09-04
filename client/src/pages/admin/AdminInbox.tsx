@@ -234,7 +234,7 @@ export default function AdminInbox() {
                       <Button
                         size="sm"
                         onClick={() => setComposing(true)}
-                        className="rounded-xl cursor-pointer bg-primary text-white font-bold"
+                        className="rounded-xl cursor-pointer bg-primary-fill text-primary-foreground font-bold"
                         data-testid="button-open-reply"
                       >
                         <Reply className="w-4 h-4" aria-hidden />

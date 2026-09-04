@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ListTree, Wrench } from "lucide-react";
-import { renderText } from "@shared/agreement/render";
+import { renderText, type RenderOptions } from "@shared/agreement/render";
 import { ISSUED_RENDER_OPTIONS } from "@shared/agreement/issued";
 import type {
   Agreement,
@@ -23,12 +23,19 @@ import type {
  * sticky contents strip that is one tap from any clause.
  *
  * **What is on screen must equal what is hashed.** This component, and whatever renders
- * the text that gets hashed, both go through `renderText` with `ISSUED_RENDER_OPTIONS`.
+ * the text that gets hashed, both go through `renderText` with the same `RenderOptions`.
  * If those two ever diverge — a different placeholder, a different missing-token
  * policy — the stored hash stops being evidence of what the gym read, which is the
  * one thing it exists to be. Import the constant; do not retype the options. It lives in
  * `@shared/agreement/issued` rather than here, because the server computes the hash now
  * and cannot import from a `"use client"` component.
+ *
+ * **Two documents use this, so the fields and the options are parameters.** The gym
+ * agreement is the default and needs no argument. The franchise term sheet passes its own
+ * `renderOptions` and an explicit type parameter, because its options are a separate
+ * constant on purpose: one document's placeholder must not be able to move the other
+ * document's hash. Whoever passes `renderOptions` is passing the same constant the server
+ * hashes with, or the hash means nothing.
  *
  * **`todo` markers are ours, not the gym's.** They are drafting notes about holes in
  * the source document. They render only when `showInternalMarkers` is set, which is
@@ -53,15 +60,17 @@ const READ_COMPLETE_PERCENT = 100;
 const SUMMARY_FOCUS =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset";
 
-export default function AgreementReader({
+export default function AgreementReader<F extends object = AgreementFields>({
   agreement,
   fields,
+  renderOptions = ISSUED_RENDER_OPTIONS,
   showInternalMarkers = false,
   onReachedEnd,
   onProgress,
 }: {
   agreement: Agreement;
-  fields: Partial<AgreementFields>;
+  fields: Partial<NoInfer<F>>;
+  renderOptions?: RenderOptions;
   showInternalMarkers?: boolean;
   onReachedEnd?: () => void;
   /** Whole percent scrolled, so the locked sign panel can say how far off it is. */
@@ -99,6 +108,7 @@ export default function AgreementReader({
               key={i}
               block={block}
               fields={fields}
+              renderOptions={renderOptions}
               showInternalMarkers={showInternalMarkers}
             />
           ))}
@@ -109,6 +119,7 @@ export default function AgreementReader({
             key={section.number}
             section={section}
             fields={fields}
+            renderOptions={renderOptions}
             showInternalMarkers={showInternalMarkers}
           />
         ))}
@@ -118,7 +129,7 @@ export default function AgreementReader({
         </p>
       </div>
     ),
-    [agreement, fields, index, showInternalMarkers],
+    [agreement, fields, index, renderOptions, showInternalMarkers],
   );
 
   return (
@@ -233,13 +244,15 @@ export default function AgreementReader({
 
 // ── Sections and blocks ─────────────────────────────────────────────────────
 
-function SectionView({
+function SectionView<F extends object>({
   section,
   fields,
+  renderOptions,
   showInternalMarkers,
 }: {
   section: Section;
-  fields: Partial<AgreementFields>;
+  fields: Partial<F>;
+  renderOptions: RenderOptions;
   showInternalMarkers: boolean;
 }) {
   return (
@@ -276,6 +289,7 @@ function SectionView({
             key={i}
             block={block}
             fields={fields}
+            renderOptions={renderOptions}
             showInternalMarkers={showInternalMarkers}
           />
         ))}
@@ -298,16 +312,18 @@ function SectionView({
  */
 const PROSE = "text-sm text-gray-700 leading-relaxed break-words";
 
-function BlockView({
+function BlockView<F extends object>({
   block,
   fields,
+  renderOptions,
   showInternalMarkers,
 }: {
   block: Block;
-  fields: Partial<AgreementFields>;
+  fields: Partial<F>;
+  renderOptions: RenderOptions;
   showInternalMarkers: boolean;
 }) {
-  const r = (text: string) => renderText(text, fields, ISSUED_RENDER_OPTIONS);
+  const r = (text: string) => renderText<F>(text, fields, renderOptions);
 
   switch (block.kind) {
     case "paragraph":

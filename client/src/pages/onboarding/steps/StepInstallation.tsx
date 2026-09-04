@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import {
   CalendarClock,
@@ -14,10 +13,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { IS_MOCK_ONBOARDING, previewAdvanceInstallation } from "@/lib/onboardingApi";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
 import { formatInr } from "@shared/partnership/summary";
-import type { MachineSummary } from "@shared/onboarding/types";
 import type { StepViewProps } from "../types";
 
 /**
@@ -41,14 +38,8 @@ import type { StepViewProps } from "../types";
  * form — they are three states of a record, and the empty one is the honest answer for
  * the first few days rather than something to hide behind a spinner.
  */
-export default function StepInstallation({ token, state, goToStep }: StepViewProps) {
-  /**
-   * Preview only. `previewAdvanceInstallation` mutates the mock's store, and holding what
-   * it returns locally is what makes the allocated and installed renderings reachable
-   * without a way for a step to re-read state — which steps deliberately do not have.
-   */
-  const [previewMachine, setPreviewMachine] = useState<MachineSummary | null>(null);
-  const machine = previewMachine ?? state.machine;
+export default function StepInstallation({ state, goToStep }: StepViewProps) {
+  const machine = state.machine;
 
   const isAllocated = machine.deviceNo !== null;
   const isInstalled = machine.installationDate !== null;
@@ -182,24 +173,6 @@ export default function StepInstallation({ token, state, goToStep }: StepViewPro
             </Link>
           </Button>
         </section>
-      )}
-
-      {IS_MOCK_ONBOARDING && !isInstalled && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-xs text-amber-900 leading-relaxed">
-            Preview mode: nothing on this step moves by itself, because on a real record we move it.
-            This button stands in for us.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setPreviewMachine(previewAdvanceInstallation(token))}
-            className="min-h-11 rounded-xl text-xs font-semibold mt-2 cursor-pointer"
-            data-testid="button-preview-advance-installation"
-          >
-            {isAllocated ? "Pretend it was installed" : "Pretend a unit was allocated"}
-          </Button>
-        </div>
       )}
     </div>
   );

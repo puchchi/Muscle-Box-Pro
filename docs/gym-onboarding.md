@@ -358,11 +358,9 @@ panel. What the gate is honestly worth is delivery and opportunity to read, not 
 a browser evidences reading. The load-bearing evidence is the hash, the OTP and the server
 timestamps.
 
-**Signing is refused in production while `canIssue()` is false**, with the gym seeing an "isn't ready
-to sign" panel and no drafting notes. Preview builds override the refusal — otherwise the flow could
-not be walked at all — and say on screen that this is why signing is enabled. The `todo` blocks and
-the blocker list render only under `IS_MOCK_ONBOARDING`; a gym must never read our notes about its
-own contract.
+**Signing is refused while `canIssue()` is false**, with the gym seeing a panel saying there are
+unresolved items and no drafting notes. There is no override in any build. The `todo` blocks and the
+blocker list are never rendered; a gym must never read our notes about its own contract.
 
 **Known gap for build item 9.** The effective date is rendered client-side into the hashed text. A
 browser that renders at 23:59 UTC and a server that signs after midnight would disagree about the
@@ -745,14 +743,13 @@ navigation — or the resume behaviour goes untested until the real backend land
 
 **As built.** Exactly one file binds the wizard to a backend:
 [`client/src/lib/onboardingApi.ts`](../client/src/lib/onboardingApi.ts), which exports the singleton
-`onboardingApi` and the `IS_MOCK_ONBOARDING` flag the preview banner reads. Nothing under
-`pages/onboarding/` imports `mockApi` directly — including the fixed preview OTP, which is
-re-exported as `PREVIEW_OTP` rather than imported from the mock at its use site. Keep it that way:
-the moment a component reaches past this file, phase 2 stops being a one-file change.
+`onboardingApi` and is now one line — the HTTP implementation, unconditionally. Nothing under
+`pages/onboarding/` imports `mockApi` at all; the mock survives as a test double, injected by the
+suites that want one, and no shipped component can reach it.
 
-The mock adds 300 ms of latency outside tests, deliberately. Against an instant API the saving
-indicator never appears and the disabled-while-submitting states never get looked at, so both ship
-broken.
+`createMockOnboardingApi` takes a `latencyMs` option, defaulting to 0. A test that wants to look at
+the saving indicator or the disabled-while-submitting states has to ask for the delay, because
+against an instant double neither state is ever on screen.
 
 The same applies to the dashboard: it renders against fixtures with honest "awaiting first
 settlement" empty states, and the data-access module is the only file that changes when real
@@ -1523,12 +1520,15 @@ section is what the frontend now does about it. **Nothing is switched on yet** �
 | [apiClient.ts](../client/src/lib/apiClient.ts) | HTTP | The only place `fetch` reaches the API. Returns a result, never throws. |
 | [httpOnboardingApi.ts](../client/src/lib/httpOnboardingApi.ts) | the wizard's 9 routes | Implements the existing `OnboardingApi` interface, so `useOnboarding` is unchanged. |
 | [gymPortalApi.ts](../client/src/lib/gymPortalApi.ts) | `GET /gym/portal` | Validates through `portalSchema.ts` before anything renders. |
-| [gymSession.ts](../client/src/lib/gymSession.ts) | login, logout, session, set-password | Dual-implemented: Supabase today, cookies when the flag flips. |
+| [gymSession.ts](../client/src/lib/gymSession.ts) | login, logout, session, set-password | Cookies, with a bearer copy for sandbox origins. |
 
-`NEXT_PUBLIC_MBP_API_MODE=live` is the single switch, and it is opt-**in** on purpose while the
-endpoints are being built. **The day `GET /onboarding` is live the trigger reverses** and the default
-should become live-with-an-opt-out: a production build that quietly fell back to the mock would take
-a real gym's details into memory, tell it the agreement was signed, and lose all of it on refresh.
+**There is no mode switch any more.** `NEXT_PUBLIC_MBP_API_MODE` is gone, and with it every runtime
+branch that chose a fixture over a request: each of these files talks to whichever stage
+`NEXT_PUBLIC_MBP_API_URL` points at, and a build with no base URL fails loudly rather than serving a
+mock. The flag was opt-**in**, so its absence is what used to select fixtures, and that is the hazard
+this section used to warn about: a production build falling back to the mock would take a real gym's
+details into memory, tell it the agreement was signed, and lose all of it on refresh. Walking a flow
+now means pointing at the sandbox stage.
 
 ### Four rules `apiClient` exists to hold
 
@@ -1870,10 +1870,10 @@ null — installation is not the gym's time. `timedSteps()` is what the intro an
 list, and `totalEstimateMinutes()` skips the nulls. "Installation, 0 minutes" in a list of times is
 worse than an absence.
 
-For preview builds, `advanceMockInstallation(token)` walks the mock record forward one stage —
-unallocated, allocated, installed — and is re-exported as `previewAdvanceInstallation` through
-`onboardingApi.ts` so nothing imports `mockApi` directly. The date derives from `signedAt` plus 14
-days rather than a clock, so the same walk always produces the same screen.
+Nothing in the wizard completes step 6, so a test that wants either of the two renderings carrying
+actual particulars calls `advanceMockInstallation(token)`, which walks the mock record forward one
+stage — unallocated, allocated, installed. The date derives from `signedAt` plus 14 days rather than a
+clock, so the same walk always produces the same screen.
 
 ### Three silent failures adding a step would have caused
 
@@ -3695,10 +3695,10 @@ reusable, the function is not the one to call from AWS.
 
 - `requestPortalPasswordReset(email)` in `gymSession.ts` — one `POST`, and a success that means
   *accepted*, never *found*. It must not gain a return value that tells the two apart.
-- `SELF_SERVE_RESET_ENABLED = USE_LIVE_API && NEXT_PUBLIC_MBP_SELF_SERVE_RESET === "on"`. Off in
-  every environment today, which is what keeps the shipped page honest while the route is
-  missing. **Turning it on before the route sends recreates §9.2's harm exactly** — a confident
-  confirmation and a gym owner waiting instead of calling.
+- `SELF_SERVE_RESET_ENABLED = NEXT_PUBLIC_MBP_SELF_SERVE_RESET === "on"`. Unset in every deployed
+  environment, which is what keeps the shipped page honest while the route is missing; `.env.local`
+  is the one place it is on. **Turning it on before the route sends recreates §9.2's harm exactly** —
+  a confident confirmation and a gym owner waiting instead of calling.
 - `GymForgotPassword` renders both halves. Off: today's prose, unchanged. On: an email field, and
   on any accepted request a panel reading "if we have an account for that address, a link to set
   a new password is on its way", plus the mailto as the fallback for when nothing arrives. No

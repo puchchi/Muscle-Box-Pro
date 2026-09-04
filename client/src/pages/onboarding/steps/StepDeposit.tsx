@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Check, CheckCircle2, Clock, Copy, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { IS_MOCK_ONBOARDING } from "@/lib/onboardingApi";
 import {
   forgetPaymentAttempt,
   readPaymentUrl,
@@ -173,13 +172,6 @@ export default function StepDeposit({
    */
   function goToPayment(url: string) {
     rememberPaymentAttempt({ returnTo: window.location.pathname, paymentUrl: url });
-    if (IS_MOCK_ONBOARDING) {
-      // No gateway to leave for, so the round trip happens here: preview lands directly in
-      // the state the tab really comes back in, which is the state worth previewing.
-      setCameBack(true);
-      setPhase("confirm");
-      return;
-    }
     window.location.assign(url);
   }
 
@@ -378,13 +370,6 @@ export default function StepDeposit({
                 {unconfirmed ? "Try the payment again" : "Pay deposit now"}
               </Button>
             </div>
-          )}
-
-          {IS_MOCK_ONBOARDING && (
-            <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-3">
-              Preview mode: there is no gateway, so paying lands straight in the state the tab
-              comes back in and the mock confirms on its second read.
-            </p>
           )}
         </section>
       )}

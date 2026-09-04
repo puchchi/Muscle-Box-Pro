@@ -1,0 +1,242 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { INDIA_PINCODE, INDIA_STATE_NAMES, districtsOf } from "@shared/geo/india";
+import { FRANCHISE_TIERS, formatLakh } from "@shared/franchise/program";
+import {
+  franchiseTerritoryLabel,
+  territoryProposalSchema,
+} from "@shared/franchise/onboarding/schema";
+import type { TerritoryProposal } from "@shared/franchise/onboarding/types";
+import {
+  AreaField,
+  CardChoiceField,
+  CodeListField,
+  ComboField,
+  ErrorSummary,
+  Form,
+  Section,
+  SubmitBar,
+  useServerFieldErrors,
+} from "../formKit";
+import { useFranchiseDraftAutosave } from "../useFranchiseDraftAutosave";
+import type { FranchiseStepViewProps } from "../types";
+
+/**
+ * Step 2 — Your territory.
+ *
+ * The step the gym flow has no equivalent of, and the one this whole application turns on:
+ * exclusivity is the thing being sold, so the record has to say what was asked for in words a
+ * lawyer can read back.
+ *
+ * **Pick a district. Do not draft a boundary.** This screen used to require a description of where
+ * the territory started and stopped, 20 characters minimum, and it was the wrong question: an
+ * applicant who answers "Bangalore" is telling us everything they can usefully tell us, and the
+ * rest is a contract clause that an admin writes at approval. So the required answer is now a state
+ * and one of its districts, the pin codes are there for somebody who wants half a metro rather than
+ * all of it, and the prose box survives as an optional place to put what the list could not say.
+ *
+ * **One district per application.** It was a tick-as-many-as-you-like list, and it is now the same
+ * dropdown as the state above it. `proposedDistricts` stays an array so the record shape does not
+ * turn on the rule, which is what `ComboField`'s `asArray` is for. Somebody who wants four districts
+ * is making four applications or asking for them in the box below, and either way it is a decision
+ * taken at approval rather than a checkbox.
+ *
+ * **Still no map, and no polygon.** `shared/geo/india.ts` has the argument, and the short version is
+ * that districts are official and enumerable where a shape dragged in a browser is neither.
+ *
+ * **What is asked for is not what is granted.** The granted territory lives on the approval
+ * record as its own strings, and this form never sees them. The case that matters is the one
+ * where we approve three suburbs of five, and a record that overwrote the request would lose
+ * the fact that anything was cut.
+ */
+
+const FIELD_LABELS: Record<keyof TerritoryProposal, string> = {
+  tier: "Franchise tier",
+  proposedState: "State",
+  proposedDistricts: "District",
+  proposedPincodes: "Pin codes",
+  proposedBoundary: "Anything else about the area",
+  existingRelationships: "Gyms you already know",
+};
+
+const STATE_OPTIONS = INDIA_STATE_NAMES.map((name) => ({ value: name, label: name }));
+
+/**
+ * Both tiers, with the number each one implies on the card rather than behind a click.
+ *
+ * Off `FRANCHISE_TIERS` rather than the record's own `terms`: this is what the tier means, where
+ * `terms` is what an admin has actually set for this franchise. `positioning` carries the body on its
+ * own, because `marketRights` for the territory tier is the same sentence with fewer words in it.
+ */
+const TIER_OPTIONS = FRANCHISE_TIERS.map((tier) => ({
+  value: tier.id,
+  title: tier.shortName,
+  headline: `${formatLakh(tier.investmentInr)} · ${tier.initialMachines} machines`,
+  body: tier.positioning,
+}));
+
+export default function StepTerritory({
+  handle,
+  state,
+  readOnly,
+  isSubmitting,
+  fieldErrors,
+  actions,
+}: FranchiseStepViewProps) {
+  const form = useForm<TerritoryProposal>({
+    resolver: zodResolver(territoryProposalSchema),
+    defaultValues: { ...state.territory, ...(state.drafts.territory ?? {}) },
+    mode: "onBlur",
+  });
+
+  const values = form.watch();
+  const draft = useFranchiseDraftAutosave(handle, "territory", values, { enabled: !readOnly });
+
+  useServerFieldErrors(form, fieldErrors, (field) => field in state.territory);
+
+  async function onSubmit(territory: TerritoryProposal) {
+    await draft.flush();
+    await actions.submitTerritory(territory);
+  }
+
+  const { errors, submitCount } = form.formState;
+
+  const selectedState = form.watch("proposedState");
+  const districts = form.watch("proposedDistricts");
+  const districtOptions = districtsOf(selectedState).map((d) => ({ value: d, label: d }));
+
+  /*
+    A district belongs to the state above it, so changing the state has to clear it. Skipped on
+    the first render: mounting with a saved selection would otherwise wipe it, which is the read-only
+    view of a submitted step showing no district at all.
+  */
+  const knownState = useRef(selectedState);
+  useEffect(() => {
+    if (readOnly) return;
+    if (knownState.current === selectedState) return;
+    knownState.current = selectedState;
+    form.setValue("proposedDistricts", [], { shouldDirty: true });
+  }, [selectedState, readOnly, form]);
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" noValidate>
+        <ErrorSummary
+          errors={errors}
+          submitCount={submitCount}
+          labels={FIELD_LABELS}
+          onGoToField={(name) => form.setFocus(name)}
+        />
+
+        <Section title="What you're applying for">
+          <CardChoiceField
+            form={form}
+            name="tier"
+            label="Franchise tier"
+            options={TIER_OPTIONS}
+            description="The same programme at two scales."
+            disabled={readOnly}
+          />
+        </Section>
+
+        <Section title="The market you want">
+          <ComboField
+            form={form}
+            name="proposedState"
+            label="State"
+            options={STATE_OPTIONS}
+            placeholder="Choose a state or union territory"
+            searchPlaceholder="Search states"
+            description="Changing this clears the district below."
+            disabled={readOnly}
+          />
+
+          <ComboField
+            form={form}
+            name="proposedDistricts"
+            label="District"
+            options={districtOptions}
+            placeholder={
+              districtOptions.length === 0 ? "Pick a state first" : "Choose a district"
+            }
+            searchPlaceholder="Search districts"
+            description="This is how the territory gets written into the agreement."
+            asArray
+            disabled={readOnly || districtOptions.length === 0}
+          />
+
+          {districts.length > 0 && <TerritoryPreview state={selectedState} districts={districts} />}
+
+          <CodeListField
+            form={form}
+            name="proposedPincodes"
+            label="Pin codes"
+            placeholder="560001, 560034 …"
+            pattern={INDIA_PINCODE}
+            invalidMessage="A pin code is six digits, and cannot start with a zero."
+            description="Only if you want part of a district rather than all of it. Separate them with commas."
+            optional
+            disabled={readOnly}
+          />
+
+          <AreaField
+            form={form}
+            name="proposedBoundary"
+            label="Anything else about the area"
+            rows={3}
+            placeholder="Excludes the airport side of Devanahalli. We would want Hosur added later if it becomes available."
+            description="Only what the lists above could not say."
+            optional
+            disabled={readOnly}
+          />
+
+          <AreaField
+            form={form}
+            name="existingRelationships"
+            label="Gyms you already know"
+            rows={3}
+            placeholder="Two chains with four branches between them in Sector 62, both already stocking supplements."
+            description="Helps us judge the market, not your application."
+            optional
+            disabled={readOnly}
+          />
+        </Section>
+
+        {!readOnly && (
+          <SubmitBar
+            nextHint="Next, your documents."
+            draftStatus={draft.status}
+            isSubmitting={isSubmitting}
+          />
+        )}
+      </form>
+    </Form>
+  );
+}
+
+/**
+ * The selection read back as one sentence, under the list that produces it.
+ *
+ * `StepDetails`'s term sheet preview makes the case for previewing next to the field rather than
+ * above the form. It applies for the same reason and one more: this is the string an admin will read
+ * when deciding what to grant, and the district and the state are two separate controls until it
+ * puts them in one sentence.
+ */
+function TerritoryPreview({ state, districts }: { state: string; districts: string[] }) {
+  return (
+    <div
+      className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-3"
+      data-testid="territory-preview"
+    >
+      <h3 className="text-xs font-semibold text-muted-foreground mb-1.5">
+        What you're asking for
+      </h3>
+      <p className="text-sm text-foreground leading-relaxed" data-testid="territory-label">
+        {franchiseTerritoryLabel({ proposedState: state, proposedDistricts: districts })}
+      </p>
+    </div>
+  );
+}

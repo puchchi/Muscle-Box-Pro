@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import React from "react";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -86,6 +88,19 @@ describe("Franchise page", () => {
       screen.getByText(/not an offer, and not a guarantee of returns/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/definitive franchise agreement, which\s+is what governs/i)).toBeInTheDocument();
+  });
+
+  /*
+   * The filename carries a date, so re-exporting the document renames the asset and
+   * leaves this href pointing at nothing. A dead link to the program document on the
+   * page that asks for ₹25,00,000 is worse than not publishing it at all.
+   */
+  it("links the program document at a path that exists in public/", () => {
+    render(<Franchise />);
+    const link = screen.getByRole("link", { name: /franchise disclosure and term document/i });
+    const href = link.getAttribute("href") ?? "";
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(existsSync(join(process.cwd(), "public", href))).toBe(true);
   });
 
   it("says the franchisee does not own the machines", () => {
@@ -220,10 +235,7 @@ describe("Franchise page", () => {
     expect(await screen.findByTestId("application-received")).toHaveTextContent("FR-1024");
   });
 
-  /*
-   * `POST /franchise/applications` is not deployed yet, so this is the path every real
-   * submission takes today. Without the mailto the enquiry is simply lost.
-   */
+  /* Without the mailto a ₹25 lakh enquiry that hits a network error is simply lost. */
   it("offers a prefilled mailto when the submission fails", async () => {
     submitFranchiseApplication.mockResolvedValue({
       ok: false,

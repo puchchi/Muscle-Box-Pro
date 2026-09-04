@@ -1,65 +1,21 @@
 /**
  * The single binding between the wizard and its backend.
  *
- * Two implementations of one interface, chosen here and nowhere else: the in-memory mock,
- * and [httpOnboardingApi.ts](./httpOnboardingApi.ts) against `api.muscleboxpro.com`. Nothing
- * in `pages/onboarding/` changes when the switch flips — that is the whole point of the
- * seam. If a component ever imports from `@shared/onboarding/mockApi` or `./apiClient`
- * directly, it stops being true, so don't. See docs/gym-onboarding.md §8.
+ * One implementation, chosen here and nowhere else: [httpOnboardingApi.ts](./httpOnboardingApi.ts).
+ * Nothing in `pages/onboarding/` changes if that is ever replaced — which is the point of the
+ * seam. If a component imports `./apiClient` directly it stops being true, so don't. See
+ * docs/gym-onboarding.md §8.
+ *
+ * `@shared/onboarding/mockApi` is a test double rather than a second runtime behaviour:
+ * `client/src/__tests__/shared/onboarding-mock-api.test.ts` exercises it as the executable
+ * statement of the flow's rules, and no build serves it to a browser. It was selectable behind
+ * `NEXT_PUBLIC_MBP_API_MODE` while the endpoints were being written, and that flag came off once
+ * they were live, because from then on the dangerous mistake reversed: a build that quietly fell
+ * back to the mock would take a real gym's details into memory, tell it the agreement was signed,
+ * and lose all of it on reload. Sandbox is where the flow is walked now.
  */
 
-import {
-  MOCK_OTP,
-  advanceMockInstallation,
-  createMockOnboardingApi,
-} from "@shared/onboarding/mockApi";
 import { createHttpOnboardingApi } from "./httpOnboardingApi";
 import type { OnboardingApi } from "@shared/onboarding/types";
 
-/**
- * Which backend the wizard talks to. `"live"` opts in; anything else is the mock.
- *
- * Opt-*in* while the endpoints are being built, because the alternative default sends every
- * preview deploy at a host that answers 404 and makes the wizard untestable by anyone
- * without the backend running. Flip the trigger the other way — mock behind an explicit
- * flag — on the day `GET /onboarding` is live, because from then on the dangerous mistake
- * reverses: a production build that quietly fell back to the mock would accept a real gym's
- * details into memory, tell it the agreement was signed, and lose all of it on refresh.
- *
- * Read at module scope on purpose. `NEXT_PUBLIC_*` is inlined at build time, so this is a
- * build-time constant and not something a running page can be talked into changing.
- */
-const USE_LIVE_API = process.env.NEXT_PUBLIC_MBP_API_MODE === "live";
-
-/**
- * A little latency in development on purpose: with an instant mock, the saving
- * indicator never appears and disabled-while-submitting states never get looked
- * at, so both ship broken. Zero under test, where waiting is just flake.
- */
-const latencyMs = process.env.NODE_ENV === "test" ? 0 : 300;
-
-export const onboardingApi: OnboardingApi = USE_LIVE_API
-  ? createHttpOnboardingApi()
-  : createMockOnboardingApi({ latencyMs });
-
-/**
- * True while the wizard is running against the in-memory mock, so the UI can say
- * so rather than letting someone mistake a demo for a real onboarding record.
- */
-export const IS_MOCK_ONBOARDING = !USE_LIVE_API;
-
-/**
- * The fixed code the mock accepts, re-exported here so no component has to import
- * from `mockApi` directly. It exists only so the preview flow can be walked
- * end-to-end; the real code is emailed and rate-limited (§7).
- */
-export const PREVIEW_OTP = MOCK_OTP;
-
-/**
- * Moves the mock's installation on a state, for the same reason `PREVIEW_OTP` exists: step 6
- * is filled in by us over the following fortnight, and a preview cannot wait for that.
- *
- * Re-exported rather than imported from `mockApi` at the call site, and every caller has to
- * be behind `IS_MOCK_ONBOARDING` — against the live API there is no store to move.
- */
-export const previewAdvanceInstallation = advanceMockInstallation;
+export const onboardingApi: OnboardingApi = createHttpOnboardingApi();

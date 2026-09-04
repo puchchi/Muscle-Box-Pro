@@ -115,7 +115,7 @@ export default function GymSetPassword({ handle }: { handle: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-6 py-12">
+    <div className="theme-console min-h-screen bg-white flex items-center justify-center px-6 py-12">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -142,7 +142,7 @@ export default function GymSetPassword({ handle }: { handle: string }) {
             <Button
               type="button"
               onClick={() => router.push("/gym/login")}
-              className="w-full h-11 bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20 mt-6"
+              className="w-full h-11 bg-primary-fill text-primary-foreground font-bold text-sm hover:bg-primary-fill/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20 mt-6"
               data-testid="button-go-to-login"
             >
               Sign in
@@ -223,7 +223,7 @@ export default function GymSetPassword({ handle }: { handle: string }) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-11 bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20"
+                className="w-full h-11 bg-primary-fill text-primary-foreground font-bold text-sm hover:bg-primary-fill/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20"
                 data-testid="button-set-password"
               >
                 {isSubmitting ? "Setting your password..." : "Set password"}

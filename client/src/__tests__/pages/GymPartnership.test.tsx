@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import React from "react";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -60,6 +62,21 @@ describe("GymPartnership page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/not a guarantee of income/i)).toBeInTheDocument();
     expect(screen.getByText(/BlendBox Innovations LLP/)).toBeInTheDocument();
+  });
+
+  /*
+   * Two things, and the second is the load-bearing one. The dated filename means a
+   * re-export renames the asset and orphans the href; and the published PDF differs from
+   * `shared/agreement/v2_3.ts` on four terms, so the sentence saying the signed copy is
+   * what binds has to survive any rewording of this disclaimer.
+   */
+  it("links the standard terms at a path that exists, and says the signed copy binds", () => {
+    render(<GymPartnership />);
+    const link = screen.getByRole("link", { name: /gym partnership program standard terms/i });
+    const href = link.getAttribute("href") ?? "";
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(existsSync(join(process.cwd(), "public", href))).toBe(true);
+    expect(screen.getByText(/that copy is\s+the one that binds/i)).toBeInTheDocument();
   });
 
   it("shows the worked month straight from summary.ts, not hardcoded", () => {

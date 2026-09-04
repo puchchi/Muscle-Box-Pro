@@ -11,8 +11,12 @@
  * UI should hardcode a rupee figure or a percentage — read it from here, or from
  * that gym's `gym_terms`. See docs/gym-onboarding.md §2 and the §17 checklist.
  *
- * Clause references are to the Machine Placement & Profit Sharing Agreement
- * v2.1 (docs/MuscleBoxPro_Machine_Placement_Profit_Sharing_Agreement_v2_1.pdf).
+ * Clause references are to the Machine Placement & Profit Sharing Agreement, whose
+ * current text is `shared/agreement/v2_3.ts` — that module, not a PDF in docs/, is
+ * what a gym signs. `public/assets/gym-partnership-terms-2026-09.pdf` is the copy
+ * /gym-partnership links, and it still carries four pre-2.2 answers (the milestone
+ * basis, the early-termination charge, the liability cap and arbitration). Where the
+ * two disagree, v2_3 is right and this file follows v2_3.
  */
 
 export const PARTNERSHIP = {
