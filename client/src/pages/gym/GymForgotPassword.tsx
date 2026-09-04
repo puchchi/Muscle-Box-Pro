@@ -4,61 +4,56 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ArrowLeft, Mail, ShieldCheck, UserCheck, Clock, AlertCircle, MailCheck, LogIn, RotateCcw } from "lucide-react";
+import { ArrowLeft, Mail, ShieldCheck, AlertCircle, MailCheck, LogIn, RotateCcw } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MBP_NOTICES } from "@shared/onboarding/agreementFields";
-import { SELF_SERVE_RESET_ENABLED, requestPortalPasswordReset } from "@/lib/gymSession";
+import { requestPortalPasswordReset } from "@/lib/gymSession";
 
 /**
- * What to do about a forgotten portal password, in whichever of two worlds we are in.
+ * What to do about a forgotten portal password: type your address, get a link.
  *
- * `SELF_SERVE_RESET_ENABLED` picks. Off, this page is prose: a reset is issued by a person and
- * the page's whole job is to say so and name the way to reach one. On, it is a form that mints
- * a link and mails it. **Both halves are here on purpose** — the alternative is deleting one,
- * and the deleted one is the honest one.
+ * `POST /gym/password-reset` mints the same single-use handle an admin used to issue by hand
+ * and mails it to the address on the account. Until that route was deployed this page was
+ * prose behind a flag — email us, a person checks you hold the account — and the flag was off
+ * because the form half of the page used to lie. It took an address, called a `forgot-password`
+ * edge function, and answered "if an account exists for this email, a password reset link has
+ * been sent" when no link was sent. A locked-out owner would read a confident confirmation and
+ * wait for a message that was never coming, which is worse than being told to call us. The
+ * form is back because the sending is real, and the two rules below are what keep it honest.
  *
- * **The prose half exists because the form half used to lie.** It took an email address, called
- * a `forgot-password` edge function, and answered "if an account exists for this email, a
- * password reset link has been sent". No link was sent; §9.2 of the backend design records the
- * reset mechanism as built and its *delivery* as not. A gym owner locked out of their portal
- * would enter their address, read a confident confirmation, and then wait for a message that
- * was never coming. Waiting instead of calling us is the worst outcome available, which is why
- * the flag is off until the route answering it is deployed and sending.
+ * Nothing here sets a password. The link lands on
+ * [/gym/set-password/[handle]](../../../../app/gym/set-password/[handle]/page.tsx), which spends
+ * the handle and deliberately does not open a session. An older version of this page rendered
+ * two password fields and called `supabase.auth.updateUser({ password })`, which changes the
+ * password of whatever session the browser already has and ignores the token entirely.
  *
- * The old `?token=` branch was broken in a second, quieter way. It rendered two password fields
- * and called `supabase.auth.updateUser({ password })` — which changes the password of whatever
- * session the browser already has and ignores the token entirely. Nothing here sets a password:
- * the link lands on [/gym/set-password/[handle]](../../../../app/gym/set-password/[handle]/page.tsx),
- * which spends the handle and deliberately does not open a session.
- *
- * ## The two rules the form half must keep
+ * ## The two rules this page must keep
  *
  * **The confirmation is neutral.** The message must not differ between an address we know and
  * one we do not, or the page becomes an oracle for which gyms are customers. That is why the
  * success panel below says "if we have an account" rather than "we have emailed you", and why
- * it renders on any accepted request rather than on a found account.
+ * it renders on any accepted request rather than on a found account. The route is written to
+ * the same rule: one body and one status for every outcome it has, throttled included.
  *
  * **The panel does not put a number on the link.** An earlier version promised links expired
  * after an hour. The TTL is the server's to choose and change, and a page that states it will
  * be wrong silently.
+ *
+ * The mailto stays on every state of the page, and is not a leftover. The route declines
+ * quietly in cases a gym owner cannot see or fix — a disabled account, or two logins on one
+ * gym, where the handle cannot tell which password to change — and answers those with the same
+ * confirmation as a send. A person issuing the link is the only way out of them.
  */
 
 const resetSchema = z.object({
   email: z.string().email("A valid email is required"),
 });
 
-/** Facts that hold while a person issues the link by hand. */
-const relayFacts = [
-  { icon: UserCheck, text: "We check you're the account holder before any link goes out" },
-  { icon: ShieldCheck, text: "The link works once, and only for setting a password" },
-  { icon: Clock, text: "Same working day, in practice. We'll tell you when it's sent" },
-];
-
-/** Facts that hold once the route mints and mails the link itself. */
-const selfServeFacts = [
+/** What the route actually promises, one line each. */
+const resetFacts = [
   { icon: Mail, text: "The link goes to the address on your portal account" },
   { icon: ShieldCheck, text: "It works once, and only for setting a password" },
   // True of the route's contract, not just nice to say: minting a link revokes the one before it.
@@ -75,7 +70,6 @@ export default function GymForgotPassword() {
   // Lives here, not in `ResetForm`, because the subhead has to answer to it: "enter your email"
   // above a screen with no email field is the page telling someone to do something twice.
   const [sent, setSent] = useState(false);
-  const facts = SELF_SERVE_RESET_ENABLED ? selfServeFacts : relayFacts;
 
   return (
     <div className="theme-console min-h-screen flex">
@@ -98,10 +92,7 @@ export default function GymForgotPassword() {
             className="font-display font-black text-white uppercase leading-none mb-4 text-balance"
             style={{ fontSize: "clamp(2.2rem, 3.5vw, 3.2rem)" }}
           >
-            Locked out?{" "}
-            <span className="text-white/80">
-              {SELF_SERVE_RESET_ENABLED ? "Let's fix that." : "Talk to us."}
-            </span>
+            Locked out? <span className="text-white/80">Let&apos;s fix that.</span>
           </h2>
           <p className="text-white/70 text-base leading-relaxed mb-10 max-w-xs">
             Your machine keeps trading and every cup keeps counting while you're out of the
@@ -109,7 +100,7 @@ export default function GymForgotPassword() {
           </p>
 
           <div className="space-y-4">
-            {facts.map((fact, i) => (
+            {resetFacts.map((fact, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                   <fact.icon className="w-4 h-4 text-white" />
@@ -141,20 +132,16 @@ export default function GymForgotPassword() {
             </h1>
             {!sent && (
               <p className="text-muted-foreground text-sm leading-relaxed">
-                {SELF_SERVE_RESET_ENABLED
-                  ? "Enter your account email. We'll send a link to set a new password."
-                  : "Ask us and we'll send you a link to set a new password."}
+                Enter your account email. We&apos;ll send a link to set a new password.
               </p>
             )}
           </div>
 
-          {!SELF_SERVE_RESET_ENABLED && <ResetByRequest />}
-          {SELF_SERVE_RESET_ENABLED &&
-            (sent ? (
-              <ResetRequested onRetry={() => setSent(false)} />
-            ) : (
-              <ResetForm onSent={() => setSent(true)} />
-            ))}
+          {sent ? (
+            <ResetRequested onRetry={() => setSent(false)} />
+          ) : (
+            <ResetForm onSent={() => setSent(true)} />
+          )}
 
           <Link
             href="/gym/login"
@@ -166,42 +153,6 @@ export default function GymForgotPassword() {
       </div>
 
     </div>
-  );
-}
-
-/**
- * The prose half. No email field.
- *
- * An input here would be indistinguishable from a self-service reset, and a gym owner who
- * typed into one would reasonably then wait for an email. Waiting is the failure this half
- * exists to prevent.
- */
-function ResetByRequest() {
-  return (
-    <>
-      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5" data-testid="reset-by-request">
-        <p className="text-sm text-foreground leading-relaxed">
-          Portal resets are handled by a person, not automatically. Email us and tell us which
-          gym you're with. We'll check you're the account holder, then send a one-time link to
-          set a new password.
-        </p>
-        <a
-          href={`mailto:${MBP_NOTICES.email}?subject=${encodeURIComponent(
-            "Partner portal password reset",
-          )}`}
-          className="mt-4 flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors break-words"
-          data-testid="link-reset-email"
-        >
-          <Mail className="h-4 w-4 flex-shrink-0" />
-          {MBP_NOTICES.email}
-        </a>
-      </div>
-
-      <p className="text-muted-foreground text-xs leading-relaxed mt-4">
-        Already have a link? Open it and set your new password there. No need to come back
-        here.
-      </p>
-    </>
   );
 }
 

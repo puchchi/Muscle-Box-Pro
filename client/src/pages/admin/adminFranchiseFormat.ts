@@ -15,6 +15,7 @@
  */
 
 import type { AdminFranchiseListRow } from "@shared/admin/franchises";
+import type { FranchiseTriageStatus } from "@shared/admin/franchiseApplications";
 import type {
   FranchiseDocumentType,
   FranchiseOnboardingStatus,
@@ -22,7 +23,7 @@ import type {
 } from "@shared/franchise/onboarding/types";
 import type { EntityType } from "@shared/onboarding/types";
 import { franchiseTier, type FranchiseTierId } from "@shared/franchise/program";
-import { ENTITY_TYPE_LABEL } from "./adminFormat";
+import { ENTITY_TYPE_LABEL, formatPaiseAsInr } from "./adminFormat";
 import {
   FRANCHISE_PHASES,
   franchisePhaseOf,
@@ -363,4 +364,41 @@ export function franchiseTierLabel(tier: FranchiseTierId): string {
 /** `ENTITY_TYPE_LABEL` cannot be indexed by `""`, and `""` means "they have not told us yet". */
 export function franchiseEntityLabel(entityType: EntityType | ""): string {
   return entityType === "" ? "" : ENTITY_TYPE_LABEL[entityType];
+}
+
+/**
+ * The four rungs of the enquiry backlog, in words.
+ *
+ * Here rather than in `AdminFranchiseApplications`, which is where they were, because the Enquiries
+ * page now lists the same rows read-only. Two copies of "Reviewed" is how one of them ends up
+ * saying something the other does not.
+ */
+export const FRANCHISE_TRIAGE_LABEL: Record<FranchiseTriageStatus, string> = {
+  new: "New",
+  reviewed: "Reviewed",
+  rejected: "Rejected",
+  converted: "Converted",
+};
+
+export const FRANCHISE_TRIAGE_CLASS: Record<FranchiseTriageStatus, string> = {
+  new: "bg-amber-50 text-amber-800",
+  reviewed: "bg-blue-50 text-blue-700",
+  rejected: "bg-gray-100 text-gray-600",
+  converted: "bg-green-50 text-green-700",
+};
+
+/**
+ * Tier, money and machines on one line.
+ *
+ * `investmentPaise` is what the applicant was quoted when they wrote in, and the tier table can have
+ * moved since — so the figure is the record and `tierName` is only a label, which is why it falls
+ * back to the raw id rather than dropping the line.
+ */
+export function franchiseEnquiryWants(row: {
+  tier: string;
+  tierName: string | null;
+  investmentPaise: number;
+  initialMachines: number;
+}): string {
+  return `${row.tierName ?? row.tier} · ${formatPaiseAsInr(row.investmentPaise)} · ${row.initialMachines} machines`;
 }

@@ -158,10 +158,14 @@ const termsSchema = z.object({
  *
  * `reason` is an enum rather than a free string: it selects the copy on screen, and an
  * unrecognised value would fall through to whichever branch the component wrote last.
+ *
+ * Both are exported because `shared/franchise/portalSchema.ts` validates the same wrapper.
+ * A second copy would be a second list of absence reasons, and the two dashboards share the
+ * card components that read `reason` — so they agree on it here or they disagree on screen.
  */
-const absenceSchema = z.enum(["not_implemented", "no_data_yet"]);
+export const absenceSchema = z.enum(["not_implemented", "no_data_yet"]);
 
-function section<T extends z.ZodTypeAny>(data: T) {
+export function section<T extends z.ZodTypeAny>(data: T) {
   return z.discriminatedUnion("available", [
     z.object({ available: z.literal(true), data }),
     z.object({ available: z.literal(false), reason: absenceSchema }),

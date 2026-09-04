@@ -178,14 +178,14 @@ export async function signOutOfPortal(): Promise<void> {
  *
  * The same `POST /gym/account` the onboarding wizard's step 5 calls, reached the other way
  * round: there, the handle is the onboarding invite and setting a password is the last thing
- * the gym does before installation; here, an admin has issued a set-password handle for a gym
- * that has forgotten its password, and a person has relayed the link. One route, because from
- * the server's side both are "this handle proves who you are, take a password".
+ * the gym does before installation; here, the handle is a set-password link for a gym that has
+ * forgotten its password. One route, because from the server's side all three are "this handle
+ * proves who you are, take a password".
  *
- * **There is no self-service reset, and this function is not one.** It cannot be reached
- * without a handle somebody at MuscleBoxPro deliberately issued. Delivery is a human — the
- * design (§9.2) has the mechanism working and the email not, so nothing on this side should
- * imply an automated link is coming. See `GymForgotPassword`.
+ * **This function does not care which way the handle arrived.** A gym owner asks for one
+ * through `requestPortalPasswordReset` below and the route mails it; an admin can still mint
+ * one by hand through `POST /admin/gyms/{gymId}/set-password-link`, which is the path for the
+ * cases the self-service route declines. Both land here with the same credential.
  *
  * The errors that matter are the handle's, and they arrive as the codes `apiClient` already
  * maps: `expired_token` for a link that sat too long, `revoked_token` for one already used —
@@ -205,22 +205,6 @@ export async function setPortalPassword(
 }
 
 /**
- * Whether the portal may offer a self-service reset.
- *
- * `POST /gym/password-reset` is the only route in this module that does not exist yet: it
- * needs a lookup from email to account,
- * which the deployed admin API cannot do — `GET /admin/gyms` has no server-side search and
- * its rows carry `noticesEmail`, the formal-notice address, not the portal login. So the
- * lookup belongs in `mbp-backend` next to the account index, and until it ships this flag
- * is off and [GymForgotPassword](../pages/gym/GymForgotPassword.tsx) stays prose.
- *
- * **Do not turn this on to "test the UI".** A form that accepts an address and answers "if
- * an account exists, a link has been sent" is the exact page §9.2 removed for lying, and the
- * failure it caused was a locked-out gym owner waiting instead of calling us.
- */
-export const SELF_SERVE_RESET_ENABLED = process.env.NEXT_PUBLIC_MBP_SELF_SERVE_RESET === "on";
-
-/**
  * Ask for a set-password link by email.
  *
  * Mints the same single-use handle an admin issues by hand and mails it, so the link lands on
@@ -229,12 +213,16 @@ export const SELF_SERVE_RESET_ENABLED = process.env.NEXT_PUBLIC_MBP_SELF_SERVE_R
  * server's side a relayed handle and a mailed one are the same credential.
  *
  * **A success here means the request was accepted, not that an account exists.** The server
- * answers the same way either way, and this function must not gain a signal that
- * distinguishes them — the caller would then be an oracle for which gyms are customers.
+ * answers `202 { requested: true }` for every outcome it has — unknown address, disabled
+ * account, terminated gym, two logins on one gym, throttled, mailed — and this function must
+ * not gain a signal that tells them apart. The caller would then be an oracle for which gyms
+ * are MuscleBoxPro customers, which is a list assembled by a script with a gym directory and
+ * no credentials.
  *
- * There is no `rate_limited` in `OnboardingErrorCode`, so a 429 arrives as `network`, whose
- * message reads as "try again" — the opposite of what a throttled caller should do. The
- * route should answer a refusal it wants read as 400 until that code exists.
+ * **A throttled caller therefore gets a success too**, by the same rule: a 429 would tell that
+ * script which addresses it had already spent. So the only failures reachable here are a
+ * malformed address, which `validation` carries in `fieldErrors.email`, and a request that
+ * never arrived.
  */
 export async function requestPortalPasswordReset(
   email: string,

@@ -3717,3 +3717,67 @@ reasoning above gets lost, and the prose half is the honest one.
 switch itself — a getter on the mocked flag, since a build-time const is otherwise untestable in
 both directions — and pins the invariant directly: the confirmation says "if we have an account",
 never "we have emailed you", never "no account", and never echoes the address back.
+
+## 44. The flag comes out (2026-09-04)
+
+> lets remove gym forgot password self_serve_reset_enabled flag. we want to gym to be able to
+> reset password automatcially
+
+§43 shipped both halves of the page behind `SELF_SERVE_RESET_ENABLED` and specified the one route
+it was waiting on. That route landed in `mbp-backend` on 2026-08-29 as
+`services/onboarding/src/handlers/gymPasswordReset.ts`, it is wired at
+`infra/lib/stacks/onboarding-stack.ts:274`, and it is deployed to production — `POST` a malformed
+address to `https://api.muscleboxpro.com/gym/password-reset` and it answers `400` with
+`fieldErrors.email`, which proves the route without minting anything. It mints a `setpw` token
+through `issuePasswordResetToken`, throttles at three per account per hour, and mails the link with
+`deliver({ kind: "password_reset" })` to the address on the account.
+
+So the condition the flag existed for is met, and the flag is gone rather than flipped on. A flag
+whose off-state is unreachable is a switch that no longer switches anything: it keeps a second page
+compiled and untested in the bundle, and the next person to read it cannot tell whether prose is
+where we are going back to or where we came from.
+
+### What went
+
+- `SELF_SERVE_RESET_ENABLED` in `gymSession.ts`, and `NEXT_PUBLIC_MBP_SELF_SERVE_RESET` with it.
+  The variable was never set in any deployed environment, so nothing on Vercel changes.
+- `ResetByRequest`, `relayFacts`, and the three conditionals in the page. One state now: a form,
+  then a neutral confirmation.
+- The suite's hoisted flag getter and its "with no self-service route deployed" block. Thirteen
+  tests remain and all pass.
+
+### What stayed, deliberately
+
+**The mailto, on every state of the page.** It reads as a leftover from the prose half and is not.
+The route declines quietly in three cases a gym owner can neither see nor fix — a disabled account,
+a terminated gym, and **two logins on one gym**, where `POST /gym/account`'s `setpw` branch requires
+exactly one account and cannot tell which password to change. All three get the same confirmation as
+a successful send, because the alternative tells a script which addresses are customers'. A person
+issuing the link through `POST /admin/gyms/{gymId}/set-password-link` is the only way out of them,
+which is also why that route is not now redundant.
+
+**No expiry figure, and no claim an account was found.** Unchanged from §43, and the two things the
+suite pins.
+
+### One correction to §43's contract
+
+Item 6 above asked the route to answer a throttled caller `400`, on the grounds that `429` maps to
+`network` and renders "check your connection", which is the wrong instruction for someone being
+throttled. **The route answers `202` instead, and that is better than what was specified.** A `400`
+would still be a different answer for an address that has an account than for one that does not,
+which is the enumeration oracle the rest of the design closes. The frontend's own comment has been
+corrected to match: the only failures `requestPortalPasswordReset` can now see are a malformed
+address and a request that never arrived.
+
+Item 7 — ending other sessions when the password is set — is still open, and is still
+`POST /gym/account`'s behaviour rather than this route's.
+
+The admin side is unchanged: `/admin/login` still has no forgot-password link, because there is no
+admin reset route. A sender now exists, so that note's reasoning is narrower than it was — the
+missing piece is the route alone.
+
+### Verified
+
+`npm run check` clean. `npx vitest run client/src/__tests__/pages/GymForgotPassword.test.tsx` —
+13 passed. Production route probed with a malformed address, which returns the `validation` body
+above and touches no account.
