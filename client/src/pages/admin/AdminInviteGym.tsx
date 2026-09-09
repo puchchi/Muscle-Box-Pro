@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { PARTNERSHIP } from "@shared/partnership/summary";
 import { adminInviteFormSchema, toAdminInviteBody, type AdminInviteFormInput, type AdminInviteResult } from "@shared/admin/invite";
 import { createGym } from "@/lib/adminApi";
+import { gymInvitePrefillFrom, type GymInviteSource } from "./gymInviteLink";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
 import { formatIstDateTime } from "./adminFormat";
@@ -63,6 +64,12 @@ import { formatIstDateTime } from "./adminFormat";
  * Only `sha256(handle)` is stored server-side, so this screen is the one and only place the
  * URL exists after the call returns. Losing it means minting a new one with `POST …/invite`
  * from the gym's detail page, not reloading this one.
+ *
+ * ## It can arrive prefilled from a demo request
+ *
+ * The Enquiries view links here with the trade name, email and phone in the query string, read by
+ * `gymInviteLink.ts`. Because that read is `useSearchParams`, the route wraps this in a Suspense
+ * boundary.
  */
 export default function AdminInviteGym() {
   const guard = useAdminGuard();
@@ -220,9 +227,18 @@ const EMPTY_VALUES: AdminInviteFormInput = {
 
 function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => void }) {
   const router = useRouter();
+  const prefill = gymInvitePrefillFrom(useSearchParams());
   const form = useForm<AdminInviteFormInput>({
     resolver: zodResolver(adminInviteFormSchema),
-    defaultValues: EMPTY_VALUES,
+    defaultValues: {
+      ...EMPTY_VALUES,
+      details: {
+        ...EMPTY_VALUES.details,
+        tradeName: prefill.tradeName,
+        noticesEmail: prefill.noticesEmail,
+        noticesPhone: prefill.noticesPhone,
+      },
+    },
     mode: "onBlur",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -289,6 +305,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
           </div>
 
           <Section title="Gym">
+            {prefill.source && <FromEnquiry source={prefill.source} />}
             <TextField
               form={form}
               name="details.tradeName"
@@ -399,6 +416,41 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminInviteResult) => v
           </div>
         </form>
       </Form>
+    </div>
+  );
+}
+
+/** What the enquirer told us, shown rather than filled in. See `gymInviteLink.ts`. */
+function FromEnquiry({ source }: { source: GymInviteSource }) {
+  return (
+    <div
+      className="rounded-xl border border-border bg-secondary/50 px-4 py-3"
+      data-testid="gym-invite-source"
+    >
+      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        From a demo request
+      </p>
+      <dl className="mt-2 space-y-1 text-sm">
+        <div className="flex gap-2">
+          <dt className="text-muted-foreground">Written by</dt>
+          <dd className="font-semibold text-foreground" data-testid="source-written-by">
+            {source.writtenBy === "" ? "Not given" : source.writtenBy}
+          </dd>
+        </div>
+        {source.location && (
+          <div className="flex gap-2">
+            <dt className="text-muted-foreground">Location</dt>
+            <dd className="font-semibold text-foreground" data-testid="source-location">
+              {source.location}
+            </dd>
+          </div>
+        )}
+      </dl>
+      {source.message && (
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed" data-testid="source-message">
+          “{source.message}”
+        </p>
+      )}
     </div>
   );
 }

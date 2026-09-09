@@ -60,12 +60,20 @@ describe("parseFranchiseApplicationPage", () => {
     expect(page.applications[2].tierName).toBeNull();
   });
 
-  it("accepts a row with no company and no background at all", () => {
-    // Absent, not null: both are optional on the public form, so the attribute was never written and the
-    // key is simply missing.
+  it("accepts a row whose company and background are null", () => {
+    // Null, not absent. Both are optional on the public form, but the server normalises blank to `null`
+    // and stores that, so the attribute is written and the key is present. Reading this as optional is
+    // what broke the live panel: every enquiry from somebody who skipped the boxes was rejected.
     const page = accept(franchiseApplicationPageFixture());
-    expect("company" in page.applications[0]).toBe(false);
+    expect(page.applications[0].company).toBeNull();
+    expect(page.applications[0].background).toBeNull();
     expect(page.applications[0].triage).toBeNull();
+  });
+
+  it("rejects a row with company missing altogether, which the server does not send", () => {
+    const page = franchiseApplicationPageFixture();
+    delete (page.applications[0] as { company?: unknown }).company;
+    expect(parseFranchiseApplicationPage(page).ok).toBe(false);
   });
 
   it("accepts an empty page, which is what an unworked filter answers with", () => {

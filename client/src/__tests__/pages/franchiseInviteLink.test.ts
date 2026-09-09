@@ -87,8 +87,7 @@ describe("invitePrefillFrom", () => {
   });
 
   it("reports company as null when the applicant gave none", () => {
-    const { source } = prefillFor({ ...APPLICATION, company: undefined });
-    expect(source?.company).toBeNull();
+    expect(prefillFor({ ...APPLICATION, company: null }).source?.company).toBeNull();
   });
 
   it("is a blank Territory invite when there are no parameters at all", () => {

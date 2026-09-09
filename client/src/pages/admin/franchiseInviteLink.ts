@@ -35,7 +35,8 @@ export type ConvertibleApplication = {
   mobile: string;
   tier: string;
   name: string;
-  company?: string;
+  /** `null` when the applicant left it blank, which is what the enquiry row carries. */
+  company?: string | null;
 };
 
 export function inviteHrefForApplication(row: ConvertibleApplication): string {
