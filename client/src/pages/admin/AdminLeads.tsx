@@ -23,6 +23,7 @@ import {
   franchiseEnquiryWants,
 } from "./adminFranchiseFormat";
 import { inviteHrefForApplication } from "./franchiseInviteLink";
+import { inviteHrefForLead } from "./gymInviteLink";
 
 /**
  * The Enquiries tab — every way somebody can write in, read-only.
@@ -53,8 +54,9 @@ import { inviteHrefForApplication } from "./franchiseInviteLink";
  * The sources have different fields, flattened into one `Row` where a field a source does not have is
  * `null`. Rendering that as one table with blanks in it, rather than four per-kind layouts, is a
  * deliberate trade: an investor enquiry has no phone number, and a blank cell under a heading is
- * easier to read correctly than a table that changes shape under you. The two columns that are
- * franchise-only are the ones nothing else could fill — a triage state and a link to act on it.
+ * easier to read correctly than a table that changes shape under you. The triage state is
+ * franchise-only, but `next` is shared with demo requests: a demo enquiry links to an invite
+ * prefilled from it the same way a franchise one does, since inviting the gym is the answer to it.
  */
 
 /** The three kinds `GET /admin/leads/{kind}` serves, plus the backlog that is its own API. */
@@ -165,6 +167,7 @@ export default function AdminLeads() {
   const rows = page?.rows ?? [];
   const visible = needle === "" ? rows : rows.filter((lead) => matches(lead, needle));
   const showsTriage = kind === "franchise";
+  const showsAction = kind === "franchise" || kind === "demo";
 
   function toggleMessage(id: string) {
     setExpanded((prev) => {
@@ -290,7 +293,7 @@ export default function AdminLeads() {
             there is. On a phone the shared width collapses the Message column to one word per line and
             a single enquiry becomes a screen and a half; a sideways scroll is the lesser evil.
           */}
-          <table className={`w-full text-sm ${showsTriage ? "min-w-[54rem]" : "min-w-[46rem]"}`}>
+          <table className={`w-full text-sm ${showsAction ? "min-w-[54rem]" : "min-w-[46rem]"}`}>
             <thead className="bg-secondary/50 border-b border-border">
               <tr>
                 <Th>Who</Th>
@@ -298,7 +301,7 @@ export default function AdminLeads() {
                 <Th>Details</Th>
                 <Th>Message</Th>
                 <Th align="right">Received</Th>
-                {showsTriage && <Th align="right">Where it stands</Th>}
+                {showsAction && <Th align="right">{showsTriage ? "Where it stands" : "Invite"}</Th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border/70">
@@ -396,7 +399,7 @@ export default function AdminLeads() {
                     <td className="px-4 py-2.5 text-right text-muted-foreground whitespace-nowrap">
                       {formatIstDateTime(lead.createdAt)}
                     </td>
-                    {showsTriage && (
+                    {showsAction && (
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
                         {lead.status && (
                           <Pill
@@ -407,8 +410,9 @@ export default function AdminLeads() {
                           </Pill>
                         )}
                         {/*
-                          The one link out of a read-only page, and it goes to the screen that owns the
-                          decision rather than pretending to be it.
+                          The one link out of a read-only page. On franchise it goes to the screen that
+                          owns the decision; on demo there is no such screen, so it opens the invite
+                          form directly.
                         */}
                         {lead.next && (
                           <p className="mt-1">
@@ -494,7 +498,9 @@ function leadToRow(lead: Lead): Row {
     message: lead.message,
     reference: lead.reference,
     status: null,
-    next: null,
+    // Campaign and investor enquiries have no gym to invite; a demo request is the one kind this
+    // page can act on directly, since inviting the gym it named is the whole answer to it.
+    next: lead.kind === "demo" ? { href: inviteHrefForLead(lead), label: "Invite" } : null,
   };
 }
 

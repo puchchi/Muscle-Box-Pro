@@ -40,11 +40,13 @@ const application = z.object({
   investmentPaise: z.number().int().min(0),
   initialMachines: z.number().int().min(0),
   /**
-   * Optional rather than nullable, because both are optional on `franchiseApplicationSchema` and an
-   * absent value was never written to DynamoDB. The attribute is missing, so the key is missing.
+   * Nullable and not optional. These were `optional()` on the guess that an unanswered field is never
+   * written, which is wrong in the other direction: the server normalises blank to `null` and stores
+   * that, so every row carries the attribute and most carry `null`. Making them optional rejected the
+   * real answer and the page showed a parse error instead of the list.
    */
-  company: z.string().optional(),
-  background: z.string().optional(),
+  company: z.string().nullable(),
+  background: z.string().nullable(),
   /** `formatIstDateTime` renders an unparseable value as itself, so no format assertion. */
   createdAt: z.string(),
   status: triageStatus,

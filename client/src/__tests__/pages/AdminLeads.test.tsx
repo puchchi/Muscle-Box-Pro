@@ -18,6 +18,8 @@ import userEvent from "@testing-library/user-event";
  *    franchise and an untouched one at the invite form carrying its answers.
  * 4. **Nothing here writes.** Triage lives on the Franchises screen, and this page must not have grown
  *    a second copy of the decision form.
+ * 5. **The Invite column is demo-only among the three lead kinds.** A campaign or investor enquiry
+ *    has no gym to invite, and the gate is `lead.kind`, not "whichever tab happens to be open".
  */
 
 const mockReplace = vi.fn();
@@ -91,6 +93,28 @@ const DEMO_PAGE = {
   total: 1,
 };
 
+/** One campaign enquiry, to prove the Invite column is demo-only and not "whichever tab is open". */
+const CAMPAIGN_PAGE = {
+  kind: "campaign" as const,
+  kinds: ["demo", "campaign", "investor"] as const,
+  leads: [
+    {
+      id: "b4a2f8e1-6d3c-4a95-8b17-2e9c5f7a1d64",
+      kind: "campaign" as const,
+      name: "Fit Brands Co",
+      email: "hello@fitbrands.co.in",
+      phone: null,
+      createdAt: "2026-08-29T11:00:00.000Z",
+      organisation: "Fit Brands Co",
+      location: null,
+      investorType: null,
+      message: null,
+      reference: null,
+    },
+  ],
+  total: 1,
+};
+
 async function openFranchiseTab() {
   const user = userEvent.setup();
   await screen.findByTestId("tab-leads-franchise");
@@ -102,7 +126,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockFetchSession.mockResolvedValue(SESSION);
   mockSignOut.mockResolvedValue(undefined);
-  mockFetchLeads.mockResolvedValue({ ok: true, data: DEMO_PAGE });
+  mockFetchLeads.mockImplementation((kind: string) =>
+    Promise.resolve({ ok: true, data: kind === "campaign" ? CAMPAIGN_PAGE : DEMO_PAGE }),
+  );
   mockFetchApplications.mockResolvedValue({ ok: true, data: franchiseApplicationPageFixture() });
 });
 
@@ -176,6 +202,30 @@ describe("AdminLeads", () => {
       "href",
       "/admin/franchises/b7e2c1a4-9f38-4d6b-8e05-3c1f7a2d9b64",
     );
+  });
+
+  it("points a demo request at the invite-a-gym form with its own answers on it", async () => {
+    render(<AdminLeads />);
+
+    const demoId = DEMO_PAGE.leads[0].id;
+    const link = await screen.findByTestId(`lead-next-${demoId}`);
+    expect(link).toHaveTextContent("Invite");
+    const href = link.getAttribute("href") ?? "";
+    expect(href.startsWith("/admin/gyms/new?")).toBe(true);
+    const params = new URLSearchParams(href.slice(href.indexOf("?") + 1));
+    expect(params.get("email")).toBe("owner@ironhouse.in");
+    expect(params.get("tradeName")).toBe("Iron House Gym");
+    expect(params.get("phone")).toBe("+919812340011");
+  });
+
+  it("offers no invite on a campaign enquiry", async () => {
+    render(<AdminLeads />);
+
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId("tab-leads-campaign"));
+    const campaignId = CAMPAIGN_PAGE.leads[0].id;
+    await screen.findByTestId(`row-lead-${campaignId}`);
+    expect(screen.queryByTestId(`lead-next-${campaignId}`)).toBeNull();
   });
 
   /*

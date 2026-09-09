@@ -13,11 +13,16 @@ import userEvent from "@testing-library/user-event";
  * own step 1, and every commercial term now starts at `PARTNERSHIP`'s standard figures. So
  * `fillEverything` only has four fields left to type, and the tests that used to fill a long
  * form now assert what is prefilled instead.
+ *
+ * The last block covers arriving from a demo request: the three fields that cross, and the panel
+ * that shows the rest of what was written rather than filling it in.
  */
 
+const { mockSearchParams } = vi.hoisted(() => ({ mockSearchParams: { current: "" } }));
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ replace: vi.fn(), push: vi.fn() })),
   usePathname: vi.fn(() => "/admin/gyms/new"),
+  useSearchParams: vi.fn(() => new URLSearchParams(mockSearchParams.current)),
 }));
 
 vi.mock("next/link", () => ({
@@ -67,6 +72,7 @@ function stubClipboard(): void {
 }
 
 import AdminInviteGym from "@/pages/admin/AdminInviteGym";
+import { inviteHrefForLead } from "@/pages/admin/gymInviteLink";
 
 const SESSION = {
   email: "ops@muscleboxpro.com",
@@ -85,6 +91,7 @@ const CREATED = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockSearchParams.current = "";
   mockFetchSession.mockResolvedValue(SESSION);
   mockSignOut.mockResolvedValue(undefined);
   mockWriteText.mockResolvedValue(undefined);
@@ -314,5 +321,48 @@ describe("AdminInviteGym", () => {
     render(<AdminInviteGym />);
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/admin/login"));
     expect(mockCreateGym).not.toHaveBeenCalled();
+  });
+});
+
+const DEMO_LEAD = {
+  name: "Rohit Anand",
+  email: "rohit@irontemple.in",
+  phone: "+919812345678",
+  organisation: "Iron Temple Fitness",
+  location: "Sector 62, Noida",
+  message: "We already run two group-fitness studios and want to add machines to both.",
+};
+
+/** The query string the Enquiries list would have linked here with. */
+function arrivingFromDemoRequest(): void {
+  mockSearchParams.current = inviteHrefForLead(DEMO_LEAD).split("?")[1];
+}
+
+describe("AdminInviteGym, arriving from a demo request", () => {
+  it("fills the trade name and contact fields", async () => {
+    arrivingFromDemoRequest();
+    render(<AdminInviteGym />);
+
+    expect(await screen.findByTestId("input-details.tradeName")).toHaveValue("Iron Temple Fitness");
+    expect(screen.getByTestId("input-details.noticesEmail")).toHaveValue("rohit@irontemple.in");
+    expect(screen.getByTestId("input-details.noticesPhone")).toHaveValue("+919812345678");
+  });
+
+  it("shows what was written, with nothing to fill in from it", async () => {
+    arrivingFromDemoRequest();
+    render(<AdminInviteGym />);
+
+    await screen.findByTestId("gym-invite-source");
+    expect(screen.getByTestId("source-written-by")).toHaveTextContent("Rohit Anand");
+    expect(screen.getByTestId("source-location")).toHaveTextContent("Sector 62, Noida");
+    expect(screen.getByTestId("source-message")).toHaveTextContent(/group-fitness studios/);
+  });
+
+  it("opens blank, with no panel, when nothing was passed", async () => {
+    render(<AdminInviteGym />);
+
+    await screen.findByTestId("input-details.tradeName");
+    expect(screen.queryByTestId("gym-invite-source")).toBeNull();
+    expect(screen.getByTestId("input-details.tradeName")).toHaveValue("");
   });
 });

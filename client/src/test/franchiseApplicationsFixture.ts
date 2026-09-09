@@ -15,8 +15,10 @@
  * - **`converted`** carries a `franchiseId`, and it is terminal. The route refuses to write over it, so this row
  *   exists to prove the screen offers no decision on it.
  *
- * The `new` row also omits `company` and `background` entirely rather than sending them as null, because both are
- * optional on the public form and an absent DynamoDB attribute is an absent JSON key.
+ * The `new` row carries `company: null` and `background: null`, and the `rejected` row carries `company: null`,
+ * which is what an unanswered optional field on the public form actually arrives as. `domain/franchiseApplication.ts`
+ * normalises blank to `null` and stores it, so the attribute is present and the key is present. This fixture used to
+ * omit those keys instead, which is why an `optional()` schema passed every test and then rejected production.
  *
  * `reference` is derived, not typed: `franchiseReference` is `MBP-FR-` plus the first ten hex characters of the
  * uuid, uppercased. Change an `applicationId` here and its reference stops matching what the server would send.
@@ -42,6 +44,8 @@ const PAGE: FranchiseApplicationPage = {
       tierName: "MuscleBox Pro City Franchise",
       investmentPaise: 500_000_000,
       initialMachines: 10,
+      company: null,
+      background: null,
       createdAt: "2026-08-28T04:41:00.000Z",
       status: "new",
       triage: null,
@@ -84,6 +88,7 @@ const PAGE: FranchiseApplicationPage = {
       tierName: null,
       investmentPaise: 100_000_000,
       initialMachines: 2,
+      company: null,
       background: "Looking for a business to run alongside a job.",
       createdAt: "2026-07-09T17:38:00.000Z",
       status: "rejected",

@@ -57,8 +57,12 @@ export type FranchiseApplicationRow = {
   tierName: string | null;
   investmentPaise: number;
   initialMachines: number;
-  company?: string;
-  background?: string;
+  /**
+   * `null` and not absent when the applicant left the box empty. The server normalises a blank
+   * optional field to `null` and stores it, so the attribute is always present in the answer.
+   */
+  company: string | null;
+  background: string | null;
   createdAt: string;
   status: FranchiseTriageStatus;
   triage: FranchiseApplicationTriage | null;

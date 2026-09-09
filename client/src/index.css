@@ -237,6 +237,14 @@
    * `--background`, so an autofilled field lands on the fill this app's inputs use at
    * rest and the onboarding form's inputs use on focus. Not a colour of its own: whether
    * the browser filled a box in is not something the gym needs pointed out.
+   *
+   * `!important` on the shadow, for the reduced-motion block's reason one paragraph down:
+   * `Input`, `Textarea` and `SelectTrigger` all carry `shadow-sm`, which is a `box-shadow`
+   * in the `utilities` layer, and `utilities` is declared after `base` — so the utility won
+   * on layer order no matter how specific this selector is. The 1000px inset never painted
+   * and every autofilled field on a dark surface came out white-on-#E8F0FE. The other two
+   * declarations were never contested, but they carry it too: they are one effect, and
+   * losing half of it is what made the bug look like a colour choice.
    */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
@@ -245,9 +253,23 @@
   textarea:-webkit-autofill:hover,
   textarea:-webkit-autofill:focus,
   select:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset;
-    -webkit-text-fill-color: hsl(var(--foreground));
-    caret-color: hsl(var(--foreground));
+    -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    caret-color: hsl(var(--foreground)) !important;
+  }
+
+  /*
+   * The focus ring on a field is `focus-visible:ring-1`, which Tailwind renders as a `box-shadow` —
+   * so the `!important` shadow above erases it and an autofilled field would take focus with nothing
+   * to show for it. An outline is a separate property and cannot be clobbered by a shadow. Both
+   * declarations need `!important`: `Input`, `Textarea` and `SelectTrigger` carry
+   * `focus-visible:outline-none`, which is the utilities layer winning again.
+   */
+  input:-webkit-autofill:focus-visible,
+  textarea:-webkit-autofill:focus-visible,
+  select:-webkit-autofill:focus-visible {
+    outline: 2px solid hsl(var(--ring)) !important;
+    outline-offset: 2px !important;
   }
 
   /*

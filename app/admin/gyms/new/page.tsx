@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import AdminInviteGym from "@/pages/admin/AdminInviteGym";
+import { AdminChecking } from "@/pages/admin/AdminShell";
 
 export const metadata: Metadata = {
   title: "Invite a gym | MBP admin",
@@ -7,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <AdminInviteGym />;
+  return (
+    <Suspense fallback={<AdminChecking />}>
+      <AdminInviteGym />
+    </Suspense>
+  );
 }
