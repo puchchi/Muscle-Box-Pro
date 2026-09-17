@@ -24,7 +24,7 @@ import { NumberField, SelectField, TextField } from "./adminFields";
 import { formatInr, formatIstDateTime } from "./adminFormat";
 
 /**
- * Invite a franchise — one form, nine fields, submitted once.
+ * Invite a franchise — one form, ten fields, submitted once.
  *
  * ## Nine identity fields are not here, and they never were
  *
@@ -34,8 +34,10 @@ import { formatInr, formatIstDateTime } from "./adminFormat";
  * against, so they come from the franchisee at step 1 or from nowhere. `POST /admin/franchises`
  * agrees: it writes all nine as `""` and **ignores them if an admin sends values**.
  *
- * What stays is what nothing downstream supplies: the tier and its two commercial figures, the legal
- * entity name the record is created under, and the address the invite goes to.
+ * What stays is what nothing downstream supplies: the tier and its two commercial figures, the name of
+ * the person who asked, and the address the invite goes to. The legal entity name is here too but is
+ * optional, and `shared/admin/franchiseInvite.ts` has the argument for why the person's name is the
+ * required one.
  *
  * ## The tier's figures are prefilled and editable
  *
@@ -53,7 +55,7 @@ import { formatInr, formatIstDateTime } from "./adminFormat";
  * ## It can arrive prefilled from an enquiry
  *
  * The Enquiries view on `/admin/franchises` links here with the applicant's details in the query
- * string, read by `franchiseInviteLink.ts`. Three fields come across and the legal entity name
+ * string, read by `franchiseInviteLink.ts`. Four fields come across and the legal entity name
  * deliberately does not. Because that read is `useSearchParams`, the route wraps this in a Suspense
  * boundary.
  */
@@ -312,10 +314,17 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
             {prefill.source && <FromEnquiry source={prefill.source} />}
             <TextField
               control={form.control}
+              name="contactName"
+              label="Contact name"
+              placeholder="Rhea Menon"
+              description="Who asked for this franchise. The invite email greets them by this name, and the franchise list shows it beside a record that has no entity name yet."
+            />
+            <TextField
+              control={form.control}
               name="legalEntityName"
               label="Legal entity name"
               placeholder="Northline Ventures Private Limited"
-              description="Required here, unlike the gym invite: the franchise record is created under this name and the term sheet identifies its counterparty by it."
+              description="Optional. Leave it blank if the entity is not registered yet, or if you do not have the name as registered. The franchisee enters it at step 1, and that is the name the term sheet identifies its counterparty by. Until then the record carries a reference of ours."
             />
             <TextField
               control={form.control}
@@ -387,12 +396,16 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
 }
 
 /**
- * What the applicant told us, shown rather than filled in.
+ * What the applicant told us, and what was done with it.
  *
- * `franchiseInviteLink.ts` on why the legal entity name is not prefilled from `company`: that name is
- * what the term sheet identifies its counterparty by, and a free-text answer sitting in the field
- * already is a value nobody chose. This panel is the compensation, so the admin can read what was
- * written and type the registered name deliberately.
+ * `franchiseInviteLink.ts` on why `company` does not prefill the legal entity name: that name is what
+ * the term sheet identifies its counterparty by, and a free-text answer sitting in the field already
+ * is a value nobody chose. This panel is the compensation, so an admin can read what was written and
+ * decide rather than inherit.
+ *
+ * The applicant's name is shown even though it *does* fill the contact name below, because that field
+ * is editable and this is the record of what was submitted. An admin who fixes a spelling, or who
+ * addresses a colleague instead, should still be able to see who enquired.
  */
 function FromEnquiry({ source }: { source: InviteSource }) {
   return (
@@ -418,9 +431,9 @@ function FromEnquiry({ source }: { source: InviteSource }) {
         </div>
       </dl>
       <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-        Neither is filled in below. The legal entity name is what the term sheet identifies its
-        counterparty by, so type it as it appears on the incorporation certificate. The email and
-        phone under Contact for notices did come from this enquiry.
+        The company they wrote is not filled in below. The legal entity name is what the term sheet
+        identifies its counterparty by, so leave it blank unless you have the name as registered. The
+        contact name, email and phone below did come from this enquiry.
       </p>
     </div>
   );

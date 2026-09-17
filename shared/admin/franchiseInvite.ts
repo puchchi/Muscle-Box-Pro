@@ -1,12 +1,22 @@
 /**
  * The invite-a-franchise form, and what it sends.
  *
- * `shared/admin/invite.ts` for the franchise side, and much smaller than it — nine fields against
+ * `shared/admin/invite.ts` for the franchise side, and much smaller than it — ten fields against
  * eighteen. The reason is the same argument that stripped eleven fields off the gym invite, applied
  * from the start: `validateFranchiseInvite` writes **nine identity fields as `""` and ignores them
  * if an admin sends values**, because they are what the term sheet identifies its counterparty by
  * and what Leegality binds a signature against. PAN, GSTIN, CIN, LLPIN, the registered address and the
  * whole signatory block come from the franchisee's own step 1 or from nowhere.
+ *
+ * ## The required name is the person's, not the entity's
+ *
+ * `contactName` is required and `legalEntityName` is not, which was the other way round until the
+ * route changed it on 2026-09-05. `adminInput.ts` in mbp-backend has the argument: an admin at invite
+ * time usually does not have the registered name, because the conversation happened with a person and
+ * the entity is often incorporated after the commercials are agreed. A required field bought a guess
+ * typed off a phone call into the one field the term sheet names its counterparty in, and step 1
+ * overwrites it regardless, so the guess was never even the value that got signed. Blank is the common
+ * case now, and the route fills it with a reference of its own.
  *
  * ## The form is in rupees; the wire is in paise
  *
@@ -25,8 +35,8 @@
  *
  * Unlike `POST /admin/gyms`, which namespaces them (`details.gstin`, `terms.termMonths`),
  * `validateFranchiseInvite` reports flat keys: `tier`, `investmentPaise`, `machineAllocation`,
- * `legalEntityName`, `entityType`, `noticesEmail`, `noticesPhone`. `investmentPaise` is the one
- * that does not name a field on this form, so `INVITE_FIELD_FOR_WIRE` maps it.
+ * `contactName`, `legalEntityName`, `entityType`, `noticesEmail`, `noticesPhone`. `investmentPaise` is
+ * the one that does not name a field on this form, so `INVITE_FIELD_FOR_WIRE` maps it.
  */
 
 import * as z from "zod";
@@ -64,11 +74,24 @@ export const adminFranchiseInviteFormSchema = z.object({
     .int("A whole number of machines")
     .min(MACHINE_ALLOCATION.min, "A franchise with no machines is not a franchise")
     .max(MACHINE_ALLOCATION.max, `At most ${MACHINE_ALLOCATION.max}`),
+  contactName: z
+    .string()
+    .trim()
+    .min(2, "Who asked for this franchise? A name is required.")
+    .max(200, "Must be at most 200 characters"),
+  /**
+   * Optional, and blank is the common case. Bounded below when it is given, matching the route: a
+   * one-character entity name is a keystroke in an abandoned field and would be *harder* to spot than
+   * a blank, because every fallback looking for a display name would find it and print it.
+   */
   legalEntityName: z
     .string()
     .trim()
-    .min(3, "The legal entity name is required")
-    .max(200, "Must be at most 200 characters"),
+    .max(200, "Must be at most 200 characters")
+    .refine(
+      (value) => value === "" || value.length >= 3,
+      "Leave it blank, or give the name as registered.",
+    ),
   tradeName: z.string().trim().max(200, "Must be at most 200 characters"),
   entityType: z.union([
     z.enum(["proprietorship", "partnership", "llp", "pvt_ltd", "unregistered"]),
@@ -93,6 +116,7 @@ export type AdminFranchiseInviteBody = {
   tier: FranchiseTierId;
   investmentPaise: number;
   machineAllocation: number;
+  contactName: string;
   legalEntityName: string;
   tradeName: string;
   entityType: EntityType | "";
@@ -110,6 +134,7 @@ export function toAdminFranchiseInviteBody(
     // fractional paise value the handler would refuse.
     investmentPaise: form.investmentInr * 100,
     machineAllocation: form.machineAllocation,
+    contactName: form.contactName,
     legalEntityName: form.legalEntityName,
     tradeName: form.tradeName,
     entityType: form.entityType,
@@ -144,6 +169,7 @@ export function inviteDefaults(tier: FranchiseTierId): AdminFranchiseInviteFormI
     tier,
     investmentInr: published.investmentInr,
     machineAllocation: published.initialMachines,
+    contactName: "",
     legalEntityName: "",
     tradeName: "",
     entityType: "",

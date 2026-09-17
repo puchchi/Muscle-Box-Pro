@@ -35,6 +35,25 @@ const CIN = /^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/;
 const LLPIN = /^[A-Z]{3}-[0-9]{4}$/;
 
 /**
+ * The label `POST /admin/franchises` gives a record whose legal entity name it was not told.
+ *
+ * The twin of `franchisePlaceholderName` and `isFranchisePlaceholderName` in mbp-backend's
+ * `domain/ids.ts`, which has the argument. The short version is that checking it is not optional: an
+ * admin inviting a franchise usually does not have the registered name, so the route labels the record
+ * "MBP Franchise 104" in the meantime, and `canIssueTermSheet` refuses *empty* fields rather than
+ * plausible ones. Unchecked, that is our own reference number printed as the counterparty on a signed
+ * term sheet. The server blanks it out of the step-1 prefill, so this catches the value retyped by hand
+ * out of the invite email. Whitespace-tolerant and case-insensitive for that reason.
+ *
+ * Nothing legitimate is refused: an entity registered as exactly "MBP Franchise 104" is our reference
+ * number, not a counterparty.
+ */
+const FRANCHISE_PLACEHOLDER_NAME = /^mbp\s+franchise\s+\d+$/i;
+
+export const isFranchisePlaceholderName = (name: string): boolean =>
+  FRANCHISE_PLACEHOLDER_NAME.test(name.trim());
+
+/**
  * Deliberately permissive. NEFT references are 16 characters, RTGS references are commonly
  * 22, and different banks print them with different prefixes. A regex that refused a real
  * transfer would be the worst outcome on this screen, so this checks only that the value
@@ -62,7 +81,11 @@ export const franchiseDetailsSchema = z
       .min(3, "Enter the full registered name of the entity taking the franchise")
       // The field hardest to correct after signing, because the signature covers the rendered
       // term sheet text that contains it.
-      .max(200, "That looks too long for a legal entity name"),
+      .max(200, "That looks too long for a legal entity name")
+      .refine(
+        (value) => !isFranchisePlaceholderName(value),
+        "That is the reference we created your record under, not a legal name. Enter the entity name as registered, or your own name if there is no registered entity yet.",
+      ),
     entityType: entityTypeSchema,
     tradeName: z.string().trim().max(200),
     pan: z

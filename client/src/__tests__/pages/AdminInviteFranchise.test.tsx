@@ -8,9 +8,14 @@ import userEvent from "@testing-library/user-event";
  * `AdminInviteGym.test.tsx`'s division, mocked at the guard and at `createFranchise`. The cases here
  * are the ones the query-string prefill could get wrong without failing:
  *
- * - **The three fields that cross, and the one that must not.** A legal entity name arriving prefilled
+ * - **The four fields that cross, and the one that must not.** A legal entity name arriving prefilled
  *   from a free-text company field is a value nobody chose the moment they click past it, and it is
- *   what the term sheet identifies its counterparty by.
+ *   what the term sheet identifies its counterparty by. The applicant's own name is the opposite case:
+ *   it fills the contact name, because there is no second source for it and it reaches an email
+ *   greeting rather than a signed document.
+ * - **Which name the form insists on.** The entity name is optional and the person's is required, which
+ *   is the route's rule since 2026-09-05 and was the other way round before it. A form that demands the
+ *   registered name gets a guess typed off a phone call, into the one field a signature covers.
  * - **`sourceApplicationId` reaching the wire**, since it is the only thing that stops an enquiry and
  *   its franchise being counted as two leads.
  * - **A blank form when nothing was passed**, because that is still how most invites are sent.
@@ -101,6 +106,7 @@ describe("AdminInviteFranchise, arriving from an enquiry", () => {
     render(<AdminInviteFranchise />);
 
     await screen.findByTestId("franchise-invite-heading");
+    expect(screen.getByTestId("input-contactName")).toHaveValue("Vikram Shetty");
     expect(screen.getByTestId("input-noticesEmail")).toHaveValue("vikram@shettyfitness.in");
     expect(screen.getByTestId("input-noticesPhone")).toHaveValue("+919632440118");
     expect(screen.getByTestId("input-sourceApplicationId")).toHaveValue(APPLICATION.applicationId);
@@ -138,6 +144,7 @@ describe("AdminInviteFranchise, arriving from an enquiry", () => {
       expect(mockCreateFranchise).toHaveBeenCalledWith(
         expect.objectContaining({
           sourceApplicationId: APPLICATION.applicationId,
+          contactName: "Vikram Shetty",
           legalEntityName: "Shetty Fitness Ventures LLP",
           noticesEmail: "vikram@shettyfitness.in",
           investmentPaise: 250_000_000,
@@ -147,13 +154,39 @@ describe("AdminInviteFranchise, arriving from an enquiry", () => {
     expect(await screen.findByTestId("franchise-invite-created")).toBeInTheDocument();
   });
 
-  it("still refuses to create a franchise with no legal entity name", async () => {
-    // The prefill deliberately leaves it blank, so this is the field that stops a converted enquiry
-    // becoming a franchise nobody named.
+  it("creates the franchise with no legal entity name, since the franchisee names the entity", async () => {
+    // The prefill leaves it blank on purpose and an admin usually cannot fill it, so submitting
+    // untouched is the ordinary path rather than an incomplete form.
     arrivingFromEnquiry();
     render(<AdminInviteFranchise />);
 
     await userEvent.click(await screen.findByTestId("button-create-franchise"));
+
+    await waitFor(() =>
+      expect(mockCreateFranchise).toHaveBeenCalledWith(
+        expect.objectContaining({ legalEntityName: "", contactName: "Vikram Shetty" }),
+      ),
+    );
+  });
+
+  it("refuses a franchise with nobody's name on it", async () => {
+    // Every other required value is prefilled, so clearing this one field is what the refusal is
+    // being attributed to.
+    arrivingFromEnquiry();
+    render(<AdminInviteFranchise />);
+
+    await userEvent.clear(await screen.findByTestId("input-contactName"));
+    await userEvent.click(screen.getByTestId("button-create-franchise"));
+
+    await waitFor(() => expect(mockCreateFranchise).not.toHaveBeenCalled());
+  });
+
+  it("refuses a legal entity name too short to be one, rather than sending a keystroke", async () => {
+    arrivingFromEnquiry();
+    render(<AdminInviteFranchise />);
+
+    await userEvent.type(await screen.findByTestId("input-legalEntityName"), "N");
+    await userEvent.click(screen.getByTestId("button-create-franchise"));
 
     await waitFor(() => expect(mockCreateFranchise).not.toHaveBeenCalled());
   });
