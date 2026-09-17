@@ -388,6 +388,7 @@ function triageResult() {
 function inviteBody() {
   const form = adminFranchiseInviteFormSchema.parse({
     ...inviteDefaults("territory"),
+    contactName: "Sunita Prabhu",
     legalEntityName: "Coastline Wellness LLP",
     tradeName: "Coastline Wellness",
     entityType: "llp",

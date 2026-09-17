@@ -5,13 +5,17 @@
  * by `AdminInviteFranchise`. Split across the two files they would drift, and a renamed parameter is
  * silent — the form simply opens blank and an admin retypes what we already knew.
  *
- * **What is deliberately not in it: the legal entity name.** The only candidate is the applicant's
+ * **What is deliberately not filled in: the legal entity name.** The only candidate is the applicant's
  * free-text `company`, and that name is what the term sheet identifies its counterparty by and what
  * Leegality binds a signature against. `AdminFranchiseActions` makes the same call about a granted
  * territory: a field arriving pre-filled with what somebody asked for is a value nobody chose the
- * moment they click past it. The applicant's own answers are shown beside the field instead.
+ * moment they click past it. What was written is shown beside the field instead, so `company` is here
+ * for that panel and not for any input.
  *
- * `applicant` and `company` are here for that panel, not for any input.
+ * `applicant` does fill `contactName`, and the distinction is the point. It is the person's own name
+ * from their own submission, it reaches an email greeting and a list heading rather than a signed
+ * document, and there is no second source for it. Asking an admin to retype what the enquiry already
+ * told us would be the retyping this module exists to prevent.
  */
 
 import { FRANCHISE_TIERS, type FranchiseTierId } from "@shared/franchise/program";
@@ -82,17 +86,19 @@ export function invitePrefillFrom(params: URLSearchParams | null): InvitePrefill
   const known = FRANCHISE_TIERS.some((entry) => entry.id === tier);
   const defaults = inviteDefaults(known ? (tier as FranchiseTierId) : "territory");
   const company = params?.get(PARAM.company)?.trim() ?? "";
+  const applicantName = params?.get(PARAM.applicant)?.trim() ?? "";
 
   return {
     defaults: {
       ...defaults,
+      contactName: applicantName,
       noticesEmail: params?.get(PARAM.email)?.trim() ?? "",
       noticesPhone: params?.get(PARAM.phone)?.trim() ?? "",
       sourceApplicationId: applicationId,
     },
     source: {
       applicationId,
-      applicantName: params?.get(PARAM.applicant)?.trim() ?? "",
+      applicantName,
       company: company === "" ? null : company,
     },
   };

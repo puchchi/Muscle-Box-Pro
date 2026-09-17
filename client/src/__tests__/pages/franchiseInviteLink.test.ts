@@ -12,8 +12,10 @@ import { franchiseApplicationPageFixture } from "@/test/franchiseApplicationsFix
  * throw, it opens a blank form and an admin retypes what we already knew. The two properties pinned
  * here are the ones that would cost something real:
  *
- * - **The legal entity name never crosses.** It is what the term sheet identifies its counterparty by
- *   and what Leegality binds a signature against, so it is typed deliberately or not at all.
+ * - **The legal entity name never crosses, and the applicant's own name does.** The first is what the
+ *   term sheet identifies its counterparty by and what Leegality binds a signature against, so it is
+ *   typed deliberately or not at all. The second fills the contact name, because there is no other
+ *   source for it and it reaches an email greeting rather than a signed document.
  * - **A tier id the program no longer publishes does not select commercials.** The two prefilled
  *   figures come from the tier, and an unknown one falling through would put a franchise on numbers
  *   from nowhere.
@@ -54,9 +56,10 @@ describe("inviteHrefForApplication", () => {
 });
 
 describe("invitePrefillFrom", () => {
-  it("round-trips the three fields the form may hold", () => {
+  it("round-trips the four fields the form may hold", () => {
     const { defaults } = prefillFor();
     expect(defaults.sourceApplicationId).toBe(APPLICATION.applicationId);
+    expect(defaults.contactName).toBe("Vikram Shetty");
     expect(defaults.noticesEmail).toBe("vikram@shettyfitness.in");
     expect(defaults.noticesPhone).toBe("+919632440118");
   });
@@ -95,6 +98,7 @@ describe("invitePrefillFrom", () => {
     expect(source).toBeNull();
     expect(defaults.tier).toBe("territory");
     expect(defaults.sourceApplicationId).toBe("");
+    expect(defaults.contactName).toBe("");
     expect(defaults.noticesEmail).toBe("");
   });
 

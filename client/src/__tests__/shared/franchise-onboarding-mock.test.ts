@@ -307,6 +307,25 @@ describe("validation", () => {
     );
   });
 
+  /**
+   * The reference `POST /admin/franchises` labels a record with, typed back at us as a legal name.
+   *
+   * Nothing offers it: the server blanks a placeholder out of the step-1 prefill. What this catches is a
+   * franchisee copying it off the invite email, and it matters because `canIssueTermSheet` refuses
+   * *empty* fields rather than plausible ones. Unrefused, our own reference number is printed as the
+   * counterparty on a signed term sheet. `domain/ids.ts` in mbp-backend holds the twin.
+   */
+  it("refuses the reference we labelled the record with as a legal entity name", async () => {
+    for (const typed of ["MBP Franchise 104", "mbp  franchise 7"]) {
+      const error = await expectError(
+        api.submitDetails(HANDLE, { ...VALID_DETAILS, legalEntityName: typed }),
+      );
+      expect((error as { fieldErrors?: Record<string, string> }).fieldErrors).toHaveProperty(
+        "legalEntityName",
+      );
+    }
+  });
+
   // An applicant who has not incorporated anything signs on their own PAN, and the fourth
   // character of a PAN is the holder's class. Refusing `P` against a company would refuse them.
   it("accepts a personal PAN for a company", async () => {
