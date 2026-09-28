@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -211,6 +211,130 @@ describe("GymLogin", () => {
     });
     expect(screen.queryByText(/incorrect email or password/i)).not.toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  /*
+    A failed sign-in changes nothing else on the page: no navigation, no title change, no
+    field marked. Without the live region a screen reader is told nothing at all, and the
+    gym owner is left waiting on a form that looks like it never submitted.
+  */
+  it("announces the failure instead of only drawing it", async () => {
+    mockSignIn.mockResolvedValue(SIGN_IN_FAILED);
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "wrongpass");
+    await user.click(screen.getByTestId("button-login"));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/incorrect email or password/i);
+  });
+
+  /*
+    The notice used to render between the password field and the submit button, which pushed
+    the button 46px down the page and left the message covering where it had been — so the
+    reflex second click after a failure landed on the error text. Asserted on DOM order
+    because that is what decides the layout.
+  */
+  it("puts the failure above the fields, not on top of the submit button", async () => {
+    mockSignIn.mockResolvedValue(SIGN_IN_FAILED);
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "wrongpass");
+    await user.click(screen.getByTestId("button-login"));
+
+    await screen.findByTestId("login-notice");
+    const order = [...document.querySelectorAll("[data-testid]")].map((el) =>
+      el.getAttribute("data-testid"),
+    );
+    expect(order.indexOf("login-notice")).toBeLessThan(order.indexOf("input-email"));
+    expect(order.indexOf("login-notice")).toBeLessThan(order.indexOf("button-login"));
+  });
+
+  /*
+    Focus went to `<body>` because the button is disabled while the request is in flight and
+    re-enabling it does not hand focus back. A keyboard user then tabs in from the logo.
+  */
+  it("returns focus to the password field after a failure", async () => {
+    mockSignIn.mockResolvedValue(SIGN_IN_FAILED);
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "wrongpass");
+    await user.click(screen.getByTestId("button-login"));
+
+    await screen.findByRole("alert");
+    expect(screen.getByTestId("input-password")).toHaveFocus();
+  });
+
+  /*
+    The recovery route is the point of the error, but only for a credential failure: telling
+    someone to reset a password they typed correctly, because the request never left the
+    building, sends them round a loop that cannot help.
+  */
+  it("offers the reset route on a credential failure", async () => {
+    mockSignIn.mockResolvedValue(SIGN_IN_FAILED);
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "wrongpass");
+    await user.click(screen.getByTestId("button-login"));
+
+    const alert = await screen.findByTestId("login-notice");
+    const reset = within(alert).getByRole("link", { name: /reset your password/i });
+    expect(reset).toHaveAttribute("href", "/gym/forgot-password");
+  });
+
+  it("does not offer the reset route when the request never arrived", async () => {
+    mockSignIn.mockResolvedValue({
+      ok: false,
+      error: { code: "network", message: "We couldn't reach us just now." },
+    });
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "supersecret");
+    await user.click(screen.getByTestId("button-login"));
+
+    const alert = await screen.findByTestId("login-notice");
+    expect(within(alert).queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  /*
+    A stale "incorrect email or password" sitting above the field being corrected reads as a
+    verdict on what is currently typed.
+  */
+  it("drops the failure once the gym starts correcting it", async () => {
+    mockSignIn.mockResolvedValue(SIGN_IN_FAILED);
+    render(<GymLogin />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByTestId("input-email"), "owner@yourgym.com");
+    await user.type(screen.getByTestId("input-password"), "wrongpass");
+    await user.click(screen.getByTestId("button-login"));
+    await screen.findByTestId("login-notice");
+
+    await user.type(screen.getByTestId("input-password"), "x");
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("login-notice")).not.toBeInTheDocument();
+    });
+  });
+
+  /*
+    Both fields, because a password manager that cannot see `current-password` will not offer
+    to fill or to save, on the one page whose entire job is signing in.
+  */
+  it("lets a password manager fill both fields", () => {
+    render(<GymLogin />);
+    expect(screen.getByTestId("input-email")).toHaveAttribute("autocomplete", "email");
+    expect(screen.getByTestId("input-password")).toHaveAttribute("autocomplete", "current-password");
   });
 
   /*
