@@ -187,6 +187,48 @@ describe("connect-src and the onboarding API", () => {
     vi.resetModules();
   });
 
+  it("allows the machine admin stack's own host off production", async () => {
+    const onboarding = "https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox";
+    const machine = "https://k1l2m3n4o5.execute-api.ap-south-1.amazonaws.com/sandbox";
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", onboarding);
+    vi.stubEnv("NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL", machine);
+    vi.resetModules();
+
+    expect(await connectSrcOfAFreshConfig()).toContain(new URL(machine).origin);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  const MACHINE_BUCKET = "https://mbp-machine-files-sandbox-000000000000.s3.ap-south-1.amazonaws.com";
+
+  it("allows the machine files bucket for picture uploads, even in production", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_MBP_MACHINE_FILES_BUCKET_ORIGIN", MACHINE_BUCKET);
+    vi.resetModules();
+
+    expect(await connectSrcOfAFreshConfig()).toContain(MACHINE_BUCKET);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it.each([
+    ["the franchise documents bucket", "https://mbp-franchise-docs-prod-000000000000.s3.ap-south-1.amazonaws.com"],
+    ["plain http", "http://mbp-machine-files-sandbox-000000000000.s3.ap-south-1.amazonaws.com"],
+    ["nonsense", "not-a-url"],
+  ])("ignores %s as the machine files bucket", async (_label, value) => {
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_MBP_MACHINE_FILES_BUCKET_ORIGIN", value);
+    vi.resetModules();
+
+    const sources = await connectSrcOfAFreshConfig();
+    expect(sources.filter((source) => source.includes("amazonaws.com"))).toEqual([]);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
   it("names every origin explicitly rather than allowing a wildcard", async () => {
     const sources = await directive("connect-src");
     expect(sources).not.toContain("*");
@@ -238,4 +280,40 @@ describe("the referrer policy the onboarding handle depends on", () => {
       expect(scopedIndex).toBeGreaterThan(globalIndex);
     },
   );
+});
+
+describe("img-src and the goods pictures", () => {
+  async function imgSrcOfAFreshConfig(): Promise<string[]> {
+    const fresh = await import("../../../../next.config.mjs");
+    const rules = await fresh.default.headers!();
+    const csp = rules
+      .find((rule) => rule.source === "/(.*)")!
+      .headers.find((header) => header.key === "Content-Security-Policy")!.value;
+    const found = csp
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith("img-src "));
+    if (!found) throw new Error("expected an img-src directive in the CSP");
+    return found.split(/\s+/).slice(1);
+  }
+
+  it("allows the files CDN that serves goods pictures", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN", "https://d1234abcd.cloudfront.net");
+    vi.resetModules();
+
+    expect(await imgSrcOfAFreshConfig()).toContain("https://d1234abcd.cloudfront.net");
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("ignores a CDN value that is not a CloudFront host", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN", "https://evil.example.com");
+    vi.resetModules();
+
+    expect(await imgSrcOfAFreshConfig()).toEqual(["'self'", "data:", "blob:"]);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
 });

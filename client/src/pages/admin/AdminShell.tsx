@@ -27,22 +27,8 @@ export function AdminShell({
   session: AdminSession;
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const pathname = usePathname() ?? "";
-
-  async function handleSignOut() {
-    // The result is not checked, for the same reason the gym portal does not check its own:
-    // only the server can expire an `HttpOnly` cookie, and an admin who has pressed this must
-    // leave the screen whether or not the call landed.
-    await signOutAsAdmin();
-    // `removeQueries` rather than `invalidateQueries`, and **all** admin queries rather than
-    // just the session. Invalidating leaves one admin's gym list in the cache for whoever
-    // signs in next while the refetch is in flight; scoping it to the session key alone would
-    // leave the gym data behind entirely, which is the same leak with an extra step.
-    queryClient.removeQueries({ queryKey: ADMIN_SESSION_QUERY_KEY });
-    queryClient.removeQueries({ queryKey: ["admin"] });
-    router.replace("/admin/login");
-  }
+  const handleSignOut = useAdminSignOut();
 
   return (
     <div className="dark theme-console min-h-screen bg-background text-foreground">
@@ -69,6 +55,9 @@ export function AdminShell({
               </NavLink>
               <NavLink href="/admin/franchises" pathname={pathname} testId="link-franchises">
                 Franchises
+              </NavLink>
+              <NavLink href="/machines" pathname={pathname} testId="link-machines">
+                Machines
               </NavLink>
               {/*
                 Two links rather than two sections of the overview, and that is the whole of the
@@ -116,6 +105,24 @@ export function AdminShell({
       </footer>
     </div>
   );
+}
+
+export function useAdminSignOut() {
+  const router = useRouter();
+
+  return async function handleSignOut() {
+    // The result is not checked, for the same reason the gym portal does not check its own:
+    // only the server can expire an `HttpOnly` cookie, and an admin who has pressed this must
+    // leave the screen whether or not the call landed.
+    await signOutAsAdmin();
+    // `removeQueries` rather than `invalidateQueries`, and **all** admin queries rather than
+    // just the session. Invalidating leaves one admin's gym list in the cache for whoever
+    // signs in next while the refetch is in flight; scoping it to the session key alone would
+    // leave the gym data behind entirely, which is the same leak with an extra step.
+    queryClient.removeQueries({ queryKey: ADMIN_SESSION_QUERY_KEY });
+    queryClient.removeQueries({ queryKey: ["admin"] });
+    router.replace("/admin/login");
+  };
 }
 
 /**
