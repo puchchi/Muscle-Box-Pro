@@ -96,7 +96,7 @@ function InviteCreated({ result }: { result: AdminFranchiseInviteResult }) {
 
   return (
     <div className="max-w-lg" data-testid="franchise-invite-created">
-      <h1 className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1">
+      <h1 className="text-2xl font-display font-black text-foreground tracking-tight mb-1">
         Franchise created
       </h1>
       <p className="text-muted-foreground text-sm mb-6">
@@ -227,7 +227,7 @@ function InviteForm({ onCreated }: { onCreated: (result: AdminFranchiseInviteRes
   return (
     <div className="max-w-2xl">
       <h1
-        className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1"
+        className="text-2xl font-display font-black text-foreground tracking-tight mb-1"
         data-testid="franchise-invite-heading"
       >
         Invite a franchise

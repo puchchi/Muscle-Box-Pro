@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { queryClient } from "@/lib/queryClient";
 import { ADMIN_SESSION_QUERY_KEY, fetchAdminSession, signInAsAdmin } from "@/lib/adminSession";
+import { forgetVerifiedSession } from "./useAdminGuard";
 
 /**
  * The admin front door. Deliberately plain.
@@ -78,6 +79,7 @@ export default function AdminLogin() {
         return;
       }
 
+      forgetVerifiedSession();
       await queryClient.invalidateQueries({ queryKey: ADMIN_SESSION_QUERY_KEY });
       router.push("/admin");
     } finally {

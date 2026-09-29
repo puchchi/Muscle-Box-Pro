@@ -101,73 +101,75 @@ function VoicesPage({ session }: { session: AdminSession }) {
         </div>
       )}
 
-      <div className="space-y-5">
-        <Card
-          title="Default prompts"
-          note={
-            data?.defaults.updatedAt
-              ? `Every machine plays these unless it has its own. Last saved ${formatIstStamp(data.defaults.updatedAt)}${data.defaults.updatedBy ? ` by ${data.defaults.updatedBy}` : ""}.`
-              : "Every machine plays these unless it has its own."
-          }
-          testId="card-voice-defaults"
-        >
-          {files ? (
-            <>
-              <VoiceSlots files={files} onChange={setFiles} errors={errors} onUploading={setUploading} />
-              <div className="flex justify-end border-t border-border px-4 py-3 sm:px-5">
-                <Button type="button" onClick={() => void save()} disabled={saving || uploading} className="rounded-xl cursor-pointer" data-testid="button-save-voices">
-                  {saving ? "Saving…" : "Save default prompts"}
-                </Button>
-              </div>
-            </>
-          ) : (
-            <p className="px-5 py-6 text-sm text-muted-foreground">{loading ? "Loading…" : "Couldn't load the prompts."}</p>
-          )}
-        </Card>
+      {(data || !problem) && (
+        <div className="space-y-5">
+          <Card
+            title="Default prompts"
+            note={
+              data?.defaults.updatedAt
+                ? `Every machine plays these unless it has its own. Last saved ${formatIstStamp(data.defaults.updatedAt)}${data.defaults.updatedBy ? ` by ${data.defaults.updatedBy}` : ""}.`
+                : "Every machine plays these unless it has its own."
+            }
+            testId="card-voice-defaults"
+          >
+            {files ? (
+              <>
+                <VoiceSlots files={files} onChange={setFiles} errors={errors} onUploading={setUploading} />
+                <div className="flex justify-end border-t border-border px-4 py-3 sm:px-5">
+                  <Button type="button" onClick={() => void save()} disabled={saving || uploading} className="rounded-xl cursor-pointer" data-testid="button-save-voices">
+                    {saving ? "Saving…" : "Save default prompts"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="px-5 py-6 text-sm text-muted-foreground">Loading…</p>
+            )}
+          </Card>
 
-        <Card
-          title="Machines with their own prompts"
-          note="To give a machine its own prompts, open the machine and choose Voice prompts."
-          testId="card-voice-overrides"
-        >
-          <div className="p-4 sm:p-5">
-            <DataTable testId="voice-overrides-table">
-              <Head>
-                <Col>Machine</Col>
-                <Col>Name</Col>
-                <Col>Own prompts</Col>
-                <Col>Operate</Col>
-              </Head>
-              <tbody className="divide-y divide-border/70">
-                {!data || data.overrides.length === 0 ? (
-                  <NoData colSpan={4} loading={loading} />
-                ) : (
-                  data.overrides.map((o) => (
-                    <tr key={o.sn} data-testid={`override-${o.sn}`}>
-                      <Cell>
-                        <MachineLabel deviceExtNo={o.deviceExtNo} sn={o.sn} />
-                      </Cell>
-                      <Cell>{o.name}</Cell>
-                      <Cell className="tabular-nums text-muted-foreground">
-                        {o.positions.length === 1 ? "Position" : "Positions"} {o.positions.join(", ")}
-                      </Cell>
-                      <Cell>
-                        <Link
-                          href={`/machines/${encodeURIComponent(o.sn)}?tab=voices`}
-                          className="text-xs font-semibold text-primary hover:underline"
-                          data-testid={`edit-override-${o.sn}`}
-                        >
-                          Edit
-                        </Link>
-                      </Cell>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </DataTable>
-          </div>
-        </Card>
-      </div>
+          <Card
+            title="Machines with their own prompts"
+            note="To give a machine its own prompts, open the machine and choose Voice prompts."
+            testId="card-voice-overrides"
+          >
+            <div className="p-4 sm:p-5">
+              <DataTable testId="voice-overrides-table">
+                <Head>
+                  <Col>Machine</Col>
+                  <Col>Name</Col>
+                  <Col>Own prompts</Col>
+                  <Col>Operate</Col>
+                </Head>
+                <tbody className="divide-y divide-border/70">
+                  {!data || data.overrides.length === 0 ? (
+                    <NoData colSpan={4} loading={loading} />
+                  ) : (
+                    data.overrides.map((o) => (
+                      <tr key={o.sn} data-testid={`override-${o.sn}`}>
+                        <Cell>
+                          <MachineLabel deviceExtNo={o.deviceExtNo} sn={o.sn} />
+                        </Cell>
+                        <Cell>{o.name}</Cell>
+                        <Cell className="tabular-nums text-muted-foreground">
+                          {o.positions.length === 1 ? "Position" : "Positions"} {o.positions.join(", ")}
+                        </Cell>
+                        <Cell>
+                          <Link
+                            href={`/machines/${encodeURIComponent(o.sn)}?tab=voices`}
+                            className="text-xs font-semibold text-primary hover:underline"
+                            data-testid={`edit-override-${o.sn}`}
+                          >
+                            Edit
+                          </Link>
+                        </Cell>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </DataTable>
+            </div>
+          </Card>
+        </div>
+      )}
     </MachinesShell>
   );
 }

@@ -16,6 +16,7 @@ import {
   Col,
   DataTable,
   FilterBar,
+  FilterRange,
   formatIstStamp,
   formatRupees,
   Head,
@@ -152,8 +153,10 @@ function Orders({ session }: { session: AdminSession }) {
           options={[{ value: "", label: "All" }, ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label }))]}
           testId="filter-status"
         />
-        <TextFilter label="From" type="datetime-local" value={draft.from} onChange={set("from")} testId="filter-from" />
-        <TextFilter label="To" type="datetime-local" value={draft.to} onChange={set("to")} testId="filter-to" />
+        <FilterRange>
+          <TextFilter label="From" type="datetime-local" value={draft.from} onChange={set("from")} testId="filter-from" />
+          <TextFilter label="To" type="datetime-local" value={draft.to} onChange={set("to")} testId="filter-to" />
+        </FilterRange>
       </FilterBar>
 
       <DataTable testId="orders-table">

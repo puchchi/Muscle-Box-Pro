@@ -126,7 +126,7 @@ export default function AdminGyms() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
         <div>
           <h1
-            className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1"
+            className="text-2xl font-display font-black text-foreground tracking-tight mb-1"
             data-testid="admin-gyms-heading"
           >
             Gyms

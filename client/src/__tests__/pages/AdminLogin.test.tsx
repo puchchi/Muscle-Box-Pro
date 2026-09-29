@@ -55,6 +55,7 @@ vi.mock("@/lib/adminApi", () => ({
 
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminHome from "@/pages/admin/AdminHome";
+import { forgetVerifiedSession } from "@/pages/admin/useAdminGuard";
 import { adminGymListFixture } from "@/test/adminGymFixture";
 
 /** One list row to vary the status of. The overview reads nothing else off it. */
@@ -176,6 +177,7 @@ describe("AdminLogin", () => {
 describe("AdminHome", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    forgetVerifiedSession();
     mockSignOut.mockResolvedValue(undefined);
     mockFetchList.mockResolvedValue({ ok: true, data: { gyms: [], nextCursor: null } });
   });
@@ -188,7 +190,7 @@ describe("AdminHome", () => {
     render(<AdminHome />);
 
     expect(await screen.findByTestId("admin-email")).toHaveTextContent("ops@muscleboxpro.com");
-    expect(screen.getByTestId("admin-name")).toHaveTextContent("Ops Team");
+    expect(screen.getByTestId("shell-admin")).toHaveTextContent("Ops Team");
     expect(screen.getByTestId("admin-role")).toHaveTextContent("admin");
   });
 
@@ -204,6 +206,34 @@ describe("AdminHome", () => {
     mockFetchSession.mockResolvedValue({ ...SESSION, expiresAt: "" });
     render(<AdminHome />);
     expect(await screen.findByTestId("admin-expires")).toHaveTextContent("Unknown");
+  });
+
+  it("renders the next page at once with a session this tab already verified, and still re-checks it", async () => {
+    const live = { ...SESSION, expiresAt: new Date(Date.now() + 3_600_000).toISOString() };
+    mockFetchSession.mockResolvedValue(live);
+    const first = render(<AdminHome />);
+    await screen.findByTestId("admin-email");
+    first.unmount();
+    const probes = mockFetchSession.mock.calls.length;
+
+    mockFetchSession.mockReturnValue(new Promise(() => {}));
+    render(<AdminHome />);
+    expect(screen.getByTestId("admin-email")).toHaveTextContent("ops@muscleboxpro.com");
+    expect(mockFetchSession.mock.calls.length).toBeGreaterThan(probes);
+  });
+
+  it("does not reuse a verified session once it has expired", async () => {
+    mockFetchSession.mockResolvedValue({ ...SESSION, expiresAt: new Date(Date.now() + 3_600_000).toISOString() });
+    const first = render(<AdminHome />);
+    await screen.findByTestId("admin-email");
+    first.unmount();
+
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 7_200_000);
+    mockFetchSession.mockReturnValue(new Promise(() => {}));
+    render(<AdminHome />);
+    expect(screen.queryByTestId("admin-email")).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it("sends an unauthenticated visitor to the login page", async () => {

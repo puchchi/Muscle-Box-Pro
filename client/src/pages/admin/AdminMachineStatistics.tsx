@@ -17,6 +17,7 @@ import {
   Col,
   DataTable,
   FilterBar,
+  FilterRange,
   formatIstStamp,
   formatRupees,
   Head,
@@ -234,8 +235,10 @@ function Statistics({ session }: { session: AdminSession }) {
         )}
         {report === "sales" && <TextFilter label="Goods" value={draft.goodsName} onChange={set("goodsName")} testId="filter-goods" />}
         {report === "ads" && <TextFilter label="Program" value={draft.ad} onChange={set("ad")} testId="filter-ad" />}
-        <TextFilter label="From" type="date" value={draft.from} onChange={set("from")} testId="filter-from" />
-        <TextFilter label="To" type="date" value={draft.to} onChange={set("to")} testId="filter-to" />
+        <FilterRange>
+          <TextFilter label="From" type="date" value={draft.from} onChange={set("from")} testId="filter-from" />
+          <TextFilter label="To" type="date" value={draft.to} onChange={set("to")} testId="filter-to" />
+        </FilterRange>
       </FilterBar>
 
       <ProblemPanel problem={problem} testId="stats-error" />

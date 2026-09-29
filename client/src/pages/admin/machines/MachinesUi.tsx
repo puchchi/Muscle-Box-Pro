@@ -126,6 +126,10 @@ export function FilterBar({
   );
 }
 
+export function FilterRange({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-wrap items-end gap-3">{children}</div>;
+}
+
 export function TextFilter({
   label,
   value,
@@ -146,7 +150,7 @@ export function TextFilter({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`${filterInputClass} ${type === "datetime-local" ? "w-52" : "w-40"}`}
+        className={`${filterInputClass} ${type === "datetime-local" ? "w-56" : "w-40"}`}
         data-testid={testId}
       />
     </label>
@@ -268,6 +272,8 @@ export function Pager({
     if (Number.isInteger(target) && target >= 1 && target <= pages) onPage(target);
     setGoTo("");
   };
+
+  if (total === 0) return null;
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-muted-foreground" data-testid="pager">

@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { CupSoda, Dumbbell, Inbox, LayoutDashboard, LogOut, MessageSquare, Store, type LucideIcon } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { ADMIN_SESSION_QUERY_KEY, signOutAsAdmin, type AdminSession } from "@/lib/adminSession";
+import { forgetVerifiedSession } from "./useAdminGuard";
 import { BEARER_SESSION_ALLOWED, MBP_API_BASE_URL } from "@/lib/apiClient";
+import { formatIstDateTime } from "./adminFormat";
 
 /**
  * The chrome every signed-in admin page sits in: who you are, where you can go, how to leave.
@@ -31,81 +33,93 @@ export function AdminShell({
   const handleSignOut = useAdminSignOut();
 
   return (
-    <div className="dark theme-console min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        {/*
-          `flex-wrap` on both rows, because four tabs plus the brand and the sign-out button no longer
-          fit a 390px viewport: without it the right-hand group lands off-screen and the whole document
-          scrolls sideways.
-        */}
-        <div className="max-w-6xl mx-auto px-6 py-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-            <Link
-              href="/admin"
-              className="font-display font-black text-sm uppercase tracking-tight text-foreground"
-            >
-              MBP admin
-            </Link>
-            <nav className="flex flex-wrap items-center gap-1 text-sm">
-              <NavLink href="/admin" pathname={pathname} testId="link-overview" exact>
-                Overview
-              </NavLink>
-              <NavLink href="/admin/gyms" pathname={pathname} testId="link-gyms">
-                Gyms
-              </NavLink>
-              <NavLink href="/admin/franchises" pathname={pathname} testId="link-franchises">
-                Franchises
-              </NavLink>
-              <NavLink href="/machines" pathname={pathname} testId="link-machines">
-                Machines
-              </NavLink>
-              {/*
-                Two links rather than two sections of the overview, and that is the whole of the
-                lazy-loading design: `/admin/inbox` opens an IMAP connection and `/admin/leads` reaches
-                Supabase, so both stay unpaid for until somebody clicks.
-              */}
-              <NavLink href="/admin/inbox" pathname={pathname} testId="link-inbox">
-                Inbox
-              </NavLink>
-              <NavLink href="/admin/leads" pathname={pathname} testId="link-leads">
-                Enquiries
-              </NavLink>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-muted-foreground hidden sm:inline" data-testid="shell-admin">
-              {session.displayName}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSignOut}
-              className="rounded-xl cursor-pointer"
-              data-testid="button-signout"
-            >
-              Sign out
-            </Button>
-          </div>
+    <div className="dark theme-console min-h-screen bg-background text-foreground lg:flex">
+      <aside className="border-b border-border bg-card lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 lg:block lg:px-5 lg:py-5">
+          <Link href="/admin" className="block">
+            <span className="block font-display text-sm font-black uppercase tracking-tight text-foreground">MBP admin</span>
+            <span className="hidden text-xs text-muted-foreground lg:block">Gyms and franchises</span>
+          </Link>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer lg:hidden"
+            data-testid="button-signout-mobile"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+            Sign out
+          </button>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
+        <nav
+          aria-label="Admin"
+          className="flex gap-1 overflow-x-auto px-3 pb-2 lg:flex-1 lg:flex-col lg:overflow-visible lg:pb-0"
+        >
+          {SECTIONS.map(({ href, label, testId, icon, exact }) => (
+            <NavLink key={href} href={href} pathname={pathname} testId={testId} icon={icon} exact={exact}>
+              {label}
+            </NavLink>
+          ))}
+          <div className="hidden lg:my-2 lg:block lg:border-t lg:border-border" aria-hidden />
+          <NavLink href="/machines" pathname={pathname} testId="link-machines" icon={CupSoda}>
+            Machine console
+          </NavLink>
+        </nav>
 
-      <footer className="max-w-6xl mx-auto px-6 pb-10">
-        {/*
-          Not a leak — the origin is in the JS bundle either way. It is here because pointing a
-          build at the wrong stage is the most common way for all of this to be mysteriously
-          broken, and the two candidate sandbox gateways in `mbp-backend` differ by six
-          characters.
-        */}
-        <p className="text-xs text-muted-foreground" data-testid="admin-api-host">
-          API: {MBP_API_BASE_URL}
-          {BEARER_SESSION_ALLOWED && " · non-production host, bearer session in use"}
-        </p>
-      </footer>
+        <div className="hidden border-t border-border px-5 py-4 lg:block" data-testid="shell-session">
+          <p className="truncate text-sm font-semibold text-foreground" data-testid="shell-admin">
+            {session.displayName}
+          </p>
+          <p className="truncate text-xs text-muted-foreground" data-testid="admin-email">
+            {session.email}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            <span className="capitalize" data-testid="admin-role">
+              {session.role}
+            </span>
+            {" · Session ends "}
+            <span className="tabular-nums" data-testid="admin-expires">
+              {session.expiresAt ? formatIstDateTime(session.expiresAt) : "Unknown"}
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="-ml-2 mt-3 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer"
+            data-testid="button-signout"
+          >
+            <LogOut className="h-3.5 w-3.5" aria-hidden />
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <div className="min-w-0 flex-1">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+        <footer className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+          {/*
+            Not a leak — the origin is in the JS bundle either way. It is here because pointing a
+            build at the wrong stage is the most common way for all of this to be mysteriously
+            broken, and the two candidate sandbox gateways in `mbp-backend` differ by six
+            characters.
+          */}
+          <p className="text-xs text-muted-foreground" data-testid="admin-api-host">
+            API: {MBP_API_BASE_URL}
+            {BEARER_SESSION_ALLOWED && " · non-production host, bearer session in use"}
+          </p>
+        </footer>
+      </div>
     </div>
   );
 }
+
+const SECTIONS: ReadonlyArray<{ href: string; label: string; testId: string; icon: LucideIcon; exact?: boolean }> = [
+  { href: "/admin", label: "Overview", testId: "link-overview", icon: LayoutDashboard, exact: true },
+  { href: "/admin/gyms", label: "Gyms", testId: "link-gyms", icon: Dumbbell },
+  { href: "/admin/franchises", label: "Franchises", testId: "link-franchises", icon: Store },
+  { href: "/admin/inbox", label: "Inbox", testId: "link-inbox", icon: Inbox },
+  { href: "/admin/leads", label: "Enquiries", testId: "link-leads", icon: MessageSquare },
+];
 
 export function useAdminSignOut() {
   const router = useRouter();
@@ -115,6 +129,7 @@ export function useAdminSignOut() {
     // only the server can expire an `HttpOnly` cookie, and an admin who has pressed this must
     // leave the screen whether or not the call landed.
     await signOutAsAdmin();
+    forgetVerifiedSession();
     // `removeQueries` rather than `invalidateQueries`, and **all** admin queries rather than
     // just the session. Invalidating leaves one admin's gym list in the cache for whoever
     // signs in next while the refetch is in flight; scoping it to the session key alone would
@@ -137,12 +152,14 @@ function NavLink({
   href,
   pathname,
   testId,
+  icon: Icon,
   exact = false,
   children,
 }: {
   href: string;
   pathname: string;
   testId: string;
+  icon: LucideIcon;
   exact?: boolean;
   children: React.ReactNode;
 }) {
@@ -151,13 +168,12 @@ function NavLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-        active
-          ? "bg-secondary text-foreground"
-          : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+      className={`flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+        active ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
       }`}
       data-testid={testId}
     >
+      <Icon className={`h-4 w-4 ${active ? "text-primary" : ""}`} aria-hidden />
       {children}
     </Link>
   );

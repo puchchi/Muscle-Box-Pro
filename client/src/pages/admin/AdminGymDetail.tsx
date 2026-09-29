@@ -138,7 +138,7 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
       <div>
         <div className="flex flex-wrap items-center gap-3 mb-1">
           <h1
-            className="text-2xl font-display font-black text-foreground uppercase tracking-tight"
+            className="text-2xl font-display font-black text-foreground tracking-tight"
             data-testid="gym-heading"
           >
             {gym.details.tradeName || gym.details.legalEntityName || gym.slug}
@@ -174,7 +174,7 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
       )}
 
       <nav
-        className="sticky top-[3.4rem] z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+        className="sticky top-2 z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80"
         aria-label="Sections of this gym"
       >
         {SECTIONS.map((section) => (

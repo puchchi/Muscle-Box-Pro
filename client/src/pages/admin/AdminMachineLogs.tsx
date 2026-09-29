@@ -16,6 +16,7 @@ import {
   Col,
   DataTable,
   FilterBar,
+  FilterRange,
   formatIstStamp,
   Head,
   LoadMore,
@@ -158,8 +159,10 @@ function EquipmentLog({ sn }: { sn?: string }) {
           ]}
           testId="filter-status"
         />
-        <TextFilter label="From" type="datetime-local" value={from} onChange={setFrom} testId="filter-from" />
-        <TextFilter label="To" type="datetime-local" value={to} onChange={setTo} testId="filter-to" />
+        <FilterRange>
+          <TextFilter label="From" type="datetime-local" value={from} onChange={setFrom} testId="filter-from" />
+          <TextFilter label="To" type="datetime-local" value={to} onChange={setTo} testId="filter-to" />
+        </FilterRange>
       </FilterBar>
 
       {filters.code && (
@@ -269,8 +272,10 @@ function OperationsLog({ sn }: { sn?: string }) {
           options={[{ value: "", label: "All" }, ...Object.entries(OPERATE_TYPE_LABEL).map(([value, label]) => ({ value, label }))]}
           testId="filter-type"
         />
-        <TextFilter label="From" type="datetime-local" value={from} onChange={setFrom} testId="filter-from" />
-        <TextFilter label="To" type="datetime-local" value={to} onChange={setTo} testId="filter-to" />
+        <FilterRange>
+          <TextFilter label="From" type="datetime-local" value={from} onChange={setFrom} testId="filter-from" />
+          <TextFilter label="To" type="datetime-local" value={to} onChange={setTo} testId="filter-to" />
+        </FilterRange>
       </FilterBar>
 
       <DataTable testId="operations-table">

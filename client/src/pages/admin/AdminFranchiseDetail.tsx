@@ -137,7 +137,7 @@ function FranchiseView({
       <div>
         <div className="flex flex-wrap items-center gap-3 mb-1">
           <h1
-            className="text-2xl font-display font-black text-foreground uppercase tracking-tight"
+            className="text-2xl font-display font-black text-foreground tracking-tight"
             data-testid="franchise-heading"
           >
             {franchise.details.tradeName || franchise.details.legalEntityName || franchise.slug}
@@ -175,14 +175,8 @@ function FranchiseView({
         </a>
       )}
 
-      {/*
-        Sticky from `md` up and no lower, because the offset has to clear the shell's header and that
-        header is not one height: its nav wraps below 768px, so it stands 157px tall on a phone and
-        57px here. Pinned at 57px on a phone this bar was painted under the header and could not be
-        clicked, which is worse than scrolling away with the page.
-      */}
       <nav
-        className="z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:sticky md:top-[57px]"
+        className="z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80 sticky top-2"
         aria-label="Sections of this franchise"
       >
         {SECTIONS.map((section) => (

@@ -90,7 +90,7 @@ export function MachineVoicesTab({ sn, onSaved }: { sn: string; onSaved: () => v
             </div>
           </>
         ) : (
-          <p className="px-5 py-6 text-sm text-muted-foreground">{problem ? "Couldn't load the prompts." : "Loading…"}</p>
+          <p className="px-5 py-6 text-sm text-muted-foreground">{problem ? "Nothing to show until the prompts load." : "Loading…"}</p>
         )}
       </Card>
     </div>

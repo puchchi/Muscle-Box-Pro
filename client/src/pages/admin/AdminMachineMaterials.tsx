@@ -128,6 +128,7 @@ function Materials({ session }: { session: AdminSession }) {
   }, [load]);
 
   const model = models.find((m) => m.id === modelId);
+  const noModels = !loading && !problem && models.length === 0;
 
   return (
     <MachinesShell session={session} section="materials">
@@ -135,19 +136,21 @@ function Materials({ session }: { session: AdminSession }) {
         title="Materials"
         subtitle="The canisters of each model. Recipes and stock slots are made from these."
         action={
-          <Button
-            type="button"
-            onClick={() => {
-              setNotice(null);
-              setEditing({ material: null });
-            }}
-            disabled={!modelId}
-            className="rounded-xl cursor-pointer"
-            data-testid="button-add-material"
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-            Add material
-          </Button>
+          !noModels && (
+            <Button
+              type="button"
+              onClick={() => {
+                setNotice(null);
+                setEditing({ material: null });
+              }}
+              disabled={!modelId}
+              className="rounded-xl cursor-pointer"
+              data-testid="button-add-material"
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              Add material
+            </Button>
+          )
         }
       />
 
@@ -158,78 +161,86 @@ function Materials({ session }: { session: AdminSession }) {
         </div>
       )}
 
-      <div className="mb-4 flex flex-wrap items-end gap-4">
-        <SelectFilter
-          label="Model"
-          value={modelId}
-          onChange={setModelId}
-          options={models.map((m) => ({ value: m.id, label: m.name }))}
-          testId="filter-model"
-        />
-        {model && (
-          <p className="pb-2 text-xs text-muted-foreground">
-            Protocol {model.protocol || "—"}. Hardware {model.versions || "—"}.
-          </p>
-        )}
-      </div>
+      {noModels ? (
+        <p className="rounded-2xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground" data-testid="materials-no-models">
+          There are no machine models yet. A model is added when its first machine is set up, and its materials can be edited here after that.
+        </p>
+      ) : (
+        <>
+          <div className="mb-4 flex flex-wrap items-end gap-4">
+            <SelectFilter
+              label="Model"
+              value={modelId}
+              onChange={setModelId}
+              options={models.map((m) => ({ value: m.id, label: m.name }))}
+              testId="filter-model"
+            />
+            {model && (
+              <p className="pb-2 text-xs text-muted-foreground">
+                Protocol {model.protocol || "—"}. Hardware {model.versions || "—"}.
+              </p>
+            )}
+          </div>
 
-      <DataTable testId="materials-table">
-        <Head>
-          <Col>Position</Col>
-          <Col>Name</Col>
-          <Col>Type</Col>
-          <Col>Unit</Col>
-          <Col align="right">Capacity</Col>
-          <Col align="right">Warning</Col>
-          <Col align="right">Consume rate</Col>
-          <Col>Enabled</Col>
-          <Col>Updated</Col>
-          <Col>Operate</Col>
-        </Head>
-        <tbody className="divide-y divide-border/70">
-          {rows.length === 0 ? (
-            <NoData colSpan={10} loading={loading} />
-          ) : (
-            rows.map((m) => (
-              <tr key={m.materialId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-material-${m.materialId}`}>
-                <Cell className="tabular-nums">{m.position}</Cell>
-                <Cell className="font-semibold">{m.name}</Cell>
-                <Cell className="text-muted-foreground">{m.rawType}</Cell>
-                <Cell className="text-muted-foreground">{m.unit}</Cell>
-                <Cell align="right" className="tabular-nums">{m.capacity}</Cell>
-                <Cell align="right" className="tabular-nums">{m.warnCapacity}</Cell>
-                <Cell align="right" className="tabular-nums">{m.expendRate}</Cell>
-                <Cell>
-                  <span className={m.enabled ? "text-emerald-200" : "text-muted-foreground"} data-testid={`enabled-${m.materialId}`}>
-                    {m.enabled ? "Yes" : "No"}
-                  </span>
-                </Cell>
-                <Cell className="whitespace-nowrap text-xs text-muted-foreground">
-                  {formatIstStamp(m.updatedAt)}
-                  {m.updatedBy && <span className="block">{m.updatedBy}</span>}
-                </Cell>
-                <Cell>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNotice(null);
-                      setEditing({ material: m });
-                    }}
-                    className="text-xs font-semibold text-primary hover:underline cursor-pointer"
-                    data-testid={`edit-material-${m.materialId}`}
-                  >
-                    Edit
-                  </button>
-                </Cell>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </DataTable>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Position is the physical canister slot and decides which motor runs. Adding a material makes an empty stock slot on
-        every machine of the model.
-      </p>
+          <DataTable testId="materials-table">
+            <Head>
+              <Col>Position</Col>
+              <Col>Name</Col>
+              <Col>Type</Col>
+              <Col>Unit</Col>
+              <Col align="right">Capacity</Col>
+              <Col align="right">Warning</Col>
+              <Col align="right">Consume rate</Col>
+              <Col>Enabled</Col>
+              <Col>Updated</Col>
+              <Col>Operate</Col>
+            </Head>
+            <tbody className="divide-y divide-border/70">
+              {rows.length === 0 ? (
+                <NoData colSpan={10} loading={loading} />
+              ) : (
+                rows.map((m) => (
+                  <tr key={m.materialId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-material-${m.materialId}`}>
+                    <Cell className="tabular-nums">{m.position}</Cell>
+                    <Cell className="font-semibold">{m.name}</Cell>
+                    <Cell className="text-muted-foreground">{m.rawType}</Cell>
+                    <Cell className="text-muted-foreground">{m.unit}</Cell>
+                    <Cell align="right" className="tabular-nums">{m.capacity}</Cell>
+                    <Cell align="right" className="tabular-nums">{m.warnCapacity}</Cell>
+                    <Cell align="right" className="tabular-nums">{m.expendRate}</Cell>
+                    <Cell>
+                      <span className={m.enabled ? "text-emerald-200" : "text-muted-foreground"} data-testid={`enabled-${m.materialId}`}>
+                        {m.enabled ? "Yes" : "No"}
+                      </span>
+                    </Cell>
+                    <Cell className="whitespace-nowrap text-xs text-muted-foreground">
+                      {formatIstStamp(m.updatedAt)}
+                      {m.updatedBy && <span className="block">{m.updatedBy}</span>}
+                    </Cell>
+                    <Cell>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNotice(null);
+                          setEditing({ material: m });
+                        }}
+                        className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                        data-testid={`edit-material-${m.materialId}`}
+                      >
+                        Edit
+                      </button>
+                    </Cell>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </DataTable>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Position is the physical canister slot and decides which motor runs. Adding a material makes an empty stock slot on
+            every machine of the model.
+          </p>
+        </>
+      )}
 
       {editing && modelId && (
         <MaterialDialog

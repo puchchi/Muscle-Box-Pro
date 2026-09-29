@@ -38,12 +38,10 @@ export function Card({
   return (
     <section
       id={id}
-      // The scroll margin clears the sticky header, whose height is not one number: the shell's
-      // nav wraps, so it is 157px at 390px wide and 57px from `md` up, where the detail page's
-      // section nav also becomes sticky and adds its own 42px.
+      // The scroll margin clears the detail page's sticky section nav.
       className={`rounded-2xl border bg-card overflow-hidden ${
         alert ? "border-rose-400/25" : "border-border"
-      } ${id ? "scroll-mt-[10.5rem] md:scroll-mt-28" : ""}`}
+      } ${id ? "scroll-mt-16" : ""}`}
       data-testid={testId}
     >
       <div
@@ -225,12 +223,10 @@ export function StatCard({
   const ink =
     tone === "good" ? "text-emerald-200" : tone === "warn" ? "text-amber-300" : "text-foreground";
   return (
-    <div className={`rounded-2xl border bg-card px-4 py-3.5 ${ring}`} data-testid={testId}>
-      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-2xl font-display font-black tabular-nums leading-none ${ink}`}>
-        {value}
-      </p>
-      {hint && <p className="mt-1.5 text-xs text-muted-foreground leading-snug">{hint}</p>}
+    <div className={`rounded-2xl border bg-card px-3.5 py-3 ${ring}`} data-testid={testId}>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`text-xl font-display font-black tabular-nums ${ink}`}>{value}</p>
+      {hint && <p className="text-xs text-muted-foreground leading-snug">{hint}</p>}
     </div>
   );
 }
