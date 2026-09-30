@@ -2,8 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { deleteGood, fetchGoods, fetchModels, setGoodListing } from "@/lib/adminMachineApi";
 import type { Good, MachineModel } from "@shared/admin/machinesSchema";
 import type { AdminSession } from "@/lib/adminSession";
@@ -192,78 +199,74 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
 
       <DataTable testId="goods-table">
         <Head>
-          <Col>Sort</Col>
-          <Col>Picture</Col>
-          <Col>Goods Number</Col>
-          <Col>Name</Col>
-          <Col>Specification</Col>
+          <Col align="right" className="w-12">Sort</Col>
+          <Col>Goods</Col>
+          <Col>Number</Col>
           <Col align="right">Price</Col>
           <Col>Model</Col>
-          <Col align="right">Machines</Col>
+          <Col align="right">Listed on</Col>
           <Col>Updated</Col>
-          <Col>Operate</Col>
+          <Col align="right">
+            <span className="sr-only">Actions</span>
+          </Col>
         </Head>
         <tbody className="divide-y divide-border/70">
           {rows.length === 0 ? (
-            <NoData colSpan={10} loading={loading} />
+            <NoData colSpan={8} loading={loading} />
           ) : (
-            rows.map((good) => (
-              <tr key={good.goodsId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-good-${good.goodsId}`}>
-                <Cell className="tabular-nums">{good.sort}</Cell>
-                <Cell>
-                  <GoodsPicture url={good.image?.url} alt={good.name} />
-                </Cell>
-                <Cell className="font-mono text-xs">{good.no}</Cell>
-                <Cell className="min-w-[8rem]">
-                  <Link
-                    href={`/machines/goods/${encodeURIComponent(good.goodsId)}`}
-                    className="font-semibold text-foreground hover:underline"
-                  >
-                    {good.name}
-                  </Link>
-                  {good.nameEn && <span className="block text-xs text-muted-foreground">{good.nameEn}</span>}
-                </Cell>
-                <Cell className="text-muted-foreground">{good.spec || "—"}</Cell>
-                <Cell align="right" className="tabular-nums">{formatRupees(good.priceInr)}</Cell>
-                <Cell className="whitespace-nowrap">{modelName(good.modelId)}</Cell>
-                <Cell align="right" className="tabular-nums">
-                  <span data-testid={`listed-count-${good.goodsId}`}>{good.machinesListed}</span>
-                </Cell>
-                <Cell className="whitespace-nowrap text-xs text-muted-foreground">
-                  {formatIstStamp(good.updatedAt)}
-                  {good.updatedBy && <span className="block">{good.updatedBy}</span>}
-                </Cell>
-                <Cell className="whitespace-nowrap">
-                  <span className="flex gap-2 text-xs font-semibold">
-                    <Link
-                      href={`/machines/goods/${encodeURIComponent(good.goodsId)}`}
-                      className="text-primary hover:underline"
-                      data-testid={`edit-${good.goodsId}`}
-                    >
-                      Edit
-                    </Link>
-                    <RowAction onClick={() => askListing(good, true)} disabled={busy} testId={`list-all-${good.goodsId}`}>
-                      List on all machines
-                    </RowAction>
-                    <RowAction onClick={() => askListing(good, false)} disabled={busy} testId={`unlist-all-${good.goodsId}`}>
-                      Unlist from all machines
-                    </RowAction>
-                    <RowAction
-                      onClick={() => {
-                        setNotice(null);
-                        if (good.machinesListed > 0) setProblem({ message: listedMessage(good), issues: [] });
-                        else setPending({ kind: "delete", good });
-                      }}
-                      disabled={busy}
-                      danger
-                      testId={`delete-${good.goodsId}`}
-                    >
-                      Delete
-                    </RowAction>
-                  </span>
-                </Cell>
-              </tr>
-            ))
+            rows.map((good) => {
+              const editHref = `/machines/goods/${encodeURIComponent(good.goodsId)}`;
+              const subtitle = [good.nameEn, good.spec].filter(Boolean).join(" · ");
+              return (
+                <tr key={good.goodsId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-good-${good.goodsId}`}>
+                  <Cell align="right" className="tabular-nums text-muted-foreground">{good.sort}</Cell>
+                  <Cell className="min-w-[16rem]">
+                    <span className="flex items-center gap-3">
+                      <GoodsPicture url={good.image?.url} alt={good.name} />
+                      <span className="min-w-0">
+                        <Link href={editHref} className="block font-semibold text-foreground hover:underline">
+                          {good.name}
+                        </Link>
+                        {subtitle && <span className="block text-xs text-muted-foreground">{subtitle}</span>}
+                      </span>
+                    </span>
+                  </Cell>
+                  <Cell className="font-mono text-xs text-muted-foreground">{good.no}</Cell>
+                  <Cell align="right" className="whitespace-nowrap tabular-nums">{formatRupees(good.priceInr)}</Cell>
+                  <Cell className="whitespace-nowrap">{modelName(good.modelId)}</Cell>
+                  <Cell align="right" className="whitespace-nowrap tabular-nums">
+                    <span data-testid={`listed-count-${good.goodsId}`}>{good.machinesListed}</span>
+                    <span className="text-muted-foreground"> {good.machinesListed === 1 ? "machine" : "machines"}</span>
+                  </Cell>
+                  <Cell className="whitespace-nowrap text-xs text-muted-foreground">
+                    {formatIstStamp(good.updatedAt)}
+                    {good.updatedBy && <span className="block">{good.updatedBy}</span>}
+                  </Cell>
+                  <Cell align="right" className="whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1">
+                      <Link
+                        href={editHref}
+                        className="rounded-lg px-2.5 py-2 text-xs font-semibold text-primary hover:bg-secondary"
+                        data-testid={`edit-${good.goodsId}`}
+                      >
+                        Edit
+                      </Link>
+                      <RowMenu
+                        good={good}
+                        disabled={busy}
+                        onList={() => askListing(good, true)}
+                        onUnlist={() => askListing(good, false)}
+                        onDelete={() => {
+                          setNotice(null);
+                          if (good.machinesListed > 0) setProblem({ message: listedMessage(good), issues: [] });
+                          else setPending({ kind: "delete", good });
+                        }}
+                      />
+                    </span>
+                  </Cell>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </DataTable>
@@ -326,28 +329,52 @@ function confirmCopy(pending: Pending | null): { title: string; message: string;
   };
 }
 
-function RowAction({
-  onClick,
+function RowMenu({
+  good,
   disabled,
-  danger,
-  testId,
-  children,
+  onList,
+  onUnlist,
+  onDelete,
 }: {
-  onClick: () => void;
-  disabled?: boolean;
-  danger?: boolean;
-  testId: string;
-  children: React.ReactNode;
+  good: Good;
+  disabled: boolean;
+  onList: () => void;
+  onUnlist: () => void;
+  onDelete: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${danger ? "text-rose-300" : "text-primary"}`}
-      data-testid={testId}
-    >
-      {children}
-    </button>
+    // Non-modal: a modal menu that opens a dialog can leave pointer-events: none on body.
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger
+        disabled={disabled}
+        aria-label={`More actions for ${good.name}`}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        data-testid={`more-${good.goodsId}`}
+      >
+        <MoreHorizontal className="h-4 w-4" aria-hidden />
+      </DropdownMenuTrigger>
+      {/* The portal mounts on body, outside MachinesShell, so the console theme has to be set again here. */}
+      <DropdownMenuContent align="end" className="dark theme-console min-w-[13rem] rounded-xl border-border bg-card">
+        <DropdownMenuItem onSelect={onList} className="cursor-pointer" data-testid={`list-all-${good.goodsId}`}>
+          List on all machines
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={onUnlist}
+          disabled={good.machinesListed === 0}
+          className="cursor-pointer"
+          data-testid={`unlist-all-${good.goodsId}`}
+        >
+          Unlist from all machines
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-border" />
+        <DropdownMenuItem
+          onSelect={onDelete}
+          className="cursor-pointer text-rose-300 focus:text-rose-200"
+          data-testid={`delete-${good.goodsId}`}
+        >
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

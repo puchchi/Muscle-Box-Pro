@@ -29,7 +29,8 @@ import {
   TextFilter,
   type Problem,
 } from "./machines/MachinesUi";
-import { PAY_METHOD_LABEL, STATUS_CLASS, STATUS_LABEL, UNKNOWN_HINT } from "./machines/orderLabels";
+import { PAY_METHOD_LABEL, STATUS_LABEL, STATUS_PILL_CLASS, UNKNOWN_HINT } from "./machines/orderLabels";
+import { Pill } from "./AdminUi";
 import { saveCsv } from "./machines/csv";
 import { istToday, ORDERS_EXPORT_MAX, ordersCsv } from "./machines/statsRules";
 import { WarningPanel } from "./machines/WarningPanel";
@@ -136,18 +137,18 @@ function Orders({ session }: { session: AdminSession }) {
           setFilters({});
         }}
       >
-        <TextFilter label="Order Number" value={draft.orderId} onChange={set("orderId")} testId="filter-order" />
+        <TextFilter label="Order number" value={draft.orderId} onChange={set("orderId")} testId="filter-order" />
         <TextFilter label="Machine" value={draft.machine} onChange={set("machine")} testId="filter-machine" />
-        <TextFilter label="Goods Name" value={draft.goodsName} onChange={set("goodsName")} testId="filter-goods" />
+        <TextFilter label="Goods name" value={draft.goodsName} onChange={set("goodsName")} testId="filter-goods" />
         <SelectFilter
-          label="Payment Method"
+          label="Payment method"
           value={draft.payMethod}
           onChange={set("payMethod")}
           options={[{ value: "", label: "All" }, ...Object.entries(PAY_METHOD_LABEL).map(([value, label]) => ({ value, label }))]}
           testId="filter-pay"
         />
         <SelectFilter
-          label="Order Status"
+          label="Order status"
           value={draft.status}
           onChange={set("status")}
           options={[{ value: "", label: "All" }, ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label }))]}
@@ -161,52 +162,48 @@ function Orders({ session }: { session: AdminSession }) {
 
       <DataTable testId="orders-table">
         <Head>
-          <Col>Order Number</Col>
-          <Col>Machine Number</Col>
-          <Col>Machine Name</Col>
-          <Col>Goods Name</Col>
+          <Col>Time</Col>
+          <Col>Order</Col>
+          <Col>Machine</Col>
+          <Col>Goods</Col>
           <Col align="right">Amount</Col>
-          <Col>Payment Method</Col>
-          <Col>Order Status</Col>
-          <Col>Dispensed</Col>
-          <Col>Failure reason</Col>
-          <Col>Order Time</Col>
+          <Col>Payment</Col>
+          <Col>Status</Col>
         </Head>
         <tbody className="divide-y divide-border/70">
           {rows.length === 0 ? (
-            <NoData colSpan={10} loading={loading} />
+            <NoData colSpan={7} loading={loading} />
           ) : (
             rows.map((order) => (
               <tr key={order.orderId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-order-${order.orderId}`}>
-                <Cell className="font-mono text-xs">
+                <Cell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">{formatIstStamp(order.createdAt)}</Cell>
+                <Cell className="whitespace-nowrap font-mono text-xs">
                   <Link href={`/machines/orders/${encodeURIComponent(order.orderId)}`} className="text-primary hover:underline">
                     {order.orderId}
                   </Link>
                 </Cell>
-                <Cell className="whitespace-nowrap">{order.deviceExtNo || "—"}</Cell>
-                <Cell>{order.machineName || "—"}</Cell>
-                <Cell>{order.goodsName}</Cell>
-                <Cell align="right" className="tabular-nums">{formatRupees(order.amountInr)}</Cell>
+                <Cell className="whitespace-nowrap">
+                  <span className="block font-semibold text-foreground">{order.machineName || order.deviceExtNo || order.sn}</span>
+                  {order.machineName && order.deviceExtNo && (
+                    <span className="block text-xs text-muted-foreground">{order.deviceExtNo}</span>
+                  )}
+                </Cell>
+                <Cell className="min-w-[12rem]">
+                  {order.goodsName || <span className="font-mono text-xs text-muted-foreground">{order.goodsId || "—"}</span>}
+                </Cell>
+                <Cell align="right" className="whitespace-nowrap tabular-nums">{formatRupees(order.amountInr)}</Cell>
                 <Cell className="whitespace-nowrap">
                   {PAY_METHOD_LABEL[order.payMethod]}
                   {order.redeemCode && <span className="block font-mono text-[11px] text-muted-foreground">{order.redeemCode}</span>}
                 </Cell>
-                <Cell>
-                  <span
-                    className={`font-semibold ${STATUS_CLASS[order.status]}`}
-                    title={order.status === "unknown" ? UNKNOWN_HINT : undefined}
-                    data-testid={`status-${order.orderId}`}
-                  >
-                    {STATUS_LABEL[order.status]}
+                <Cell className="max-w-[16rem]">
+                  <span title={order.status === "unknown" ? UNKNOWN_HINT : undefined}>
+                    <Pill className={STATUS_PILL_CLASS[order.status]} testId={`status-${order.orderId}`}>
+                      {STATUS_LABEL[order.status]}
+                    </Pill>
                   </span>
+                  <StatusDetail order={order} />
                 </Cell>
-                <Cell>{order.dispensed ? "Yes" : "No"}</Cell>
-                <Cell className="max-w-[14rem]">
-                  <span className="block truncate text-xs text-muted-foreground" title={order.failReason ?? undefined}>
-                    {order.failReason || "—"}
-                  </span>
-                </Cell>
-                <Cell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">{formatIstStamp(order.createdAt)}</Cell>
               </tr>
             ))
           )}
@@ -214,5 +211,23 @@ function Orders({ session }: { session: AdminSession }) {
       </DataTable>
       {cursor && <LoadMore onClick={() => page(cursor)} loading={loading} />}
     </MachinesShell>
+  );
+}
+
+function StatusDetail({ order }: { order: Order }) {
+  if (order.status === "failed" && order.failReason) {
+    return (
+      <span className="mt-1 block truncate text-xs text-muted-foreground" title={order.failReason}>
+        {order.failReason}
+      </span>
+    );
+  }
+  if (order.status !== "made") return null;
+  return order.dispensed ? (
+    <span className="mt-1 block text-xs text-muted-foreground">Dispensed</span>
+  ) : (
+    <span className="mt-1 block text-xs text-amber-200" data-testid={`undispensed-${order.orderId}`}>
+      Dispense not confirmed
+    </span>
   );
 }

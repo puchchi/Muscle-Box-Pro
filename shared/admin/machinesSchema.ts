@@ -227,8 +227,19 @@ const orderSchema = z.object({
 
 export const ordersSchema = z.object({ items: z.array(orderSchema), nextCursor });
 
+export const REFUND_STATES = ["requested", "pending", "refunded"] as const;
+
+const orderPaymentSchema = z.object({
+  paidAt: instant,
+  refund: z.enum(REFUND_STATES).nullable(),
+  refundReason: z.string().nullable(),
+});
+
 export const orderDetailSchema = z.object({
   order: orderSchema.extend({
+    payNo: z.string().nullable().optional().transform((v) => v ?? null),
+    thirdOrderNo: z.string().nullable().optional().transform((v) => v ?? null),
+    payment: orderPaymentSchema.nullable().optional().transform((v) => v ?? null),
     materials: z.array(
       z.object({
         materialId: z.string(),
