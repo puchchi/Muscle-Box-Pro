@@ -23,6 +23,8 @@ const machineValues = {
   coldMax: "8",
   coldMin: "5",
   enabled: true,
+  qrPay: true,
+  freeVend: false,
 };
 
 describe("validateMachine", () => {
@@ -255,5 +257,10 @@ describe("machineFilters", () => {
     expect(machineFilters("offline", "sn", " GS01 ", "m1")).toEqual({ network: "offline", sn: "GS01", modelId: "m1" });
     expect(machineFilters("all", "name", "  ", "")).toEqual({ name: undefined, modelId: undefined });
     expect(machineFilters("faulty", "deviceExtNo", "MBP", "")).toMatchObject({ fault: "faulty", deviceExtNo: "MBP" });
+  });
+
+  it("adds the free vend and factory PIN filters only when set", () => {
+    expect(machineFilters("all", "sn", "", "", "yes", true)).toEqual({ freeVend: "yes", factoryPin: "none" });
+    expect(machineFilters("all", "sn", "", "", "", false)).toEqual({});
   });
 });

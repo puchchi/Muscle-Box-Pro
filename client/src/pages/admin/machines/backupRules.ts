@@ -17,7 +17,8 @@ const LABELS: Record<string, string> = {
   isEnableAdQuantityStatistics: "Ad statistics",
   isEnableMembershipFunction: "Membership",
   isOpenToReceiveDrinks: "Get Drinks",
-  isEnableSkipPayment: "Free vend",
+  isEnableSkipPayment: "No pay",
+  isSkipPayEnabled: "Skip payment",
   isEnableConcentrationAdjustment: "Strength adjust",
   isOpenDailyProductionLimit: "Daily limit",
   dailyProductionLimit: "Daily limit (drinks)",
@@ -129,4 +130,9 @@ export function diffBackups(current: Record<string, Json>, previous: Record<stri
     }
   }
   return changes;
+}
+
+export function skipPaymentOn(config: Record<string, Json>): boolean {
+  const factory = config["factoryConfigBean"];
+  return typeof factory === "object" && factory !== null && (factory as Record<string, Json>)["isSkipPayEnabled"] === true;
 }

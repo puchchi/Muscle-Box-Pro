@@ -7,7 +7,7 @@ import type { MachineCreateInput, MachineEditInput } from "@shared/admin/machine
 import type { Machine, MachineModel } from "@shared/admin/machinesSchema";
 import type { MachineCall } from "@/lib/adminMachineApi";
 import { FormRow, NativeSelect, parseNumber, TextInput } from "./formBits";
-import { ProblemPanel, type Problem } from "./MachinesUi";
+import { ConfirmDialog, formatIstStamp, ProblemPanel, type Problem } from "./MachinesUi";
 
 type Values = {
   sn: string;
@@ -23,6 +23,8 @@ type Values = {
   coldMax: string;
   coldMin: string;
   enabled: boolean;
+  qrPay: boolean;
+  freeVend: boolean;
 };
 
 function valuesOf(machine: Machine | null, models: MachineModel[]): Values {
@@ -41,6 +43,8 @@ function valuesOf(machine: Machine | null, models: MachineModel[]): Values {
       coldMax: "8",
       coldMin: "5",
       enabled: true,
+      qrPay: false,
+      freeVend: false,
     };
   }
   return {
@@ -57,6 +61,8 @@ function valuesOf(machine: Machine | null, models: MachineModel[]): Values {
     coldMax: String(machine.coldMax),
     coldMin: String(machine.coldMin),
     enabled: machine.enabled,
+    qrPay: machine.qrPay,
+    freeVend: machine.freeVend,
   };
 }
 
@@ -124,6 +130,8 @@ export function validateMachine(
       coldMax,
       coldMin,
       enabled: v.enabled,
+      qrPay: v.qrPay,
+      freeVend: v.freeVend,
     },
   };
 }
@@ -134,9 +142,11 @@ export function MachineForm({
   onSubmit,
   onCancel,
   submitLabel,
+  skipPaymentBackupAt = null,
 }: {
   machine: Machine | null;
   models: MachineModel[];
+  skipPaymentBackupAt?: string | null;
   onSubmit: (input: MachineCreateInput | MachineEditInput) => Promise<MachineCall<unknown>>;
   onCancel?: () => void;
   submitLabel: string;
@@ -146,6 +156,7 @@ export function MachineForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<Problem | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmFreeVend, setConfirmFreeVend] = useState(false);
 
   const set = (key: keyof Values) => (value: string) => setValues((v) => ({ ...v, [key]: value }));
 
@@ -229,17 +240,61 @@ export function MachineForm({
         </FormRow>
       </div>
 
-      <label className="flex items-center gap-3 text-sm text-foreground">
-        <Switch
-          checked={values.enabled}
-          onCheckedChange={(checked) => setValues((v) => ({ ...v, enabled: checked }))}
-          data-testid="input-enabled"
-        />
-        <span>
-          Enabled
-          <span className="block text-xs text-muted-foreground">A disabled machine is refused service.</span>
-        </span>
-      </label>
+      <SwitchRow
+        checked={values.enabled}
+        onChange={(checked) => setValues((v) => ({ ...v, enabled: checked }))}
+        label="Enabled"
+        help="A disabled machine is refused service."
+        testId="input-enabled"
+      />
+
+      <fieldset className="rounded-xl border border-border px-4 pb-4 pt-2" data-testid="pay-settings">
+        <legend className="px-1 text-sm font-semibold text-foreground">Payment</legend>
+        <div className="space-y-4">
+          <SwitchRow
+            checked={values.qrPay}
+            onChange={(checked) => setValues((v) => ({ ...v, qrPay: checked }))}
+            label="QR payment"
+            help="Customers pay by scanning a UPI QR code on the machine."
+            testId="input-qrPay"
+          />
+          <SwitchRow
+            checked={values.freeVend}
+            onChange={(checked) => {
+              if (checked) setConfirmFreeVend(true);
+              else setValues((v) => ({ ...v, freeVend: false }));
+            }}
+            label="Free vend"
+            help="Customers can take drinks without paying. Every free drink is recorded as a free order. The machine can also turn free vend on locally (Skip payment, No pay); turning this off doesn't turn those off."
+            testId="input-freeVend"
+          >
+            {machine?.freeVendChangedAt && (
+              <span className="mt-1 block text-xs text-muted-foreground" data-testid="free-vend-changed">
+                Last changed {formatIstStamp(machine.freeVendChangedAt)}
+                {machine.freeVendChangedBy ? ` by ${machine.freeVendChangedBy}` : ""}
+              </span>
+            )}
+            {skipPaymentBackupAt && (
+              <span className="mt-1 block text-xs text-amber-200" data-testid="skip-payment-note">
+                Skip payment is on at the machine (backup of {formatIstStamp(skipPaymentBackupAt)})
+              </span>
+            )}
+          </SwitchRow>
+        </div>
+      </fieldset>
+
+      <ConfirmDialog
+        open={confirmFreeVend}
+        title={`Turn on free vend for ${values.name.trim() || machine?.name || "this machine"}?`}
+        message="Customers will get drinks without paying until free vend is turned off. Save to send it to the machine."
+        confirmLabel="Turn on"
+        onConfirm={() => {
+          setValues((v) => ({ ...v, freeVend: true }));
+          setConfirmFreeVend(false);
+        }}
+        onClose={() => setConfirmFreeVend(false)}
+        testId="confirm-free-vend"
+      />
 
       <div className="flex gap-2">
         <Button type="submit" disabled={saving} className="rounded-xl cursor-pointer" data-testid="button-save-machine">
@@ -252,5 +307,32 @@ export function MachineForm({
         )}
       </div>
     </form>
+  );
+}
+
+function SwitchRow({
+  checked,
+  onChange,
+  label,
+  help,
+  testId,
+  children,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  help: string;
+  testId: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 text-sm text-foreground">
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} className="mt-0.5 shrink-0" data-testid={testId} />
+      <span>
+        {label}
+        <span className="block max-w-prose text-xs text-muted-foreground">{help}</span>
+        {children}
+      </span>
+    </div>
   );
 }

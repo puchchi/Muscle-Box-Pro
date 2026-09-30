@@ -54,6 +54,8 @@ import {
   ordersSchema,
   parseWith,
   pinResultSchema,
+  factoryPinResultSchema,
+  factoryPinBulkResultSchema,
   promotionGetSchema,
   promotionSaveSchema,
   promotionsSchema,
@@ -135,6 +137,12 @@ export const updateMachine = (sn: string, input: MachineEditInput, expectedVersi
 
 export const setMachinePin = (sn: string, pin: string, confirmPin: string) =>
   call(pinResultSchema, "PUT", `/machines/${seg(sn)}/pin`, { pin, confirmPin });
+
+export const setFactoryPin = (sn: string, pin: string, confirmPin: string) =>
+  call(factoryPinResultSchema, "PUT", `/machines/${seg(sn)}/factory-pin`, { pin, confirmPin });
+
+export const setFactoryPinBulk = (sns: string[], pin: string, confirmPin: string) =>
+  call(factoryPinBulkResultSchema, "PUT", "/machines/factory-pin", { sns, pin, confirmPin });
 
 export const fetchMachineGoods = (sn: string, filters: { name?: string; listed?: "yes" | "no" }) =>
   call(machineGoodsSchema, "GET", `/machines/${seg(sn)}/goods${queryString(filters)}`);

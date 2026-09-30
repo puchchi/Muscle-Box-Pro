@@ -31,6 +31,8 @@ export type MachineListFilters = {
   restartPending?: "yes";
   fault?: "normal" | "exception" | "faulty";
   stock?: "lack" | "normal";
+  freeVend?: "yes" | "no";
+  factoryPin?: "none";
 };
 
 export type MachineEditInput = {
@@ -45,6 +47,8 @@ export type MachineEditInput = {
   coldMax: number;
   coldMin: number;
   enabled: boolean;
+  qrPay: boolean;
+  freeVend: boolean;
 };
 
 export type MachineCreateInput = MachineEditInput & { sn: string; modelId: string };
@@ -76,6 +80,9 @@ export type GoodInput = {
   modelId: string;
   image: { url: string } | null;
   recipe: RecipeLineInput[];
+  tagline: string;
+  nutrition: { name: string; value: string }[];
+  ingredients: string[];
 };
 
 export type MaterialInput = {

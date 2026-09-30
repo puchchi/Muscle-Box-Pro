@@ -7,6 +7,8 @@ const instant = z.string().nullable();
 const actor = z.string().nullable().optional().transform((v) => v ?? null);
 const inr = z.number().finite();
 const count = z.number().int().min(0);
+const flag = z.boolean().optional().transform((v) => v ?? false);
+const optionalInstant = instant.optional().transform((v) => v ?? null);
 
 export const summarySchema = z.object({
   machines: count,
@@ -35,6 +37,8 @@ export const machineRowSchema = z.object({
   stockStatus: z.enum(["lack", "normal"]),
   stockRemark: z.string(),
   restartPending: z.boolean(),
+  freeVend: flag,
+  hasFactoryPin: flag,
 });
 
 export const machineListSchema = z.object({ items: z.array(machineRowSchema), total: count });
@@ -56,6 +60,10 @@ export const machineSchema = z.object({
   coldMax: z.number(),
   coldMin: z.number(),
   enabled: z.boolean(),
+  qrPay: flag,
+  freeVend: flag,
+  freeVendChangedAt: optionalInstant,
+  freeVendChangedBy: actor,
   firstSeenAt: instant,
   lastSeenAt: instant,
   lastBootAt: instant,
@@ -63,6 +71,9 @@ export const machineSchema = z.object({
   hasPin: z.boolean(),
   pinChangedAt: instant,
   pinChangedBy: actor,
+  hasFactoryPin: flag,
+  factoryPinChangedAt: optionalInstant,
+  factoryPinChangedBy: actor,
   version: z.number().int().min(0),
   createdAt: instant,
   createdBy: actor,
@@ -73,6 +84,10 @@ export const machineSchema = z.object({
 export const machineEnvelopeSchema = z.object({ machine: machineSchema });
 
 export const pinResultSchema = z.object({ pinChangedAt: instant, pinChangedBy: actor });
+
+export const factoryPinResultSchema = z.object({ factoryPinChangedAt: instant, factoryPinChangedBy: actor });
+
+export const factoryPinBulkResultSchema = factoryPinResultSchema.extend({ updated: count });
 
 const imageSchema = z
   .object({ url: z.string(), path: z.string(), fileName: z.string(), md5: z.string() })
@@ -192,6 +207,12 @@ export const goodSchema = z.object({
   modelId: z.string(),
   image: imageSchema,
   recipe: z.array(recipeLineSchema),
+  tagline: z.string().optional().transform((v) => v ?? ""),
+  nutrition: z
+    .array(z.object({ name: z.string(), value: z.string() }))
+    .optional()
+    .transform((v) => v ?? []),
+  ingredients: z.array(z.string()).optional().transform((v) => v ?? []),
   machinesListed: count,
   version: z.number().int().min(0),
   createdAt: instant,
@@ -534,6 +555,7 @@ export type MachineRow = z.infer<typeof machineRowSchema>;
 export type MachineList = z.infer<typeof machineListSchema>;
 export type Machine = z.infer<typeof machineSchema>;
 export type PinResult = z.infer<typeof pinResultSchema>;
+export type FactoryPinResult = z.infer<typeof factoryPinResultSchema>;
 export type MachineGood = z.infer<typeof machineGoodSchema>;
 export type MachineGoods = z.infer<typeof machineGoodsSchema>;
 export type AvailableGood = z.infer<typeof availableGoodsSchema>["items"][number];

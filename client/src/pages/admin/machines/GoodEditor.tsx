@@ -9,6 +9,7 @@ import type { Good, MachineModel, Material } from "@shared/admin/machinesSchema"
 import { Card, SuccessPanel } from "../AdminUi";
 import { FormRow, hasTwoDecimalsAtMost, NativeSelect, parseNumber, TextInput } from "./formBits";
 import { GoodsPicture, problemOf, ProblemPanel, REFRESH_NOTE, type Problem } from "./MachinesUi";
+import { checkDetails, detailsDraftOf, draftErrorsOf, PayScreenDetails, type DetailsDraft } from "./PayScreenDetails";
 
 const MAX_LINES = 20;
 const MAX_PICTURE_BYTES = 2 * 1024 * 1024;
@@ -76,8 +77,11 @@ export function validateGood(
   lines: Line[],
   image: string | null,
   materials: Material[],
-): { errors: Record<string, string>; input: GoodInput | null } {
-  const errors: Record<string, string> = {};
+  details: DetailsDraft = { tagline: "", nutrition: [], ingredients: [] },
+): { errors: Record<string, string>; input: GoodInput | null; sent: ReturnType<typeof checkDetails>["sent"] } {
+  const checkedDetails = checkDetails(details);
+  const errors: Record<string, string> = { ...checkedDetails.errors };
+  const sent = checkedDetails.sent;
   const no = values.no.trim();
   if (!no) errors.no = "Required.";
   else if (no.length > 20) errors.no = "Up to 20 characters.";
@@ -122,9 +126,10 @@ export function validateGood(
     return out;
   });
 
-  if (Object.keys(errors).length > 0) return { errors, input: null };
+  if (Object.keys(errors).length > 0) return { errors, input: null, sent };
   return {
     errors,
+    sent,
     input: {
       no,
       name,
@@ -135,6 +140,7 @@ export function validateGood(
       modelId: values.modelId,
       image: { url: image! },
       recipe,
+      ...checkedDetails.details,
     },
   };
 }
@@ -161,6 +167,7 @@ export function GoodEditor({
     modelId: good?.modelId ?? models[0]?.id ?? "",
   }));
   const [lines, setLines] = useState<Line[]>(() => linesOf(good));
+  const [details, setDetails] = useState<DetailsDraft>(() => detailsDraftOf(good));
   const [image, setImage] = useState<string | null>(good?.image?.url ?? null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -219,7 +226,7 @@ export function GoodEditor({
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setSaved(null);
-    const checked = validateGood(values, lines, image, materials);
+    const checked = validateGood(values, lines, image, materials, details);
     setErrors(checked.errors);
     if (!checked.input) {
       setProblem({ message: "Some fields need fixing.", issues: [] });
@@ -229,7 +236,7 @@ export function GoodEditor({
     const result = await onSubmit(checked.input);
     setSaving(false);
     if (!result.ok) {
-      setErrors(result.error.fieldErrors ?? {});
+      setErrors(draftErrorsOf(result.error.fieldErrors ?? {}, checked.sent));
       setProblem(problemOf(result));
       setStale(result.error.code === "stale_write");
       return;
@@ -330,6 +337,8 @@ export function GoodEditor({
           </div>
         </Card>
       </div>
+
+      <PayScreenDetails draft={details} onChange={setDetails} errors={errors} />
 
       <Card title="Recipe" note="Amounts are board units: motor and pump time on the machine. Machine calibration scales them." testId="card-recipe">
         <div className="overflow-x-auto">

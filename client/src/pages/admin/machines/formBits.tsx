@@ -43,6 +43,9 @@ export function TextInput({
   mono,
   type = "text",
   inputMode,
+  maxLength,
+  onPaste,
+  "aria-label": ariaLabel,
 }: {
   id: string;
   value: string;
@@ -52,6 +55,9 @@ export function TextInput({
   mono?: boolean;
   type?: "text" | "password";
   inputMode?: "numeric" | "decimal" | "text";
+  maxLength?: number;
+  onPaste?: React.ClipboardEventHandler<HTMLInputElement>;
+  "aria-label"?: string;
 }) {
   return (
     <Input
@@ -62,6 +68,9 @@ export function TextInput({
       disabled={disabled}
       placeholder={placeholder}
       inputMode={inputMode}
+      maxLength={maxLength}
+      onPaste={onPaste}
+      aria-label={ariaLabel}
       className={`${inputClass} ${mono ? "font-mono text-sm" : ""}`}
       data-testid={`input-${id}`}
     />

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, CupSoda, Plus, Search } from "lucide-react";
+import { ChevronRight, CupSoda, KeyRound, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchMachines, fetchMachineSummary, fetchModels } from "@/lib/adminMachineApi";
@@ -13,6 +13,7 @@ import type { AdminSession } from "@/lib/adminSession";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
 import { useAdminGuard } from "./useAdminGuard";
+import { FactoryPinBulkDialog } from "./machines/FactoryPinBulkDialog";
 import { Pill } from "./AdminUi";
 import {
   Cell,
@@ -52,13 +53,26 @@ const SEARCH_FIELDS: ReadonlyArray<{ value: SearchField; label: string }> = [
   { value: "sn", label: "Machine ID" },
 ];
 
-export function machineFilters(health: Health, field: SearchField, text: string, modelId: string): MachineListFilters {
+type PayFilter = "" | "yes" | "no";
+
+export function machineFilters(
+  health: Health,
+  field: SearchField,
+  text: string,
+  modelId: string,
+  freeVend: PayFilter = "",
+  noFactoryPin = false,
+): MachineListFilters {
   return {
     ...HEALTH_FILTER[health],
     [field]: text.trim() || undefined,
     modelId: modelId || undefined,
+    freeVend: freeVend || undefined,
+    factoryPin: noFactoryPin ? "none" : undefined,
   };
 }
+
+const selectClass = "h-9 rounded-lg border border-border bg-card px-2 text-sm text-foreground cursor-pointer";
 
 function MachinesOverview({ session }: { session: AdminSession }) {
   const [summary, setSummary] = useState<MachineSummary | null>(null);
@@ -72,6 +86,9 @@ function MachinesOverview({ session }: { session: AdminSession }) {
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
   const [modelId, setModelId] = useState("");
+  const [freeVend, setFreeVend] = useState<PayFilter>("");
+  const [noFactoryPin, setNoFactoryPin] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [problem, setProblem] = useState<Problem | null>(null);
 
@@ -95,7 +112,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const result = await fetchMachines(machineFilters(health, field, query, modelId), page, pageSize);
+    const result = await fetchMachines(machineFilters(health, field, query, modelId, freeVend, noFactoryPin), page, pageSize);
     setLoading(false);
     if (!result.ok) {
       setProblem(problemOf(result));
@@ -104,13 +121,13 @@ function MachinesOverview({ session }: { session: AdminSession }) {
     setProblem(null);
     setRows(result.data.items);
     setTotal(result.data.total);
-  }, [health, field, query, modelId, page, pageSize]);
+  }, [health, field, query, modelId, freeVend, noFactoryPin, page, pageSize]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const filtered = health !== "all" || query.trim() !== "" || modelId !== "";
+  const filtered = health !== "all" || query.trim() !== "" || modelId !== "" || freeVend !== "" || noFactoryPin;
   const fleetEmpty = summary?.machines === 0 && !filtered;
 
   function pickHealth(next: Health) {
@@ -123,6 +140,8 @@ function MachinesOverview({ session }: { session: AdminSession }) {
     setText("");
     setQuery("");
     setModelId("");
+    setFreeVend("");
+    setNoFactoryPin(false);
     setPage(1);
   }
 
@@ -140,8 +159,25 @@ function MachinesOverview({ session }: { session: AdminSession }) {
       <MachinesHeader
         title="Machines"
         subtitle="Online means the machine checked in within the last 3 minutes."
-        action={addButton}
+        action={
+          <span className="flex flex-wrap gap-2">
+            {!fleetEmpty && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setBulkOpen(true)}
+                className="rounded-xl cursor-pointer"
+                data-testid="button-bulk-factory-pin"
+              >
+                <KeyRound className="h-4 w-4" aria-hidden />
+                Set factory PIN
+              </Button>
+            )}
+            {addButton}
+          </span>
+        }
       />
+      <FactoryPinBulkDialog open={bulkOpen} onClose={() => setBulkOpen(false)} onDone={() => void load()} />
 
       <ProblemPanel problem={problem} testId="machines-error" />
 
@@ -220,7 +256,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
                   setPage(1);
                 }}
                 aria-label="Model"
-                className="h-9 rounded-lg border border-border bg-card px-2 text-sm text-foreground cursor-pointer"
+                className={selectClass}
                 data-testid="filter-model"
               >
                 <option value="">All models</option>
@@ -231,6 +267,33 @@ function MachinesOverview({ session }: { session: AdminSession }) {
                 ))}
               </select>
             )}
+            <select
+              value={freeVend}
+              onChange={(event) => {
+                setFreeVend(event.target.value as PayFilter);
+                setPage(1);
+              }}
+              aria-label="Free vend"
+              className={selectClass}
+              data-testid="filter-free-vend"
+            >
+              <option value="">Free vend: Any</option>
+              <option value="yes">Free vend: Yes</option>
+              <option value="no">Free vend: No</option>
+            </select>
+            <label className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={noFactoryPin}
+                onChange={(event) => {
+                  setNoFactoryPin(event.target.checked);
+                  setPage(1);
+                }}
+                className="h-4 w-4 accent-primary"
+                data-testid="filter-no-factory-pin"
+              />
+              No factory PIN
+            </label>
             {filtered && (
               <Button
                 type="button"
@@ -438,6 +501,16 @@ function StatusPills({ row }: { row: MachineRow }) {
         {row.restartPending && (
           <Pill className="bg-amber-400/15 text-amber-200" testId={`restart-${row.sn}`}>
             Restart pending
+          </Pill>
+        )}
+        {row.freeVend && (
+          <Pill className="bg-sky-400/10 text-sky-200" testId={`free-vend-${row.sn}`}>
+            Free vend
+          </Pill>
+        )}
+        {!row.hasFactoryPin && (
+          <Pill className="bg-secondary text-muted-foreground" testId={`no-factory-pin-${row.sn}`}>
+            No factory PIN
           </Pill>
         )}
       </span>

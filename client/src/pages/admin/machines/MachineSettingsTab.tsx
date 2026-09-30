@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { updateMachine } from "@/lib/adminMachineApi";
+import { fetchBackup, fetchBackups, updateMachine } from "@/lib/adminMachineApi";
 import type { MachineEditInput } from "@shared/admin/machines";
 import type { Machine, MachineModel } from "@shared/admin/machinesSchema";
 import { Card, Field, Fields, SuccessPanel } from "../AdminUi";
 import { MachineForm } from "./MachineForm";
 import { formatIstStamp, REFRESH_NOTE } from "./MachinesUi";
+import { skipPaymentOn } from "./backupRules";
+
+async function skipPaymentBackupAt(sn: string): Promise<string | null> {
+  const list = await fetchBackups(sn, 1, 1);
+  const latest = list.ok ? list.data.items[0] : undefined;
+  if (!latest) return null;
+  const backup = await fetchBackup(sn, latest.id);
+  return backup.ok && skipPaymentOn(backup.data.backup.config) ? backup.data.backup.at : null;
+}
 
 export function MachineSettingsTab({
   machine,
@@ -23,6 +32,17 @@ export function MachineSettingsTab({
   const [formKey, setFormKey] = useState(0);
   const [stale, setStale] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [skipPaymentAt, setSkipPaymentAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void skipPaymentBackupAt(machine.sn).then((at) => {
+      if (live) setSkipPaymentAt(at);
+    });
+    return () => {
+      live = false;
+    };
+  }, [machine.sn]);
 
   async function reload() {
     const fresh = await onReload();
@@ -53,6 +73,7 @@ export function MachineSettingsTab({
             key={formKey}
             machine={machine}
             models={models}
+            skipPaymentBackupAt={skipPaymentAt}
             submitLabel="Save"
             onSubmit={async (input) => {
               setSaved(false);

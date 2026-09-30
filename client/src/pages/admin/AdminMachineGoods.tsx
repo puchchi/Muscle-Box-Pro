@@ -205,6 +205,7 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
           <Col align="right">Price</Col>
           <Col>Model</Col>
           <Col align="right">Listed on</Col>
+          <Col>Details</Col>
           <Col>Updated</Col>
           <Col align="right">
             <span className="sr-only">Actions</span>
@@ -212,7 +213,7 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
         </Head>
         <tbody className="divide-y divide-border/70">
           {rows.length === 0 ? (
-            <NoData colSpan={8} loading={loading} />
+            <NoData colSpan={9} loading={loading} />
           ) : (
             rows.map((good) => {
               const editHref = `/machines/goods/${encodeURIComponent(good.goodsId)}`;
@@ -237,6 +238,9 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
                   <Cell align="right" className="whitespace-nowrap tabular-nums">
                     <span data-testid={`listed-count-${good.goodsId}`}>{good.machinesListed}</span>
                     <span className="text-muted-foreground"> {good.machinesListed === 1 ? "machine" : "machines"}</span>
+                  </Cell>
+                  <Cell className="whitespace-nowrap text-muted-foreground">
+                    <span data-testid={`details-${good.goodsId}`}>{hasPayScreenDetails(good) ? "Yes" : "No"}</span>
                   </Cell>
                   <Cell className="whitespace-nowrap text-xs text-muted-foreground">
                     {formatIstStamp(good.updatedAt)}
@@ -293,6 +297,10 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
       />
     </MachinesShell>
   );
+}
+
+export function hasPayScreenDetails(good: Pick<Good, "tagline" | "nutrition" | "ingredients">): boolean {
+  return Boolean(good.tagline) || good.nutrition.length > 0 || good.ingredients.length > 0;
 }
 
 function listedMessage(good: Good): string {
