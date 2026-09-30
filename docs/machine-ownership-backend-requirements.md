@@ -1,6 +1,6 @@
 # Machine ownership: backend requirements
 
-Status: draft, 2026-09-30. Decisions below were confirmed by Anurag on 2026-09-30.
+Status: ready for the backend, 2026-09-30. All decisions below, including §9, were confirmed by Anurag on 2026-09-30.
 
 Goal: every vending machine has a known owner (MBP stock, a franchise, or a gym), a gym can
 belong to a franchise, and every order records who owned the machine when it was made. Only
@@ -138,7 +138,7 @@ as `updatedBy`.
   `franchiseId` filters. These use the **stamped** owner (§6), not the current one.
 - The order DTO gains `gymId`, `gymName`, `franchiseId` and `franchiseName`.
 
-## 9. Eligibility rules (proposed; confirm or change)
+## 9. Eligibility rules (decided)
 
 - A franchise can receive gyms or machines only when its status is `active`.
 - A gym can be linked to a franchise, or receive a machine, unless it is offboarded.
@@ -173,7 +173,17 @@ as `updatedBy`.
 9. A franchise that isn't `active` is refused as a target.
 10. A gym or franchise session calling any of these routes gets 401 or 403.
 
-## 12. Out of scope for this phase
+## 12. What the dashboard needs back
+
+The dashboard work starts once these routes are deployed to sandbox. When you finish, report:
+
+- The final route paths and which stack serves each one.
+- The request and response shape of every route in §7 and §8, including the error codes and
+  `fieldErrors` keys for each refusal (occupied gym, inactive franchise, offboarded gym, stale
+  `expectedVersion`, unknown `sn`).
+- Anything in this spec you changed, and why.
+
+## 13. Out of scope for this phase
 
 Settlement statements and franchise-side maths, payout (beneficiary) accounts, per-owner QR and
 logo branding, and gym or franchise portal views of machines and sales. All of them read the
