@@ -154,6 +154,8 @@ export type QrInput = {
   memberTip: string;
   exchangeQr: FileRef;
   exchangeTip: string;
+  memberLink: string;
+  exchangeLink: string;
 };
 
 export type MachineScopeInput = { allMachines: boolean; sns: string[] };

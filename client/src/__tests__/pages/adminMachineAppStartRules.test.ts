@@ -10,7 +10,7 @@ import {
   type ScheduleRow,
 } from "@/pages/admin/machines/adRules";
 import { appStartNotice, checkMedia, formatBytes } from "@/pages/admin/machines/mediaBits";
-import { REDEEM_PAIR_WARNING, validateQr } from "@/pages/admin/AdminMachineQr";
+import { DEFAULT_EXCHANGE_LINK, DEFAULT_MEMBER_LINK, linkProblem, scanTarget, validateQr } from "@/pages/admin/AdminMachineQr";
 import { emptyVoiceFiles, toPositionsInput } from "@/pages/admin/machines/VoiceSlots";
 
 const MB = 1024 * 1024;
@@ -164,27 +164,42 @@ describe("app-start notice", () => {
 
 describe("QR and logo", () => {
   const file = { url: "https://cdn/qr/a.png", path: "qr/a.png", fileName: "a.png", md5: "m" };
-  const base = { logo: null, memberQr: null, memberTip: "", exchangeQr: null, exchangeTip: "" };
+  const base = { logo: null, memberQr: null, memberTip: "", exchangeQr: null, exchangeTip: "", memberLink: "", exchangeLink: "" };
 
-  it("sends files by URL and trims tips", () => {
-    expect(validateQr({ ...base, logo: file, exchangeQr: file, exchangeTip: " Scan to redeem " }).input).toEqual({
+  it("sends files by URL, trims tips and links, and keeps the stored QR pictures for old apps", () => {
+    expect(
+      validateQr({ ...base, logo: file, exchangeQr: file, exchangeTip: " Scan to redeem ", memberLink: " https://muscleboxpro.com/join " }).input,
+    ).toEqual({
       logo: { url: file.url },
       memberQr: null,
       memberTip: "",
       exchangeQr: { url: file.url },
       exchangeTip: "Scan to redeem",
+      memberLink: "https://muscleboxpro.com/join",
+      exchangeLink: "",
     });
-  });
-
-  it("warns, without refusing, when the redeem QR or its tip is missing", () => {
-    expect(validateQr({ ...base, exchangeQr: file }).warning).toBe(REDEEM_PAIR_WARNING);
-    expect(validateQr({ ...base, exchangeTip: "Scan" }).warning).toBe(REDEEM_PAIR_WARNING);
-    expect(validateQr({ ...base, exchangeTip: "Scan" }).input).not.toBeNull();
-    expect(validateQr(base).warning).toBeNull();
   });
 
   it("caps tips at 80 characters", () => {
     expect(validateQr({ ...base, memberTip: "x".repeat(81) }).errors).toEqual({ memberTip: "Up to 80 characters." });
+  });
+
+  it("takes only https links on muscleboxpro.com or a subdomain", () => {
+    expect(linkProblem("")).toBeNull();
+    expect(linkProblem("https://muscleboxpro.com/drinks")).toBeNull();
+    expect(linkProblem("https://shop.muscleboxpro.com/drinks?ref=machine")).toBeNull();
+    expect(linkProblem("http://muscleboxpro.com/join")).toMatch(/https/);
+    expect(linkProblem("https://muscleboxpro.com.evil.in/join")).toMatch(/muscleboxpro.com/);
+    expect(linkProblem("https://notmuscleboxpro.com/join")).toMatch(/muscleboxpro.com/);
+    expect(linkProblem("muscleboxpro.com/join")).toMatch(/full link/);
+    expect(linkProblem(`https://muscleboxpro.com/${"x".repeat(200)}`)).toBe("Up to 200 characters.");
+    expect(validateQr({ ...base, exchangeLink: "http://x.in" }).input).toBeNull();
+  });
+
+  it("shows the page a scan opens, with the default when empty or refused", () => {
+    expect(scanTarget("", DEFAULT_EXCHANGE_LINK)).toBe("https://muscleboxpro.com/drinks?sn=<machine SN>");
+    expect(scanTarget("http://example.com/drinks", DEFAULT_EXCHANGE_LINK)).toBe("https://muscleboxpro.com/drinks?sn=<machine SN>");
+    expect(scanTarget("https://muscleboxpro.com/join?ref=m", DEFAULT_MEMBER_LINK)).toBe("https://muscleboxpro.com/join?ref=m&sn=<machine SN>");
   });
 });
 

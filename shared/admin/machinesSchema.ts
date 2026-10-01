@@ -417,6 +417,8 @@ export const qrSettingsSchema = z.object({
   memberTip: z.string(),
   exchangeQr: mediaFileSchema.nullable(),
   exchangeTip: z.string(),
+  memberLink: z.string().optional().transform((v) => v ?? ""),
+  exchangeLink: z.string().optional().transform((v) => v ?? ""),
   version: z.number().int().min(0),
   updatedAt: instant,
   updatedBy: actor,

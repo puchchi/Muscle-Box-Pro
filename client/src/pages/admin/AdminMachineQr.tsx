@@ -16,25 +16,63 @@ import { ACCEPT, appStartNotice, FileButton, formatBytes, precheckMedia } from "
 import { formatIstStamp, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 
 export const TIP_MAX = 80;
+export const LINK_MAX = 200;
 
-export const REDEEM_PAIR_WARNING = "Set both the redeem QR and its tip, or the machine hides step 1 of Get Drinks.";
+export const DEFAULT_MEMBER_LINK = "https://muscleboxpro.com/join";
+export const DEFAULT_EXCHANGE_LINK = "https://muscleboxpro.com/drinks";
 
-type Values = Pick<QrSettings, "logo" | "memberQr" | "memberTip" | "exchangeQr" | "exchangeTip">;
+const DEFAULT_MEMBER_TIP = "Scan to join MuscleBoxPro for drink packs and rewards";
+const DEFAULT_EXCHANGE_TIP = "Scan to get a drink code from your MuscleBoxPro account";
+
+type Values = Pick<QrSettings, "logo" | "memberQr" | "memberTip" | "exchangeQr" | "exchangeTip" | "memberLink" | "exchangeLink">;
 
 const ref = (file: UploadedFile | null) => (file ? { url: file.url } : null);
 
-export function validateQr(v: Values): { errors: Record<string, string>; input: QrInput | null; warning: string | null } {
+export function linkProblem(link: string): string | null {
+  if (link === "") return null;
+  if (link.length > LINK_MAX) return `Up to ${LINK_MAX} characters.`;
+  let url: URL;
+  try {
+    url = new URL(link);
+  } catch {
+    return "Use a full link, starting with https://.";
+  }
+  const host = url.hostname.toLowerCase();
+  if (url.protocol !== "https:" || !(host === "muscleboxpro.com" || host.endsWith(".muscleboxpro.com"))) {
+    return "Use a link on muscleboxpro.com, starting with https://.";
+  }
+  return null;
+}
+
+export function scanTarget(link: string, fallback: string): string {
+  const drawn = link && !linkProblem(link) ? link : fallback;
+  return `${drawn}${drawn.includes("?") ? "&" : "?"}sn=<machine SN>`;
+}
+
+export function validateQr(v: Values): { errors: Record<string, string>; input: QrInput | null } {
   const errors: Record<string, string> = {};
   const memberTip = v.memberTip.trim();
   const exchangeTip = v.exchangeTip.trim();
+  const memberLink = v.memberLink.trim();
+  const exchangeLink = v.exchangeLink.trim();
   if (memberTip.length > TIP_MAX) errors.memberTip = `Up to ${TIP_MAX} characters.`;
   if (exchangeTip.length > TIP_MAX) errors.exchangeTip = `Up to ${TIP_MAX} characters.`;
-  const warning = Boolean(v.exchangeQr) !== Boolean(exchangeTip) ? REDEEM_PAIR_WARNING : null;
-  if (Object.keys(errors).length > 0) return { errors, input: null, warning };
+  const memberLinkProblem = linkProblem(memberLink);
+  const exchangeLinkProblem = linkProblem(exchangeLink);
+  if (memberLinkProblem) errors.memberLink = memberLinkProblem;
+  if (exchangeLinkProblem) errors.exchangeLink = exchangeLinkProblem;
+  if (Object.keys(errors).length > 0) return { errors, input: null };
   return {
     errors,
-    warning,
-    input: { logo: ref(v.logo), memberQr: ref(v.memberQr), memberTip, exchangeQr: ref(v.exchangeQr), exchangeTip },
+    input: {
+      logo: ref(v.logo),
+      memberQr: ref(v.memberQr),
+      memberTip,
+      exchangeQr: ref(v.exchangeQr),
+      exchangeTip,
+      memberLink,
+      exchangeLink,
+    },
   };
 }
 
@@ -94,8 +132,6 @@ function QrPage({ session }: { session: AdminSession }) {
     setNotice(appStartNotice(result.data.restartPending ?? 0));
   }
 
-  const warning = values ? validateQr(values).warning : null;
-
   return (
     <MachinesShell session={session} section="qr">
       <MachinesHeader
@@ -139,40 +175,38 @@ function QrPage({ session }: { session: AdminSession }) {
           </Card>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <Card title="Join Members" note="Shown in the Join Members dialog. A square PNG, at least 200×200 px." testId="card-member">
+            <Card title="Join Members" note="The machine draws this link as a QR code in the Join Members dialog and adds its SN." testId="card-member">
               <div className="space-y-4 p-4 sm:p-5">
-                <PictureSlot
-                  kind="qr"
-                  file={values.memberQr}
-                  onChange={set("memberQr")}
-                  onBusy={busy}
-                  error={errors.memberQr}
-                  emptyText="No QR. The machine shows its SN as a QR instead."
-                  frame="h-40 w-40"
-                  testId="member-qr"
+                <LinkField
+                  id="memberLink"
+                  label="Join Members link"
+                  value={values.memberLink}
+                  fallback={DEFAULT_MEMBER_LINK}
+                  onChange={set("memberLink")}
+                  error={errors.memberLink}
                 />
-                <TipField id="memberTip" label="Tip under the QR" value={values.memberTip} onChange={set("memberTip")} error={errors.memberTip} />
+                <TipField id="memberTip" label="Tip under the QR" value={values.memberTip} placeholder={DEFAULT_MEMBER_TIP} onChange={set("memberTip")} error={errors.memberTip} />
               </div>
             </Card>
 
-            <Card title="Get Drinks (redeem)" note="Step 1 of the Get Drinks screen. A square PNG, at least 200×200 px." testId="card-exchange">
+            <Card title="Get Drinks" note="The machine draws this link as a QR code in step 1 of Get Drinks and adds its SN." testId="card-exchange">
               <div className="space-y-4 p-4 sm:p-5">
-                <PictureSlot
-                  kind="qr"
-                  file={values.exchangeQr}
-                  onChange={set("exchangeQr")}
-                  onBusy={busy}
-                  error={errors.exchangeQr}
-                  emptyText="No QR. The machine hides step 1."
-                  frame="h-40 w-40"
-                  testId="exchange-qr"
+                <LinkField
+                  id="exchangeLink"
+                  label="Get Drinks link"
+                  value={values.exchangeLink}
+                  fallback={DEFAULT_EXCHANGE_LINK}
+                  onChange={set("exchangeLink")}
+                  error={errors.exchangeLink}
                 />
-                <TipField id="exchangeTip" label="Tip beside the QR" value={values.exchangeTip} onChange={set("exchangeTip")} error={errors.exchangeTip} />
-                {warning && (
-                  <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200" role="status" data-testid="redeem-warning">
-                    {warning}
-                  </p>
-                )}
+                <TipField
+                  id="exchangeTip"
+                  label="Tip beside the QR"
+                  value={values.exchangeTip}
+                  placeholder={DEFAULT_EXCHANGE_TIP}
+                  onChange={set("exchangeTip")}
+                  error={errors.exchangeTip}
+                />
               </div>
             </Card>
           </div>
@@ -188,22 +222,49 @@ function QrPage({ session }: { session: AdminSession }) {
   );
 }
 
-function TipField({
+function LinkField({
   id,
   label,
   value,
+  fallback,
   onChange,
   error,
 }: {
   id: string;
   label: string;
   value: string;
+  fallback: string;
   onChange: (value: string) => void;
   error?: string;
 }) {
   return (
-    <FormRow label={label} htmlFor={id} error={error} hint={`${value.trim().length} of ${TIP_MAX} characters.`}>
-      <TextInput id={id} value={value} onChange={onChange} />
+    <FormRow label={label} htmlFor={id} error={error} hint="Leave empty for the default.">
+      <TextInput id={id} value={value} onChange={onChange} placeholder={fallback} />
+      <p className="break-all text-xs text-muted-foreground" data-testid={`${id}-target`}>
+        Scanning opens <span className="font-mono text-foreground">{scanTarget(value.trim(), fallback)}</span>
+      </p>
+    </FormRow>
+  );
+}
+
+function TipField({
+  id,
+  label,
+  value,
+  placeholder,
+  onChange,
+  error,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  error?: string;
+}) {
+  return (
+    <FormRow label={label} htmlFor={id} error={error} hint={`${value.trim().length} of ${TIP_MAX} characters. Leave empty for the tip shown in grey.`}>
+      <TextInput id={id} value={value} onChange={onChange} placeholder={placeholder} />
     </FormRow>
   );
 }
