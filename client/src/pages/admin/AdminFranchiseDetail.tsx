@@ -17,6 +17,7 @@ import {
 import { AdminFranchiseTermsEditor } from "./AdminFranchiseTermsEditor";
 import { FranchiseInviteActions } from "./AdminFranchiseInviteActions";
 import { FranchiseNetworkCard } from "./FranchiseNetworkCard";
+import { FranchiseActivationCard } from "./FranchiseActivationCard";
 import { formatCalendarDate, formatIstDateTime } from "./adminFormat";
 import {
   FRANCHISE_DOC_TYPE_LABEL,
@@ -114,6 +115,7 @@ const SECTIONS: Array<{ id: string; label: string }> = [
   { id: "progress", label: "Progress" },
   { id: "decision", label: "Decision" },
   { id: "instalments", label: "Instalments" },
+  { id: "activation", label: "Activation" },
   { id: "network", label: "Gyms and machines" },
   { id: "details", label: "Details" },
   { id: "terms", label: "Terms" },
@@ -221,6 +223,8 @@ function FranchiseView({
       <FranchiseDecisionSection franchise={franchise} onSaved={onChanged} />
 
       <FranchiseInstalmentsSection franchise={franchise} onSaved={onChanged} />
+
+      <FranchiseActivationCard franchise={franchise} onChanged={onChanged} />
 
       <FranchiseNetworkCard franchiseId={franchise.franchiseId} />
 
@@ -539,6 +543,14 @@ function whatWeOwe(
       what: "a bank check on step 8",
       detail: "They say the first instalment has been sent. Nobody has looked at a statement yet.",
       since: franchise.timestamps.paymentClaimedAt,
+    };
+  }
+  if (franchise.status === "payment_verified") {
+    return {
+      section: "activation",
+      what: "switching them on",
+      detail: "The first instalment is confirmed. Nobody has activated the franchise yet.",
+      since: franchise.timestamps.paymentVerifiedAt,
     };
   }
   return null;
