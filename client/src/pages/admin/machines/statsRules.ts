@@ -74,12 +74,14 @@ export const adStatsCsv = (s: AdStats): string =>
 
 export const ordersCsv = (orders: readonly Order[]): string =>
   toCsv(
-    ["Order number", "Machine number", "Machine name", "SN", "Goods", "Amount (INR)", "Payment method", "Redeem code", "Status", "Dispensed", "Failure reason", "Order time (IST)"],
+    ["Order number", "Machine number", "Machine name", "SN", "Gym", "Franchise", "Goods", "Amount (INR)", "Payment method", "Redeem code", "Status", "Dispensed", "Failure reason", "Order time (IST)"],
     orders.map((o) => [
       o.orderId,
       o.deviceExtNo,
       o.machineName,
       o.sn,
+      o.gymName ?? o.gymId,
+      o.franchiseName ?? o.franchiseId,
       o.goodsName,
       money(o.amountInr),
       PAY_METHOD_LABEL[o.payMethod],

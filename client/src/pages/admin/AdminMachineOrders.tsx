@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchAllOrders, fetchOrders } from "@/lib/adminMachineApi";
@@ -34,6 +35,7 @@ import { Pill } from "./AdminUi";
 import { saveCsv } from "./machines/csv";
 import { istToday, ORDERS_EXPORT_MAX, ordersCsv } from "./machines/statsRules";
 import { WarningPanel } from "./machines/WarningPanel";
+import { OwnerCellText, OwnerSelectFilters, useOwnerChoices } from "./machines/ownerBits";
 
 export default function AdminMachineOrders() {
   const guard = useAdminGuard();
@@ -41,9 +43,19 @@ export default function AdminMachineOrders() {
   return <Orders session={guard.session} />;
 }
 
-type Draft = { orderId: string; machine: string; goodsName: string; payMethod: string; status: string; from: string; to: string };
+type Draft = {
+  orderId: string;
+  machine: string;
+  goodsName: string;
+  payMethod: string;
+  status: string;
+  from: string;
+  to: string;
+  franchiseId: string;
+  gymId: string;
+};
 
-const EMPTY: Draft = { orderId: "", machine: "", goodsName: "", payMethod: "", status: "", from: "", to: "" };
+const EMPTY: Draft = { orderId: "", machine: "", goodsName: "", payMethod: "", status: "", from: "", to: "", franchiseId: "", gymId: "" };
 
 function toFilters(d: Draft): OrderFilters {
   return {
@@ -54,12 +66,20 @@ function toFilters(d: Draft): OrderFilters {
     status: (d.status || undefined) as OrderFilters["status"],
     from: d.from || undefined,
     to: d.to || undefined,
+    franchiseId: d.franchiseId || undefined,
+    gymId: d.gymId || undefined,
   };
 }
 
 function Orders({ session }: { session: AdminSession }) {
-  const [draft, setDraft] = useState<Draft>(EMPTY);
-  const [filters, setFilters] = useState<OrderFilters>({});
+  const search = useSearchParams();
+  const [draft, setDraft] = useState<Draft>(() => ({
+    ...EMPTY,
+    franchiseId: search?.get("franchiseId") ?? "",
+    gymId: search?.get("gymId") ?? "",
+  }));
+  const [filters, setFilters] = useState<OrderFilters>(() => toFilters(draft));
+  const choices = useOwnerChoices();
   const [rows, setRows] = useState<Order[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,6 +174,13 @@ function Orders({ session }: { session: AdminSession }) {
           options={[{ value: "", label: "All" }, ...Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label }))]}
           testId="filter-status"
         />
+        <OwnerSelectFilters
+          choices={choices}
+          franchiseId={draft.franchiseId}
+          gymId={draft.gymId}
+          onFranchise={set("franchiseId")}
+          onGym={set("gymId")}
+        />
         <FilterRange>
           <TextFilter label="From" type="datetime-local" value={draft.from} onChange={set("from")} testId="filter-from" />
           <TextFilter label="To" type="datetime-local" value={draft.to} onChange={set("to")} testId="filter-to" />
@@ -165,6 +192,7 @@ function Orders({ session }: { session: AdminSession }) {
           <Col>Time</Col>
           <Col>Order</Col>
           <Col>Machine</Col>
+          <Col>Owner</Col>
           <Col>Goods</Col>
           <Col align="right">Amount</Col>
           <Col>Payment</Col>
@@ -172,7 +200,7 @@ function Orders({ session }: { session: AdminSession }) {
         </Head>
         <tbody className="divide-y divide-border/70">
           {rows.length === 0 ? (
-            <NoData colSpan={7} loading={loading} />
+            <NoData colSpan={8} loading={loading} />
           ) : (
             rows.map((order) => (
               <tr key={order.orderId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-order-${order.orderId}`}>
@@ -187,6 +215,9 @@ function Orders({ session }: { session: AdminSession }) {
                   {order.machineName && order.deviceExtNo && (
                     <span className="block text-xs text-muted-foreground">{order.deviceExtNo}</span>
                   )}
+                </Cell>
+                <Cell className="min-w-[9rem] max-w-[14rem]">
+                  <OwnerCellText owner={order} empty="Not assigned" />
                 </Cell>
                 <Cell className="min-w-[12rem]">
                   {order.goodsName || <span className="font-mono text-xs text-muted-foreground">{order.goodsId || "—"}</span>}

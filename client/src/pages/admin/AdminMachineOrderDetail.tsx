@@ -29,6 +29,7 @@ import {
   STATUS_LABEL,
   UNKNOWN_HINT,
 } from "./machines/orderLabels";
+import { FranchiseLink, GymLink } from "./machines/ownerBits";
 
 const STEP_LABEL: Record<string, string> = { created: "Created", made: "Made", dispensed: "Dispensed", failed: "Failed" };
 
@@ -80,6 +81,22 @@ function OrderPage({ session, orderId }: { session: AdminSession; orderId: strin
               <Field label="Machine number" value={order.deviceExtNo} />
               <Field label="Machine name" value={order.machineName} />
               <Field label="Machine ID" value={order.sn} mono />
+              <div className="grid items-baseline gap-x-4 px-4 sm:px-5 py-2 sm:grid-cols-[14rem_minmax(0,1fr)]">
+                <dt className="text-sm text-muted-foreground">Gym</dt>
+                <dd className="text-sm text-foreground" data-testid="order-gym">
+                  {order.gymId ? <GymLink gymId={order.gymId} name={order.gymName} /> : <span className="text-muted-foreground">Not assigned</span>}
+                </dd>
+              </div>
+              <div className="grid items-baseline gap-x-4 px-4 sm:px-5 py-2 sm:grid-cols-[14rem_minmax(0,1fr)]">
+                <dt className="text-sm text-muted-foreground">Franchise</dt>
+                <dd className="text-sm text-foreground" data-testid="order-franchise">
+                  {order.franchiseId ? (
+                    <FranchiseLink franchiseId={order.franchiseId} name={order.franchiseName} />
+                  ) : (
+                    <span className="text-muted-foreground">{order.gymId ? "None. The gym was MBP-direct." : "Not assigned"}</span>
+                  )}
+                </dd>
+              </div>
               <Field label="Goods name" value={order.goodsName} />
               <Field label="Amount" value={formatRupees(order.amountInr)} />
               <Field label="Payment method" value={PAY_METHOD_LABEL[order.payMethod]} />

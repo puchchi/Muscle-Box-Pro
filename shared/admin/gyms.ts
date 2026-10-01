@@ -81,6 +81,16 @@ export type AdminGymListRow = {
   noticesPhone: string;
   createdAt: string;
   updatedAt: string;
+} & GymOwnership & { lifecycle: OffboardingState | null };
+
+/** Which franchise a gym is in and which machine is live there, from the ownership record. */
+export type GymOwnership = {
+  franchiseId: string | null;
+  franchiseName: string | null;
+  /** Null until the ownership migration reaches a gym, even when `machines` lists a live unit. */
+  liveDeviceNo: string | null;
+  /** Sent back as `expectedVersion` on `PUT /admin/gyms/{gymId}/franchise`. */
+  ownershipVersion: number;
 };
 
 /**
@@ -377,4 +387,4 @@ export type AdminGymView = {
    * as long as the field went undeclared.
    */
   offboarding: AdminOffboarding | null;
-};
+} & GymOwnership;

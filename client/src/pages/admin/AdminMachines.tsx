@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchMachines, fetchMachineSummary, fetchModels } from "@/lib/adminMachineApi";
 import type { MachineListFilters } from "@shared/admin/machines";
+import type { OwnerState } from "@shared/admin/ownership";
 import type { MachineModel, MachineRow, MachineSummary } from "@shared/admin/machinesSchema";
 import type { AdminSession } from "@/lib/adminSession";
 import { AdminChecking } from "./AdminShell";
@@ -15,6 +16,8 @@ import { MachinesShell } from "./machines/MachinesShell";
 import { useAdminGuard } from "./useAdminGuard";
 import { FactoryPinBulkDialog } from "./machines/FactoryPinBulkDialog";
 import { Pill } from "./AdminUi";
+import { OwnerCellText } from "./machines/ownerBits";
+import { OWNER_STATE_LABEL } from "./machines/ownerRules";
 import {
   Cell,
   Col,
@@ -62,6 +65,7 @@ export function machineFilters(
   modelId: string,
   freeVend: PayFilter = "",
   noFactoryPin = false,
+  ownerState: OwnerState | "" = "",
 ): MachineListFilters {
   return {
     ...HEALTH_FILTER[health],
@@ -69,6 +73,7 @@ export function machineFilters(
     modelId: modelId || undefined,
     freeVend: freeVend || undefined,
     factoryPin: noFactoryPin ? "none" : undefined,
+    ownerState: ownerState || undefined,
   };
 }
 
@@ -88,6 +93,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
   const [modelId, setModelId] = useState("");
   const [freeVend, setFreeVend] = useState<PayFilter>("");
   const [noFactoryPin, setNoFactoryPin] = useState(false);
+  const [ownerState, setOwnerState] = useState<OwnerState | "">("");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -112,7 +118,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const result = await fetchMachines(machineFilters(health, field, query, modelId, freeVend, noFactoryPin), page, pageSize);
+    const result = await fetchMachines(machineFilters(health, field, query, modelId, freeVend, noFactoryPin, ownerState), page, pageSize);
     setLoading(false);
     if (!result.ok) {
       setProblem(problemOf(result));
@@ -121,13 +127,13 @@ function MachinesOverview({ session }: { session: AdminSession }) {
     setProblem(null);
     setRows(result.data.items);
     setTotal(result.data.total);
-  }, [health, field, query, modelId, freeVend, noFactoryPin, page, pageSize]);
+  }, [health, field, query, modelId, freeVend, noFactoryPin, ownerState, page, pageSize]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const filtered = health !== "all" || query.trim() !== "" || modelId !== "" || freeVend !== "" || noFactoryPin;
+  const filtered = health !== "all" || query.trim() !== "" || modelId !== "" || freeVend !== "" || noFactoryPin || ownerState !== "";
   const fleetEmpty = summary?.machines === 0 && !filtered;
 
   function pickHealth(next: Health) {
@@ -142,6 +148,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
     setModelId("");
     setFreeVend("");
     setNoFactoryPin(false);
+    setOwnerState("");
     setPage(1);
   }
 
@@ -268,6 +275,23 @@ function MachinesOverview({ session }: { session: AdminSession }) {
               </select>
             )}
             <select
+              value={ownerState}
+              onChange={(event) => {
+                setOwnerState(event.target.value as OwnerState | "");
+                setPage(1);
+              }}
+              aria-label="Owner"
+              className={selectClass}
+              data-testid="filter-owner"
+            >
+              <option value="">All owners</option>
+              {(Object.keys(OWNER_STATE_LABEL) as OwnerState[]).map((state) => (
+                <option key={state} value={state}>
+                  {OWNER_STATE_LABEL[state]}
+                </option>
+              ))}
+            </select>
+            <select
               value={freeVend}
               onChange={(event) => {
                 setFreeVend(event.target.value as PayFilter);
@@ -313,6 +337,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
               <Col>Machine</Col>
               <Col>Status</Col>
               <Col>Stock</Col>
+              <Col className="hidden sm:table-cell">Owner</Col>
               <Col className="hidden md:table-cell">Last seen</Col>
               <Col className="hidden lg:table-cell">Model</Col>
               <Col>
@@ -322,10 +347,10 @@ function MachinesOverview({ session }: { session: AdminSession }) {
             <tbody className="divide-y divide-border/70">
               {rows.length === 0 ? (
                 loading || !filtered ? (
-                  <NoData colSpan={6} loading={loading} />
+                  <NoData colSpan={7} loading={loading} />
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground" data-testid="no-data">
+                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground" data-testid="no-data">
                       No machines match these filters.{" "}
                       <button type="button" onClick={clearFilters} className="text-primary hover:underline cursor-pointer">
                         Clear filters
@@ -459,6 +484,11 @@ function MachineTableRow({ row }: { row: MachineRow }) {
             OK
           </span>
         )}
+      </Cell>
+      <Cell className="hidden max-w-[14rem] sm:table-cell">
+        <span onClick={(event) => event.stopPropagation()} data-testid={`owner-${row.sn}`}>
+          <OwnerCellText owner={row.owner} />
+        </span>
       </Cell>
       <Cell className="hidden whitespace-nowrap text-xs text-muted-foreground md:table-cell">
         <span title={formatIstStamp(row.lastSeenAt)}>{timeAgo(row.lastSeenAt)}</span>

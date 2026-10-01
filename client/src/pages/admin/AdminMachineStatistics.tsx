@@ -45,6 +45,7 @@ import {
   salesStatsCsv,
 } from "./machines/statsRules";
 import { WarningPanel } from "./machines/WarningPanel";
+import { OwnerSelectFilters, useOwnerChoices } from "./machines/ownerBits";
 
 const REPORTS = [
   { id: "orders", label: "Orders" },
@@ -56,7 +57,7 @@ type ReportId = (typeof REPORTS)[number]["id"];
 
 const reportOf = (raw: string | null): ReportId => (REPORTS.some((r) => r.id === raw) ? (raw as ReportId) : "orders");
 
-type Draft = { machine: string; payMethod: string; goodsName: string; ad: string; from: string; to: string };
+type Draft = { machine: string; payMethod: string; goodsName: string; ad: string; from: string; to: string; franchiseId: string; gymId: string };
 
 type Result = { report: "orders"; data: OrderStats } | { report: "sales"; data: SalesStats } | { report: "ads"; data: AdStats };
 
@@ -69,6 +70,8 @@ function toFilters(period: StatPeriod, d: Draft, report: ReportId): StatFilters 
     payMethod: report === "ads" ? undefined : ((d.payMethod || undefined) as StatFilters["payMethod"]),
     goodsName: report === "sales" ? d.goodsName.trim() || undefined : undefined,
     ad: report === "ads" ? d.ad.trim() || undefined : undefined,
+    franchiseId: d.franchiseId || undefined,
+    gymId: d.gymId || undefined,
   };
 }
 
@@ -97,9 +100,19 @@ function Statistics({ session }: { session: AdminSession }) {
   const search = useSearchParams();
   const report = reportOf(search?.get("report") ?? null);
   const [period, setPeriod] = useState<StatPeriod>("day");
-  const blank = (p: StatPeriod): Draft => ({ machine: "", payMethod: "", goodsName: "", ad: "", ...defaultRange(p, istToday(Date.now())) });
-  const [draft, setDraft] = useState<Draft>(() => blank("day"));
-  const [filters, setFilters] = useState<StatFilters>(() => toFilters("day", blank("day"), report));
+  const blank = (p: StatPeriod): Draft => ({
+    machine: "",
+    payMethod: "",
+    goodsName: "",
+    ad: "",
+    franchiseId: "",
+    gymId: "",
+    ...defaultRange(p, istToday(Date.now())),
+  });
+  const initial = (): Draft => ({ ...blank("day"), franchiseId: search?.get("franchiseId") ?? "", gymId: search?.get("gymId") ?? "" });
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [filters, setFilters] = useState<StatFilters>(() => toFilters("day", initial(), report));
+  const choices = useOwnerChoices();
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(true);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -233,6 +246,13 @@ function Statistics({ session }: { session: AdminSession }) {
             testId="filter-pay"
           />
         )}
+        <OwnerSelectFilters
+          choices={choices}
+          franchiseId={draft.franchiseId}
+          gymId={draft.gymId}
+          onFranchise={set("franchiseId")}
+          onGym={set("gymId")}
+        />
         {report === "sales" && <TextFilter label="Goods" value={draft.goodsName} onChange={set("goodsName")} testId="filter-goods" />}
         {report === "ads" && <TextFilter label="Program" value={draft.ad} onChange={set("ad")} testId="filter-ad" />}
         <FilterRange>

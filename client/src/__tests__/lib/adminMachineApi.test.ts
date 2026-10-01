@@ -265,6 +265,7 @@ describe("app-start data paths", () => {
     const row = (sn: string) => ({
       sn, deviceExtNo: "", name: "", modelId: "", modelName: "", enabled: true, online: false, lastSeenAt: null, runStatus: null,
       faultStatus: "normal", faultRemark: "", statusAt: null, stockStatus: "normal", stockRemark: "", restartPending: false,
+      ownerState: "stock", owner: null, ownerVersion: 0,
     });
     resolves({ items: Array.from({ length: 50 }, (_, i) => row(`A${i}`)), total: 51 }, { items: [row("B")], total: 51 });
     const result = await fetchAllMachines();

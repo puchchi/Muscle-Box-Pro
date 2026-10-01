@@ -12,6 +12,7 @@ import { Card, Empty, ErrorPanel, Field, Fields, Pill } from "./AdminUi";
 import { AdminGymDashboard } from "./AdminGymDashboard";
 import { AdminTermsEditor } from "./AdminTermsEditor";
 import { AdminMachineEditor } from "./AdminMachineEditor";
+import { GymFranchiseCard } from "./GymFranchiseCard";
 import { AdminOffboardingSection } from "./AdminOffboardingSection";
 import {
   DEPOSIT_CHOICE_LABEL,
@@ -123,6 +124,7 @@ const SECTIONS: Array<{ id: string; label: string }> = [
   { id: "progress", label: "Progress" },
   { id: "invite", label: "Link" },
   { id: "details", label: "Details" },
+  { id: "franchise", label: "Franchise" },
   { id: "terms", label: "Terms" },
   { id: "signature", label: "Signature" },
   { id: "deposit", label: "Deposit" },
@@ -255,6 +257,8 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
           <Field label="Notices phone" value={gym.details.noticesPhone} />
         </Fields>
       </Card>
+
+      <GymFranchiseCard gym={gym} onChanged={onChanged} />
 
       <AdminTermsEditor gym={gym} onSaved={onChanged} />
 

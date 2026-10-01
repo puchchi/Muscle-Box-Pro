@@ -16,9 +16,11 @@ import { MachinePinTab } from "./machines/MachinePinTab";
 import { MachineGoodsTab } from "./machines/MachineGoodsTab";
 import { MachineStockTab } from "./machines/MachineStockTab";
 import { MachineVoicesTab } from "./machines/MachineVoicesTab";
+import { MachineOwnerTab } from "./machines/MachineOwnerTab";
 
 const TABS = [
   { id: "settings", label: "Settings" },
+  { id: "owner", label: "Owner" },
   { id: "goods", label: "Goods" },
   { id: "stock", label: "Stock" },
   { id: "voices", label: "Voice prompts" },
@@ -149,6 +151,7 @@ function MachineDetail({ session, sn }: { session: AdminSession; sn: string }) {
           </div>
 
           {tab === "settings" && <MachineSettingsTab machine={machine} models={models} onReload={reload} onSaved={setMachine} />}
+          {tab === "owner" && <MachineOwnerTab machine={machine} onChanged={() => void reload()} />}
           {tab === "goods" && <MachineGoodsTab sn={machine.sn} />}
           {tab === "stock" && <MachineStockTab sn={machine.sn} />}
           {tab === "voices" && <MachineVoicesTab sn={machine.sn} onSaved={() => void reload()} />}

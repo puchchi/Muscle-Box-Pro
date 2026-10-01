@@ -57,6 +57,8 @@ export type AdminFranchiseListRow = {
   sourceApplicationId: string | null;
   createdAt: string;
   updatedAt: string;
+  gymCount: number;
+  machineCount: number;
 };
 
 export type AdminFranchiseList = {

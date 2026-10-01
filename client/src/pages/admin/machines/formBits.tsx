@@ -53,7 +53,7 @@ export function TextInput({
   disabled?: boolean;
   placeholder?: string;
   mono?: boolean;
-  type?: "text" | "password";
+  type?: "text" | "password" | "date";
   inputMode?: "numeric" | "decimal" | "text";
   maxLength?: number;
   onPaste?: React.ClipboardEventHandler<HTMLInputElement>;

@@ -1,3 +1,5 @@
+import type { OwnerState } from "./ownership";
+
 export const MACHINE_ADMIN_ERROR_CODES = [
   "validation",
   "invalid_token",
@@ -33,7 +35,10 @@ export type MachineListFilters = {
   stock?: "lack" | "normal";
   freeVend?: "yes" | "no";
   factoryPin?: "none";
-};
+  ownerState?: OwnerState;
+} & OwnerFilters;
+
+export type OwnerFilters = { gymId?: string; franchiseId?: string };
 
 export type MachineEditInput = {
   deviceExtNo: string;
@@ -104,7 +109,7 @@ export type OrderFilters = {
   status?: "created" | "unknown" | "made" | "failed";
   from?: string;
   to?: string;
-};
+} & OwnerFilters;
 
 export type EquipmentLogFilters = {
   machine?: string;
@@ -177,6 +182,6 @@ export type StatFilters = {
   payMethod?: "free" | "redeem" | "qr";
   goodsName?: string;
   ad?: string;
-};
+} & OwnerFilters;
 
 export type MachineFileKind = "logs" | "crashes";

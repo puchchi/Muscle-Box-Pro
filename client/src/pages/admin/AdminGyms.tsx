@@ -250,6 +250,11 @@ export default function AdminGyms() {
                               {row.legalEntityName}
                             </p>
                           )}
+                        {row.franchiseId && (
+                          <p className="truncate text-xs text-sky-200/80" data-testid={`franchise-${row.gymId}`}>
+                            {row.franchiseName ?? row.franchiseId}
+                          </p>
+                        )}
                       </div>
                       <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
                     </div>
@@ -327,6 +332,11 @@ export default function AdminGyms() {
                       */}
                       {row.legalEntityName !== "" && row.legalEntityName !== row.tradeName && (
                         <p className="text-xs text-muted-foreground">{row.legalEntityName}</p>
+                      )}
+                      {row.franchiseId && (
+                        <p className="text-xs text-sky-200/80" data-testid={`franchise-${row.gymId}`}>
+                          {row.franchiseName ?? row.franchiseId}
+                        </p>
                       )}
                     </td>
                     <td className="px-4 py-2.5">

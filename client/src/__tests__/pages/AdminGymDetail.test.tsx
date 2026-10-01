@@ -58,6 +58,18 @@ vi.mock("@/lib/adminApi", () => ({
   adminGymQueryKey: (gymId: string) => ["admin", "gym", gymId],
 }));
 
+const { mockActiveFranchises, mockNetwork, mockSetGymFranchise } = vi.hoisted(() => ({
+  mockActiveFranchises: vi.fn(),
+  mockNetwork: vi.fn(),
+  mockSetGymFranchise: vi.fn(),
+}));
+vi.mock("@/lib/adminOwnershipApi", () => ({
+  OFFBOARDED_LIFECYCLES: new Set(["terminated", "machine_recovered", "settled"]),
+  fetchActiveFranchises: mockActiveFranchises,
+  fetchFranchiseNetwork: mockNetwork,
+  setGymFranchise: mockSetGymFranchise,
+}));
+
 vi.mock("@/lib/queryClient", () => ({
   queryClient: { invalidateQueries: vi.fn().mockResolvedValue(undefined), removeQueries: vi.fn() },
 }));
@@ -551,5 +563,87 @@ describe("AdminGymDetail — offboarding", () => {
 
     expect(await screen.findByText("Choose a cause.")).toBeInTheDocument();
     expect(mockTerminate).not.toHaveBeenCalled();
+  });
+});
+
+describe("AdminGymDetail — the franchise card", () => {
+  const franchises = [{ franchiseId: "fr_northline", name: "Northline Nutrition" }];
+  const network = (machineCount: number) => ({
+    ok: true,
+    data: {
+      franchiseId: "fr_northline",
+      franchiseName: "Northline Nutrition",
+      status: "active",
+      machineAllocation: 3,
+      machineCount,
+      overAllocated: false,
+      gyms: [],
+      unplacedMachines: [],
+    },
+  });
+
+  it("says an unlinked gym is MBP-direct and links to its machine and sales", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    expect(await screen.findByTestId("gym-franchise")).toHaveTextContent("MBP-direct");
+    expect(screen.getByTestId("gym-live-machine")).toHaveTextContent("MBP-000241");
+    expect(screen.getByTestId("gym-orders-link")).toHaveAttribute("href", "/machines/orders?gymId=gym_01HQZX9K2M4N6P8R");
+  });
+
+  it("says the machine moves with the gym, warns past the allocation, and sends the version it read", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockActiveFranchises.mockResolvedValue({ ok: true, data: franchises });
+    mockNetwork.mockResolvedValue(network(3));
+    mockSetGymFranchise.mockResolvedValue({
+      ok: true,
+      data: { gymId: "gym_01HQZX9K2M4N6P8R", changed: true, franchiseId: "fr_northline", franchiseName: "Northline Nutrition", ownershipVersion: 2, machine: null },
+    });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-open-gym-franchise"));
+    await waitFor(() => expect(screen.getByRole("option", { name: "Northline Nutrition" })).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText("Franchise"), "fr_northline");
+
+    expect(screen.getByTestId("gym-franchise-machine-note")).toHaveTextContent("MBP-000241, moves to Northline Nutrition");
+    expect(await screen.findByTestId("gym-franchise-allocation-note")).toHaveTextContent("will hold 4 machines");
+
+    await user.click(screen.getByTestId("button-save-gym-franchise"));
+    await waitFor(() => expect(mockSetGymFranchise).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R", "fr_northline", 1));
+    expect(await screen.findByTestId("gym-franchise-saved")).toHaveTextContent("Northline Nutrition");
+  });
+
+  it("offers a reload when someone else changed the gym first", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockActiveFranchises.mockResolvedValue({ ok: true, data: franchises });
+    mockNetwork.mockResolvedValue(network(0));
+    mockSetGymFranchise.mockResolvedValue({
+      ok: false,
+      error: { code: "already_signed", message: "This machine or gym changed since you loaded it. Reload and try again.", fieldErrors: { expectedVersion: "Stale." } },
+      issues: [],
+    });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-open-gym-franchise"));
+    await waitFor(() => expect(screen.getByRole("option", { name: "Northline Nutrition" })).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText("Franchise"), "fr_northline");
+    await user.click(screen.getByTestId("button-save-gym-franchise"));
+
+    expect(await screen.findByTestId("button-gym-franchise-reload")).toBeInTheDocument();
+  });
+});
+
+describe("AdminGymDetail — a gym with no machine", () => {
+  it("points to the machine console rather than offering a form the server would refuse", async () => {
+    const gym = adminGymFixture();
+    gym.machine = { model: "", deviceNo: null, serialNumber: null, valueInr: 0, accessories: "", installationDate: null };
+    gym.liveDeviceNo = null;
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    expect(await screen.findByTestId("machine-none")).toHaveTextContent("Owner tab");
+    expect(screen.queryByTestId("button-edit-machine")).not.toBeInTheDocument();
   });
 });

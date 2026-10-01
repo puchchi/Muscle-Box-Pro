@@ -1,5 +1,6 @@
 import * as z from "zod";
 import { toParse, type AdminParse } from "./parse";
+import { OWNER_STATES } from "./ownership";
 
 export type { AdminParse };
 
@@ -9,6 +10,20 @@ const inr = z.number().finite();
 const count = z.number().int().min(0);
 const flag = z.boolean().optional().transform((v) => v ?? false);
 const optionalInstant = instant.optional().transform((v) => v ?? null);
+
+const machineOwnerFields = {
+  ownerState: z.enum(OWNER_STATES),
+  owner: z
+    .object({
+      franchiseId: z.string().nullable(),
+      franchiseName: z.string().nullable(),
+      gymId: z.string().nullable(),
+      gymName: z.string().nullable(),
+      since: instant,
+    })
+    .nullable(),
+  ownerVersion: count,
+};
 
 export const summarySchema = z.object({
   machines: count,
@@ -39,6 +54,7 @@ export const machineRowSchema = z.object({
   restartPending: z.boolean(),
   freeVend: flag,
   hasFactoryPin: flag,
+  ...machineOwnerFields,
 });
 
 export const machineListSchema = z.object({ items: z.array(machineRowSchema), total: count });
@@ -74,6 +90,7 @@ export const machineSchema = z.object({
   hasFactoryPin: flag,
   factoryPinChangedAt: optionalInstant,
   factoryPinChangedBy: actor,
+  ...machineOwnerFields,
   version: z.number().int().min(0),
   createdAt: instant,
   createdBy: actor,
@@ -243,6 +260,10 @@ const orderSchema = z.object({
   status: z.enum(["created", "unknown", "made", "failed"]),
   dispensed: z.boolean(),
   failReason: z.string().nullable(),
+  gymId: z.string().nullable(),
+  gymName: z.string().nullable(),
+  franchiseId: z.string().nullable(),
+  franchiseName: z.string().nullable(),
   createdAt: instant,
 });
 
@@ -552,6 +573,7 @@ export const backupSchema = z.object({ backup: backupWithConfig, previous: backu
 
 export type MachineSummary = z.infer<typeof summarySchema>;
 export type MachineRow = z.infer<typeof machineRowSchema>;
+export type MachineOwnerCopy = MachineRow["owner"];
 export type MachineList = z.infer<typeof machineListSchema>;
 export type Machine = z.infer<typeof machineSchema>;
 export type PinResult = z.infer<typeof pinResultSchema>;

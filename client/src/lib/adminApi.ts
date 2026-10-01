@@ -71,11 +71,13 @@ export const adminGymQueryKey = (gymId: string) => ["admin", "gym", gymId] as co
  * for a parameter the UI sets. Left as a number here so a caller cannot send one at all.
  */
 export async function fetchAdminGymList(
-  options: { limit?: number; cursor?: string } = {},
+  options: { limit?: number; cursor?: string; franchiseId?: string; hasMachine?: boolean } = {},
 ): Promise<AdminReadResult<AdminGymList>> {
   const query = new URLSearchParams();
   if (options.limit !== undefined) query.set("limit", String(options.limit));
   if (options.cursor) query.set("cursor", options.cursor);
+  if (options.franchiseId) query.set("franchiseId", options.franchiseId);
+  if (options.hasMachine !== undefined) query.set("hasMachine", String(options.hasMachine));
   // `toString()` rather than `.size`, which is recent enough to be a compatibility question
   // this file has no reason to ask.
   const encoded = query.toString();

@@ -16,6 +16,7 @@ import {
 } from "./AdminFranchiseActions";
 import { AdminFranchiseTermsEditor } from "./AdminFranchiseTermsEditor";
 import { FranchiseInviteActions } from "./AdminFranchiseInviteActions";
+import { FranchiseNetworkCard } from "./FranchiseNetworkCard";
 import { formatCalendarDate, formatIstDateTime } from "./adminFormat";
 import {
   FRANCHISE_DOC_TYPE_LABEL,
@@ -113,6 +114,7 @@ const SECTIONS: Array<{ id: string; label: string }> = [
   { id: "progress", label: "Progress" },
   { id: "decision", label: "Decision" },
   { id: "instalments", label: "Instalments" },
+  { id: "network", label: "Gyms and machines" },
   { id: "details", label: "Details" },
   { id: "terms", label: "Terms" },
   { id: "kyc", label: "Documents" },
@@ -219,6 +221,8 @@ function FranchiseView({
       <FranchiseDecisionSection franchise={franchise} onSaved={onChanged} />
 
       <FranchiseInstalmentsSection franchise={franchise} onSaved={onChanged} />
+
+      <FranchiseNetworkCard franchiseId={franchise.franchiseId} />
 
       <Card
         id="details"
