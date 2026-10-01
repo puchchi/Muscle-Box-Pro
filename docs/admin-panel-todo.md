@@ -120,6 +120,40 @@ Open from this work:
 - [ ] **The QR save message.** Once a QR save also sets `refreshPending` (shop spec §3.1), the
       notice "picks this up the next time its app starts" is wrong. Change it when that lands.
 
+## Done 2026-10-02: machine handoff (coming soon, Contact us, ratings, Instagram)
+
+The brief is `mbp-machine/docs/HANDOFF-FRONTEND-STOCK-SOON-FEEDBACK.md`; the admin API it builds
+against is the backend brief's §2.5, §3.3 and §4. The backend has not shipped any of it yet, so
+every new field parses as off or none when it is missing. What this repo still needs from the
+backend is in `docs/stock-soon-feedback-asks.md`.
+
+- **Coming soon** on a drink: a switch in the goods form (`ComingSoonField`), a pill and a Status
+  filter on the goods library, and "Coming soon" in the machine's Sold out column. While it is on,
+  the recipe may be empty; a recipe line that was started is still checked.
+- **Feedback page** at `/machines/feedback` (`AdminMachineFeedback.tsx`): type chips, a State
+  filter that opens on New, an SN filter, cursor paging. The detail shows the whole message as
+  text with its line breaks, `mailto:`/`tel:` links, a state and a note of up to 1000 characters.
+  The order links to the orders page only when `orderLinked`. A New badge in the menu
+  (`newFeedbackCount.ts`) comes from `newCount` and follows saves. Opened from a rating link
+  (`?type=review&sn=`), it shows every state.
+- **Ratings**: a Rating column (`★ 4.6 (23)`, or "—") on the goods library and on a machine's
+  goods, linking to the Feedback page filtered to reviews (and to that machine).
+- **Instagram page** on QR settings: `instagramLink`, `https` on `instagram.com` or
+  `www.instagram.com` with a profile name; `""` clears it.
+- Customer email and phone appear only on the Feedback page: not in URLs, analytics or logs.
+
+Open from this work:
+
+- [ ] Type chip counts appear only once the list reply has `counts` (asks A3).
+- [ ] The Status filter filters the returned page on the client until `GET goods` takes
+      `comingSoon` (asks A1), so the total and paging can be off.
+- [ ] Filter ratings by drink once `GET feedback` takes `goodsId` (asks A4).
+- [ ] **Website, later** (no machine menu page yet, only `DrinksHolding`). When the menu is built
+      from `GET shop/machines/{sn}`: an out-of-stock drink greyed out with "Out of stock" and not
+      buyable; a coming-soon drink labelled "Coming soon" with no buy button; the `coming_soon`
+      order error shown as "This drink isn't available yet." Reviews stay private: nothing about
+      them on the website.
+
 ## Shop: `/join` and `/drinks`
 
 The contract is `mbp-backend/docs/shop-agreed-spec.md` (agreed 2026-10-01). It wins over this
