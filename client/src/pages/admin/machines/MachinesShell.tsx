@@ -8,6 +8,7 @@ import {
   ClipboardList,
   CupSoda,
   LogOut,
+  MessageSquare,
   MonitorPlay,
   Package,
   Percent,
@@ -21,6 +22,7 @@ import {
 import type { AdminSession } from "@/lib/adminSession";
 import { apiBaseUrl } from "@/lib/apiClient";
 import { useAdminSignOut } from "../AdminShell";
+import { useNewFeedbackCount } from "./newFeedbackCount";
 
 const SECTIONS = [
   { href: "/machines", label: "Machines", id: "machines", icon: CupSoda },
@@ -33,6 +35,7 @@ const SECTIONS = [
   { href: "/machines/new-products", label: "New products", id: "newProducts", icon: Sparkles },
   { href: "/machines/redeem-codes", label: "Redeem codes", id: "redeemCodes", icon: Ticket },
   { href: "/machines/orders", label: "Orders", id: "orders", icon: ClipboardList },
+  { href: "/machines/feedback", label: "Feedback", id: "feedback", icon: MessageSquare },
   { href: "/machines/statistics", label: "Statistics", id: "statistics", icon: BarChart3 },
   { href: "/machines/logs", label: "Logs", id: "logs", icon: ScrollText },
 ] as const satisfies ReadonlyArray<{ href: string; label: string; id: string; icon: LucideIcon }>;
@@ -49,6 +52,7 @@ export function MachinesShell({
   children: React.ReactNode;
 }) {
   const handleSignOut = useAdminSignOut();
+  const newFeedback = useNewFeedbackCount();
 
   return (
     <div className="dark theme-console min-h-screen bg-background text-foreground lg:flex">
@@ -91,6 +95,15 @@ export function MachinesShell({
               >
                 <Icon className={`h-4 w-4 ${active ? "text-primary" : ""}`} aria-hidden />
                 {label}
+                {id === "feedback" && newFeedback > 0 && (
+                  <span
+                    className="relative ml-auto rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-5 tabular-nums text-primary-foreground"
+                    data-testid="badge-new-feedback"
+                  >
+                    {newFeedback}
+                    <span className="sr-only"> new</span>
+                  </span>
+                )}
               </Link>
             );
           })}

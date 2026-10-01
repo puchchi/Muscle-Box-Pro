@@ -24,6 +24,7 @@ import type {
   UploadKind,
   VoicePositionsInput,
 } from "@shared/admin/machines";
+import { feedbackListSchema, feedbackSchema, type FeedbackFilters, type FeedbackPatch } from "@shared/admin/feedbackSchema";
 import {
   adDeleteSchema,
   adEnvelopeSchema,
@@ -240,6 +241,13 @@ export const fetchBackups = (sn: string, page: number, pageSize: number) =>
 export const fetchBackup = (sn: string, backupId: string) => call(backupSchema, "GET", `/machines/${seg(sn)}/backups/${seg(backupId)}`);
 
 export const fetchOrder = (orderId: string) => call(orderDetailSchema, "GET", `/orders/${seg(orderId)}`);
+
+export const listFeedback = (filters: FeedbackFilters, cursor: string | null, limit = 20) =>
+  call(feedbackListSchema, "GET", `/feedback${queryString({ ...filters, cursor, limit })}`);
+
+export const getFeedback = (id: string) => call(feedbackSchema, "GET", `/feedback/${seg(id)}`);
+
+export const updateFeedback = (id: string, patch: FeedbackPatch) => call(feedbackSchema, "PATCH", `/feedback/${seg(id)}`, patch);
 
 export const fetchEquipmentLog = (filters: EquipmentLogFilters, cursor: string | null, limit = 20) =>
   call(equipmentLogSchema, "GET", `/logs/equipment${queryString({ ...filters, cursor, limit })}`);
