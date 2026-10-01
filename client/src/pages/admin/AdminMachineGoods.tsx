@@ -16,6 +16,7 @@ import type { Good, MachineModel } from "@shared/admin/machinesSchema";
 import type { AdminSession } from "@/lib/adminSession";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
+import { SERVE_TEMP_LABEL } from "./machines/ServeTempField";
 import { useAdminGuard } from "./useAdminGuard";
 import { SuccessPanel } from "./AdminUi";
 import {
@@ -206,6 +207,7 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
           <Col>Model</Col>
           <Col align="right">Listed on</Col>
           <Col>Details</Col>
+          <Col>Served</Col>
           <Col>Updated</Col>
           <Col align="right">
             <span className="sr-only">Actions</span>
@@ -213,7 +215,7 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
         </Head>
         <tbody className="divide-y divide-border/70">
           {rows.length === 0 ? (
-            <NoData colSpan={9} loading={loading} />
+            <NoData colSpan={10} loading={loading} />
           ) : (
             rows.map((good) => {
               const editHref = `/machines/goods/${encodeURIComponent(good.goodsId)}`;
@@ -241,6 +243,9 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
                   </Cell>
                   <Cell className="whitespace-nowrap text-muted-foreground">
                     <span data-testid={`details-${good.goodsId}`}>{hasPayScreenDetails(good) ? "Yes" : "No"}</span>
+                  </Cell>
+                  <Cell className="whitespace-nowrap text-muted-foreground">
+                    <span data-testid={`serve-temp-${good.goodsId}`}>{good.serveTemp ? SERVE_TEMP_LABEL[good.serveTemp] : "—"}</span>
                   </Cell>
                   <Cell className="whitespace-nowrap text-xs text-muted-foreground">
                     {formatIstStamp(good.updatedAt)}

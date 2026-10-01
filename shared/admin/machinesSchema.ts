@@ -230,6 +230,7 @@ export const goodSchema = z.object({
     .optional()
     .transform((v) => v ?? []),
   ingredients: z.array(z.string()).optional().transform((v) => v ?? []),
+  serveTemp: z.enum(["chilled", "hot"]).nullable().optional().transform((v) => v ?? null),
   machinesListed: count,
   version: z.number().int().min(0),
   createdAt: instant,

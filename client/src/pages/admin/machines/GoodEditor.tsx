@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchMaterials, uploadGoodsPicture, type MachineCall } from "@/lib/adminMachineApi";
-import type { GoodInput, RecipeLineInput } from "@shared/admin/machines";
+import type { GoodInput, RecipeLineInput, ServeTemp } from "@shared/admin/machines";
 import type { Good, MachineModel, Material } from "@shared/admin/machinesSchema";
 import { Card, SuccessPanel } from "../AdminUi";
 import { FormRow, hasTwoDecimalsAtMost, NativeSelect, parseNumber, TextInput } from "./formBits";
 import { GoodsPicture, problemOf, ProblemPanel, REFRESH_NOTE, type Problem } from "./MachinesUi";
 import { checkDetails, detailsDraftOf, draftErrorsOf, PayScreenDetails, type DetailsDraft } from "./PayScreenDetails";
+import { ServeTempField } from "./ServeTempField";
 
 const MAX_LINES = 20;
 const MAX_PICTURE_BYTES = 2 * 1024 * 1024;
@@ -78,6 +79,7 @@ export function validateGood(
   image: string | null,
   materials: Material[],
   details: DetailsDraft = { tagline: "", nutrition: [], ingredients: [] },
+  serveTemp: ServeTemp | null = null,
 ): { errors: Record<string, string>; input: GoodInput | null; sent: ReturnType<typeof checkDetails>["sent"] } {
   const checkedDetails = checkDetails(details);
   const errors: Record<string, string> = { ...checkedDetails.errors };
@@ -141,6 +143,7 @@ export function validateGood(
       image: { url: image! },
       recipe,
       ...checkedDetails.details,
+      serveTemp,
     },
   };
 }
@@ -168,6 +171,7 @@ export function GoodEditor({
   }));
   const [lines, setLines] = useState<Line[]>(() => linesOf(good));
   const [details, setDetails] = useState<DetailsDraft>(() => detailsDraftOf(good));
+  const [serveTemp, setServeTemp] = useState<ServeTemp | null>(good?.serveTemp ?? null);
   const [image, setImage] = useState<string | null>(good?.image?.url ?? null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -226,7 +230,7 @@ export function GoodEditor({
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setSaved(null);
-    const checked = validateGood(values, lines, image, materials, details);
+    const checked = validateGood(values, lines, image, materials, details, serveTemp);
     setErrors(checked.errors);
     if (!checked.input) {
       setProblem({ message: "Some fields need fixing.", issues: [] });
@@ -301,6 +305,7 @@ export function GoodEditor({
             <FormRow label="Sort" htmlFor="sort" error={errors.sort} hint="Lower comes first.">
               <TextInput id="sort" value={values.sort} onChange={set("sort")} inputMode="numeric" />
             </FormRow>
+            <ServeTempField value={serveTemp} onChange={setServeTemp} error={errors.serveTemp} />
           </div>
         </Card>
 
