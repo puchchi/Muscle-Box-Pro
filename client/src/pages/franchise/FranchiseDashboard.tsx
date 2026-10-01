@@ -315,6 +315,8 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
         <StatusPill status={snapshot.onboardingStatus} />
       </div>
 
+      {snapshot.onboardingStatus !== "active" && <NotLiveBanner status={snapshot.onboardingStatus} />}
+
       <Tabs defaultValue="figures" className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* The strip scrolls rather than wraps. Three labels and the chip do not fit 390px, and
@@ -609,6 +611,34 @@ function StatusPill({ status }: { status: FranchiseOnboardingStatus }) {
       <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${STATUS_TONE[status]}`} />
       {STATUS_LABEL[status]}
     </span>
+  );
+}
+
+export function notLiveMessage(status: FranchiseOnboardingStatus): string {
+  switch (status) {
+    case "signed":
+      return "Once your first instalment reaches us and we confirm it, we'll switch you on and email you.";
+    case "payment_claimed":
+      return "We're checking your transfer against our bank statement. Once it's confirmed, we'll switch you on and email you.";
+    case "payment_verified":
+      return "Your first instalment is confirmed. We'll switch you on shortly and email you when it's done.";
+    default:
+      return "We'll email you as soon as your franchise is switched on.";
+  }
+}
+
+function NotLiveBanner({ status }: { status: FranchiseOnboardingStatus }) {
+  return (
+    <div
+      className="mt-6 flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3"
+      role="status"
+      data-testid="franchise-not-live"
+    >
+      <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300" aria-hidden="true" />
+      <p className="text-sm leading-relaxed text-amber-100">
+        <span className="font-semibold">You're not live yet.</span> {notLiveMessage(status)}
+      </p>
+    </div>
   );
 }
 

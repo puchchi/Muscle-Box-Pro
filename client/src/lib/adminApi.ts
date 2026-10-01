@@ -198,6 +198,66 @@ export async function putGymMachine(
   );
 }
 
+export type GymActivateBody = { notifyGym: boolean; depositWaiver?: { reason: string } };
+export type GymActivateResult = { gym: AdminGymView; changed: boolean; emailed: boolean | null; emailReason?: string };
+
+export async function activateGym(gymId: string, body: GymActivateBody): Promise<AdminReadResult<GymActivateResult>> {
+  const result = await apiRequest<unknown>("POST", `/admin/gyms/${encodeURIComponent(gymId)}/activate`, { body });
+  if (!result.ok) return { ok: false, error: result.error, issues: [] };
+  const parsed = parseAdminGymView(result.data);
+  if (!parsed.ok) return { ok: false, error: MALFORMED_ACTIVATE, issues: parsed.issues };
+  const extra = result.data as { changed?: unknown; emailed?: unknown; emailReason?: unknown };
+  return {
+    ok: true,
+    data: {
+      gym: parsed.data,
+      changed: extra.changed === true,
+      emailed: typeof extra.emailed === "boolean" ? extra.emailed : null,
+      ...(typeof extra.emailReason === "string" ? { emailReason: extra.emailReason } : {}),
+    },
+  };
+}
+
+export type IssuedInvite = { onboardingUrl: string; tokenId: string; expiresAt: string; emailed: boolean; emailReason?: string };
+
+export async function resendGymInvite(
+  gymId: string,
+  body: { invitedByName?: string; sendInvite: boolean },
+): Promise<AdminReadResult<IssuedInvite>> {
+  const result = await apiRequest<unknown>("POST", `/admin/gyms/${encodeURIComponent(gymId)}/invite`, { body });
+  if (!result.ok) return { ok: false, error: result.error, issues: [] };
+  const data = result.data as Partial<Record<keyof IssuedInvite, unknown>>;
+  if (typeof data.onboardingUrl !== "string" || typeof data.tokenId !== "string" || typeof data.expiresAt !== "string") {
+    return { ok: false, error: MALFORMED_RESEND, issues: [] };
+  }
+  return {
+    ok: true,
+    data: {
+      onboardingUrl: data.onboardingUrl,
+      tokenId: data.tokenId,
+      expiresAt: data.expiresAt,
+      emailed: data.emailed === true,
+      ...(typeof data.emailReason === "string" ? { emailReason: data.emailReason } : {}),
+    },
+  };
+}
+
+export async function voidGymInvite(gymId: string): Promise<AdminReadResult<{ wasLive: boolean }>> {
+  const result = await apiRequest<{ wasLive?: unknown }>("DELETE", `/admin/gyms/${encodeURIComponent(gymId)}/invite`);
+  if (!result.ok) return { ok: false, error: result.error, issues: [] };
+  return { ok: true, data: { wasLive: result.data.wasLive === true } };
+}
+
+const MALFORMED_ACTIVATE: OnboardingError = {
+  code: "network",
+  message: "The gym may have been activated, but the reply came back in a shape this page doesn't recognise. Reload before trying again.",
+};
+
+const MALFORMED_RESEND: OnboardingError = {
+  code: "network",
+  message: "A new link may have been made, but the reply didn't include it. Reload the gym before sending another.",
+};
+
 /**
  * The four offboarding writes, which all answer with the same record.
  *

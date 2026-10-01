@@ -37,13 +37,15 @@ vi.mock("@/lib/adminSession", () => ({
 
 // The six writes are mocked alongside the read, and they have to be: Vitest's module mock is
 // exhaustive, so an export the factory omits throws on import rather than arriving as undefined.
-const { mockFetchView, mockPatchTerms, mockPutMachine, mockNotice, mockTerminate } = vi.hoisted(
+const { mockFetchView, mockPatchTerms, mockPutMachine, mockNotice, mockTerminate, mockResendInvite, mockVoidInvite } = vi.hoisted(
   () => ({
     mockFetchView: vi.fn(),
     mockPatchTerms: vi.fn(),
     mockPutMachine: vi.fn(),
     mockNotice: vi.fn(),
     mockTerminate: vi.fn(),
+    mockResendInvite: vi.fn(),
+    mockVoidInvite: vi.fn(),
   }),
 );
 vi.mock("@/lib/adminApi", () => ({
@@ -54,6 +56,9 @@ vi.mock("@/lib/adminApi", () => ({
   terminateGym: mockTerminate,
   recordMachineRecovered: vi.fn(),
   recordOffboardingSettlement: vi.fn(),
+  activateGym: vi.fn(),
+  resendGymInvite: mockResendInvite,
+  voidGymInvite: mockVoidInvite,
   ADMIN_GYMS_QUERY_KEY: ["admin", "gyms"],
   adminGymQueryKey: (gymId: string) => ["admin", "gym", gymId],
 }));
@@ -256,6 +261,34 @@ describe("AdminGymDetail", () => {
     // Scoped to the invite card: the shell's own footer legitimately prints the API's https
     // URL, and that is not the leak this test is about.
     expect(card).not.toHaveTextContent(/http/);
+  });
+
+  it("sends a new gym link to this gym and shows it once", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockResendInvite.mockResolvedValue({
+      ok: true,
+      data: { onboardingUrl: "https://muscleboxpro.com/onboarding/abc", tokenId: "t2", expiresAt: "2026-10-08T00:00:00.000Z", emailed: true },
+    });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    await userEvent.click(await screen.findByTestId("button-resend-invite"));
+    expect(screen.getByTestId("confirm-resend")).toHaveTextContent("rohit@ironhousegym.in");
+    await userEvent.click(screen.getByTestId("button-confirm-resend"));
+
+    expect(mockResendInvite).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R", { sendInvite: true });
+    expect(await screen.findByTestId("input-onboarding-url")).toHaveValue("https://muscleboxpro.com/onboarding/abc");
+  });
+
+  it("revokes the gym's link and says when nothing was live", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockVoidInvite.mockResolvedValue({ ok: true, data: { wasLive: false } });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    await userEvent.click(await screen.findByTestId("button-void-invite"));
+    await userEvent.click(screen.getByTestId("button-confirm-void"));
+
+    expect(mockVoidInvite).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R");
+    expect(await screen.findByTestId("invite-voided")).toHaveTextContent(/Nothing was live to revoke. .*this gym/);
   });
 
   it("says a gym with no signature is not signed, without erroring", async () => {
