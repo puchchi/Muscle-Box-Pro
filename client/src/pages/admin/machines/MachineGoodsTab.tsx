@@ -16,6 +16,7 @@ import {
 import type { MachineGoodsPatch } from "@shared/admin/machines";
 import type { AvailableGood, MachineGood } from "@shared/admin/machinesSchema";
 import { SuccessPanel } from "../AdminUi";
+import { RatingLink } from "./RatingLink";
 import { hasTwoDecimalsAtMost, parseNumber } from "./formBits";
 import {
   Cell,
@@ -231,10 +232,11 @@ export function MachineGoodsTab({ sn }: { sn: string }) {
           <Col align="right">Shown price</Col>
           <Col>Listed</Col>
           <Col>Sold out</Col>
+          <Col>Rating</Col>
         </Head>
         <tbody className="divide-y divide-border/70">
           {rows.length === 0 ? (
-            <NoData colSpan={11} loading={loading} />
+            <NoData colSpan={12} loading={loading} />
           ) : (
             rows.map((good) => {
               const draft = draftOf(good);
@@ -311,6 +313,9 @@ export function MachineGoodsTab({ sn }: { sn: string }) {
                         {good.soldOut ? "Yes" : "No"}
                       </span>
                     )}
+                  </Cell>
+                  <Cell>
+                    <RatingLink rating={good.rating} sn={sn} testId={`rating-${good.goodsId}`} />
                   </Cell>
                 </tr>
               );

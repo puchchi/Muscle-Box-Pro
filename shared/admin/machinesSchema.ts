@@ -106,6 +106,12 @@ export const factoryPinResultSchema = z.object({ factoryPinChangedAt: instant, f
 
 export const factoryPinBulkResultSchema = factoryPinResultSchema.extend({ updated: count });
 
+const ratingSchema = z
+  .object({ avg: z.number().min(0).max(5), count: z.number().int().min(0) })
+  .nullable()
+  .optional()
+  .transform((v) => (v && v.count > 0 ? v : null));
+
 const imageSchema = z
   .object({ url: z.string(), path: z.string(), fileName: z.string(), md5: z.string() })
   .nullable();
@@ -123,6 +129,7 @@ export const machineGoodSchema = z.object({
   listed: z.boolean(),
   soldOut: z.boolean(),
   comingSoon: z.boolean().nullable().optional().transform((v) => v === true),
+  rating: ratingSchema,
   sort: z.number(),
   updatedAt: instant,
   updatedBy: actor,
@@ -233,6 +240,7 @@ export const goodSchema = z.object({
   ingredients: z.array(z.string()).optional().transform((v) => v ?? []),
   serveTemp: z.enum(["chilled", "hot"]).nullable().optional().transform((v) => v ?? null),
   comingSoon: z.boolean().nullable().optional().transform((v) => v === true),
+  rating: ratingSchema,
   machinesListed: count,
   version: z.number().int().min(0),
   createdAt: instant,
@@ -594,6 +602,7 @@ export type MachineModel = z.infer<typeof modelsSchema>["items"][number];
 export type Material = z.infer<typeof materialSchema>;
 export type MaterialSave = z.infer<typeof materialSaveSchema>;
 export type Good = z.infer<typeof goodSchema>;
+export type GoodRating = NonNullable<Good["rating"]>;
 export type GoodsList = z.infer<typeof goodsListSchema>;
 export type GoodSave = z.infer<typeof goodEnvelopeSchema>;
 export type ListingResult = z.infer<typeof listingResultSchema>;
