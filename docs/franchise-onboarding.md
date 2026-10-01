@@ -1019,7 +1019,7 @@ id would compile in both directions.
 | `POST /admin/franchises/{id}/approval` | approve, hold or decline, and record the **granted** territory |
 | `POST /admin/franchises/{id}/payments/{n}/verify` | records `receivedPaise`. The write that completes step 8 |
 | `GET /admin/franchises/{id}/documents/{docId}/url` | short-lived presigned GET (§9) |
-| `POST /admin/franchises/{id}/activate` | `payment_verified` → `active`. The only route that ends onboarding |
+| `POST /admin/franchises/{id}/activate` | any status but `declined` → `active`, with **no preconditions** (decided 2026-10-01). The only route that ends onboarding |
 
 `onboardingBaseUrl` builds the invite URL, and the reason it is config rather than a request field is
 verbatim backend design §7's: a base URL from an admin's request body lets a compromised admin client
@@ -1333,6 +1333,9 @@ two gaps in §9 with it.
 activate` and `POST /franchise/account`. The franchise dashboard — the program document's §22 list,
 including capital recovery progress — is its own piece of work and needs the settlement model that
 backend design §9.4 says does not have data yet.
+
+Built 2026-10-01: the admin Activation card (`FranchiseActivationCard`) and the "not live yet"
+banner on the franchise dashboard. Login and the portal are not gated on `active`.
 
 ---
 

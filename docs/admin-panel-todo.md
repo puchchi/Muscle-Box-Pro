@@ -87,18 +87,59 @@ server-side without deciding which copy is authoritative.
 `docs/gym-onboarding-api-design.md` §2.1 in `mbp-backend` lists these as already deployed
 routes with no admin UI in front of them yet:
 
-- [ ] **Resend invite** — `POST /admin/gyms/{gymId}/invite`. Regenerates the link, supersedes
-      the previous handle. **Priority**: only `sha256(handle)` is stored, so a link is recoverable
-      exactly once, in the response that minted it. Resending is the only way to get a working
-      link to a gym that lost theirs, and the detail page currently says so without offering it.
-      `AdminFranchiseInviteActions` is the same two writes on the franchise side and is the screen
-      to copy: the confirm-first shape, the show-once URL panel and the honest `wasLive: false`
-      outcome all apply unchanged.
-- [ ] **Void invite** — `DELETE /admin/gyms/{gymId}/invite`.
-- [ ] **Activate** — `POST /admin/gyms/{gymId}/activate`. `deposit_paid` → `active`. Needs
-      `installationDate` set first (`docs/onboarding-build-progress.md`, deviation found during
-      the sandbox walk).
 - [ ] **Set-password link** — `POST /admin/gyms/{gymId}/set-password-link`. §9.2.
+
+Resend, void and activate for gyms are done (2026-10-01, see below).
+
+## Done 2026-10-01 — activation, invites, and the machine-console follow-ups
+
+- **Gym activation** — `GymActivationCard`, rules in `activationRules.ts`. Shows the three checks
+  (signed, machine placed, deposit), asks for a waiver reason of at least ten characters when the
+  deposit is unpaid, and has a "tell the gym" switch. A `PENDING-` device number does not count
+  as placed, on either side. Server refusals have their route names swapped for "the Machine
+  section" by `plainActivationMessage`.
+- **Gym invite resend and void** — `InviteActions subject="gym"`, the shared version of what was
+  `AdminFranchiseInviteActions` (now a thin wrapper).
+- **Franchise activation** — `FranchiseActivationCard`, `POST /admin/franchises/{id}/activate`.
+  **No preconditions** (decided 2026-10-01): it lists what is unfinished but never blocks.
+  Declined franchises are refused. The "you're live" email is on by default and can be switched
+  off. The detail page's "Waiting on us" banner now covers `payment_verified`.
+- **Franchise "not live yet" banner** on the franchise's own dashboard (`notLiveMessage`).
+  Login and the portal are not gated on `active`.
+- **Goods "Served" choice** — Normal, Chilled or Hot (`ServeTempField`), and a Served column in
+  the goods library. The form always sends `serveTemp`; `null` means Normal.
+- **QR and logo: links instead of QR pictures** — "Join Members link" and "Get Drinks link",
+  empty for the machine's default (`/join`, `/drinks`). Only `https` on muscleboxpro.com or a
+  subdomain, up to 200 characters. The stored QR pictures are still sent unchanged so old apps
+  keep them. The backend does not accept the links yet (shop spec §3.1).
+
+Open from this work:
+
+- [ ] **Who activated a franchise.** The backend stores `activatedByEmail`, but the admin
+      franchise view does not return it, so the card shows only the date.
+- [ ] **The QR save message.** Once a QR save also sets `refreshPending` (shop spec §3.1), the
+      notice "picks this up the next time its app starts" is wrong. Change it when that lands.
+
+## Shop: `/join` and `/drinks`
+
+The contract is `mbp-backend/docs/shop-agreed-spec.md` (agreed 2026-10-01). It wins over this
+repo's `docs/shop-backend-requirements.md`, which is kept as the original request. Decisions are
+in its §1: guests can buy; a bought code works at that machine, for that drink, once, and never
+expires; every 10th drink is free for signed-in customers; sign-in is an email code; accounts live
+in a new AWS shop service, not Supabase.
+
+- [x] Holding pages at `/join` and `/drinks` (`client/src/pages/shop/`). The machine app already
+      draws QRs to them. They say what is coming and how to buy on the machine now. Not indexed.
+- [ ] **Phase 1b, website:** the `/drinks` menu and guest purchase (Razorpay Checkout), the
+      receipt page with the token in the fragment (`/drinks/receipt#t=…`, sent as
+      `x-shop-order-token`), `Referrer-Policy: no-referrer`, and the shop host and Razorpay in
+      the CSP. Recognise the shop error codes in spec §5.2.
+- [ ] **Phase 1c, website:** email sign-in, `/join`, "My drink codes", stamps, claiming a guest
+      order. A separate sandbox session-storage key for the shop.
+- [ ] **Dashboard:** the `source` tag and `shopOrderId` filter on Redeem Codes; shop orders,
+      customers, refund, retry-refund and reissue pages.
+- **Not doing (decided 2026-10-01):** phone Start. No "Connect MQTT", certificate details or MQTT
+      status on the machine page, and no "Website start" on orders. Customers type the code.
 
 ## Parked — the panel is cheap, the API's metrics are not
 

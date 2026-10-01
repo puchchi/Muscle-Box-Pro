@@ -7,6 +7,8 @@ Two things change at once:
 
 1. **Consumer login/signup is removed.** There are no customer accounts. Members buy a shake at
    the machine; they do not have profiles, wallets, or logins.
+   *2026-10-01:* customer accounts are coming back, in a new AWS shop service rather than
+   Supabase, for `/join` and `/drinks`. See `mbp-backend/docs/shop-agreed-spec.md`.
 2. **Gyms are onboarded through a single emailed link** — a six-step flow that ends with a signed
    agreement, a paid security deposit, a working portal account, and a machine on the floor. The
    sixth step is the only one the gym does not do: see §20.

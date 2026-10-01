@@ -1,0 +1,39 @@
+# Shop codes: asks from the website
+
+Status: decided by Anurag 2026-10-01, not yet sent. These amend `mbp-backend/docs/shop-agreed-spec.md`.
+
+## Decisions
+
+1. **No phone Start on the website or the dashboard.** The website shows the 8-digit code and the customer types it
+   on the machine. There is no "Start my drink" button and no time parameter in the Get Drinks link. The dashboard
+   gets no "Connect MQTT", certificate details or MQTT status on the machine page, and no "Website start" on
+   orders. Spec §6.1's Start routes, §6.5's dashboard items and §6.7 have no website or dashboard caller.
+2. **A guest can email themselves the code.** No SMS (it needs DLT). Emailing does not create an account.
+
+## Backend (mbp-backend)
+
+**B0. Phone Start work already done.** Commit 5a12cf7 adds MQTT enrolment, whose codes come from the dashboard's
+"Connect MQTT" button, which will not be built. Please update the agreed spec's §2 and §6 to match decision 1, and
+say whether the MQTT work is parked or kept for something else, such as the `refresh` message.
+
+**B1. Email a guest their code.** `POST shop/order/email` with `x-shop-order-token` and `{email}`.
+
+- Sends the code, the drink and the machine's name from `no-reply@muscleboxpro.com`.
+- Only for a `coded` order. At most 3 sends per order, plus the per-IP limit. The reply is the same whether or not
+  the send went out.
+- It does not create an account. The email is stored on the order, lower-cased, as `guestEmail`.
+- **When that email signs in, its guest orders join the account** (decided 2026-10-01). On `POST shop/auth/verify`,
+  every order with that `guestEmail` and no `customerId` moves to the customer and earns its stamp, exactly as a
+  `claimToken` claim does: once per order, none for a refunded order. This needs a lookup by `guestEmail`.
+  Signing in proves the email, so no extra check is needed; a guest who typed someone else's email has given that
+  person the code anyway.
+
+**B2. A typed code whose reply is lost.** If `exchangeGenOrder` consumes the code but its reply never reaches the
+machine, the machine makes nothing and never reports, so the customer has paid for a drink they did not get.
+Please say whether this can happen today, and if so, give the use back when no `produceOver` or `produceFail`
+arrives within 5 minutes. This is machine BACKEND-REQUESTS #5, applied to typed codes.
+
+## Website (Muscle-Box-Pro)
+
+- The receipt shows the code in large digits with "Enter this code on the machine's Get Drinks screen."
+- Guests see "Email me this code". Everyone not signed in sees "Log in to keep your codes in My drinks."
