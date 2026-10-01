@@ -184,7 +184,7 @@ export const updateMaterial = (
   });
 
 export const fetchGoods = (
-  filters: { name?: string; modelId?: string; listed?: "yes" | "no" },
+  filters: { name?: string; modelId?: string; listed?: "yes" | "no"; comingSoon?: "yes" | "no" },
   page: number,
   pageSize: number,
 ) => call(goodsListSchema, "GET", `/goods${queryString({ ...filters, page, pageSize })}`);

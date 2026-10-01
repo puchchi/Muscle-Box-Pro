@@ -16,6 +16,7 @@ import type { Good, MachineModel } from "@shared/admin/machinesSchema";
 import type { AdminSession } from "@/lib/adminSession";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
+import { ComingSoonPill } from "./machines/ComingSoonField";
 import { SERVE_TEMP_LABEL } from "./machines/ServeTempField";
 import { useAdminGuard } from "./useAdminGuard";
 import { SuccessPanel } from "./AdminUi";
@@ -46,7 +47,7 @@ export default function AdminMachineGoods() {
   return <GoodsLibrary session={guard.session} />;
 }
 
-type Filters = { name?: string; modelId?: string; listed?: "yes" | "no" };
+type Filters = { name?: string; modelId?: string; listed?: "yes" | "no"; comingSoon?: "yes" | "no" };
 
 type Pending =
   | { kind: "listing"; good: Good; listed: boolean; count: number }
@@ -61,6 +62,7 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
   const [name, setName] = useState("");
   const [modelId, setModelId] = useState("");
   const [listed, setListed] = useState("");
+  const [status, setStatus] = useState("");
   const [filters, setFilters] = useState<Filters>({});
   const [loading, setLoading] = useState(true);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -82,7 +84,8 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
       setProblem(problemOf(result));
       return;
     }
-    setRows(result.data.items);
+    const wanted = filters.comingSoon;
+    setRows(wanted ? result.data.items.filter((g) => g.comingSoon === (wanted === "yes")) : result.data.items);
     setTotal(result.data.total);
   }, [filters, page, pageSize]);
 
@@ -166,6 +169,7 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
             name: name.trim() || undefined,
             modelId: modelId || undefined,
             listed: (listed || undefined) as Filters["listed"],
+            comingSoon: (status || undefined) as Filters["comingSoon"],
           });
           setPage(1);
         }}
@@ -173,6 +177,7 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
           setName("");
           setModelId("");
           setListed("");
+          setStatus("");
           setFilters({});
           setPage(1);
         }}
@@ -195,6 +200,17 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
             { value: "no", label: "No" },
           ]}
           testId="filter-listed"
+        />
+        <SelectFilter
+          label="Status"
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: "", label: "All" },
+            { value: "no", label: "On sale" },
+            { value: "yes", label: "Coming soon" },
+          ]}
+          testId="filter-status"
         />
       </FilterBar>
 
@@ -227,9 +243,12 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
                     <span className="flex items-center gap-3">
                       <GoodsPicture url={good.image?.url} alt={good.name} />
                       <span className="min-w-0">
-                        <Link href={editHref} className="block font-semibold text-foreground hover:underline">
-                          {good.name}
-                        </Link>
+                        <span className="flex flex-wrap items-center gap-2">
+                          <Link href={editHref} className="font-semibold text-foreground hover:underline">
+                            {good.name}
+                          </Link>
+                          {good.comingSoon && <ComingSoonPill testId={`coming-soon-${good.goodsId}`} />}
+                        </span>
                         {subtitle && <span className="block text-xs text-muted-foreground">{subtitle}</span>}
                       </span>
                     </span>

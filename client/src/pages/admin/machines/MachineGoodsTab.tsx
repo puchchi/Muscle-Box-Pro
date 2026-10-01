@@ -302,9 +302,15 @@ export function MachineGoodsTab({ sn }: { sn: string }) {
                     />
                   </Cell>
                   <Cell>
-                    <span className={good.soldOut ? "font-semibold text-amber-300" : "text-muted-foreground"} data-testid={`soldout-${good.goodsId}`}>
-                      {good.soldOut ? "Yes" : "No"}
-                    </span>
+                    {good.comingSoon ? (
+                      <span className="font-semibold text-sky-200" data-testid={`soldout-${good.goodsId}`}>
+                        Coming soon
+                      </span>
+                    ) : (
+                      <span className={good.soldOut ? "font-semibold text-amber-300" : "text-muted-foreground"} data-testid={`soldout-${good.goodsId}`}>
+                        {good.soldOut ? "Yes" : "No"}
+                      </span>
+                    )}
                   </Cell>
                 </tr>
               );

@@ -10,6 +10,7 @@ import { Card, SuccessPanel } from "../AdminUi";
 import { FormRow, hasTwoDecimalsAtMost, NativeSelect, parseNumber, TextInput } from "./formBits";
 import { GoodsPicture, problemOf, ProblemPanel, REFRESH_NOTE, type Problem } from "./MachinesUi";
 import { checkDetails, detailsDraftOf, draftErrorsOf, PayScreenDetails, type DetailsDraft } from "./PayScreenDetails";
+import { ComingSoonField } from "./ComingSoonField";
 import { ServeTempField } from "./ServeTempField";
 
 const MAX_LINES = 20;
@@ -80,6 +81,7 @@ export function validateGood(
   materials: Material[],
   details: DetailsDraft = { tagline: "", nutrition: [], ingredients: [] },
   serveTemp: ServeTemp | null = null,
+  comingSoon = false,
 ): { errors: Record<string, string>; input: GoodInput | null; sent: ReturnType<typeof checkDetails>["sent"] } {
   const checkedDetails = checkDetails(details);
   const errors: Record<string, string> = { ...checkedDetails.errors };
@@ -106,10 +108,11 @@ export function validateGood(
   if (!values.modelId) errors.modelId = "Required.";
   if (!image) errors.image = "Upload a picture.";
 
-  if (lines.length === 0) errors.recipe = "Add at least one line.";
+  const noRecipe = comingSoon && lines.every((line) => !line.materialId && !line.amount.trim());
+  if (!noRecipe && lines.length === 0) errors.recipe = "Add at least one line.";
   else if (lines.length > MAX_LINES) errors.recipe = `Up to ${MAX_LINES} lines.`;
   const byId = new Map(materials.map((m) => [m.materialId, m]));
-  const recipe: RecipeLineInput[] = lines.map((line, i) => {
+  const recipe: RecipeLineInput[] = (noRecipe ? [] : lines).map((line, i) => {
     const at = `recipe.${i}`;
     const material = byId.get(line.materialId);
     const field = amountFieldOf(material?.rawType);
@@ -144,6 +147,7 @@ export function validateGood(
       recipe,
       ...checkedDetails.details,
       serveTemp,
+      comingSoon,
     },
   };
 }
@@ -172,6 +176,7 @@ export function GoodEditor({
   const [lines, setLines] = useState<Line[]>(() => linesOf(good));
   const [details, setDetails] = useState<DetailsDraft>(() => detailsDraftOf(good));
   const [serveTemp, setServeTemp] = useState<ServeTemp | null>(good?.serveTemp ?? null);
+  const [comingSoon, setComingSoon] = useState(good?.comingSoon ?? false);
   const [image, setImage] = useState<string | null>(good?.image?.url ?? null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -230,7 +235,7 @@ export function GoodEditor({
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setSaved(null);
-    const checked = validateGood(values, lines, image, materials, details, serveTemp);
+    const checked = validateGood(values, lines, image, materials, details, serveTemp, comingSoon);
     setErrors(checked.errors);
     if (!checked.input) {
       setProblem({ message: "Some fields need fixing.", issues: [] });
@@ -306,6 +311,7 @@ export function GoodEditor({
               <TextInput id="sort" value={values.sort} onChange={set("sort")} inputMode="numeric" />
             </FormRow>
             <ServeTempField value={serveTemp} onChange={setServeTemp} error={errors.serveTemp} />
+            <ComingSoonField value={comingSoon} onChange={setComingSoon} />
           </div>
         </Card>
 

@@ -89,6 +89,7 @@ export type GoodInput = {
   nutrition: { name: string; value: string }[];
   ingredients: string[];
   serveTemp: ServeTemp | null;
+  comingSoon: boolean;
 };
 
 export type ServeTemp = "chilled" | "hot";
