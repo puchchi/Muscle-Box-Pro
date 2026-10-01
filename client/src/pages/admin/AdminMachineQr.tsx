@@ -20,11 +20,12 @@ export const LINK_MAX = 200;
 
 export const DEFAULT_MEMBER_LINK = "https://muscleboxpro.com/join";
 export const DEFAULT_EXCHANGE_LINK = "https://muscleboxpro.com/drinks";
+export const DEFAULT_INSTAGRAM_LINK = "https://www.instagram.com/muscleboxpro/";
 
 const DEFAULT_MEMBER_TIP = "Scan to join MuscleBoxPro for drink packs and rewards";
 const DEFAULT_EXCHANGE_TIP = "Scan to get a drink code from your MuscleBoxPro account";
 
-type Values = Pick<QrSettings, "logo" | "memberQr" | "memberTip" | "exchangeQr" | "exchangeTip" | "memberLink" | "exchangeLink">;
+type Values = Pick<QrSettings, "logo" | "memberQr" | "memberTip" | "exchangeQr" | "exchangeTip" | "memberLink" | "exchangeLink" | "instagramLink">;
 
 const ref = (file: UploadedFile | null) => (file ? { url: file.url } : null);
 
@@ -44,6 +45,24 @@ export function linkProblem(link: string): string | null {
   return null;
 }
 
+export function instagramProblem(link: string): string | null {
+  if (link === "") return null;
+  const message = `Use the profile link, like ${DEFAULT_INSTAGRAM_LINK}`;
+  if (link.length > LINK_MAX) return `Up to ${LINK_MAX} characters.`;
+  let url: URL;
+  try {
+    url = new URL(link);
+  } catch {
+    return message;
+  }
+  const host = url.hostname.toLowerCase();
+  const profile = url.pathname.split("/")[1] ?? "";
+  if (url.protocol !== "https:" || (host !== "instagram.com" && host !== "www.instagram.com") || !/^[A-Za-z0-9_.]{1,30}$/.test(profile)) {
+    return message;
+  }
+  return null;
+}
+
 export function scanTarget(link: string, fallback: string): string {
   const drawn = link && !linkProblem(link) ? link : fallback;
   return `${drawn}${drawn.includes("?") ? "&" : "?"}sn=<machine SN>`;
@@ -55,12 +74,15 @@ export function validateQr(v: Values): { errors: Record<string, string>; input: 
   const exchangeTip = v.exchangeTip.trim();
   const memberLink = v.memberLink.trim();
   const exchangeLink = v.exchangeLink.trim();
+  const instagramLink = v.instagramLink.trim();
   if (memberTip.length > TIP_MAX) errors.memberTip = `Up to ${TIP_MAX} characters.`;
   if (exchangeTip.length > TIP_MAX) errors.exchangeTip = `Up to ${TIP_MAX} characters.`;
   const memberLinkProblem = linkProblem(memberLink);
   const exchangeLinkProblem = linkProblem(exchangeLink);
   if (memberLinkProblem) errors.memberLink = memberLinkProblem;
   if (exchangeLinkProblem) errors.exchangeLink = exchangeLinkProblem;
+  const instagramLinkProblem = instagramProblem(instagramLink);
+  if (instagramLinkProblem) errors.instagramLink = instagramLinkProblem;
   if (Object.keys(errors).length > 0) return { errors, input: null };
   return {
     errors,
@@ -72,6 +94,7 @@ export function validateQr(v: Values): { errors: Record<string, string>; input: 
       exchangeTip,
       memberLink,
       exchangeLink,
+      instagramLink,
     },
   };
 }
@@ -186,6 +209,14 @@ function QrPage({ session }: { session: AdminSession }) {
                   error={errors.memberLink}
                 />
                 <TipField id="memberTip" label="Tip under the QR" value={values.memberTip} placeholder={DEFAULT_MEMBER_TIP} onChange={set("memberTip")} error={errors.memberTip} />
+                <FormRow
+                  label="Instagram page"
+                  htmlFor="instagramLink"
+                  error={errors.instagramLink}
+                  hint="The profile customers follow from Join Members. Leave empty for muscleboxpro."
+                >
+                  <TextInput id="instagramLink" value={values.instagramLink} onChange={set("instagramLink")} placeholder={DEFAULT_INSTAGRAM_LINK} />
+                </FormRow>
               </div>
             </Card>
 

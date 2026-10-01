@@ -257,7 +257,7 @@ describe("app-start data paths", () => {
 
   it("puts QR settings with the version", async () => {
     resolves({ settings: { logo: null, memberQr: null, memberTip: "", exchangeQr: null, exchangeTip: "", version: 1, updatedAt: null, updatedBy: null }, restartPending: 5 });
-    const input = { logo: null, memberQr: null, memberTip: "", exchangeQr: { url: "u" }, exchangeTip: "Scan", memberLink: "", exchangeLink: "https://muscleboxpro.com/drinks" };
+    const input = { logo: null, memberQr: null, memberTip: "", exchangeQr: { url: "u" }, exchangeTip: "Scan", memberLink: "", exchangeLink: "https://muscleboxpro.com/drinks", instagramLink: "" };
     await setQrSettings(input, 0);
     expect(call()).toEqual(["PUT", "/qr", { ...input, expectedVersion: 0 }]);
   });
@@ -265,7 +265,7 @@ describe("app-start data paths", () => {
   it("reads QR settings saved before the links existed as empty links", async () => {
     resolves({ settings: { logo: null, memberQr: null, memberTip: "", exchangeQr: null, exchangeTip: "", version: 1, updatedAt: null, updatedBy: null } });
     const result = await fetchQrSettings();
-    expect(result.ok && [result.data.settings.memberLink, result.data.settings.exchangeLink]).toEqual(["", ""]);
+    expect(result.ok && [result.data.settings.memberLink, result.data.settings.exchangeLink, result.data.settings.instagramLink]).toEqual(["", "", ""]);
   });
 
   it("walks every page of machines", async () => {

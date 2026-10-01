@@ -429,6 +429,7 @@ export const qrSettingsSchema = z.object({
   exchangeTip: z.string(),
   memberLink: z.string().optional().transform((v) => v ?? ""),
   exchangeLink: z.string().optional().transform((v) => v ?? ""),
+  instagramLink: z.string().optional().transform((v) => v ?? ""),
   version: z.number().int().min(0),
   updatedAt: instant,
   updatedBy: actor,

@@ -10,7 +10,7 @@ import {
   type ScheduleRow,
 } from "@/pages/admin/machines/adRules";
 import { appStartNotice, checkMedia, formatBytes } from "@/pages/admin/machines/mediaBits";
-import { DEFAULT_EXCHANGE_LINK, DEFAULT_MEMBER_LINK, linkProblem, scanTarget, validateQr } from "@/pages/admin/AdminMachineQr";
+import { DEFAULT_EXCHANGE_LINK, DEFAULT_MEMBER_LINK, instagramProblem, linkProblem, scanTarget, validateQr } from "@/pages/admin/AdminMachineQr";
 import { emptyVoiceFiles, toPositionsInput } from "@/pages/admin/machines/VoiceSlots";
 
 const MB = 1024 * 1024;
@@ -164,7 +164,7 @@ describe("app-start notice", () => {
 
 describe("QR and logo", () => {
   const file = { url: "https://cdn/qr/a.png", path: "qr/a.png", fileName: "a.png", md5: "m" };
-  const base = { logo: null, memberQr: null, memberTip: "", exchangeQr: null, exchangeTip: "", memberLink: "", exchangeLink: "" };
+  const base = { logo: null, memberQr: null, memberTip: "", exchangeQr: null, exchangeTip: "", memberLink: "", exchangeLink: "", instagramLink: "" };
 
   it("sends files by URL, trims tips and links, and keeps the stored QR pictures for old apps", () => {
     expect(
@@ -177,6 +177,7 @@ describe("QR and logo", () => {
       exchangeTip: "Scan to redeem",
       memberLink: "https://muscleboxpro.com/join",
       exchangeLink: "",
+      instagramLink: "",
     });
   });
 
@@ -194,6 +195,22 @@ describe("QR and logo", () => {
     expect(linkProblem("muscleboxpro.com/join")).toMatch(/full link/);
     expect(linkProblem(`https://muscleboxpro.com/${"x".repeat(200)}`)).toBe("Up to 200 characters.");
     expect(validateQr({ ...base, exchangeLink: "http://x.in" }).input).toBeNull();
+  });
+
+  it("takes only an https Instagram profile link, and sends it trimmed", () => {
+    const refused = "Use the profile link, like https://www.instagram.com/muscleboxpro/";
+    expect(instagramProblem("")).toBeNull();
+    expect(instagramProblem("https://www.instagram.com/muscleboxpro/")).toBeNull();
+    expect(instagramProblem("https://instagram.com/mbp.andheri_1")).toBeNull();
+    expect(instagramProblem("http://www.instagram.com/muscleboxpro/")).toBe(refused);
+    expect(instagramProblem("https://instagram.com.evil.in/muscleboxpro/")).toBe(refused);
+    expect(instagramProblem("https://muscleboxpro.com/join")).toBe(refused);
+    expect(instagramProblem("https://www.instagram.com/")).toBe(refused);
+    expect(instagramProblem(`https://www.instagram.com/${"a".repeat(31)}/`)).toBe(refused);
+    expect(instagramProblem("instagram.com/muscleboxpro")).toBe(refused);
+    expect(validateQr({ ...base, instagramLink: "https://example.com/x" }).errors).toEqual({ instagramLink: refused });
+    expect(validateQr({ ...base, instagramLink: " https://www.instagram.com/mbp/ " }).input?.instagramLink).toBe("https://www.instagram.com/mbp/");
+    expect(validateQr({ ...base, instagramLink: "   " }).input?.instagramLink).toBe("");
   });
 
   it("shows the page a scan opens, with the default when empty or refused", () => {

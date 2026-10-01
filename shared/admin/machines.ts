@@ -157,6 +157,7 @@ export type QrInput = {
   exchangeTip: string;
   memberLink: string;
   exchangeLink: string;
+  instagramLink: string;
 };
 
 export type MachineScopeInput = { allMachines: boolean; sns: string[] };
