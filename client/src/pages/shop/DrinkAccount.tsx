@@ -18,7 +18,6 @@ const PANEL = "rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6"
 const PANEL_TITLE = "text-lg font-bold text-gray-900";
 const QUIET_BUTTON =
   "inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
-const HERO_SIZE = { fontSize: "clamp(2.5rem, 6vw, 4.5rem)" };
 
 type View = { kind: "checking" } | { kind: "signedOut" } | { kind: "error" } | { kind: "deleted" } | { kind: "signedIn"; customer: ShopCustomer };
 
@@ -99,51 +98,50 @@ export function DrinkAccount({ sn }: { sn: string | null }) {
 
 function SignedOut({ sn, onSignedIn }: { sn: string | null; onSignedIn: (customer: ShopCustomer) => void }) {
   return (
-    <div className="grid gap-8 lg:grid-cols-12 lg:gap-x-12 lg:gap-y-10">
-      <div className="lg:col-span-7">
-        <span className={EYEBROW}>{ACCOUNT_COPY.eyebrow}</span>
-        <h1 className="font-display font-black uppercase leading-[0.9] text-foreground" style={HERO_SIZE}>
-          {ACCOUNT_COPY.heroTitleLead} <span className={GRADIENT_TEXT}>{ACCOUNT_COPY.heroTitleHighlight}</span>
+    <div className="mx-auto grid max-w-lg overflow-hidden lg:max-w-4xl rounded-3xl border border-gray-200 bg-white shadow-xl shadow-gray-900/5 lg:grid-cols-5">
+      <section className="p-6 sm:p-10 lg:col-span-3 lg:flex lg:flex-col lg:justify-center lg:p-12" aria-labelledby="signin-title">
+        <h1 id="signin-title" className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          {ACCOUNT_COPY.formTitle}
         </h1>
-        <p className="mt-5 max-w-xl text-lg leading-relaxed text-gray-700">{ACCOUNT_COPY.heroLead}</p>
-      </div>
+        <p className="mb-8 mt-3 text-gray-700">{ACCOUNT_COPY.formLead}</p>
+        <SignInForm sn={sn} claimToken={savedOrders()[0]?.token ?? null} submitLabel={ACCOUNT_COPY.signInTitle} onSignedIn={onSignedIn} />
+      </section>
 
-      <div className="lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
-        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl shadow-gray-900/5 sm:p-8 lg:sticky lg:top-24" aria-labelledby="signin-title">
-          <h2 id="signin-title" className="text-2xl font-bold text-gray-900">
-            {ACCOUNT_COPY.formTitle}
+      <section className="relative overflow-hidden bg-gray-900 p-6 text-white sm:p-10 lg:col-span-2" aria-labelledby="perks-title" data-testid="account-perks">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/30 blur-3xl" aria-hidden />
+        <div className="relative">
+          <h2 id="perks-title" className="text-xs font-bold uppercase tracking-[0.25em] text-white/70">
+            {ACCOUNT_COPY.perksTitle}
           </h2>
-          <p className="mb-6 mt-2 text-gray-700">{ACCOUNT_COPY.formLead}</p>
-          <SignInForm sn={sn} claimToken={savedOrders()[0]?.token ?? null} submitLabel={ACCOUNT_COPY.signInTitle} onSignedIn={onSignedIn} />
-        </section>
-      </div>
-
-      <section className="lg:col-span-7" aria-labelledby="perks-title" data-testid="account-perks">
-        <h2 id="perks-title" className="sr-only">
-          {ACCOUNT_COPY.perksTitle}
-        </h2>
-        <LoyaltyCard filled={9} caption={ACCOUNT_COPY.cardSample} wide />
-        <ul className="mt-6 grid gap-4 sm:grid-cols-3">
-          {ACCOUNT_COPY.perks.map((perk) => {
-            const Icon = PERK_ICONS[perk.icon as keyof typeof PERK_ICONS];
-            return (
-              <li key={perk.title} className="rounded-2xl border border-gray-200 bg-white p-4">
-                <Icon className="h-6 w-6 text-primary-ink" aria-hidden />
-                <span className="mt-3 block font-semibold text-gray-900">{perk.title}</span>
-                <span className="mt-1 block text-sm leading-snug text-gray-600">{perk.body}</span>
-              </li>
-            );
-          })}
-        </ul>
-        <p className="mt-5 text-sm leading-relaxed text-gray-600">{ACCOUNT_COPY.perksJoin}</p>
+          <p className="mt-3 font-display text-2xl font-black uppercase leading-[0.95] sm:text-3xl">
+            {ACCOUNT_COPY.heroTitleLead} <span className={GRADIENT_TEXT}>{ACCOUNT_COPY.heroTitleHighlight}</span>
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-white/75">{ACCOUNT_COPY.heroBody}</p>
+          <StampSlots filled={6} className="mt-6 grid grid-cols-10 gap-1.5" />
+          <ul className="mt-8 space-y-5">
+            {ACCOUNT_COPY.perks.map((perk) => {
+              const Icon = PERK_ICONS[perk.icon as keyof typeof PERK_ICONS];
+              return (
+                <li key={perk.title} className="flex gap-3">
+                  <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  <span>
+                    <span className="block font-semibold">{perk.title}</span>
+                    <span className="mt-0.5 block text-sm leading-snug text-white/75">{perk.body}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-8 border-t border-white/15 pt-5 text-sm leading-relaxed text-white/75">{ACCOUNT_COPY.perksJoin}</p>
+        </div>
       </section>
     </div>
   );
 }
 
-const PERK_ICONS = { gift: Gift, codes: KeyRound, orders: ReceiptIndianRupee } as const;
+const PERK_ICONS = { codes: KeyRound, orders: ReceiptIndianRupee } as const;
 
-function LoyaltyCard({ filled, caption, wide, children }: { filled: number; caption: string; wide?: boolean; children?: React.ReactNode }) {
+function LoyaltyCard({ filled, caption, children }: { filled: number; caption: string; children?: React.ReactNode }) {
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gray-900 p-5 text-white shadow-xl shadow-gray-900/10 sm:p-7">
       <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/40 blur-3xl" aria-hidden />
@@ -153,25 +151,31 @@ function LoyaltyCard({ filled, caption, wide, children }: { filled: number; capt
           <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/80">{ACCOUNT_COPY.cardLabel}</span>
           <span className="text-sm font-semibold">{caption}</span>
         </div>
-        <ol className={`mt-5 grid grid-cols-5 gap-2.5 sm:gap-3 md:grid-cols-10 ${wide ? "" : "lg:grid-cols-5"}`} aria-hidden>
-          {Array.from({ length: 10 }, (_, i) => {
-            const reward = i === 9;
-            const on = i < filled;
-            return (
-              <li
-                key={i}
-                className={`flex aspect-square items-center justify-center rounded-full ${
-                  reward ? "border-2 border-dashed border-white/70 text-white" : on ? "bg-white text-gray-900" : "border-2 border-white/25 text-white/30"
-                }`}
-              >
-                {reward ? <Gift className="h-1/2 w-1/2" /> : <CupSoda className="h-[45%] w-[45%]" />}
-              </li>
-            );
-          })}
-        </ol>
+        <StampSlots filled={filled} className="mt-5 grid grid-cols-5 gap-2.5 sm:gap-3 md:grid-cols-10 lg:grid-cols-5" />
         {children}
       </div>
     </div>
+  );
+}
+
+function StampSlots({ filled, className }: { filled: number; className: string }) {
+  return (
+    <ol className={className} aria-hidden>
+      {Array.from({ length: 10 }, (_, i) => {
+        const reward = i === 9;
+        const on = i < filled;
+        return (
+          <li
+            key={i}
+            className={`flex aspect-square items-center justify-center rounded-full ${
+              reward ? "border-2 border-dashed border-white/70 text-white" : on ? "bg-white text-gray-900" : "border-2 border-white/25 text-white/30"
+            }`}
+          >
+            {reward ? <Gift className="h-1/2 w-1/2" /> : <CupSoda className="h-[45%] w-[45%]" />}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
