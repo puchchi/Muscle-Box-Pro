@@ -141,7 +141,7 @@ export function TextFilter({
   value: string;
   onChange: (value: string) => void;
   testId: string;
-  type?: "text" | "datetime-local" | "date";
+  type?: "text" | "datetime-local" | "date" | "month";
 }) {
   return (
     <label className="flex flex-col gap-1 text-xs font-semibold text-muted-foreground">

@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-const { mockFetchCodes, mockFetchCode, mockFetchUses } = vi.hoisted(() => ({
+const { mockFetchCodes, mockFetchCode, mockFetchUses, mockSearch } = vi.hoisted(() => ({
+  mockSearch: vi.fn(() => new URLSearchParams()),
   mockFetchCodes: vi.fn(),
   mockFetchCode: vi.fn(),
   mockFetchUses: vi.fn(),
@@ -23,7 +24,7 @@ vi.mock("@/pages/admin/useAdminGuard", () => ({
 vi.mock("@/pages/admin/machines/MachinesShell", () => ({
   MachinesShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), useSearchParams: () => mockSearch() }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...rest}>
@@ -98,6 +99,14 @@ describe("redeem code source", () => {
     await user.selectOptions(await screen.findByTestId("filter-code-source"), "shop_reward");
     await user.click(screen.getByTestId("button-search"));
     expect(mockFetchCodes).toHaveBeenLastCalledWith({ source: "shop_reward" }, 1, 20);
+  });
+
+  it("filters on the shop order in the link", async () => {
+    mockSearch.mockReturnValueOnce(new URLSearchParams("shopOrderId=so_123"));
+    mockFetchCodes.mockResolvedValue({ ok: true, data: { items: [], total: 0 } });
+    render(<AdminMachineRedeemCodes />);
+    expect(await screen.findByTestId("filter-code-shop-order")).toHaveValue("so_123");
+    expect(mockFetchCodes).toHaveBeenCalledWith({ shopOrderId: "so_123" }, 1, 20);
   });
 
   it("shows a shop code without the form or the disable and delete buttons", async () => {

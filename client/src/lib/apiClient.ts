@@ -136,7 +136,7 @@ export const IS_PRODUCTION_API = hostnameOf(MBP_API_BASE_URL) === PRODUCTION_API
  *
  * In sandbox they are three different `execute-api` hosts, which cannot be derived from each other.
  */
-export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard" | "machineAdmin";
+export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard" | "machineAdmin" | "shopAdmin";
 
 /** The base path each stack is mapped onto where there is a custom domain to map onto. */
 const BASE_PATHS: Record<ApiTarget, string> = {
@@ -144,6 +144,7 @@ const BASE_PATHS: Record<ApiTarget, string> = {
   franchiseAdmin: "/franchise-admin",
   franchiseWizard: "/franchise-wizard",
   machineAdmin: "/machine-admin",
+  shopAdmin: "/shop-admin",
 };
 
 /**
@@ -173,6 +174,8 @@ const BASE_URLS: Record<ApiTarget, string | null> = {
     process.env.NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL,
   ),
   machineAdmin: resolveBase("machineAdmin", process.env.NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL),
+  // Explicit only, never derived: the shop admin pages stay hidden until the routes are deployed.
+  shopAdmin: process.env.NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL?.replace(/\/+$/, "") || null,
 };
 
 /** The env var a caller is told to set when a target has no base URL. */
@@ -181,6 +184,7 @@ const BASE_URL_VARS: Record<ApiTarget, string> = {
   franchiseAdmin: "NEXT_PUBLIC_MBP_FRANCHISE_API_URL",
   franchiseWizard: "NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL",
   machineAdmin: "NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL",
+  shopAdmin: "NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL",
 };
 
 export function apiBaseUrl(target: ApiTarget): string | null {
@@ -761,6 +765,41 @@ export async function machineApiRequest<T>(
   if (outcome.kind === "ok") return { ok: true, data: outcome.data as T };
   if (outcome.kind === "network") return { ok: false, error: MACHINE_NETWORK_ERROR };
   return { ok: false, error: toMachineError(outcome.status, outcome.body) };
+}
+
+const SHOP_ADMIN_CODES: Record<string, MachineAdminErrorCode> = {
+  invalid_request: "validation",
+  signed_out: "invalid_token",
+  order_not_found: "not_found",
+  customer_not_found: "not_found",
+  code_used: "conflict",
+  order_state: "conflict",
+  price_above_paid: "conflict",
+};
+
+export async function shopAdminRequest<T>(
+  method: ApiMethod,
+  path: string,
+  body?: unknown,
+): Promise<MachineAdminResult<T>> {
+  const outcome = await rawRequest(method, path, { api: "shopAdmin", body });
+  if (outcome.kind === "ok") return { ok: true, data: outcome.data as T };
+  if (outcome.kind === "network") return { ok: false, error: MACHINE_NETWORK_ERROR };
+  const envelope = isRecord(outcome.body) ? outcome.body : {};
+  const code = typeof envelope.code === "string" ? SHOP_ADMIN_CODES[envelope.code] : undefined;
+  if (code === undefined) {
+    return { ok: false, error: { code: machineCodeForStatus(outcome.status), message: machineMessageForStatus(outcome.status) } };
+  }
+  const error: MachineAdminError = {
+    code,
+    message:
+      typeof envelope.message === "string" && envelope.message.trim().length > 0
+        ? envelope.message
+        : machineMessageForStatus(outcome.status),
+  };
+  const fieldErrors = asFieldErrors(envelope.fieldErrors);
+  if (fieldErrors) error.fieldErrors = fieldErrors;
+  return { ok: false, error };
 }
 
 function toMachineError(status: number, body: unknown): MachineAdminError {

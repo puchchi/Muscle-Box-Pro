@@ -14,8 +14,10 @@ import {
   Percent,
   QrCode,
   ScrollText,
+  ShoppingBag,
   Sparkles,
   Ticket,
+  Users,
   Volume2,
   type LucideIcon,
 } from "lucide-react";
@@ -35,10 +37,14 @@ const SECTIONS = [
   { href: "/machines/new-products", label: "New products", id: "newProducts", icon: Sparkles },
   { href: "/machines/redeem-codes", label: "Redeem codes", id: "redeemCodes", icon: Ticket },
   { href: "/machines/orders", label: "Orders", id: "orders", icon: ClipboardList },
+  { href: "/machines/shop-orders", label: "Shop orders", id: "shopOrders", icon: ShoppingBag, shop: true },
+  { href: "/machines/customers", label: "Customers", id: "customers", icon: Users, shop: true },
   { href: "/machines/feedback", label: "Feedback", id: "feedback", icon: MessageSquare },
   { href: "/machines/statistics", label: "Statistics", id: "statistics", icon: BarChart3 },
   { href: "/machines/logs", label: "Logs", id: "logs", icon: ScrollText },
-] as const satisfies ReadonlyArray<{ href: string; label: string; id: string; icon: LucideIcon }>;
+] as const satisfies ReadonlyArray<{ href: string; label: string; id: string; icon: LucideIcon; shop?: true }>;
+
+const VISIBLE_SECTIONS = SECTIONS.filter((s) => !("shop" in s) || apiBaseUrl("shopAdmin") !== null);
 
 export type MachineSection = (typeof SECTIONS)[number]["id"];
 
@@ -79,7 +85,7 @@ export function MachinesShell({
           aria-label="Machine console"
           className="flex gap-1 overflow-x-auto px-3 pb-2 lg:flex-1 lg:flex-col lg:overflow-visible lg:px-3 lg:pb-0"
         >
-          {SECTIONS.map(({ href, label, id, icon: Icon }) => {
+          {VISIBLE_SECTIONS.map(({ href, label, id, icon: Icon }) => {
             const active = id === section;
             return (
               <Link

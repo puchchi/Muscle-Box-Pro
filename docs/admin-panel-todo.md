@@ -191,8 +191,19 @@ in a new AWS shop service, not Supabase.
       purchase, Shop reward) with the shop order id. Shop codes are read-only, because the backend
       refuses edit, disable and delete on them: the row offers View and Usage, and the detail page
       shows the code instead of the form.
-- [ ] **Dashboard:** shop orders, customers, refund, retry-refund and reissue pages (spec §5.4).
-      Shop orders should link to `?shopOrderId=` on Redeem Codes, which the backend filters exactly.
+- [x] **Dashboard: shop orders and customers** (2026-10-02), against the routes as built in
+      `mbp-backend/services/shop/src/handlers/admin*.ts` (spec §5.4, not deployed yet).
+      - `/machines/shop-orders` by month (this IST month by default), status, machine and customer;
+        `/machines/shop-orders/[orderId]` with Refund, Try the refund again, Reissue for another
+        drink, and Finish reissue when one was left half done. Every action needs a reason (200
+        characters, the backend's limit). Reissue offers only drinks at or below the price paid.
+      - `/machines/customers` and `/machines/customers/[customerId]`. The customer's email is shown
+        only on their own page; list rows drop it. A guest's email is shown on the order page.
+      - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
+      - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
+        Production is `https://api.muscleboxpro.com/shop-admin`. Restart `next dev` after setting it.
+      - Not used yet: `GET shop-admin/customers?email=` (an email in a query string), and the
+        `already` and `resumed` flags, since the page reloads the order after every action.
 - **Not doing (decided 2026-10-01):** phone Start. No "Connect MQTT", certificate details or MQTT
       status on the machine page, and no "Website start" on orders. Customers type the code.
 

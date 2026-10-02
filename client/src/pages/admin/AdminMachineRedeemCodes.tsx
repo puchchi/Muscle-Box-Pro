@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { useAdminGuard } from "./useAdminGuard";
 import { Pill, SuccessPanel } from "./AdminUi";
 import { takeFlash } from "./machines/flash";
 import { CODE_SOURCE_LABEL, CODE_STATUS_LABEL, isShopCode, validWindow } from "./machines/codeRules";
+import { shopOrderHref, shopOrderOfCode } from "./machines/shopBits";
+import { shopAdminConfigured } from "@/lib/shopAdminApi";
 import {
   Cell,
   Col,
@@ -41,7 +44,8 @@ export default function AdminMachineRedeemCodes() {
 }
 
 function RedeemCodes({ session }: { session: AdminSession }) {
-  const [draft, setDraft] = useState({ q: "", status: "", source: "" });
+  const search = useSearchParams();
+  const [draft, setDraft] = useState({ q: "", status: "", source: "", shopOrderId: search?.get("shopOrderId") ?? "" });
   const [filters, setFilters] = useState(draft);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -56,7 +60,7 @@ function RedeemCodes({ session }: { session: AdminSession }) {
   const load = useCallback(async () => {
     setLoading(true);
     const result = await fetchRedeemCodes(
-      { ...(filters.q ? { q: filters.q } : {}), ...(filters.status ? { status: filters.status as CodeStatus } : {}), ...(filters.source ? { source: filters.source } : {}) },
+      { ...(filters.q ? { q: filters.q } : {}), ...(filters.status ? { status: filters.status as CodeStatus } : {}), ...(filters.source ? { source: filters.source } : {}), ...(filters.shopOrderId ? { shopOrderId: filters.shopOrderId } : {}) },
       page,
       pageSize,
     );
@@ -134,10 +138,10 @@ function RedeemCodes({ session }: { session: AdminSession }) {
       <FilterBar
         onSearch={() => {
           setPage(1);
-          setFilters({ ...draft, q: draft.q.trim() });
+          setFilters({ ...draft, q: draft.q.trim(), shopOrderId: draft.shopOrderId.trim() });
         }}
         onReset={() => {
-          const cleared = { q: "", status: "", source: "" };
+          const cleared = { q: "", status: "", source: "", shopOrderId: "" };
           setDraft(cleared);
           setFilters(cleared);
           setPage(1);
@@ -146,6 +150,7 @@ function RedeemCodes({ session }: { session: AdminSession }) {
         <TextFilter label="Code, theme or serial" value={draft.q} onChange={(q) => setDraft((d) => ({ ...d, q }))} testId="filter-code-q" />
         <SelectFilter label="Status" value={draft.status} onChange={(status) => setDraft((d) => ({ ...d, status }))} options={STATUS_OPTIONS} testId="filter-code-status" />
         <SelectFilter label="Source" value={draft.source} onChange={(source) => setDraft((d) => ({ ...d, source }))} options={SOURCE_OPTIONS} testId="filter-code-source" />
+        <TextFilter label="Shop order" value={draft.shopOrderId} onChange={(shopOrderId) => setDraft((d) => ({ ...d, shopOrderId }))} testId="filter-code-shop-order" />
       </FilterBar>
 
       <DataTable testId="codes-table">
@@ -202,7 +207,7 @@ function RedeemCodes({ session }: { session: AdminSession }) {
                     <Pill className={source.className} testId={`source-${c.code}`}>
                       {source.text}
                     </Pill>
-                    {c.shopOrderId && <span className="mt-1 block font-mono text-[11px] text-muted-foreground">{c.shopOrderId}</span>}
+                    {c.shopOrderId && <ShopOrderRef shopOrderId={c.shopOrderId} />}
                   </Cell>
                   <Cell>
                     <span className="flex gap-3 whitespace-nowrap">
@@ -267,5 +272,16 @@ function RedeemCodes({ session }: { session: AdminSession }) {
         testId="delete-code"
       />
     </MachinesShell>
+  );
+}
+
+function ShopOrderRef({ shopOrderId }: { shopOrderId: string }) {
+  const order = shopAdminConfigured() ? shopOrderOfCode(shopOrderId) : null;
+  const className = "mt-1 block font-mono text-[11px]";
+  if (!order) return <span className={`${className} text-muted-foreground`}>{shopOrderId}</span>;
+  return (
+    <Link href={shopOrderHref(order)} className={`${className} text-primary hover:underline`} data-testid={`shop-order-link-${shopOrderId}`}>
+      {shopOrderId}
+    </Link>
   );
 }
