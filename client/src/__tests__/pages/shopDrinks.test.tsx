@@ -17,6 +17,9 @@ vi.mock("@/lib/shopApi", () => ({
   createShopOrder: mockCreate,
   fetchShopReceipt: mockReceipt,
   emailShopCode: mockEmail,
+  fetchMe: vi.fn(),
+  requestSigninCode: vi.fn(),
+  verifySignin: vi.fn(),
 }));
 vi.mock("@/lib/razorpayCheckout", () => ({ payWithRazorpay: mockPay }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mockPush }) }));
@@ -32,7 +35,7 @@ vi.mock("next/link", () => ({
 import { shopMenuSchema, shopReceiptSchema, formatInr } from "@shared/shop/shopSchema";
 import { DrinksShop } from "@/pages/shop/DrinksShop";
 import { DrinkReceipt, POLL_FAST_MS } from "@/pages/shop/DrinkReceipt";
-import { RECEIPT_COPY, SHOP_COPY } from "@/pages/shop/shopCopy";
+import { ACCOUNT_COPY, PAY_COPY, RECEIPT_COPY, SHOP_COPY, SIGNIN_COPY } from "@/pages/shop/shopCopy";
 import { receiptHref, saveOrder, savedOrders, SAVED_ORDERS_MAX, tokenFromHash } from "@/pages/shop/savedOrders";
 
 const TOKEN = "A".repeat(43);
@@ -143,8 +146,9 @@ describe("DrinksShop", () => {
     render(<DrinksShop sn="GS805TEST01" />);
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: "Buy Chocolate protein shake for ₹99" }));
+    await user.click(await screen.findByTestId("pay-guest"));
 
-    expect(mockCreate).toHaveBeenCalledWith("GS805TEST01", "1001");
+    expect(mockCreate).toHaveBeenCalledWith("GS805TEST01", "1001", { asCustomer: false });
     expect(mockPay).toHaveBeenCalledWith({ ...created.data, description: "Chocolate protein shake" });
     expect(mockPush).toHaveBeenCalledWith(`/drinks/receipt#t=${TOKEN}`);
     expect(savedOrders()[0]).toMatchObject({ token: TOKEN, sn: "GS805TEST01", drinkName: "Chocolate protein shake" });
@@ -156,6 +160,7 @@ describe("DrinksShop", () => {
     render(<DrinksShop sn="GS805TEST01" />);
     const user = userEvent.setup();
     await user.click(await screen.findByTestId("shop-buy-1001"));
+    await user.click(await screen.findByTestId("pay-guest"));
 
     const notice = await screen.findByTestId("shop-notice");
     expect(notice).toHaveTextContent(SHOP_COPY.closedTitle);
@@ -170,6 +175,7 @@ describe("DrinksShop", () => {
     render(<DrinksShop sn="GS805TEST01" />);
     const user = userEvent.setup();
     await user.click(await screen.findByTestId("shop-buy-1001"));
+    await user.click(await screen.findByTestId("pay-guest"));
 
     expect(await screen.findByTestId("shop-notice")).toHaveTextContent("That drink is sold out on this machine.");
     expect(mockMenu).toHaveBeenCalledTimes(2);
@@ -274,7 +280,7 @@ describe("DrinkReceipt", () => {
   });
 
   it("uses no em dashes in what the customer reads", () => {
-    const copy = JSON.stringify([SHOP_COPY, RECEIPT_COPY, RECEIPT_COPY.emailSent("a"), RECEIPT_COPY.refundingBody("₹1")]);
+    const copy = JSON.stringify([SHOP_COPY, RECEIPT_COPY, PAY_COPY, SIGNIN_COPY, ACCOUNT_COPY, RECEIPT_COPY.emailSent("a"), RECEIPT_COPY.refundingBody("₹1")]);
     expect(copy).not.toContain("—");
   });
 });

@@ -87,3 +87,70 @@ describe("shopApi", () => {
     expect(fetch.mock.calls[0]![0]).toBe(`${BASE}/machines/a%2Fb`);
   });
 });
+
+describe("shop sessions", () => {
+  const SESSION = "s".repeat(43);
+  const customer = { customerId: "cu_1", email: "a@x.in", stamps: -1, stampsToNext: 10 };
+
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  it("signs in with cookies, keeps the sandbox token for the tab only, and sends it back as a bearer", async () => {
+    const fetch = reply(200, { customer, sessionToken: SESSION });
+    vi.stubGlobal("fetch", fetch);
+    const { verifySignin, fetchMe } = await api();
+    const result = await verifySignin("a@x.in", "123456", { sn: "S1", claimToken: TOKEN });
+
+    expect(result).toMatchObject({ ok: true, data: { customer: { stamps: 0, stampsToNext: 10 } } });
+    const [, init] = fetch.mock.calls[0]!;
+    expect(JSON.parse(init.body)).toEqual({ email: "a@x.in", code: "123456", sn: "S1", claimToken: TOKEN });
+    expect(init.credentials).toBe("include");
+    expect(localStorage.getItem("mbp:shop-signed-in")).toBe("1");
+    expect(JSON.stringify({ ...localStorage })).not.toContain("a@x.in");
+    expect(JSON.stringify({ ...localStorage })).not.toContain(SESSION);
+
+    fetch.mockResolvedValue(new Response(JSON.stringify({ customer }), { status: 200 }));
+    await fetchMe();
+    expect(fetch.mock.calls[1]![1].headers).toEqual({ Authorization: `Bearer ${SESSION}` });
+  });
+
+  it("never keeps a bearer against the production host", async () => {
+    vi.stubGlobal("fetch", reply(200, { customer, sessionToken: SESSION }));
+    const { verifySignin } = await api("https://api.muscleboxpro.com/shop");
+    await verifySignin("a@x.in", "123456", { sn: null });
+    expect(sessionStorage.length).toBe(0);
+    expect(localStorage.getItem("mbp:shop-signed-in")).toBe("1");
+  });
+
+  it("forgets the sign-in when the server says it's over", async () => {
+    localStorage.setItem("mbp:shop-signed-in", "1");
+    sessionStorage.setItem("mbp:shop-sandbox-session", SESSION);
+    vi.stubGlobal("fetch", reply(401, { code: "signed_out", message: "Sign in again." }));
+    const { fetchMe } = await api();
+    expect(await fetchMe()).toMatchObject({ ok: false, error: { code: "signed_out" } });
+    expect(localStorage.getItem("mbp:shop-signed-in")).toBeNull();
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it("orders as the customer only when asked, and as a guest with no cookies otherwise", async () => {
+    const fetch = reply(200, { token: TOKEN, razorpayOrderId: "o", amount: 100, currency: "INR", keyId: "k" });
+    vi.stubGlobal("fetch", fetch);
+    const { createShopOrder } = await api();
+    await createShopOrder("S1", "g");
+    await createShopOrder("S1", "g", { asCustomer: true });
+    expect(fetch.mock.calls[0]![1].credentials).toBe("omit");
+    expect(fetch.mock.calls[1]![1].credentials).toBe("include");
+  });
+
+  it("deletes the account with a JSON DELETE and signs out locally", async () => {
+    localStorage.setItem("mbp:shop-signed-in", "1");
+    const fetch = reply(200, { deleted: true });
+    vi.stubGlobal("fetch", fetch);
+    const { deleteAccount } = await api();
+    expect((await deleteAccount()).ok).toBe(true);
+    expect(fetch.mock.calls[0]![1]).toMatchObject({ method: "DELETE", headers: { "Content-Type": "application/json" } });
+    expect(localStorage.getItem("mbp:shop-signed-in")).toBeNull();
+  });
+});

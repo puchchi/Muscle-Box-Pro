@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CupSoda, Flame, Loader2, MapPin, Receipt, RotateCw, Snowflake } from "lucide-react";
-import { formatInr, type ShopDrink, type ShopErrorCode, type ShopMenu } from "@shared/shop/shopSchema";
-import { createShopOrder, fetchShopMenu } from "@/lib/shopApi";
+import { AlertCircle, ChevronRight, CupSoda, Flame, Loader2, MapPin, Receipt, RotateCw, Snowflake, UserRound } from "lucide-react";
+import { formatInr, type ShopCustomer, type ShopDrink, type ShopErrorCode, type ShopMenu } from "@shared/shop/shopSchema";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { createShopOrder, fetchMe, fetchShopMenu } from "@/lib/shopApi";
+import { signedInHint } from "@/lib/shopSession";
 import { payWithRazorpay } from "@/lib/razorpayCheckout";
-import { ShopHeader } from "./ShopHolding";
-import { SHOP_COPY } from "./shopCopy";
+import { AccountLink, ShopHeader } from "./ShopHolding";
+import { PAY_COPY, SHOP_COPY, SIGNIN_COPY } from "./shopCopy";
+import { SignInForm } from "./SignInForm";
 import { CONTAINER, SectionHeader, StepCards } from "./shopUi";
 import { receiptHref, saveOrder, savedOrders, type SavedOrder } from "./savedOrders";
 
@@ -22,6 +25,8 @@ export function DrinksShop({ sn }: { sn: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [saved, setSaved] = useState<SavedOrder[]>([]);
+  const [customer, setCustomer] = useState<ShopCustomer | null>(null);
+  const [choosing, setChoosing] = useState<ShopDrink | null>(null);
 
   const load = useCallback(async () => {
     const result = await fetchShopMenu(sn);
@@ -38,10 +43,23 @@ export function DrinksShop({ sn }: { sn: string }) {
     setSaved(savedOrders());
   }, [load]);
 
-  async function buy(drink: ShopDrink) {
+  useEffect(() => {
+    if (!signedInHint()) return;
+    void fetchMe().then((me) => {
+      if (me.ok) setCustomer(me.data);
+    });
+  }, []);
+
+  function startBuy(drink: ShopDrink) {
+    if (customer) void buy(drink, true);
+    else setChoosing(drink);
+  }
+
+  async function buy(drink: ShopDrink, asCustomer: boolean) {
+    setChoosing(null);
     setBusy(drink.goodsId);
     setNotice(null);
-    const order = await createShopOrder(sn, drink.goodsId);
+    const order = await createShopOrder(sn, drink.goodsId, { asCustomer });
     if (!order.ok) {
       setBusy(null);
       setNotice({ kind: "error", message: order.error.message });
@@ -63,7 +81,9 @@ export function DrinksShop({ sn }: { sn: string }) {
 
   return (
     <div className="min-h-screen bg-background" data-testid="shop-menu-page">
-      <ShopHeader sn={sn} />
+      <ShopHeader sn={sn}>
+        <AccountLink sn={sn} signedIn={customer !== null} />
+      </ShopHeader>
       <main>
         <section className="border-b border-gray-100 bg-gray-50">
           <div className={`${CONTAINER} py-8 lg:py-12`}>
@@ -72,6 +92,11 @@ export function DrinksShop({ sn }: { sn: string }) {
               {SHOP_COPY.title}
             </h1>
             <p className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">{SHOP_COPY.lead}</p>
+            {customer && (
+              <p className="mt-3 text-sm text-gray-700" data-testid="shop-signed-in">
+                {PAY_COPY.signedInAs(customer.email)}
+              </p>
+            )}
           </div>
         </section>
 
@@ -110,13 +135,24 @@ export function DrinksShop({ sn }: { sn: string }) {
                   selling={selling}
                   busy={busy === drink.goodsId}
                   locked={busy !== null}
-                  onBuy={() => void buy(drink)}
+                  onBuy={() => startBuy(drink)}
                 />
               ))}
             </ul>
           )}
 
           {saved.length > 0 && <SavedOrders orders={saved} />}
+          <PayChoice
+            sn={sn}
+            drink={choosing}
+            claimToken={saved[0]?.token ?? null}
+            onClose={() => setChoosing(null)}
+            onGuest={(drink) => void buy(drink, false)}
+            onSignedIn={(drink, who) => {
+              setCustomer(who);
+              void buy(drink, true);
+            }}
+          />
         </section>
 
         <section className="bg-muted py-14 lg:py-20">
@@ -133,6 +169,70 @@ export function DrinksShop({ sn }: { sn: string }) {
         </section>
       </main>
     </div>
+  );
+}
+
+function PayChoice({
+  sn,
+  drink,
+  claimToken,
+  onClose,
+  onGuest,
+  onSignedIn,
+}: {
+  sn: string;
+  drink: ShopDrink | null;
+  claimToken: string | null;
+  onClose: () => void;
+  onGuest: (drink: ShopDrink) => void;
+  onSignedIn: (drink: ShopDrink, customer: ShopCustomer) => void;
+}) {
+  const [signingIn, setSigningIn] = useState(false);
+  const [shown, setShown] = useState<ShopDrink | null>(drink);
+  if (drink && drink !== shown) {
+    setShown(drink);
+    setSigningIn(false);
+  }
+  const current = drink ?? shown;
+  const price = current ? formatInr(current.pricePaise) : "";
+  return (
+    <Dialog open={drink !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md rounded-2xl p-6" data-testid="pay-choice">
+        <DialogHeader className="text-left">
+          <DialogTitle className="pr-6 text-xl font-bold text-gray-900">{current ? PAY_COPY.title(current.name) : ""}</DialogTitle>
+          <DialogDescription className="font-display text-2xl font-black text-gray-900">{price}</DialogDescription>
+        </DialogHeader>
+        {current && !signingIn && (
+          <div className="mt-2 space-y-3">
+            <ChoiceButton title={PAY_COPY.member} body={PAY_COPY.memberBody} onClick={() => setSigningIn(true)} testId="pay-member" icon={<UserRound className="h-5 w-5" aria-hidden />} />
+            <ChoiceButton title={PAY_COPY.guest} body={PAY_COPY.guestBody} onClick={() => onGuest(current)} testId="pay-guest" icon={<Receipt className="h-5 w-5" aria-hidden />} />
+          </div>
+        )}
+        {current && signingIn && (
+          <div className="mt-2">
+            <SignInForm sn={sn} claimToken={claimToken} submitLabel={SIGNIN_COPY.verifyAndPay(price)} onSignedIn={(who) => onSignedIn(current, who)} />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ChoiceButton({ title, body, icon, onClick, testId }: { title: string; body: string; icon: React.ReactNode; onClick: () => void; testId: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-left transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      data-testid={testId}
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-gray-900">{title}</span>
+        <span className="mt-0.5 block text-sm leading-snug text-muted-foreground">{body}</span>
+      </span>
+      <ChevronRight className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />
+    </button>
   );
 }
 

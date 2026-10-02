@@ -53,7 +53,65 @@ export const shopReceiptSchema = z.object({
   used: z.boolean().nullable().optional().transform((v) => v ?? null),
 });
 
+const shopOrderDrinkSchema = z.object({
+  goodsId: z.string(),
+  name: z.string(),
+  image: z.string().nullable().optional().transform((v) => v ?? ""),
+});
+
+export const shopCustomerSchema = z.object({
+  customerId: z.string().min(1),
+  email: z.string(),
+  name: z.string().nullable().optional().transform((v) => v ?? null),
+  stamps: z.number().int().transform((v) => Math.max(0, v)),
+  stampsToNext: z.number().int(),
+  lifetimeDrinks: z.number().int().optional().transform((v) => v ?? 0),
+  rewardsIssued: z.number().int().optional().transform((v) => v ?? 0),
+});
+
+export const shopSignedInSchema = z.object({
+  customer: shopCustomerSchema,
+  joinedOrders: z.number().int().optional().transform((v) => v ?? 0),
+  claimed: z.boolean().optional().transform((v) => v === true),
+  sessionToken: z.unknown().optional(),
+});
+
+export const shopMeSchema = z.object({ customer: shopCustomerSchema });
+
+const shopMyCodeSchema = z.object({
+  kind: z.enum(["purchase", "reward"]),
+  shopOrderId: z.string().nullable().optional().transform((v) => v ?? null),
+  code: z.string().min(1),
+  drink: shopOrderDrinkSchema.nullable().optional().transform((v) => v ?? null),
+  sn: z.string().nullable().optional().transform((v) => v ?? null),
+  machineName: z.string().nullable().optional().transform((v) => v ?? ""),
+  used: z.boolean().nullable().optional().transform((v) => v ?? null),
+  createdAt: z.string(),
+});
+
+export const shopMyCodesSchema = z.object({ codes: z.array(shopMyCodeSchema) });
+
+const shopMyOrderSchema = z.object({
+  shopOrderId: z.string().min(1),
+  status: z.enum(SHOP_ORDER_STATUSES),
+  drink: shopOrderDrinkSchema,
+  pricePaise: paise,
+  sn: z.string(),
+  machineName: z.string().nullable().optional().transform((v) => v ?? ""),
+  createdAt: z.string(),
+});
+
+export const shopMyOrdersSchema = z.object({
+  orders: z.array(shopMyOrderSchema),
+  nextCursor: z.string().nullable().optional().transform((v) => v ?? null),
+});
+
 export type ShopDrink = z.infer<typeof shopDrinkSchema>;
+export type ShopCustomer = z.infer<typeof shopCustomerSchema>;
+export type ShopSignedIn = z.infer<typeof shopSignedInSchema>;
+export type ShopMyCode = z.infer<typeof shopMyCodeSchema>;
+export type ShopMyOrder = z.infer<typeof shopMyOrderSchema>;
+export type ShopMyOrders = z.infer<typeof shopMyOrdersSchema>;
 export type ShopMenu = z.infer<typeof shopMenuSchema>;
 export type ShopOrderCreated = z.infer<typeof shopOrderCreatedSchema>;
 export type ShopOrderStatus = (typeof SHOP_ORDER_STATUSES)[number];
@@ -70,6 +128,10 @@ export const SHOP_ERROR_CODES = [
   "order_not_found",
   "rate_limited",
   "invalid_request",
+  "signin_code_wrong",
+  "signin_code_expired",
+  "too_many_tries",
+  "signed_out",
   "network",
 ] as const;
 

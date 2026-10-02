@@ -185,8 +185,18 @@ in a new AWS shop service, not Supabase.
       - Production also needs `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` for drink pictures, and the
         Razorpay shop webhook registered, before a real paid order reaches `coded`.
       - After changing the variable, restart `next dev`: the CSP is built when the config loads.
-- [ ] **Phase 1c, website:** email sign-in, `/join`, "My drink codes", stamps, claiming a guest
-      order. A separate sandbox session-storage key for the shop.
+- [x] **Phase 1c, website: signed-in `/drinks`** (2026-10-02), against `shop/auth/*` and
+      `shop/me*` as built (spec §5.2, not deployed in sandbox yet, so tested with mocks).
+      - Buy opens a sheet: "Sign in and pay" or "Pay as a guest". Sign-in is the email code inside
+        the sheet, then Razorpay. It claims the phone's newest saved order. Once signed in, Buy pays
+        straight away as the customer.
+      - `/drinks/account?sn=`: the stamp card, "My drink codes" (free drinks included), orders a page
+        at a time, sign out, and delete the account.
+      - Production uses the `mbp_shop` cookie. Sandbox keeps the returned bearer in sessionStorage
+        (`mbp:shop-sandbox-session`), never against `api.muscleboxpro.com`. localStorage holds only
+        `mbp:shop-signed-in`, so a phone that never signed in doesn't call `GET me`.
+- [ ] **Phase 1c, website:** `/join`.
+- [ ] **Prepaid balance:** decided, needs backend. See `docs/shop-balance-asks.md`.
 - [x] **Dashboard: Redeem Codes source** (2026-10-02). A Source column and filter (Admin, Shop
       purchase, Shop reward) with the shop order id. Shop codes are read-only, because the backend
       refuses edit, disable and delete on them: the row offers View and Usage, and the detail page

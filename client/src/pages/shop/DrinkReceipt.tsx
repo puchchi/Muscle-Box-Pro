@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Check, CheckCircle2, Clock, Copy, CupSoda, Loader2, Mail, RotateCcw, SearchX, XCircle } from "lucide-react";
 import { formatInr, type ShopReceipt } from "@shared/shop/shopSchema";
 import { emailShopCode, fetchShopReceipt } from "@/lib/shopApi";
-import { ShopHeader } from "./ShopHolding";
+import { signedInHint } from "@/lib/shopSession";
+import { AccountLink, ShopHeader } from "./ShopHolding";
 import { RECEIPT_COPY } from "./shopCopy";
 import { tokenFromHash } from "./savedOrders";
 
@@ -24,8 +25,10 @@ export function DrinkReceipt() {
   const [view, setView] = useState<View>({ kind: "loading" });
   const [retrying, setRetrying] = useState(false);
   const [slow, setSlow] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
+    setSignedIn(signedInHint());
     const read = () => setToken(tokenFromHash(window.location.hash));
     read();
     window.addEventListener("hashchange", read);
@@ -71,7 +74,9 @@ export function DrinkReceipt() {
 
   return (
     <div className="min-h-screen bg-gray-50" data-testid="shop-receipt-page">
-      <ShopHeader sn={receipt?.sn ?? null} container="max-w-xl px-4 sm:px-6" />
+      <ShopHeader sn={receipt?.sn ?? null} container="max-w-xl px-4 sm:px-6">
+        {signedIn && <AccountLink sn={receipt?.sn ?? null} signedIn />}
+      </ShopHeader>
       <main className="mx-auto max-w-xl space-y-5 px-4 py-8 sm:px-6 sm:py-12">
         {view.kind === "loading" && (
           <Panel testId="receipt-loading">
