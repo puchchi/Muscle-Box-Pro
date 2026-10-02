@@ -136,6 +136,9 @@ backend is in `docs/stock-soon-feedback-asks.md`.
   The order links to the orders page only when `orderLinked`. A New badge in the menu
   (`newFeedbackCount.ts`) comes from `newCount` and follows saves. Opened from a rating link
   (`?type=review&sn=`), it shows every state.
+- **Ad End quick picks**: +1 mo, +3 mo, +6 mo and +1 yr under each schedule row's End, counted
+  from the row's Start, or from now in IST when Start is empty. Jan 31 + 1 month is the last day of
+  February (`addMonths` in `adRules.ts`).
 - **Ratings**: a Rating column (`★ 4.6 (23)`, or "—") on the goods library and on a machine's
   goods, linking to the Feedback page filtered to reviews (and to that machine).
 - **Instagram page** on QR settings: `instagramLink`, `https` on `instagram.com` or
