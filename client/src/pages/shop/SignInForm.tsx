@@ -32,6 +32,10 @@ export function SignInForm({
   async function send(event?: React.FormEvent) {
     event?.preventDefault();
     const address = (sentTo ?? email).trim();
+    if (address === "") {
+      setError({ field: "email", message: SIGNIN_COPY.emailMissing });
+      return;
+    }
     setBusy(true);
     setError(null);
     const result = await requestSigninCode(address, sn);
@@ -47,6 +51,10 @@ export function SignInForm({
   async function verify(event: React.FormEvent) {
     event.preventDefault();
     if (!sentTo) return;
+    if (code.length !== 6) {
+      setError({ field: "code", message: SIGNIN_COPY.codeMissing });
+      return;
+    }
     setBusy(true);
     setError(null);
     const result = await verifySignin(sentTo, code, { sn, claimToken });
@@ -79,7 +87,7 @@ export function SignInForm({
           data-testid="signin-email"
         />
         <ErrorLine error={error} />
-        <button type="submit" disabled={busy || email.trim() === ""} className={PRIMARY_BUTTON} data-testid="signin-send">
+        <button type="submit" disabled={busy} className={PRIMARY_BUTTON} data-testid="signin-send">
           {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {busy ? SIGNIN_COPY.sending : SIGNIN_COPY.sendCode}
         </button>
@@ -111,7 +119,7 @@ export function SignInForm({
         autoFocus
       />
       <ErrorLine error={error} />
-      <button type="submit" disabled={busy || code.length !== 6} className={PRIMARY_BUTTON} data-testid="signin-verify">
+      <button type="submit" disabled={busy} className={PRIMARY_BUTTON} data-testid="signin-verify">
         {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
         {busy ? SIGNIN_COPY.verifying : submitLabel}
       </button>

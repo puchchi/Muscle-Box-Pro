@@ -2,24 +2,28 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Gift, KeyRound, Loader2, LogOut, Receipt, RotateCw, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, CupSoda, Gift, KeyRound, Loader2, LogOut, ReceiptIndianRupee, RotateCw } from "lucide-react";
 import { formatInr, type ShopCustomer, type ShopMyCode, type ShopMyOrder } from "@shared/shop/shopSchema";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { deleteAccount, fetchMe, fetchMyCodes, fetchMyOrders, signOut } from "@/lib/shopApi";
 import { signedInHint } from "@/lib/shopSession";
 import { ShopHeader } from "./ShopHolding";
 import { ACCOUNT_COPY, RECEIPT_COPY } from "./shopCopy";
+import { EYEBROW, GRADIENT_TEXT } from "./shopUi";
 import { savedOrders } from "./savedOrders";
-import { SignInForm } from "./SignInForm";
+import { PRIMARY_BUTTON, SignInForm } from "./SignInForm";
 
-const COLUMN = "mx-auto max-w-2xl px-4 sm:px-6";
-const SECTION = "rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6";
+const PAGE = "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8";
+const PANEL = "rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6";
+const PANEL_TITLE = "text-lg font-bold text-gray-900";
 const QUIET_BUTTON =
-  "inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-gray-300 px-5 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
+const HERO_SIZE = { fontSize: "clamp(2.5rem, 6vw, 4.5rem)" };
 
 type View = { kind: "checking" } | { kind: "signedOut" } | { kind: "error" } | { kind: "deleted" } | { kind: "signedIn"; customer: ShopCustomer };
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
+const menuHref = (sn: string) => `/drinks?sn=${encodeURIComponent(sn)}`;
 
 export function DrinkAccount({ sn }: { sn: string | null }) {
   const [view, setView] = useState<View>({ kind: "checking" });
@@ -41,12 +45,20 @@ export function DrinkAccount({ sn }: { sn: string | null }) {
 
   return (
     <div className="min-h-screen bg-gray-50" data-testid="shop-account-page">
-      <ShopHeader sn={sn} container="max-w-2xl px-4 sm:px-6" />
-      <main className={`${COLUMN} space-y-5 py-8 lg:py-12`}>
-        <h1 className="font-display font-black uppercase leading-[0.9] text-foreground" style={{ fontSize: "clamp(2rem, 5vw, 3rem)" }}>
-          {view.kind === "signedIn" ? ACCOUNT_COPY.title : ACCOUNT_COPY.signInTitle}
-        </h1>
+      <ShopHeader sn={null} container="max-w-6xl px-4 sm:px-6 lg:px-8">
+        {sn && (
+          <Link
+            href={menuHref(sn)}
+            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            data-testid="account-menu"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            {RECEIPT_COPY.backToMenu}
+          </Link>
+        )}
+      </ShopHeader>
 
+      <main className={`${PAGE} py-8 sm:py-12 lg:py-16`}>
         {view.kind === "checking" && (
           <p className="flex items-center gap-2 text-muted-foreground" role="status">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -55,7 +67,7 @@ export function DrinkAccount({ sn }: { sn: string | null }) {
         )}
 
         {view.kind === "error" && (
-          <div className={`${SECTION} text-center`} role="alert" data-testid="account-error">
+          <div className={`${PANEL} mx-auto max-w-md text-center`} role="alert" data-testid="account-error">
             <p className="font-semibold text-gray-900">{ACCOUNT_COPY.loadError}</p>
             <button type="button" className={`${QUIET_BUTTON} mt-4`} onClick={() => void load()}>
               <RotateCw className="h-4 w-4" aria-hidden />
@@ -65,136 +77,183 @@ export function DrinkAccount({ sn }: { sn: string | null }) {
         )}
 
         {view.kind === "deleted" && (
-          <p className={SECTION} role="status" data-testid="account-deleted">
+          <p className={`${PANEL} mx-auto max-w-md text-center`} role="status" data-testid="account-deleted">
             {ACCOUNT_COPY.deleted}
           </p>
         )}
 
-        {view.kind === "signedOut" && (
-          <>
-            <SignInPerks />
-            <div className={SECTION}>
-              <p className="mb-4 text-gray-700">{ACCOUNT_COPY.signInLead}</p>
-              <SignInForm
-                sn={sn}
-                claimToken={savedOrders()[0]?.token ?? null}
-                submitLabel={ACCOUNT_COPY.signInTitle}
-                onSignedIn={(customer) => setView({ kind: "signedIn", customer })}
-              />
-            </div>
-          </>
-        )}
+        {view.kind === "signedOut" && <SignedOut sn={sn} onSignedIn={(customer) => setView({ kind: "signedIn", customer })} />}
 
         {view.kind === "signedIn" && (
           <SignedIn
+            sn={sn}
             customer={view.customer}
             onSignedOut={() => setView({ kind: "signedOut" })}
             onDeleted={() => setView({ kind: "deleted" })}
           />
         )}
-
-        <BackToMenu sn={sn} />
       </main>
     </div>
   );
 }
 
-function SignedIn({ customer, onSignedOut, onDeleted }: { customer: ShopCustomer; onSignedOut: () => void; onDeleted: () => void }) {
+function SignedOut({ sn, onSignedIn }: { sn: string | null; onSignedIn: (customer: ShopCustomer) => void }) {
+  return (
+    <div className="grid gap-8 lg:grid-cols-12 lg:gap-x-12 lg:gap-y-10">
+      <div className="lg:col-span-7">
+        <span className={EYEBROW}>{ACCOUNT_COPY.eyebrow}</span>
+        <h1 className="font-display font-black uppercase leading-[0.9] text-foreground" style={HERO_SIZE}>
+          {ACCOUNT_COPY.heroTitleLead} <span className={GRADIENT_TEXT}>{ACCOUNT_COPY.heroTitleHighlight}</span>
+        </h1>
+        <p className="mt-5 max-w-xl text-lg leading-relaxed text-gray-700">{ACCOUNT_COPY.heroLead}</p>
+      </div>
+
+      <div className="lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
+        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl shadow-gray-900/5 sm:p-8 lg:sticky lg:top-24" aria-labelledby="signin-title">
+          <h2 id="signin-title" className="text-2xl font-bold text-gray-900">
+            {ACCOUNT_COPY.formTitle}
+          </h2>
+          <p className="mb-6 mt-2 text-gray-700">{ACCOUNT_COPY.formLead}</p>
+          <SignInForm sn={sn} claimToken={savedOrders()[0]?.token ?? null} submitLabel={ACCOUNT_COPY.signInTitle} onSignedIn={onSignedIn} />
+        </section>
+      </div>
+
+      <section className="lg:col-span-7" aria-labelledby="perks-title" data-testid="account-perks">
+        <h2 id="perks-title" className="sr-only">
+          {ACCOUNT_COPY.perksTitle}
+        </h2>
+        <LoyaltyCard filled={9} caption={ACCOUNT_COPY.cardSample} wide />
+        <ul className="mt-6 grid gap-4 sm:grid-cols-3">
+          {ACCOUNT_COPY.perks.map((perk) => {
+            const Icon = PERK_ICONS[perk.icon as keyof typeof PERK_ICONS];
+            return (
+              <li key={perk.title} className="rounded-2xl border border-gray-200 bg-white p-4">
+                <Icon className="h-6 w-6 text-primary-ink" aria-hidden />
+                <span className="mt-3 block font-semibold text-gray-900">{perk.title}</span>
+                <span className="mt-1 block text-sm leading-snug text-gray-600">{perk.body}</span>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-5 text-sm leading-relaxed text-gray-600">{ACCOUNT_COPY.perksJoin}</p>
+      </section>
+    </div>
+  );
+}
+
+const PERK_ICONS = { gift: Gift, codes: KeyRound, orders: ReceiptIndianRupee } as const;
+
+function LoyaltyCard({ filled, caption, wide, children }: { filled: number; caption: string; wide?: boolean; children?: React.ReactNode }) {
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-gray-900 p-5 text-white shadow-xl shadow-gray-900/10 sm:p-7">
+      <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/40 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-accent/30 blur-3xl" aria-hidden />
+      <div className="relative">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/80">{ACCOUNT_COPY.cardLabel}</span>
+          <span className="text-sm font-semibold">{caption}</span>
+        </div>
+        <ol className={`mt-5 grid grid-cols-5 gap-2.5 sm:gap-3 md:grid-cols-10 ${wide ? "" : "lg:grid-cols-5"}`} aria-hidden>
+          {Array.from({ length: 10 }, (_, i) => {
+            const reward = i === 9;
+            const on = i < filled;
+            return (
+              <li
+                key={i}
+                className={`flex aspect-square items-center justify-center rounded-full ${
+                  reward ? "border-2 border-dashed border-white/70 text-white" : on ? "bg-white text-gray-900" : "border-2 border-white/25 text-white/30"
+                }`}
+              >
+                {reward ? <Gift className="h-1/2 w-1/2" /> : <CupSoda className="h-[45%] w-[45%]" />}
+              </li>
+            );
+          })}
+        </ol>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SignedIn({
+  sn,
+  customer,
+  onSignedOut,
+  onDeleted,
+}: {
+  sn: string | null;
+  customer: ShopCustomer;
+  onSignedOut: () => void;
+  onDeleted: () => void;
+}) {
   const [leaving, setLeaving] = useState(false);
+  const filled = Math.min(customer.stamps, 9);
+
+  async function leave() {
+    setLeaving(true);
+    await signOut();
+    onSignedOut();
+  }
+
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="min-w-0 truncate text-sm text-gray-700" data-testid="account-email">
-          {customer.email}
-        </p>
-        <button
-          type="button"
-          className={QUIET_BUTTON}
-          disabled={leaving}
-          onClick={async () => {
-            setLeaving(true);
-            await signOut();
-            onSignedOut();
-          }}
-          data-testid="account-sign-out"
-        >
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <span className={EYEBROW}>{ACCOUNT_COPY.eyebrow}</span>
+          <h1 className="font-display font-black uppercase leading-[0.9] text-foreground" style={{ fontSize: "clamp(2.25rem, 5vw, 3.5rem)" }}>
+            {ACCOUNT_COPY.hello(customer.name)}
+          </h1>
+          <p className="mt-2 truncate text-gray-700" data-testid="account-email">
+            {customer.email}
+          </p>
+        </div>
+        <button type="button" className={QUIET_BUTTON} disabled={leaving} onClick={() => void leave()} data-testid="account-sign-out">
           <LogOut className="h-4 w-4" aria-hidden />
           {ACCOUNT_COPY.signOut}
         </button>
       </div>
-      <StampCard customer={customer} />
-      <MyCodes />
-      <MyOrders />
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-12 lg:gap-8">
+        <div className="space-y-6 lg:col-span-5">
+          <section aria-labelledby="stamps-title" data-testid="account-stamps">
+            <h2 id="stamps-title" className="sr-only">
+              {ACCOUNT_COPY.stampsTitle}
+            </h2>
+            <LoyaltyCard filled={filled} caption={ACCOUNT_COPY.stampsCount(filled)}>
+              <p className="mt-5 text-white/90">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
+            </LoyaltyCard>
+          </section>
+          <dl className="grid grid-cols-2 gap-4">
+            <Stat label={ACCOUNT_COPY.statsDrinks} value={customer.lifetimeDrinks} />
+            <Stat label={ACCOUNT_COPY.statsFree} value={customer.rewardsIssued} />
+          </dl>
+          {sn ? (
+            <Link href={menuHref(sn)} className={PRIMARY_BUTTON}>
+              {ACCOUNT_COPY.buyMore}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          ) : (
+            <p className="text-center text-sm text-gray-600">{ACCOUNT_COPY.scanHint}</p>
+          )}
+        </div>
+
+        <div className="space-y-6 lg:col-span-7">
+          <MyCodes />
+          <MyOrders />
+        </div>
+      </div>
+
       <DeleteAccount onDeleted={onDeleted} />
     </>
   );
 }
 
-const PERK_ICONS = { gift: Gift, codes: KeyRound, orders: Receipt } as const;
-
-function SignInPerks() {
+function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <section className={SECTION} aria-labelledby="perks-title" data-testid="account-perks">
-      <h2 id="perks-title" className="text-lg font-bold text-gray-900">
-        {ACCOUNT_COPY.perksTitle}
-      </h2>
-      <div className="mt-4 rounded-xl bg-primary/5 p-4">
-        <StampRow filled={9} />
-        <p className="mt-2 text-center text-xs font-semibold text-primary-ink">{ACCOUNT_COPY.perksStamps}</p>
-      </div>
-      <ul className="mt-5 space-y-4">
-        {ACCOUNT_COPY.perks.map((perk) => {
-          const Icon = PERK_ICONS[perk.icon as keyof typeof PERK_ICONS];
-          return (
-            <li key={perk.title} className="flex gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
-                <Icon className="h-5 w-5" aria-hidden />
-              </span>
-              <span>
-                <span className="block font-semibold text-gray-900">{perk.title}</span>
-                <span className="mt-0.5 block text-sm leading-snug text-muted-foreground">{perk.body}</span>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-gray-700">{ACCOUNT_COPY.perksJoin}</p>
-    </section>
-  );
-}
-
-function StampRow({ filled }: { filled: number }) {
-  return (
-    <ol className="grid grid-cols-10 gap-1.5 sm:gap-2" aria-hidden>
-      {Array.from({ length: 10 }, (_, i) => (
-        <li
-          key={i}
-          className={`flex aspect-square items-center justify-center rounded-full border-2 ${
-            i === 9 ? "border-dashed border-primary bg-white text-primary-ink" : i < filled ? "border-primary bg-primary-fill" : "border-gray-200 bg-gray-50"
-          }`}
-        >
-          {i === 9 && <Gift className="h-4 w-4" />}
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function StampCard({ customer }: { customer: ShopCustomer }) {
-  const filled = Math.min(customer.stamps, 9);
-  return (
-    <section className={SECTION} aria-labelledby="stamps-title" data-testid="account-stamps">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 id="stamps-title" className="text-lg font-bold text-gray-900">
-          {ACCOUNT_COPY.stampsTitle}
-        </h2>
-        <span className="text-sm font-semibold text-gray-700">{ACCOUNT_COPY.stampsCount(filled)}</span>
-      </div>
-      <div className="mt-4">
-        <StampRow filled={filled} />
-      </div>
-      <p className="mt-3 text-sm text-muted-foreground">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
-    </section>
+    <div className="rounded-2xl border border-gray-200 bg-white p-4">
+      <dt className="text-sm text-gray-600">{label}</dt>
+      <dd className="mt-1 font-display text-3xl font-black text-gray-900">{value}</dd>
+    </div>
   );
 }
 
@@ -213,41 +272,90 @@ function MyCodes() {
     void load();
   }, [load]);
 
+  const ready = codes?.filter((c) => c.used !== true) ?? [];
+  const used = codes?.filter((c) => c.used === true) ?? [];
+
   return (
-    <section className={SECTION} aria-labelledby="codes-title" data-testid="account-codes">
-      <h2 id="codes-title" className="text-lg font-bold text-gray-900">
+    <section className={PANEL} aria-labelledby="codes-title" data-testid="account-codes">
+      <h2 id="codes-title" className={PANEL_TITLE}>
         {ACCOUNT_COPY.codesTitle}
       </h2>
       {failed ? (
         <Retry onRetry={() => void load()} />
       ) : codes === null ? (
-        <p className="mt-3 text-sm text-muted-foreground">{ACCOUNT_COPY.loading}</p>
-      ) : codes.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">{ACCOUNT_COPY.codesEmpty}</p>
+        <p className="mt-3 text-sm text-gray-600">{ACCOUNT_COPY.loading}</p>
       ) : (
-        <ul className="mt-2 divide-y divide-gray-100">
-          {codes.map((c) => (
-            <li key={c.code} className="flex items-center justify-between gap-4 py-3" data-testid={`account-code-${c.code}`}>
-              <span className="min-w-0">
-                <span className="block truncate font-semibold text-gray-900">{c.kind === "reward" ? ACCOUNT_COPY.freeDrink : (c.drink?.name ?? "")}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {c.kind === "reward" ? ACCOUNT_COPY.freeDrinkWhere : [c.machineName, when(c.createdAt)].filter(Boolean).join(", ")}
-                </span>
-              </span>
-              <span className="shrink-0 text-right">
-                <span className={`block font-mono text-lg font-bold tracking-wider ${c.used ? "text-gray-400 line-through" : "text-gray-900"}`}>{c.code}</span>
-                <CodeState used={c.used} />
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {ready.length === 0 ? (
+            <p className="mt-3 text-sm text-gray-600">{codes.length === 0 ? ACCOUNT_COPY.codesEmpty : ACCOUNT_COPY.readyEmpty}</p>
+          ) : (
+            <>
+              <p className="mt-1 text-sm text-gray-600">{ACCOUNT_COPY.readyHint}</p>
+              <ul className="mt-4 space-y-3">
+                {ready.map((c) => (
+                  <li
+                    key={c.code}
+                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4"
+                    data-testid={`account-code-${c.code}`}
+                  >
+                    <CodeLabel code={c} />
+                    <span className="sm:text-right">
+                      <span className="block font-mono text-2xl font-bold tracking-[0.15em] text-gray-900">{grouped(c.code)}</span>
+                      <CodeState used={c.used} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {used.length > 0 && (
+            <details className="group mt-4 border-t border-gray-100 pt-3">
+              <summary className="flex min-h-11 list-none [&::-webkit-details-marker]:hidden cursor-pointer items-center text-sm font-semibold text-gray-700 hover:text-gray-900">
+                {ACCOUNT_COPY.usedTitle(used.length)}
+                <ChevronDown className="ml-1 h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+              </summary>
+              <ul className="divide-y divide-gray-100">
+                {used.map((c) => (
+                  <li key={c.code} className="flex items-center justify-between gap-4 py-3" data-testid={`account-code-${c.code}`}>
+                    <CodeLabel code={c} />
+                    <span className="shrink-0 text-right">
+                      <span className="block font-mono text-gray-500 line-through">{grouped(c.code)}</span>
+                      <CodeState used={c.used} />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
       )}
     </section>
   );
 }
 
+const grouped = (code: string) => (code.length === 8 ? `${code.slice(0, 4)} ${code.slice(4)}` : code);
+
+function CodeLabel({ code }: { code: ShopMyCode }) {
+  const reward = code.kind === "reward";
+  return (
+    <span className="flex min-w-0 items-center gap-3">
+      {reward && (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
+          <Gift className="h-5 w-5" aria-hidden />
+        </span>
+      )}
+      <span className="min-w-0">
+        <span className="block truncate font-semibold text-gray-900">{reward ? ACCOUNT_COPY.freeDrink : (code.drink?.name ?? "")}</span>
+        <span className="block truncate text-sm text-gray-600">
+          {reward ? ACCOUNT_COPY.freeDrinkWhere : [code.machineName, when(code.createdAt)].filter(Boolean).join(", ")}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 function CodeState({ used }: { used: boolean | null }) {
-  if (used === null) return <span className="block text-xs text-muted-foreground">{ACCOUNT_COPY.unknown}</span>;
+  if (used === null) return <span className="block text-xs text-gray-600">{ACCOUNT_COPY.unknown}</span>;
   return <span className={`block text-xs font-semibold ${used ? "text-gray-600" : "text-emerald-700"}`}>{used ? ACCOUNT_COPY.used : ACCOUNT_COPY.ready}</span>;
 }
 
@@ -275,14 +383,14 @@ function MyOrders() {
   }, [load]);
 
   return (
-    <section className={SECTION} aria-labelledby="orders-title" data-testid="account-orders">
-      <h2 id="orders-title" className="text-lg font-bold text-gray-900">
+    <section className={PANEL} aria-labelledby="orders-title" data-testid="account-orders">
+      <h2 id="orders-title" className={PANEL_TITLE}>
         {ACCOUNT_COPY.ordersTitle}
       </h2>
       {orders === null ? (
-        failed ? <Retry onRetry={() => void load(null)} /> : <p className="mt-3 text-sm text-muted-foreground">{ACCOUNT_COPY.loading}</p>
+        failed ? <Retry onRetry={() => void load(null)} /> : <p className="mt-3 text-sm text-gray-600">{ACCOUNT_COPY.loading}</p>
       ) : orders.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">{ACCOUNT_COPY.ordersEmpty}</p>
+        <p className="mt-3 text-sm text-gray-600">{ACCOUNT_COPY.ordersEmpty}</p>
       ) : (
         <>
           <ul className="mt-2 divide-y divide-gray-100">
@@ -290,11 +398,11 @@ function MyOrders() {
               <li key={o.shopOrderId} className="flex items-center justify-between gap-4 py-3" data-testid={`account-order-${o.shopOrderId}`}>
                 <span className="min-w-0">
                   <span className="block truncate font-semibold text-gray-900">{o.drink.name}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{[o.machineName, when(o.createdAt)].filter(Boolean).join(", ")}</span>
+                  <span className="block truncate text-sm text-gray-600">{[o.machineName, when(o.createdAt)].filter(Boolean).join(", ")}</span>
                 </span>
                 <span className="shrink-0 text-right">
                   <span className="block font-semibold text-gray-900">{formatInr(o.pricePaise)}</span>
-                  <span className="block text-xs text-muted-foreground">{ACCOUNT_COPY.status[o.status] ?? ""}</span>
+                  <span className="block text-xs text-gray-600">{ACCOUNT_COPY.status[o.status] ?? ""}</span>
                 </span>
               </li>
             ))}
@@ -341,14 +449,14 @@ function DeleteAccount({ onDeleted }: { onDeleted: () => void }) {
   }
 
   return (
-    <section className={SECTION} aria-labelledby="delete-title">
-      <h2 id="delete-title" className="text-lg font-bold text-gray-900">
+    <div className="mt-12 border-t border-gray-200 pt-6 text-center sm:text-left">
+      <button
+        type="button"
+        className="inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold text-rose-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={() => setOpen(true)}
+        data-testid="account-delete"
+      >
         {ACCOUNT_COPY.deleteTitle}
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">{ACCOUNT_COPY.deleteBody}</p>
-      <button type="button" className={`${QUIET_BUTTON} mt-4 border-rose-300 text-rose-700 hover:bg-rose-50`} onClick={() => setOpen(true)} data-testid="account-delete">
-        <Trash2 className="h-4 w-4" aria-hidden />
-        {ACCOUNT_COPY.deleteConfirm}
       </button>
       <Dialog open={open} onOpenChange={(next) => !busy && setOpen(next)}>
         <DialogContent className="max-w-md rounded-2xl p-6">
@@ -378,20 +486,6 @@ function DeleteAccount({ onDeleted }: { onDeleted: () => void }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </section>
-  );
-}
-
-function BackToMenu({ sn }: { sn: string | null }) {
-  if (!sn) return <p className="text-center text-sm text-muted-foreground">{ACCOUNT_COPY.scanHint}</p>;
-  return (
-    <Link
-      href={`/drinks?sn=${encodeURIComponent(sn)}`}
-      className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      data-testid="account-menu"
-    >
-      <ArrowLeft className="h-4 w-4" aria-hidden />
-      {RECEIPT_COPY.backToMenu}
-    </Link>
+    </div>
   );
 }

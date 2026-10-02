@@ -65,7 +65,9 @@ describe("paying on /drinks", () => {
 
     const verify = await screen.findByTestId("signin-verify");
     expect(verify).toHaveTextContent("Sign in and pay ₹99");
-    expect(verify).toBeDisabled();
+    await user.click(verify);
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter the 6-digit code");
+    expect(m.verifySignin).not.toHaveBeenCalled();
     await user.type(screen.getByTestId("signin-code"), "12a3456");
     expect(screen.getByTestId("signin-code")).toHaveValue("123456");
     await user.click(verify);
@@ -153,7 +155,7 @@ describe("/drinks/account", () => {
     m.fetchMe.mockResolvedValue({ ok: false, error: { code: "signed_out", message: "Sign in again." } });
     render(<DrinkAccount sn={null} />);
     expect(await screen.findByTestId("signin-email-form")).toBeInTheDocument();
-    expect(screen.getByTestId("account-perks")).toHaveTextContent("Every 10th protein shake is free");
+    expect(screen.getByTestId("account-perks")).toHaveTextContent("10th shake free");
   });
 
   it("signs out, and deletes the account only after asking", async () => {
