@@ -111,14 +111,14 @@ Resend, void and activate for gyms are done (2026-10-01, see below).
 - **QR and logo: links instead of QR pictures** — "Join Members link" and "Get Drinks link",
   empty for the machine's default (`/join`, `/drinks`). Only `https` on muscleboxpro.com or a
   subdomain, up to 200 characters. The stored QR pictures are still sent unchanged so old apps
-  keep them. The backend does not accept the links yet (shop spec §3.1).
+  keep them. The backend stores both links and returns `restartPending` from the save.
 
 Open from this work:
 
 - [ ] **Who activated a franchise.** The backend stores `activatedByEmail`, but the admin
       franchise view does not return it, so the card shows only the date.
-- [ ] **The QR save message.** Once a QR save also sets `refreshPending` (shop spec §3.1), the
-      notice "picks this up the next time its app starts" is wrong. Change it when that lands.
+- [x] **The QR save message.** The save returns `restartPending`, and the notice is
+      `appStartNotice(restartPending)` like the other app-start settings.
 
 ## Done 2026-10-02: machine handoff (coming soon, Contact us, ratings, Instagram)
 
@@ -158,11 +158,10 @@ Open from this work:
 - [ ] The Status filter filters the returned page on the client until `GET goods` takes
       `comingSoon` (asks A1), so the total and paging can be off.
 - [ ] Filter ratings by drink once `GET feedback` takes `goodsId` (asks A4).
-- [ ] **Website, later** (no machine menu page yet, only `DrinksHolding`). When the menu is built
-      from `GET shop/machines/{sn}`: an out-of-stock drink greyed out with "Out of stock" and not
-      buyable; a coming-soon drink labelled "Coming soon" with no buy button; the `coming_soon`
-      order error shown as "This drink isn't available yet." Reviews stay private: nothing about
-      them on the website.
+- [x] **Website** (done 2026-10-02 with the `/drinks` menu). A sold-out drink is greyed out and
+      its button says "Sold out"; a coming-soon drink shows no price and a disabled "Coming soon"
+      button; order refusals such as `coming_soon` show the server's message and reload the menu.
+      Reviews stay private: nothing about them on the website.
 
 ## Shop: `/join` and `/drinks`
 
@@ -174,14 +173,26 @@ in a new AWS shop service, not Supabase.
 
 - [x] Holding pages at `/join` and `/drinks` (`client/src/pages/shop/`). The machine app already
       draws QRs to them. They say what is coming and how to buy on the machine now. Not indexed.
-- [ ] **Phase 1b, website:** the `/drinks` menu and guest purchase (Razorpay Checkout), the
-      receipt page with the token in the fragment (`/drinks/receipt#t=…`, sent as
-      `x-shop-order-token`), `Referrer-Policy: no-referrer`, and the shop host and Razorpay in
-      the CSP. Recognise the shop error codes in spec §5.2.
+- [x] **Phase 1b, website** (2026-10-02). `/drinks?sn=` shows the live menu and buys with Razorpay
+      Checkout (`DrinksShop.tsx`). The receipt is `/drinks/receipt#t=…` (`DrinkReceipt.tsx`): it
+      polls until the code arrives, shows refunds in plain words, and has "Email me this code".
+      The token stays in the fragment and goes only in `x-shop-order-token`, with
+      `credentials: "omit"`. The phone keeps its last 10 orders (`savedOrders.ts`) so a closed
+      checkout or a UPI app switch can find the order again. `/drinks/:path*` gets
+      `Referrer-Policy: no-referrer` and the only CSP that allows Razorpay.
+      - Gated on `NEXT_PUBLIC_MBP_SHOP_API_URL`: unset keeps the holding page, so production is
+        unchanged until it is set to `https://api.muscleboxpro.com/shop`.
+      - Production also needs `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` for drink pictures, and the
+        Razorpay shop webhook registered, before a real paid order reaches `coded`.
+      - After changing the variable, restart `next dev`: the CSP is built when the config loads.
 - [ ] **Phase 1c, website:** email sign-in, `/join`, "My drink codes", stamps, claiming a guest
       order. A separate sandbox session-storage key for the shop.
-- [ ] **Dashboard:** the `source` tag and `shopOrderId` filter on Redeem Codes; shop orders,
-      customers, refund, retry-refund and reissue pages.
+- [x] **Dashboard: Redeem Codes source** (2026-10-02). A Source column and filter (Admin, Shop
+      purchase, Shop reward) with the shop order id. Shop codes are read-only, because the backend
+      refuses edit, disable and delete on them: the row offers View and Usage, and the detail page
+      shows the code instead of the form.
+- [ ] **Dashboard:** shop orders, customers, refund, retry-refund and reissue pages (spec §5.4).
+      Shop orders should link to `?shopOrderId=` on Redeem Codes, which the backend filters exactly.
 - **Not doing (decided 2026-10-01):** phone Start. No "Connect MQTT", certificate details or MQTT
       status on the machine page, and no "Website start" on orders. Customers type the code.
 

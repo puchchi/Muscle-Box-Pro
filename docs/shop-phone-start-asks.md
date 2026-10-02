@@ -1,6 +1,17 @@
 # Shop codes: asks from the website
 
-Status: decided by Anurag 2026-10-01, not yet sent. These amend `mbp-backend/docs/shop-agreed-spec.md`.
+Status: decided by Anurag 2026-10-01, sent, and all four answered (2026-10-02). The agreed spec,
+`mbp-backend/docs/shop-agreed-spec.md`, now carries them:
+
+- **B0:** phone Start is dropped (spec D4 and §6). The MQTT and start work is parked on the branch
+  `phase2-mqtt-start`, reverted on the main line, and not kept for the `refresh` message.
+- **B1:** `POST shop/order/email` is built and in sandbox (spec §5.2). The website calls it from the receipt. The
+  sign-in join by `guestEmail` is built in 1c, not deployed yet.
+- **B2:** yes, it could happen. The use is given back when no report arrives within five minutes (spec §3.5), in
+  the machine service's sweep, in sandbox.
+- **B3:** the reward code is issued on the 9th stamp and 9 are taken off (spec §5.3). Stamps are not awarded yet.
+
+What follows is the request as sent.
 
 ## Decisions
 
