@@ -38,7 +38,7 @@ const STEPS = [
 
 export function MachineScreenMock() {
   return (
-    <figure className="mx-auto mt-12 max-w-3xl" data-testid="shop-machine-mock">
+    <figure className="mx-auto max-w-3xl" data-testid="shop-machine-mock">
       <div className="rounded-[1.75rem] bg-gray-900 p-2.5 shadow-2xl shadow-gray-900/20 sm:p-3.5" aria-hidden>
         <div className="aspect-[16/9] overflow-hidden rounded-2xl bg-white [container-type:inline-size]">
           <div className="flex h-[19%] items-center justify-between bg-black px-[3cqw]">

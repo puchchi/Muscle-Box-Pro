@@ -133,6 +133,19 @@ describe("DrinksShop", () => {
     expect(within(screen.getByTestId("shop-drink-1002")).queryByText("Chilled")).not.toBeInTheDocument();
   });
 
+  it("offers sign-in for stamps above the menu, and not when the menu can't load", async () => {
+    const { unmount } = render(<DrinksShop sn="GS805TEST01" />);
+    const strip = await screen.findByTestId("shop-member-strip");
+    expect(strip).toHaveTextContent(SHOP_COPY.memberTitle);
+    expect(within(strip).getByRole("link")).toHaveAttribute("href", "/drinks/account?sn=GS805TEST01");
+    unmount();
+
+    mockMenu.mockResolvedValue({ ok: false, error: { code: "machine_unknown", message: "No such machine." } });
+    render(<DrinksShop sn="GS805TEST01" />);
+    await screen.findByTestId("shop-load-error");
+    expect(screen.queryByTestId("shop-member-strip")).not.toBeInTheDocument();
+  });
+
   it("shows where the code goes on the machine's screen", async () => {
     render(<DrinksShop sn="GS805TEST01" />);
     expect(await screen.findByTestId("shop-machine-mock")).toHaveTextContent(SHOP_COPY.machineCaption);

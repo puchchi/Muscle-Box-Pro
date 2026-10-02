@@ -2,17 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ChevronRight, CupSoda, Flame, Loader2, MapPin, Receipt, RotateCw, Snowflake, UserRound } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, ChevronRight, CupSoda, Flame, Gift, Loader2, MapPin, Receipt, ReceiptIndianRupee, RotateCw, Snowflake, UserRound } from "lucide-react";
 import { formatInr, type ShopCustomer, type ShopDrink, type ShopErrorCode, type ShopMenu } from "@shared/shop/shopSchema";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createShopOrder, fetchMe, fetchShopMenu } from "@/lib/shopApi";
 import { signedInHint } from "@/lib/shopSession";
 import { payWithRazorpay } from "@/lib/razorpayCheckout";
-import { AccountLink, ShopHeader } from "./ShopHolding";
-import { PAY_COPY, SHOP_COPY, SIGNIN_COPY } from "./shopCopy";
+import { AccountLink, ShopHeader, accountHref } from "./ShopHolding";
+import { ACCOUNT_COPY, PAY_COPY, SHOP_COPY, SIGNIN_COPY } from "./shopCopy";
 import { MachineScreenMock } from "./MachineScreenMock";
 import { SignInForm } from "./SignInForm";
-import { CONTAINER, SectionHeader, StepCards } from "./shopUi";
+import { CONTAINER } from "./shopUi";
 import { receiptHref, saveOrder, savedOrders, type SavedOrder } from "./savedOrders";
 
 const MENU_CHANGED: ReadonlySet<ShopErrorCode> = new Set(["machine_offline", "machine_disabled", "drink_not_listed", "sold_out", "coming_soon"]);
@@ -81,27 +82,22 @@ export function DrinksShop({ sn }: { sn: string }) {
   const selling = menu !== null && menu.online && menu.enabled;
 
   return (
-    <div className="min-h-screen bg-background" data-testid="shop-menu-page">
-      <ShopHeader sn={sn}>
+    <div className="min-h-screen bg-gray-50" data-testid="shop-menu-page">
+      <ShopHeader sn={null}>
         <AccountLink sn={sn} signedIn={customer !== null} />
       </ShopHeader>
-      <main>
-        <section className="border-b border-gray-100 bg-gray-50">
-          <div className={`${CONTAINER} py-8 lg:py-12`}>
-            {menu && <MachineLine menu={menu} />}
-            <h1 className="mt-3 font-display font-black uppercase leading-[0.9] text-foreground" style={{ fontSize: "clamp(2.25rem, 5vw, 3.75rem)" }}>
-              {SHOP_COPY.title}
-            </h1>
-            <p className="mt-3 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">{SHOP_COPY.lead}</p>
-            {customer && (
-              <p className="mt-3 text-sm text-gray-700" data-testid="shop-signed-in">
-                {PAY_COPY.signedInAs(customer.email)}
-              </p>
-            )}
-          </div>
-        </section>
+      <main className={`${CONTAINER} py-6 sm:py-8 lg:py-10`}>
+        <div>
+          {menu && <MachineLine menu={menu} />}
+          <h1 className="mt-3 font-display font-black uppercase leading-[0.95] text-foreground" style={{ fontSize: "clamp(1.875rem, 4vw, 2.75rem)" }}>
+            {SHOP_COPY.title}
+          </h1>
+          <p className="mt-2 max-w-2xl text-base leading-relaxed text-gray-600">{SHOP_COPY.lead}</p>
+        </div>
 
-        <section className={`${CONTAINER} space-y-5 py-8 lg:py-12`} aria-label="Menu">
+        {!loadError && menu !== null && menu.drinks.length > 0 && <MemberStrip sn={sn} customer={customer} />}
+
+        <section className="mt-6 space-y-5" aria-label="Menu">
           {menu && !menu.online && <Banner tone="warn" testId="shop-offline">{SHOP_COPY.offlineNotice}</Banner>}
           {menu && menu.online && !menu.enabled && <Banner tone="warn" testId="shop-disabled">{SHOP_COPY.disabledNotice}</Banner>}
           {notice?.kind === "error" && (
@@ -120,15 +116,15 @@ export function DrinksShop({ sn }: { sn: string }) {
           )}
 
           {loadError ? (
-            <LoadError message={loadError} onRetry={() => void load()} />
+            <LoadError sn={sn} message={loadError} onRetry={() => void load()} />
           ) : menu === null ? (
             <MenuSkeleton />
           ) : menu.drinks.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-muted-foreground" data-testid="shop-empty">
+            <p className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600" data-testid="shop-empty">
               {SHOP_COPY.emptyMenu}
             </p>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6" data-testid="shop-drinks">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4" data-testid="shop-drinks">
               {menu.drinks.map((drink) => (
                 <DrinkCard
                   key={drink.goodsId}
@@ -156,20 +152,65 @@ export function DrinksShop({ sn }: { sn: string }) {
           />
         </section>
 
-        <section className="bg-muted py-14 lg:py-20">
-          <div className={CONTAINER}>
-            <SectionHeader
-              centered
-              eyebrow={SHOP_COPY.stepsEyebrow}
-              titleLead={SHOP_COPY.stepsTitleLead}
-              titleHighlight={SHOP_COPY.stepsTitleHighlight}
-              lead={SHOP_COPY.stepsLead}
-            />
-            <StepCards steps={SHOP_COPY.steps} />
-            <MachineScreenMock />
+        <section className="mt-14 border-t border-gray-200 pt-10 lg:mt-20 lg:pt-14" aria-labelledby="how-title">
+          <div className="grid gap-10 lg:grid-cols-12 lg:items-center lg:gap-12">
+            <div className="lg:col-span-5">
+              <h2 id="how-title" className="text-2xl font-bold text-gray-900">
+                {SHOP_COPY.stepsTitle}
+              </h2>
+              <p className="mt-2 text-gray-600">{SHOP_COPY.stepsLead}</p>
+              <ol className="mt-6 space-y-5">
+                {SHOP_COPY.steps.map((step, i) => (
+                  <li key={step.title} className="flex gap-4">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-900 text-sm font-bold text-white" aria-hidden>
+                      {i + 1}
+                    </span>
+                    <span>
+                      <span className="block font-semibold text-gray-900">{step.title}</span>
+                      <span className="mt-0.5 block text-sm leading-relaxed text-gray-600">{step.body}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="lg:col-span-7">
+              <MachineScreenMock />
+            </div>
           </div>
         </section>
       </main>
+    </div>
+  );
+}
+
+function MemberStrip({ sn, customer }: { sn: string; customer: ShopCustomer | null }) {
+  if (customer) {
+    return (
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4" data-testid="shop-signed-in">
+        <span className="flex min-w-0 items-center gap-3">
+          <Gift className="h-5 w-5 shrink-0 text-primary-ink" aria-hidden />
+          <span className="min-w-0">
+            <span className="block truncate text-sm text-gray-600">{PAY_COPY.signedInAs(customer.email)}</span>
+            <span className="block font-semibold text-gray-900">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</span>
+          </span>
+        </span>
+        <span className="text-sm font-semibold text-gray-700">{ACCOUNT_COPY.stampsCount(Math.min(customer.stamps, 9))}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 sm:gap-4 sm:px-5" data-testid="shop-member-strip">
+      <Gift className="hidden h-5 w-5 shrink-0 text-primary-ink sm:block" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-gray-900 sm:text-base">{SHOP_COPY.memberTitle}</span>
+        <span className="block text-sm leading-snug text-gray-700">{SHOP_COPY.memberBody}</span>
+      </span>
+      <Link
+        href={accountHref(sn)}
+        className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {SHOP_COPY.memberCta}
+      </Link>
     </div>
   );
 }
@@ -206,8 +247,8 @@ function PayChoice({
         </DialogHeader>
         {current && !signingIn && (
           <div className="mt-2 space-y-3">
-            <ChoiceButton title={PAY_COPY.member} body={PAY_COPY.memberBody} onClick={() => setSigningIn(true)} testId="pay-member" icon={<UserRound className="h-5 w-5" aria-hidden />} />
-            <ChoiceButton title={PAY_COPY.guest} body={PAY_COPY.guestBody} onClick={() => onGuest(current)} testId="pay-guest" icon={<Receipt className="h-5 w-5" aria-hidden />} />
+            <ChoiceButton title={PAY_COPY.member} body={PAY_COPY.memberBody} onClick={() => setSigningIn(true)} testId="pay-member" icon={<UserRound className="h-5 w-5" aria-hidden />} featured />
+            <ChoiceButton title={PAY_COPY.guest} body={PAY_COPY.guestBody} onClick={() => onGuest(current)} testId="pay-guest" icon={<ReceiptIndianRupee className="h-5 w-5" aria-hidden />} />
           </div>
         )}
         {current && signingIn && (
@@ -220,12 +261,26 @@ function PayChoice({
   );
 }
 
-function ChoiceButton({ title, body, icon, onClick, testId }: { title: string; body: string; icon: React.ReactNode; onClick: () => void; testId: string }) {
+function ChoiceButton({
+  title,
+  body,
+  icon,
+  onClick,
+  testId,
+  featured,
+}: {
+  title: string;
+  body: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  testId: string;
+  featured?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-left transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={`flex w-full cursor-pointer items-center gap-4 rounded-2xl border p-4 text-left transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${featured ? "border-primary bg-primary/5" : "border-gray-200 bg-white"}`}
       data-testid={testId}
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">{icon}</span>
@@ -278,7 +333,7 @@ function DrinkCard({
       className={`flex gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-col sm:p-5 ${unavailable ? "opacity-75" : ""}`}
       data-testid={`shop-drink-${drink.goodsId}`}
     >
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-100 sm:aspect-square sm:h-auto sm:w-full">
+      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-100 sm:aspect-[4/3] sm:h-auto sm:w-full">
         <DrinkPicture url={drink.image} alt={drink.name} dim={unavailable !== null} />
         {drink.serveTemp && <TempSticker temp={drink.serveTemp} />}
       </div>
@@ -357,11 +412,15 @@ function Banner({ tone, testId, children }: { tone: "warn" | "error" | "info"; t
   );
 }
 
-function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+function LoadError({ sn, message, onRetry }: { sn: string; message: string; onRetry: () => void }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center" role="alert" data-testid="shop-load-error">
-      <p className="font-semibold text-gray-900">{message}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{SHOP_COPY.loadErrorHint}</p>
+    <div className="mx-auto max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center" role="alert" data-testid="shop-load-error">
+      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+        <CupSoda className="h-6 w-6" aria-hidden />
+      </span>
+      <p className="mt-4 font-semibold text-gray-900">{message}</p>
+      <p className="mt-1 text-sm text-gray-600">{SHOP_COPY.loadErrorHint}</p>
+      <p className="mt-3 font-mono text-xs text-gray-600">{SHOP_COPY.machineCode(sn)}</p>
       <button
         type="button"
         onClick={onRetry}
@@ -376,10 +435,10 @@ function LoadError({ message, onRetry }: { message: string; onRetry: () => void 
 
 function MenuSkeleton() {
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6" aria-busy="true" aria-label="Loading the menu" data-testid="shop-loading">
+    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4" aria-busy="true" aria-label="Loading the menu" data-testid="shop-loading">
       {[0, 1, 2].map((i) => (
         <li key={i} className="flex animate-pulse gap-4 rounded-2xl border border-gray-100 bg-white p-4 sm:flex-col sm:p-5">
-          <span className="h-24 w-24 shrink-0 rounded-xl bg-gray-100 sm:aspect-square sm:h-auto sm:w-full" />
+          <span className="h-24 w-24 shrink-0 rounded-xl bg-gray-100 sm:aspect-[4/3] sm:h-auto sm:w-full" />
           <span className="flex flex-1 flex-col gap-2 pt-1">
             <span className="h-4 w-3/4 rounded bg-gray-100" />
             <span className="h-3 w-1/3 rounded bg-gray-100" />
