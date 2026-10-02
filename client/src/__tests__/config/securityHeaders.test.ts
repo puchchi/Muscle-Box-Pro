@@ -317,3 +317,53 @@ describe("img-src and the goods pictures", () => {
     vi.resetModules();
   });
 });
+
+describe("Razorpay Checkout and the shop", () => {
+  async function drinksRule() {
+    const rules = await nextConfig.headers!();
+    const index = rules.findIndex((rule) => rule.source === "/drinks/:path*");
+    return { rules, index, rule: rules[index]! };
+  }
+
+  function directiveOf(csp: string, name: string): string[] {
+    const found = csp
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part === name || part.startsWith(`${name} `));
+    return found ? found.split(/\s+/).slice(1) : [];
+  }
+
+  it("lets /drinks load Checkout and frame its payment window", async () => {
+    const { rule } = await drinksRule();
+    const csp = rule.headers.find((header) => header.key === "Content-Security-Policy")!.value;
+    expect(directiveOf(csp, "script-src")).toContain("https://checkout.razorpay.com");
+    expect(directiveOf(csp, "frame-src")).toEqual(["https://api.razorpay.com", "https://checkout.razorpay.com"]);
+    expect(directiveOf(csp, "connect-src")).toEqual(expect.arrayContaining([...(await directive("connect-src")), "https://api.razorpay.com"]));
+  });
+
+  it("keeps Razorpay out of every other page", async () => {
+    expect(await directive("frame-src")).toEqual(["'none'"]);
+    expect((await directive("script-src")).filter((source) => source.includes("razorpay"))).toEqual([]);
+  });
+
+  it("withholds the referrer on /drinks, whose receipt link carries the order token, and wins over the global rule", async () => {
+    const { rules, index, rule } = await drinksRule();
+    expect(rule.headers).toContainEqual({ key: "Referrer-Policy", value: "no-referrer" });
+    expect(index).toBeGreaterThan(rules.findIndex((r) => r.source === "/(.*)"));
+  });
+
+  it("allows the sandbox shop host off production only", async () => {
+    const shop = "https://emh7o808qd.execute-api.ap-south-1.amazonaws.com/sandbox";
+    vi.stubEnv("NEXT_PUBLIC_MBP_SHOP_API_URL", shop);
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "https://6t9q5v5v97.execute-api.ap-south-1.amazonaws.com/sandbox");
+    vi.resetModules();
+    expect(await connectSrcOfAFreshConfig()).toContain(new URL(shop).origin);
+
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "");
+    vi.resetModules();
+    expect(await connectSrcOfAFreshConfig()).not.toContain(new URL(shop).origin);
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+});
