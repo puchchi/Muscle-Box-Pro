@@ -102,6 +102,7 @@ export const SHOP_COPY = {
     { icon: "code", title: "Get your code", body: "Your 8-digit code shows up on this page as soon as you've paid." },
     { icon: "tap", title: "Type it on the machine", body: "Tap Get Drinks on the machine's screen and type the code." },
   ],
+  machineCaption: "On the machine, type your 8-digit code under \"Enter code to start drink\" and tap Submit.",
 };
 
 export const RECEIPT_COPY = {

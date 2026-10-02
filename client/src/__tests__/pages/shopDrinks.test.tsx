@@ -133,6 +133,11 @@ describe("DrinksShop", () => {
     expect(within(screen.getByTestId("shop-drink-1002")).queryByText("Chilled")).not.toBeInTheDocument();
   });
 
+  it("shows where the code goes on the machine's screen", async () => {
+    render(<DrinksShop sn="GS805TEST01" />);
+    expect(await screen.findByTestId("shop-machine-mock")).toHaveTextContent(SHOP_COPY.machineCaption);
+  });
+
   it("can't sell from an offline machine and says why", async () => {
     mockMenu.mockResolvedValue(menu({ online: false }));
     render(<DrinksShop sn="GS805TEST01" />);

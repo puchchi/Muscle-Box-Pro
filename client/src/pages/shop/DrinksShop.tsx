@@ -10,6 +10,7 @@ import { signedInHint } from "@/lib/shopSession";
 import { payWithRazorpay } from "@/lib/razorpayCheckout";
 import { AccountLink, ShopHeader } from "./ShopHolding";
 import { PAY_COPY, SHOP_COPY, SIGNIN_COPY } from "./shopCopy";
+import { MachineScreenMock } from "./MachineScreenMock";
 import { SignInForm } from "./SignInForm";
 import { CONTAINER, SectionHeader, StepCards } from "./shopUi";
 import { receiptHref, saveOrder, savedOrders, type SavedOrder } from "./savedOrders";
@@ -165,6 +166,7 @@ export function DrinksShop({ sn }: { sn: string }) {
               lead={SHOP_COPY.stepsLead}
             />
             <StepCards steps={SHOP_COPY.steps} />
+            <MachineScreenMock />
           </div>
         </section>
       </main>
