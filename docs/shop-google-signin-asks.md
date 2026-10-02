@@ -1,7 +1,7 @@
 # Shop sign-in with Google: asks from the website
 
-Status: decided by Anurag 2026-10-02, not sent yet. The website keeps email-code sign-in only until
-G1 exists.
+Status: **parked** by Anurag 2026-10-02. Sign-in is the email code (OTP) only, and these asks
+are not sent. They are kept in case Google sign-in comes back.
 
 ## Decisions
 
