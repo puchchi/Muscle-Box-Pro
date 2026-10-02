@@ -5,14 +5,14 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deleteRedeemCode, fetchRedeemCodes, setRedeemCodeDisabled } from "@/lib/adminMachineApi";
-import { CODE_STATUSES, type CodeStatus, type RedeemCode } from "@shared/admin/machinesSchema";
+import { CODE_SOURCES, CODE_STATUSES, type CodeStatus, type RedeemCode } from "@shared/admin/machinesSchema";
 import type { AdminSession } from "@/lib/adminSession";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
 import { useAdminGuard } from "./useAdminGuard";
 import { Pill, SuccessPanel } from "./AdminUi";
 import { takeFlash } from "./machines/flash";
-import { CODE_STATUS_LABEL, validWindow } from "./machines/codeRules";
+import { CODE_SOURCE_LABEL, CODE_STATUS_LABEL, isShopCode, validWindow } from "./machines/codeRules";
 import {
   Cell,
   Col,
@@ -32,6 +32,7 @@ import {
 } from "./machines/MachinesUi";
 
 const STATUS_OPTIONS = [{ value: "", label: "Any status" }, ...CODE_STATUSES.map((s) => ({ value: s, label: CODE_STATUS_LABEL[s].text }))];
+const SOURCE_OPTIONS = [{ value: "", label: "Any source" }, ...CODE_SOURCES.map((s) => ({ value: s, label: CODE_SOURCE_LABEL[s].text }))];
 
 export default function AdminMachineRedeemCodes() {
   const guard = useAdminGuard();
@@ -40,7 +41,7 @@ export default function AdminMachineRedeemCodes() {
 }
 
 function RedeemCodes({ session }: { session: AdminSession }) {
-  const [draft, setDraft] = useState({ q: "", status: "" });
+  const [draft, setDraft] = useState({ q: "", status: "", source: "" });
   const [filters, setFilters] = useState(draft);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -55,7 +56,7 @@ function RedeemCodes({ session }: { session: AdminSession }) {
   const load = useCallback(async () => {
     setLoading(true);
     const result = await fetchRedeemCodes(
-      { ...(filters.q ? { q: filters.q } : {}), ...(filters.status ? { status: filters.status as CodeStatus } : {}) },
+      { ...(filters.q ? { q: filters.q } : {}), ...(filters.status ? { status: filters.status as CodeStatus } : {}), ...(filters.source ? { source: filters.source } : {}) },
       page,
       pageSize,
     );
@@ -136,7 +137,7 @@ function RedeemCodes({ session }: { session: AdminSession }) {
           setFilters({ ...draft, q: draft.q.trim() });
         }}
         onReset={() => {
-          const cleared = { q: "", status: "" };
+          const cleared = { q: "", status: "", source: "" };
           setDraft(cleared);
           setFilters(cleared);
           setPage(1);
@@ -144,6 +145,7 @@ function RedeemCodes({ session }: { session: AdminSession }) {
       >
         <TextFilter label="Code, theme or serial" value={draft.q} onChange={(q) => setDraft((d) => ({ ...d, q }))} testId="filter-code-q" />
         <SelectFilter label="Status" value={draft.status} onChange={(status) => setDraft((d) => ({ ...d, status }))} options={STATUS_OPTIONS} testId="filter-code-status" />
+        <SelectFilter label="Source" value={draft.source} onChange={(source) => setDraft((d) => ({ ...d, source }))} options={SOURCE_OPTIONS} testId="filter-code-source" />
       </FilterBar>
 
       <DataTable testId="codes-table">
@@ -155,15 +157,18 @@ function RedeemCodes({ session }: { session: AdminSession }) {
           <Col align="right">Uses</Col>
           <Col>Valid</Col>
           <Col>Status</Col>
+          <Col>Source</Col>
           <Col>Operate</Col>
         </Head>
         <tbody className="divide-y divide-border/70">
           {rows.length === 0 ? (
-            <NoData colSpan={8} loading={loading} />
+            <NoData colSpan={9} loading={loading} />
           ) : (
             rows.map((c) => {
               const href = `/machines/redeem-codes/${encodeURIComponent(c.code)}`;
               const status = CODE_STATUS_LABEL[c.status];
+              const source = CODE_SOURCE_LABEL[c.source];
+              const shop = isShopCode(c);
               return (
                 <tr key={c.code} className="hover:bg-secondary/40 transition-colors" data-testid={`row-code-${c.code}`}>
                   <Cell className="whitespace-nowrap font-mono text-xs text-muted-foreground">{c.serialNo}</Cell>
@@ -194,22 +199,30 @@ function RedeemCodes({ session }: { session: AdminSession }) {
                     </Pill>
                   </Cell>
                   <Cell>
+                    <Pill className={source.className} testId={`source-${c.code}`}>
+                      {source.text}
+                    </Pill>
+                    {c.shopOrderId && <span className="mt-1 block font-mono text-[11px] text-muted-foreground">{c.shopOrderId}</span>}
+                  </Cell>
+                  <Cell>
                     <span className="flex gap-3 whitespace-nowrap">
                       <Link href={href} className="text-xs font-semibold text-primary hover:underline" data-testid={`edit-code-${c.code}`}>
-                        Edit
+                        {shop ? "View" : "Edit"}
                       </Link>
                       <Link href={`${href}#usage`} className="text-xs font-semibold text-primary hover:underline" data-testid={`usage-code-${c.code}`}>
                         Usage
                       </Link>
-                      <button
-                        type="button"
-                        onClick={() => void toggleDisabled(c)}
-                        disabled={busy === c.code}
-                        className="text-xs font-semibold text-primary hover:underline cursor-pointer disabled:opacity-60"
-                        data-testid={`disable-code-${c.code}`}
-                      >
-                        {c.disabled ? "Enable" : "Disable"}
-                      </button>
+                      {!shop && (
+                        <button
+                          type="button"
+                          onClick={() => void toggleDisabled(c)}
+                          disabled={busy === c.code}
+                          className="text-xs font-semibold text-primary hover:underline cursor-pointer disabled:opacity-60"
+                          data-testid={`disable-code-${c.code}`}
+                        >
+                          {c.disabled ? "Enable" : "Disable"}
+                        </button>
+                      )}
                       {c.canDelete && (
                         <button
                           type="button"

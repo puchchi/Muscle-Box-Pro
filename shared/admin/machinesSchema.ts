@@ -475,6 +475,7 @@ export const promotionSaveSchema = z.object({
 export const deletedSchema = z.object({ deleted: z.literal(true) });
 
 export const CODE_STATUSES = ["active", "not_started", "used_up", "expired", "disabled"] as const;
+export const CODE_SOURCES = ["admin", "shop_purchase", "shop_reward"] as const;
 
 export const redeemCodeSchema = z.object({
   code: z.string().min(1),
@@ -491,6 +492,8 @@ export const redeemCodeSchema = z.object({
   allMachines: z.boolean(),
   sns: z.array(z.string()),
   canDelete: z.boolean(),
+  source: z.enum(CODE_SOURCES).catch("admin"),
+  shopOrderId: z.string().nullable().catch(null),
   lastUsedAt: instant,
   version: z.number().int().min(0),
   createdAt: instant,
@@ -635,6 +638,7 @@ export type Promotion = z.infer<typeof promotionSchema>;
 export type Promotions = z.infer<typeof promotionsSchema>;
 export type PromotionSave = z.infer<typeof promotionSaveSchema>;
 export type CodeStatus = (typeof CODE_STATUSES)[number];
+export type CodeSource = (typeof CODE_SOURCES)[number];
 export type RedeemCode = z.infer<typeof redeemCodeSchema>;
 export type RedeemCodes = z.infer<typeof redeemCodesSchema>;
 export type RedeemUse = z.infer<typeof redeemUsesSchema>["items"][number];

@@ -10,11 +10,11 @@ import type { AdminSession } from "@/lib/adminSession";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
 import { useAdminGuard } from "./useAdminGuard";
-import { Card, Pill, SuccessPanel } from "./AdminUi";
+import { Card, Field, Fields, Pill, SuccessPanel } from "./AdminUi";
 import { CodeForm } from "./machines/CodeForm";
 import { setFlash, takeFlash } from "./machines/flash";
 import { useGoodsAndMachines } from "./machines/usePromotionRefs";
-import { CODE_STATUS_LABEL, codeSavedNotice } from "./machines/codeRules";
+import { CODE_SOURCE_LABEL, CODE_STATUS_LABEL, codeSavedNotice, isShopCode, validWindow } from "./machines/codeRules";
 import {
   Cell,
   Col,
@@ -102,6 +102,7 @@ function CodeDetail({ session, codeId }: { session: AdminSession; codeId: string
   }
 
   const status = code ? CODE_STATUS_LABEL[code.status] : null;
+  const shop = code !== null && isShopCode(code);
 
   return (
     <MachinesShell session={session} section="redeemCodes">
@@ -130,7 +131,8 @@ function CodeDetail({ session, codeId }: { session: AdminSession; codeId: string
           </span>
         }
         action={
-          code && (
+          code &&
+          !shop && (
             <span className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => void toggleDisabled()} disabled={busy} className="rounded-xl cursor-pointer" data-testid="button-disable-code">
                 {code.disabled ? "Enable" : "Disable"}
@@ -159,7 +161,12 @@ function CodeDetail({ session, codeId }: { session: AdminSession; codeId: string
         </div>
       )}
 
-      {code && goods ? (
+      {code && shop ? (
+        <div className="space-y-5">
+          <ShopCodeCard code={code} />
+          <UsageCard uses={uses} />
+        </div>
+      ) : code && goods ? (
         <div className="space-y-5">
           <CodeForm
             key={loadCount}
@@ -195,6 +202,20 @@ function CodeDetail({ session, codeId }: { session: AdminSession; codeId: string
         testId="delete-code"
       />
     </MachinesShell>
+  );
+}
+
+function ShopCodeCard({ code }: { code: RedeemCode }) {
+  return (
+    <Card title="From the website shop" note="Only the shop changes this code, when it refunds or reissues the order." testId="card-shop-code">
+      <Fields>
+        <Field label="Source" value={CODE_SOURCE_LABEL[code.source].text} testId="shop-code-source" />
+        <Field label="Shop order" value={code.shopOrderId} mono testId="shop-code-order" />
+        <Field label="Goods" value={code.goods.map((g) => g.name).join(", ")} />
+        <Field label="Machines" value={code.allMachines ? "All machines" : code.sns.join(", ")} mono={!code.allMachines} />
+        <Field label="Valid" value={validWindow(code, formatIstStamp)} />
+      </Fields>
+    </Card>
   );
 }
 

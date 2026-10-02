@@ -180,7 +180,7 @@ export type RedeemCodeInput = MachineScopeInput & {
   validTo: string | null;
 };
 
-export type RedeemCodeFilters = { q?: string; status?: string };
+export type RedeemCodeFilters = { q?: string; status?: string; source?: string };
 
 export type StatFilters = {
   period: "day" | "month" | "year";

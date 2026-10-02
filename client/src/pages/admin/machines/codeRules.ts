@@ -1,5 +1,5 @@
 import type { RedeemCodeInput } from "@shared/admin/machines";
-import type { CodeStatus, RedeemCode } from "@shared/admin/machinesSchema";
+import type { CodeSource, CodeStatus, RedeemCode } from "@shared/admin/machinesSchema";
 import { istInputValue } from "./adRules";
 
 export const THEME_MAX = 40;
@@ -14,6 +14,14 @@ export const CODE_STATUS_LABEL: Record<CodeStatus, { text: string; className: st
   expired: { text: "Expired", className: "bg-secondary text-muted-foreground" },
   disabled: { text: "Disabled", className: "bg-rose-400/15 text-rose-200" },
 };
+
+export const CODE_SOURCE_LABEL: Record<CodeSource, { text: string; className: string }> = {
+  admin: { text: "Admin", className: "bg-secondary text-muted-foreground" },
+  shop_purchase: { text: "Shop purchase", className: "bg-violet-400/15 text-violet-200" },
+  shop_reward: { text: "Shop reward", className: "bg-amber-400/15 text-amber-200" },
+};
+
+export const isShopCode = (c: Pick<RedeemCode, "source">) => c.source !== "admin";
 
 export type CodeValues = {
   code: string;
