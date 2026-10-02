@@ -158,7 +158,7 @@ function LoyaltyCard({ filled, caption, children }: { filled: number; caption: s
   );
 }
 
-function StampSlots({ filled, className }: { filled: number; className: string }) {
+export function StampSlots({ filled, className }: { filled: number; className: string }) {
   return (
     <ol className={className} aria-hidden>
       {Array.from({ length: 10 }, (_, i) => {

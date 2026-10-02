@@ -70,6 +70,37 @@ export const JOIN_COPY = {
   menuLink: "See every protein shake we make",
 };
 
+export const MEMBER_COPY = {
+  eyebrow: "MuscleBoxPro members",
+  titleLead: "Every 10th protein shake",
+  titleHighlight: "is free.",
+  lead: "Join with your email. Every protein shake you buy on your phone earns a stamp. After 9 stamps, the next one is on us.",
+  cardLabel: "Your stamp card",
+  cardBody: "9 stamps, then a free protein shake. Any drink, at any machine.",
+  benefits: [
+    { title: "Your codes kept safe", body: "Every code you buy is saved in your account and never expires." },
+    { title: "Orders and refunds", body: "See what you bought, and where a refund is." },
+    { title: "No password", body: "We email you a 6-digit code each time you sign in." },
+  ],
+  formTitle: "Join free",
+  formLead: "It takes a minute. Already a member? The same steps sign you in.",
+  submit: "Join",
+  checking: "Checking your account…",
+  guestLead: "Just want a protein shake now?",
+  guestCta: "Pay as a guest",
+  doneTitle: "You're a member",
+  doneBody: "Buy while signed in and every protein shake earns a stamp.",
+  doneCta: "Pick a protein shake",
+  accountCta: "My account",
+  stepsTitle: "How it works",
+  steps: [
+    { title: "Join with your email", body: "Type the 6-digit code we email you. That's your account." },
+    { title: "Buy on your phone", body: "Scan the QR on the machine, pick a protein shake and pay while signed in." },
+    { title: "Your 10th is free", body: "After 9 stamps, a free protein shake code shows up in your account." },
+  ],
+  guestNote: "Bought as a guest and emailed yourself the code? Join with that email and those protein shakes count too.",
+};
+
 export const SHOP_COPY = {
   title: "Pick your protein shake",
   lead: "Pay with any UPI app. You get a code to type on the machine, and it never expires.",
