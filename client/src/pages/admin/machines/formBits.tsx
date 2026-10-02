@@ -120,3 +120,31 @@ export function parseNumber(text: string): number | null {
 export function hasTwoDecimalsAtMost(n: number): boolean {
   return Math.abs(Math.round(n * 100) - n * 100) < 1e-6;
 }
+
+export function IconButton({
+  label,
+  disabled,
+  onClick,
+  testId,
+  children,
+}: {
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+  testId: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+      data-testid={testId}
+    >
+      {children}
+    </button>
+  );
+}

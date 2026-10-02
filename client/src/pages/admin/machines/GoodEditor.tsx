@@ -5,12 +5,13 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchMaterials, uploadGoodsPicture, type MachineCall } from "@/lib/adminMachineApi";
 import type { GoodInput, RecipeLineInput, ServeTemp } from "@shared/admin/machines";
-import type { Good, MachineModel, Material } from "@shared/admin/machinesSchema";
+import type { Good, GoodMedia, MachineModel, Material } from "@shared/admin/machinesSchema";
 import { Card, SuccessPanel } from "../AdminUi";
-import { FormRow, hasTwoDecimalsAtMost, NativeSelect, parseNumber, TextInput } from "./formBits";
+import { FormRow, hasTwoDecimalsAtMost, IconButton, NativeSelect, parseNumber, TextInput } from "./formBits";
 import { GoodsPicture, problemOf, ProblemPanel, REFRESH_NOTE, type Problem } from "./MachinesUi";
 import { checkDetails, detailsDraftOf, draftErrorsOf, PayScreenDetails, type DetailsDraft } from "./PayScreenDetails";
 import { ComingSoonField } from "./ComingSoonField";
+import { GoodsGallery, MAX_GALLERY } from "./GoodsGallery";
 import { ServeTempField } from "./ServeTempField";
 
 const MAX_LINES = 20;
@@ -82,6 +83,7 @@ export function validateGood(
   details: DetailsDraft = { tagline: "", nutrition: [], ingredients: [] },
   serveTemp: ServeTemp | null = null,
   comingSoon = false,
+  media: Pick<GoodMedia, "url">[] = [],
 ): { errors: Record<string, string>; input: GoodInput | null; sent: ReturnType<typeof checkDetails>["sent"] } {
   const checkedDetails = checkDetails(details);
   const errors: Record<string, string> = { ...checkedDetails.errors };
@@ -107,6 +109,7 @@ export function validateGood(
   }
   if (!values.modelId) errors.modelId = "Required.";
   if (!image) errors.image = "Upload a picture.";
+  if (media.length > MAX_GALLERY) errors.media = "Up to 7 more pictures and videos.";
 
   const noRecipe = comingSoon && lines.every((line) => !line.materialId && !line.amount.trim());
   if (!noRecipe && lines.length === 0) errors.recipe = "Add at least one line.";
@@ -148,6 +151,7 @@ export function validateGood(
       ...checkedDetails.details,
       serveTemp,
       comingSoon,
+      media: media.map((m) => ({ url: m.url })),
     },
   };
 }
@@ -180,6 +184,8 @@ export function GoodEditor({
   const [image, setImage] = useState<string | null>(good?.image?.url ?? null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [media, setMedia] = useState<GoodMedia[]>(() => good?.media ?? []);
+  const [galleryUploading, setGalleryUploading] = useState(false);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -235,7 +241,7 @@ export function GoodEditor({
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setSaved(null);
-    const checked = validateGood(values, lines, image, materials, details, serveTemp, comingSoon);
+    const checked = validateGood(values, lines, image, materials, details, serveTemp, comingSoon, media);
     setErrors(checked.errors);
     if (!checked.input) {
       setProblem({ message: "Some fields need fixing.", issues: [] });
@@ -349,6 +355,8 @@ export function GoodEditor({
         </Card>
       </div>
 
+      <GoodsGallery items={media} onChange={setMedia} onUploadingChange={setGalleryUploading} error={errors.media} />
+
       <PayScreenDetails draft={details} onChange={setDetails} errors={errors} />
 
       <Card title="Recipe" note="Amounts are board units: motor and pump time on the machine. Machine calibration scales them." testId="card-recipe">
@@ -457,37 +465,9 @@ export function GoodEditor({
         )}
       </Card>
 
-      <Button type="submit" disabled={saving || uploading} className="rounded-xl cursor-pointer" data-testid="button-save-good">
+      <Button type="submit" disabled={saving || uploading || galleryUploading} className="rounded-xl cursor-pointer" data-testid="button-save-good">
         {saving ? "Saving…" : creating ? "Create goods" : "Save"}
       </Button>
     </form>
-  );
-}
-
-function IconButton({
-  label,
-  disabled,
-  onClick,
-  testId,
-  children,
-}: {
-  label: string;
-  disabled?: boolean;
-  onClick: () => void;
-  testId: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
-      data-testid={testId}
-    >
-      {children}
-    </button>
   );
 }

@@ -90,6 +90,7 @@ export type GoodInput = {
   ingredients: string[];
   serveTemp: ServeTemp | null;
   comingSoon: boolean;
+  media: { url: string }[];
 };
 
 export type ServeTemp = "chilled" | "hot";
@@ -132,7 +133,7 @@ export type OperationsLogFilters = {
   to?: string;
 };
 
-export type UploadKind = "goods" | "ad" | "voice" | "logo" | "qr";
+export type UploadKind = "goods" | "goodsMedia" | "ad" | "voice" | "logo" | "qr";
 
 export type FileRef = { url: string } | null;
 

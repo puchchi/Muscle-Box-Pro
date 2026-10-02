@@ -23,9 +23,24 @@ type MediaRule = {
   typeHint: string;
   notPicture: string;
   picture?: (width: number, height: number) => string | null;
+  maxSeconds?: number;
 };
 
-const MEDIA_RULES: Record<Exclude<UploadKind, "goods">, MediaRule> = {
+type MediaKind = Exclude<UploadKind, "goods">;
+
+const MEDIA_RULES: Record<MediaKind, MediaRule> = {
+  goodsMedia: {
+    maxBytes: { "image/png": 2 * MB, "image/jpeg": 2 * MB, "video/mp4": 20 * MB },
+    typeHint: "PNG, JPG or MP4 only.",
+    notPicture: "This isn't a PNG or JPG picture.",
+    picture: (w, h) =>
+      w !== h
+        ? `The picture must be square. This one is ${w}×${h} px.`
+        : w < 420
+          ? `The picture must be at least 420×420 px. This one is ${w}×${h} px.`
+          : null,
+    maxSeconds: 60,
+  },
   ad: {
     maxBytes: { "image/png": 5 * MB, "image/jpeg": 5 * MB, "video/mp4": 100 * MB },
     typeHint: "JPG, PNG or MP4 only.",
@@ -57,7 +72,8 @@ const MEDIA_RULES: Record<Exclude<UploadKind, "goods">, MediaRule> = {
   },
 };
 
-export const ACCEPT: Record<Exclude<UploadKind, "goods">, string> = {
+export const ACCEPT: Record<MediaKind, string> = {
+  goodsMedia: "image/png,image/jpeg,video/mp4",
   ad: "image/png,image/jpeg,video/mp4",
   voice: "audio/mpeg,audio/aac,audio/wav,.mp3,.aac,.wav",
   logo: "image/png",
@@ -67,15 +83,19 @@ export const ACCEPT: Record<Exclude<UploadKind, "goods">, string> = {
 export const isPictureType = (type: string) => type === "image/png" || type === "image/jpeg";
 
 export function checkMedia(
-  kind: Exclude<UploadKind, "goods">,
+  kind: MediaKind,
   file: { name: string; type: string; size: number },
   size: Size | null,
+  seconds: number | null = null,
 ): string | null {
   const rule = MEDIA_RULES[kind];
   const type = contentTypeOf(file);
   const max = rule.maxBytes[type];
   if (max === undefined) return rule.typeHint;
   if (file.size > max) return `Up to ${max / MB} MB.`;
+  if (type === "video/mp4" && rule.maxSeconds && seconds !== null && seconds > rule.maxSeconds) {
+    return `Videos can be up to ${rule.maxSeconds} seconds.`;
+  }
   if (!isPictureType(type) || !rule.picture) return null;
   if (!size) return rule.notPicture;
   return rule.picture(size.width, size.height);
@@ -90,10 +110,25 @@ export function readPictureSize(url: string): Promise<Size | null> {
   });
 }
 
-export async function precheckMedia(kind: Exclude<UploadKind, "goods">, file: File): Promise<string | null> {
-  if (!isPictureType(contentTypeOf(file))) return checkMedia(kind, file, null);
+export function readVideoSeconds(url: string): Promise<number | null> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.onloadedmetadata = () => resolve(Number.isFinite(video.duration) ? video.duration : null);
+    video.onerror = () => resolve(null);
+    video.src = url;
+  });
+}
+
+export async function precheckMedia(kind: MediaKind, file: File): Promise<string | null> {
+  const type = contentTypeOf(file);
+  const early = checkMedia(kind, file, null);
+  const timed = type === "video/mp4" && MEDIA_RULES[kind].maxSeconds !== undefined;
+  if (!isPictureType(type) && (!timed || early)) return early;
   const local = URL.createObjectURL(file);
   try {
+    if (timed) return checkMedia(kind, file, null, await readVideoSeconds(local));
     return checkMedia(kind, file, await readPictureSize(local));
   } finally {
     URL.revokeObjectURL(local);

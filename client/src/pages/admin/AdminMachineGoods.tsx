@@ -243,7 +243,19 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
                   <Cell align="right" className="tabular-nums text-muted-foreground">{good.sort}</Cell>
                   <Cell className="min-w-[16rem]">
                     <span className="flex items-center gap-3">
-                      <GoodsPicture url={good.image?.url} alt={good.name} />
+                      <span className="relative shrink-0">
+                        <GoodsPicture url={good.image?.url} alt={good.name} />
+                        {good.media.length > 0 && (
+                          <span
+                            className="absolute -bottom-1 -right-1.5 rounded-full border border-border bg-card px-1 text-[10px] font-semibold leading-4 text-foreground"
+                            title={`${good.media.length} more pictures and videos`}
+                            data-testid={`gallery-count-${good.goodsId}`}
+                          >
+                            <span aria-hidden>+{good.media.length}</span>
+                            <span className="sr-only">{good.media.length} more pictures and videos</span>
+                          </span>
+                        )}
+                      </span>
                       <span className="min-w-0">
                         <span className="flex flex-wrap items-center gap-2">
                           <Link href={editHref} className="font-semibold text-foreground hover:underline">

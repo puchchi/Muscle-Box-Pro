@@ -240,6 +240,10 @@ export const goodSchema = z.object({
   ingredients: z.array(z.string()).optional().transform((v) => v ?? []),
   serveTemp: z.enum(["chilled", "hot"]).nullable().optional().transform((v) => v ?? null),
   comingSoon: z.boolean().nullable().optional().transform((v) => v === true),
+  media: z
+    .array(z.object({ url: z.string(), video: z.boolean() }))
+    .optional()
+    .transform((v) => v ?? []),
   rating: ratingSchema,
   machinesListed: count,
   version: z.number().int().min(0),
@@ -615,6 +619,7 @@ export type EquipmentLogRow = EquipmentLog["items"][number];
 export type OperationsLog = z.infer<typeof operationsLogSchema>;
 export type OperationsLogRow = OperationsLog["items"][number];
 export type UploadStart = z.infer<typeof uploadStartSchema>;
+export type GoodMedia = Good["media"][number];
 export type UploadedFile = z.infer<typeof uploadCompleteSchema>["file"];
 export type Ad = z.infer<typeof adSchema>;
 export type AdSchedule = Ad["schedules"][number];

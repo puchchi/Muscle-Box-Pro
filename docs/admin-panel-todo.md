@@ -136,6 +136,13 @@ backend is in `docs/stock-soon-feedback-asks.md`.
   The order links to the orders page only when `orderLinked`. A New badge in the menu
   (`newFeedbackCount.ts`) comes from `newCount` and follows saves. Opened from a rating link
   (`?type=review&sn=`), it shows every state.
+- **More pictures and videos** on a drink (`GoodsGallery.tsx`, brief
+  `mbp-machine/docs/HANDOFF-FRONTEND-GALLERY.md`): up to 7, picked several at a time and uploaded
+  one by one with the `goodsMedia` kind, with move left, move right and remove. Before uploading it
+  refuses anything but PNG, JPG or MP4, pictures over 2 MB or not square (420 px or more), videos
+  over 20 MB or 60 seconds, and files past the 7th. Save is off while uploading, and `media` is sent
+  in the order shown (`[]` when all are removed). The goods list shows "+3" on the thumbnail. The
+  backend side is `HANDOFF-BACKEND-GALLERY.md` §4; until it ships, a missing `media` reads as none.
 - **End quick picks** (`EndField` in `scopeBits.tsx`): +1 mo, +3 mo, +6 mo and +1 yr under End on
   ad schedule rows, Discounts and New products. They count from Start, or from now in IST when Start
   is empty. Jan 31 + 1 month is the last day of February (`machines/quickEnd.ts`).
