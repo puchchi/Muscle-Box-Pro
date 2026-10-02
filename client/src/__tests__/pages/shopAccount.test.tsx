@@ -153,6 +153,7 @@ describe("/drinks/account", () => {
     m.fetchMe.mockResolvedValue({ ok: false, error: { code: "signed_out", message: "Sign in again." } });
     render(<DrinkAccount sn={null} />);
     expect(await screen.findByTestId("signin-email-form")).toBeInTheDocument();
+    expect(screen.getByTestId("account-perks")).toHaveTextContent("Every 10th protein shake is free");
   });
 
   it("signs out, and deletes the account only after asking", async () => {

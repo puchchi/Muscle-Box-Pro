@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Gift, Loader2, LogOut, RotateCw, Trash2 } from "lucide-react";
+import { ArrowLeft, Gift, KeyRound, Loader2, LogOut, Receipt, RotateCw, Trash2 } from "lucide-react";
 import { formatInr, type ShopCustomer, type ShopMyCode, type ShopMyOrder } from "@shared/shop/shopSchema";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { deleteAccount, fetchMe, fetchMyCodes, fetchMyOrders, signOut } from "@/lib/shopApi";
@@ -71,15 +71,18 @@ export function DrinkAccount({ sn }: { sn: string | null }) {
         )}
 
         {view.kind === "signedOut" && (
-          <div className={SECTION}>
-            <p className="mb-4 text-gray-700">{ACCOUNT_COPY.signInLead}</p>
-            <SignInForm
-              sn={sn}
-              claimToken={savedOrders()[0]?.token ?? null}
-              submitLabel={ACCOUNT_COPY.signInTitle}
-              onSignedIn={(customer) => setView({ kind: "signedIn", customer })}
-            />
-          </div>
+          <>
+            <SignInPerks />
+            <div className={SECTION}>
+              <p className="mb-4 text-gray-700">{ACCOUNT_COPY.signInLead}</p>
+              <SignInForm
+                sn={sn}
+                claimToken={savedOrders()[0]?.token ?? null}
+                submitLabel={ACCOUNT_COPY.signInTitle}
+                onSignedIn={(customer) => setView({ kind: "signedIn", customer })}
+              />
+            </div>
+          </>
         )}
 
         {view.kind === "signedIn" && (
@@ -127,6 +130,56 @@ function SignedIn({ customer, onSignedOut, onDeleted }: { customer: ShopCustomer
   );
 }
 
+const PERK_ICONS = { gift: Gift, codes: KeyRound, orders: Receipt } as const;
+
+function SignInPerks() {
+  return (
+    <section className={SECTION} aria-labelledby="perks-title" data-testid="account-perks">
+      <h2 id="perks-title" className="text-lg font-bold text-gray-900">
+        {ACCOUNT_COPY.perksTitle}
+      </h2>
+      <div className="mt-4 rounded-xl bg-primary/5 p-4">
+        <StampRow filled={9} />
+        <p className="mt-2 text-center text-xs font-semibold text-primary-ink">{ACCOUNT_COPY.perksStamps}</p>
+      </div>
+      <ul className="mt-5 space-y-4">
+        {ACCOUNT_COPY.perks.map((perk) => {
+          const Icon = PERK_ICONS[perk.icon as keyof typeof PERK_ICONS];
+          return (
+            <li key={perk.title} className="flex gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
+                <Icon className="h-5 w-5" aria-hidden />
+              </span>
+              <span>
+                <span className="block font-semibold text-gray-900">{perk.title}</span>
+                <span className="mt-0.5 block text-sm leading-snug text-muted-foreground">{perk.body}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-gray-700">{ACCOUNT_COPY.perksJoin}</p>
+    </section>
+  );
+}
+
+function StampRow({ filled }: { filled: number }) {
+  return (
+    <ol className="grid grid-cols-10 gap-1.5 sm:gap-2" aria-hidden>
+      {Array.from({ length: 10 }, (_, i) => (
+        <li
+          key={i}
+          className={`flex aspect-square items-center justify-center rounded-full border-2 ${
+            i === 9 ? "border-dashed border-primary bg-white text-primary-ink" : i < filled ? "border-primary bg-primary-fill" : "border-gray-200 bg-gray-50"
+          }`}
+        >
+          {i === 9 && <Gift className="h-4 w-4" />}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function StampCard({ customer }: { customer: ShopCustomer }) {
   const filled = Math.min(customer.stamps, 9);
   return (
@@ -137,18 +190,9 @@ function StampCard({ customer }: { customer: ShopCustomer }) {
         </h2>
         <span className="text-sm font-semibold text-gray-700">{ACCOUNT_COPY.stampsCount(filled)}</span>
       </div>
-      <ol className="mt-4 grid grid-cols-10 gap-1.5 sm:gap-2" aria-hidden>
-        {Array.from({ length: 10 }, (_, i) => (
-          <li
-            key={i}
-            className={`flex aspect-square items-center justify-center rounded-full border-2 ${
-              i === 9 ? "border-dashed border-primary text-primary-ink" : i < filled ? "border-primary bg-primary-fill" : "border-gray-200 bg-gray-50"
-            }`}
-          >
-            {i === 9 && <Gift className="h-4 w-4" />}
-          </li>
-        ))}
-      </ol>
+      <div className="mt-4">
+        <StampRow filled={filled} />
+      </div>
       <p className="mt-3 text-sm text-muted-foreground">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
     </section>
   );
