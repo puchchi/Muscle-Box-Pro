@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import type { MachineRow } from "@shared/admin/machinesSchema";
 import { inputClass } from "./formBits";
+import { END_QUICK_MONTHS, quickEnd } from "./quickEnd";
 
 export function FieldError({ error, testId }: { error?: string; testId: string }) {
   if (!error) return null;
@@ -33,6 +34,44 @@ export function TimeField({
       <Input type="datetime-local" value={value} onChange={(event) => onChange(event.target.value)} className={inputClass} data-testid={testId} />
       <FieldError error={error} testId={`error-${testId}`} />
     </label>
+  );
+}
+
+export function EndField({
+  label = "End",
+  start,
+  value,
+  onChange,
+  error,
+  testId,
+}: {
+  label?: string;
+  start: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  testId: string;
+}) {
+  const from = start ? "after the start" : "from now";
+  return (
+    <div className="min-w-0 space-y-2">
+      <TimeField label={label} value={value} onChange={onChange} error={error} testId={testId} />
+      <div className="flex flex-wrap gap-1" role="group" aria-label={`Quick ${label.toLowerCase()}`}>
+        {END_QUICK_MONTHS.map(({ months, short, label: length }) => (
+          <button
+            key={months}
+            type="button"
+            onClick={() => onChange(quickEnd(start, months, Date.now()))}
+            className="min-h-8 rounded-full border border-border px-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+            aria-label={`End ${length} ${from}`}
+            title={`End ${length} ${from}`}
+            data-testid={`${testId}-plus-${months}`}
+          >
+            +{short}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

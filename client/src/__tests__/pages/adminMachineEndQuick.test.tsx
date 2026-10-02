@@ -28,8 +28,9 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import { addMonths, istNowInput, quickEnd } from "@/pages/admin/machines/adRules";
+import { addMonths, istNowInput, quickEnd } from "@/pages/admin/machines/quickEnd";
 import AdminMachineAdDetail from "@/pages/admin/AdminMachineAdDetail";
+import { PromotionForm } from "@/pages/admin/machines/PromotionForm";
 
 describe("addMonths", () => {
   it("keeps the day and time", () => {
@@ -90,9 +91,9 @@ describe("ad schedule End quick picks", () => {
 
   it("sets End from the row's Start", async () => {
     render(<AdminMachineAdDetail adId="AD1" />);
-    await userEvent.click(await screen.findByTestId("end-quick-3-0"));
+    await userEvent.click(await screen.findByTestId("end-0-plus-3"));
     expect(screen.getByTestId("end-0")).toHaveValue("2027-01-05T10:00");
-    await userEvent.click(screen.getByTestId("end-quick-12-0"));
+    await userEvent.click(screen.getByTestId("end-0-plus-12"));
     expect(screen.getByTestId("end-0")).toHaveValue("2027-10-05T10:00");
   });
 
@@ -100,8 +101,32 @@ describe("ad schedule End quick picks", () => {
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-02T04:30:00Z"));
     render(<AdminMachineAdDetail adId="AD1" />);
     await userEvent.click(await screen.findByTestId("button-add-row"));
-    await userEvent.click(screen.getByTestId("end-quick-1-1"));
+    await userEvent.click(screen.getByTestId("end-1-plus-1"));
     expect(screen.getByTestId("end-1")).toHaveValue("2026-11-02T10:00");
     expect(screen.getByTestId("start-1")).toHaveValue("");
+  });
+});
+
+describe("promotion End quick picks", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function renderForm() {
+    render(<PromotionForm kind="discount" promotion={null} goods={[]} machines={[]} submitLabel="Add" onSubmit={vi.fn()} onSaved={vi.fn()} />);
+  }
+
+  it("sets End from Start", async () => {
+    renderForm();
+    await userEvent.type(screen.getByTestId("promotion-start"), "2026-10-31T09:00");
+    await userEvent.click(screen.getByTestId("promotion-end-plus-6"));
+    expect(screen.getByTestId("promotion-end")).toHaveValue("2027-04-30T09:00");
+  });
+
+  it("sets End from now when Start is empty", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-02T04:30:00Z"));
+    renderForm();
+    await userEvent.click(screen.getByTestId("promotion-end-plus-12"));
+    expect(screen.getByTestId("promotion-end")).toHaveValue("2027-10-02T10:00");
   });
 });

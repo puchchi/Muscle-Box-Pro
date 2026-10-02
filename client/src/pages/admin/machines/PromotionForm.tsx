@@ -9,7 +9,7 @@ import type { PromotionInput } from "@shared/admin/machines";
 import type { Good, MachineRow, Promotion, PromotionKind, PromotionSave } from "@shared/admin/machinesSchema";
 import { Card } from "../AdminUi";
 import { FormRow, inputClass, NativeSelect, TextInput } from "./formBits";
-import { FieldError, MachineScopeField, TimeField } from "./scopeBits";
+import { EndField, FieldError, MachineScopeField, TimeField } from "./scopeBits";
 import { formatRupees, problemOf, ProblemPanel, type Problem } from "./MachinesUi";
 import { blankItem, MAX_PROMOTION_ITEMS, PROMOTION_NAME_MAX, validatePromotion, valuesOf, type PromotionValues } from "./promotionRules";
 
@@ -90,7 +90,7 @@ export function PromotionForm({
             <TextInput id="promotion-name" value={values.name} onChange={(name) => set("name", name)} />
           </FormRow>
           <TimeField label="Start" value={values.start} onChange={(start) => set("start", start)} error={errors.start} testId="promotion-start" />
-          <TimeField label="End" value={values.end} onChange={(end) => set("end", end)} error={errors.end} testId="promotion-end" />
+          <EndField start={values.start} value={values.end} onChange={(end) => set("end", end)} error={errors.end} testId="promotion-end" />
         </div>
       </Card>
 

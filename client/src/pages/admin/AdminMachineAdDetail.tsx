@@ -15,12 +15,10 @@ import { Card, Pill, SuccessPanel } from "./AdminUi";
 import { AdForm } from "./machines/AdForm";
 import { inputClass } from "./machines/formBits";
 import { appStartNotice } from "./machines/mediaBits";
-import { FieldError, MachinePicker, TimeField } from "./machines/scopeBits";
+import { EndField, FieldError, MachinePicker, TimeField } from "./machines/scopeBits";
 import {
   blankRow,
-  END_QUICK_MONTHS,
   MAX_SCHEDULE_ROWS,
-  quickEnd,
   rowsOf,
   scheduleState,
   validateSchedules,
@@ -265,24 +263,7 @@ function ScheduleCard({
 
                 <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem] lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem]">
                   <TimeField label="Start" value={row.start} onChange={(start) => update(row.key, { start })} error={errors[`${at}.start`]} testId={`start-${i}`} />
-                  <div className="min-w-0 space-y-2">
-                    <TimeField label="End" value={row.end} onChange={(end) => update(row.key, { end })} error={errors[`${at}.end`]} testId={`end-${i}`} />
-                    <div className="flex flex-wrap gap-1" role="group" aria-label="Quick end">
-                      {END_QUICK_MONTHS.map(({ months, short, label }) => (
-                        <button
-                          key={months}
-                          type="button"
-                          onClick={() => update(row.key, { end: quickEnd(row.start, months, Date.now()) })}
-                          className="min-h-8 rounded-full border border-border px-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
-                          aria-label={`End ${label} ${row.start ? "after the start" : "from now"}`}
-                          title={`End ${label} ${row.start ? "after the start" : "from now"}`}
-                          data-testid={`end-quick-${months}-${i}`}
-                        >
-                          +{short}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <EndField start={row.start} value={row.end} onChange={(end) => update(row.key, { end })} error={errors[`${at}.end`]} testId={`end-${i}`} />
                   <label className="space-y-1.5">
                     <span className="block text-sm font-semibold text-muted-foreground">Order</span>
                     <Input
