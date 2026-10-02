@@ -9,6 +9,7 @@ Status: decided by Anurag 2026-10-01, not yet sent. These amend `mbp-backend/doc
    gets no "Connect MQTT", certificate details or MQTT status on the machine page, and no "Website start" on
    orders. Spec §6.1's Start routes, §6.5's dashboard items and §6.7 have no website or dashboard caller.
 2. **A guest can email themselves the code.** No SMS (it needs DLT). Emailing does not create an account.
+3. **The 10th drink is free, not the 11th** (decided 2026-10-02). Nine paid drinks, then a free one.
 
 ## Backend (mbp-backend)
 
@@ -32,6 +33,12 @@ say whether the MQTT work is parked or kept for something else, such as the `ref
 machine, the machine makes nothing and never reports, so the customer has paid for a drink they did not get.
 Please say whether this can happen today, and if so, give the use back when no `produceOver` or `produceFail`
 arrives within 5 minutes. This is machine BACKEND-REQUESTS #5, applied to typed codes.
+
+
+**B3. The reward comes after 9 stamps.** The spec says that on the 10th stamp a reward code is issued and 10 stamps
+are taken off, which makes the 11th drink the free one. Decision 3 wants the 10th. So issue the reward on the 9th
+stamp and take 9 off; the free drink is the 10th, and as before it earns no stamp. The idempotency key
+`reward:<customerId>:<n>` is unchanged. The website will show the card as 9 boxes with "Your 10th drink is free".
 
 ## Website (Muscle-Box-Pro)
 

@@ -165,8 +165,9 @@ beyond `soldOut`.
 ### 5.4 Stamps
 
 - A signed-in customer's paid website drink earns 1 stamp, once per order.
-- On the 10th stamp: issue a reward code (§4.4: `shop_reward`, any drink, any machine, 1 use, never expires) and
-  take 10 stamps off. The reward is idempotent on `reward:<customerId>:<n>`.
+- On the 9th stamp: issue a reward code (§4.4: `shop_reward`, any drink, any machine, 1 use, never expires) and
+  take 9 stamps off, so the reward is the 10th drink (decided 2026-10-02). The reward is idempotent on
+  `reward:<customerId>:<n>`.
 - A reward drink earns no stamp.
 - Drinks paid on the machine's own pay screen earn none (they are anonymous). A later phase could change that.
 - A refund removes the order's stamp. If that stamp already turned into a reward, the count can go below zero
