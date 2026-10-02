@@ -197,6 +197,7 @@ in a new AWS shop service, not Supabase.
         `mbp:shop-signed-in`, so a phone that never signed in doesn't call `GET me`.
 - [ ] **Phase 1c, website:** `/join`.
 - [ ] **Prepaid balance:** decided, needs backend. See `docs/shop-balance-asks.md`.
+- [ ] **Sign in with Google:** decided, needs backend. See `docs/shop-google-signin-asks.md`.
 - [x] **Dashboard: Redeem Codes source** (2026-10-02). A Source column and filter (Admin, Shop
       purchase, Shop reward) with the shop order id. Shop codes are read-only, because the backend
       refuses edit, disable and delete on them: the row offers View and Usage, and the detail page
