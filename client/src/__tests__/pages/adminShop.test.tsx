@@ -53,6 +53,7 @@ import AdminShopOrderDetail from "@/pages/admin/AdminShopOrderDetail";
 import AdminShopCustomers from "@/pages/admin/AdminShopCustomers";
 import AdminShopCustomerDetail, { balanceRefundNotice } from "@/pages/admin/AdminShopCustomerDetail";
 import { shopOrderOfCode } from "@/pages/admin/machines/shopBits";
+import { withFreeCodes } from "@/pages/admin/machines/shopOrderRules";
 
 const wireOrder = (over: Record<string, unknown> = {}) => ({
   shopOrderId: "so_1",
@@ -76,7 +77,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.search.mockImplementation(() => new URLSearchParams());
   m.fetchAllMachines.mockResolvedValue(ok([]));
+  m.fetchShopCustomer.mockResolvedValue({ ok: false, error: { code: "not_found", message: "Not found." } });
 });
+
+const known = (rewards: unknown[] = [], email: string | null = "asha@example.com") =>
+  shopCustomerDetailSchema.parse({ customer: { customerId: "cu_1", email, stamps: 0, createdAt: 1 }, rewards });
 
 describe("Shop orders list", () => {
   it("lists this month's orders and takes the customer from the link", async () => {
@@ -87,6 +92,47 @@ describe("Shop orders list", () => {
     expect(within(row).getByText("₹99")).toBeInTheDocument();
     expect(within(row).getByTestId("shop-status-so_1")).toHaveTextContent("Code issued");
     expect(m.fetchShopOrders).toHaveBeenCalledWith(expect.objectContaining({ customerId: "cu_1", month: expect.stringMatching(/^\d{4}-\d{2}$/) }), null);
+  });
+});
+
+describe("Shop orders list, customers and free codes", () => {
+  const NOW = Date.parse("2026-10-03T12:00:00Z");
+  const later = () => order({ shopOrderId: "so_2", createdAt: "2026-10-02T06:00:00.000Z" });
+  const reward = (over: Record<string, unknown> = {}) => ({ n: 1, status: "coded", code: "55554444", createdAt: "2026-10-02T05:30:00.000Z", codedAt: "2026-10-02T05:30:01.000Z", ...over });
+  const kinds = (rows: ReturnType<typeof withFreeCodes>) => rows.map((r) => (r.kind === "order" ? r.order.shopOrderId : `free${r.n}`));
+
+  it("shows each customer's email, and their free codes among the orders, marked free", async () => {
+    m.search.mockImplementation(() => new URLSearchParams("customerId=cu_1"));
+    m.fetchShopOrders.mockResolvedValue(ok({ items: [later(), order()], nextCursor: null }));
+    m.fetchShopCustomer.mockResolvedValue(ok(known([reward()])));
+    render(<AdminShopOrders />);
+
+    expect(await screen.findByTestId("row-free-code-cu_1-1")).toHaveTextContent("Free drink 1");
+    const rows = within(screen.getByTestId("shop-orders-table")).getAllByRole("row").slice(1);
+    expect(rows.map((r) => r.dataset.testid)).toEqual(["row-shop-order-so_2", "row-free-code-cu_1-1", "row-shop-order-so_1"]);
+    expect(screen.getByTestId("free-status-cu_1-1")).toHaveTextContent("Free code");
+    expect(within(rows[1]!).getByRole("link", { name: "55554444" })).toHaveAttribute("href", "/machines/redeem-codes/55554444");
+    expect(within(rows[0]!).getByTestId("customer-email-cu_1")).toHaveTextContent("asha@example.com");
+    expect(m.fetchShopCustomer).toHaveBeenCalledTimes(1);
+  });
+
+  it("puts free codes only where they belong: this month, no machine or other status filter, within the loaded rows", () => {
+    const customers = new Map([["cu_1", known([reward(), reward({ n: 2, status: "pending", code: null, createdAt: "2026-10-02T07:00:00.000Z" }), reward({ n: 3, createdAt: "2026-09-30T07:00:00.000Z" })])]]);
+    const orders = [later(), order()];
+    expect(kinds(withFreeCodes(orders, customers, { month: "2026-10" }, false, NOW))).toEqual(["free2", "so_2", "free1", "so_1"]);
+    expect(kinds(withFreeCodes(orders, customers, {}, false, NOW))).toEqual(["free2", "so_2", "free1", "so_1"]);
+    expect(kinds(withFreeCodes(orders, customers, { month: "2026-10", status: "coded" }, false, NOW))).toEqual(["so_2", "free1", "so_1"]);
+    expect(kinds(withFreeCodes(orders, customers, { month: "2026-10", status: "refunded" }, false, NOW))).toEqual(["so_2", "so_1"]);
+    expect(kinds(withFreeCodes(orders, customers, { month: "2026-10", sn: "S1" }, false, NOW))).toEqual(["so_2", "so_1"]);
+    expect(kinds(withFreeCodes([later()], customers, { month: "2026-10" }, true, NOW))).toEqual(["free2", "so_2"]);
+    expect(kinds(withFreeCodes(orders, customers, { customerId: "cu_1" }, false, NOW))).toEqual(["free2", "so_2", "free1", "so_1", "free3"]);
+  });
+
+  it("names the customer on the order page, and a deleted account as one", async () => {
+    m.fetchShopOrder.mockResolvedValue(ok({ order: order() }));
+    m.fetchShopCustomer.mockResolvedValue(ok(known([], null)));
+    render(<AdminShopOrderDetail orderId="so_1" />);
+    expect(await screen.findByTestId("customer-email-cu_1")).toHaveTextContent("Deleted account");
   });
 });
 

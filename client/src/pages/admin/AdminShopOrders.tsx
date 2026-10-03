@@ -27,8 +27,11 @@ import {
   type Problem,
 } from "./machines/MachinesUi";
 import { istToday } from "./machines/statsRules";
-import { SHOP_STATUS_LABEL } from "./machines/shopOrderRules";
-import { CustomerCell, ShopNotConfigured, shopOrderHref, ShopStatusPill } from "./machines/shopBits";
+import { SHOP_STATUS_LABEL, withFreeCodes, type FreeCode } from "./machines/shopOrderRules";
+import { CustomerCell, FREE_LABEL, ShopNotConfigured, shopOrderHref, ShopStatusPill } from "./machines/shopBits";
+import { useShopCustomers } from "./machines/useShopCustomers";
+import { Pill } from "./AdminUi";
+import type { ShopCustomerRow } from "@shared/admin/shopAdminSchema";
 
 export default function AdminShopOrders() {
   const guard = useAdminGuard();
@@ -86,6 +89,9 @@ function ShopOrders({ session }: { session: AdminSession }) {
     void page(null);
   }, [page]);
 
+  const customers = useShopCustomers([...rows.map((o) => o.customerId), filters.customerId]);
+  const list = withFreeCodes(rows, customers, filters, cursor !== null, Date.now());
+
   const set = (key: keyof Draft) => (value: string) => setDraft((d) => ({ ...d, [key]: value }));
 
   return (
@@ -121,10 +127,13 @@ function ShopOrders({ session }: { session: AdminSession }) {
               <Col>Status</Col>
             </Head>
             <tbody className="divide-y divide-border/70">
-              {rows.length === 0 ? (
+              {list.length === 0 ? (
                 <NoData colSpan={8} loading={loading} />
               ) : (
-                rows.map((order) => (
+                list.map((row) => {
+                  if (row.kind === "free") return <FreeRow key={`free-${row.customerId}-${row.n}`} free={row} customer={customers.get(row.customerId)?.customer} />;
+                  const order = row.order;
+                  return (
                   <tr key={order.shopOrderId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-shop-order-${order.shopOrderId}`}>
                     <Cell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">{formatIstStamp(order.createdAt)}</Cell>
                     <Cell className="whitespace-nowrap font-mono text-xs">
@@ -143,13 +152,14 @@ function ShopOrders({ session }: { session: AdminSession }) {
                       {order.reissues > 0 && <span className="block font-sans text-[11px] text-muted-foreground">Reissued</span>}
                     </Cell>
                     <Cell className="whitespace-nowrap">
-                      <CustomerCell customerId={order.customerId} />
+                      <CustomerCell customerId={order.customerId} customer={order.customerId ? customers.get(order.customerId)?.customer : undefined} />
                     </Cell>
                     <Cell className="whitespace-nowrap">
                       <ShopStatusPill status={order.status} testId={`shop-status-${order.shopOrderId}`} />
                     </Cell>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </DataTable>
@@ -157,5 +167,37 @@ function ShopOrders({ session }: { session: AdminSession }) {
         </>
       )}
     </MachinesShell>
+  );
+}
+
+function FreeRow({ free, customer }: { free: FreeCode; customer?: ShopCustomerRow }) {
+  return (
+    <tr className="bg-fuchsia-400/[0.03]" data-testid={`row-free-code-${free.customerId}-${free.n}`}>
+      <Cell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">{formatIstStamp(free.at)}</Cell>
+      <Cell className="whitespace-nowrap">
+        <span className="block text-foreground">Free drink {free.n}</span>
+        <span className="block text-xs text-muted-foreground">From the stamp card</span>
+      </Cell>
+      <Cell className="whitespace-nowrap text-muted-foreground">Any machine</Cell>
+      <Cell className="min-w-[10rem] text-muted-foreground">Any drink</Cell>
+      <Cell align="right" className="whitespace-nowrap">Free</Cell>
+      <Cell className="whitespace-nowrap font-mono text-xs">
+        {free.code ? (
+          <Link href={`/machines/redeem-codes/${encodeURIComponent(free.code)}`} className="text-primary hover:underline">
+            {free.code}
+          </Link>
+        ) : (
+          <span className="font-sans text-muted-foreground">Being made</span>
+        )}
+      </Cell>
+      <Cell className="whitespace-nowrap">
+        <CustomerCell customerId={free.customerId} customer={customer} />
+      </Cell>
+      <Cell className="whitespace-nowrap">
+        <Pill className={FREE_LABEL.className} testId={`free-status-${free.customerId}-${free.n}`}>
+          {FREE_LABEL.text}
+        </Pill>
+      </Cell>
+    </tr>
   );
 }

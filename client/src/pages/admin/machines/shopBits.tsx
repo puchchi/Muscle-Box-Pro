@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ShopAdminStatus } from "@shared/admin/shopAdminSchema";
+import type { ShopAdminStatus, ShopCustomerRow } from "@shared/admin/shopAdminSchema";
 import { Pill } from "../AdminUi";
 import { WarningPanel } from "./WarningPanel";
 import { SHOP_STATUS_LABEL } from "./shopOrderRules";
@@ -30,11 +30,23 @@ export function shopOrderOfCode(shopOrderId: string): string | null {
 
 export const customerHref = (id: string) => `/machines/customers/${encodeURIComponent(id)}`;
 
-export function CustomerCell({ customerId }: { customerId: string | null }) {
+export function CustomerCell({ customerId, customer }: { customerId: string | null; customer?: ShopCustomerRow }) {
   if (!customerId) return <span className="text-muted-foreground">Guest</span>;
+  if (!customer) {
+    return (
+      <Link href={customerHref(customerId)} className="font-mono text-xs text-primary hover:underline">
+        {customerId}
+      </Link>
+    );
+  }
   return (
-    <Link href={customerHref(customerId)} className="font-mono text-xs text-primary hover:underline">
-      {customerId}
-    </Link>
+    <span className="block">
+      <Link href={customerHref(customerId)} className="text-primary hover:underline" data-testid={`customer-email-${customerId}`}>
+        {customer.email ?? "Deleted account"}
+      </Link>
+      <span className="block font-mono text-xs text-muted-foreground">{customerId}</span>
+    </span>
   );
 }
+
+export const FREE_LABEL = { text: "Free code", className: "bg-fuchsia-400/10 text-fuchsia-200" };

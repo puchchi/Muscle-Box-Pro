@@ -237,6 +237,16 @@ in a new AWS shop service, not Supabase.
           `POST shop-admin/payouts/{payoutId}/resolve` with refunded or not refunded. Not refunded
           puts the amount back on the balance. The dialog names the Razorpay payment to look up.
         - The page reloads the customer after either, so the balance and history are the server's.
+      - Shop orders, emails and free codes (2026-10-03). An order carries only `customerId`, so the
+        list and the order page look each customer up once (`GET shop-admin/customers/{id}`) and
+        show their email over the id. Free codes are rewards, not orders, and no route lists them
+        by month. So the list merges in the free codes of the customers it has loaded, at the time
+        each was made, as "Free drink N", "Any machine", "Free" and a "Free code" pill. Hidden under
+        a machine filter (a free code works at any machine) or a status other than Code issued, and
+        none older than the last loaded order while there is more to load. The gap: a free code
+        whose customer has no order in the loaded rows is not listed. That needs the backend to
+        list rewards by month, and to put the email on the order row, which would also save the
+        lookups.
       - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
       - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
         Production is `https://api.muscleboxpro.com/shop-admin`. Restart `next dev` after setting it.
