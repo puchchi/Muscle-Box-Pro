@@ -12,6 +12,7 @@ import { payWithRazorpay } from "@/lib/razorpayCheckout";
 import { AccountLink, ShopHeader, accountHref } from "./ShopHolding";
 import { ACCOUNT_COPY, PAY_COPY, SHOP_COPY, SIGNIN_COPY } from "./shopCopy";
 import { MachineScreenMock } from "./MachineScreenMock";
+import { StampSlots } from "./DrinkAccount";
 import { SignInForm } from "./SignInForm";
 import { CONTAINER } from "./shopUi";
 import { receiptHref, saveOrder, savedOrders, type SavedOrder } from "./savedOrders";
@@ -80,6 +81,8 @@ export function DrinksShop({ sn }: { sn: string }) {
   }
 
   const selling = menu !== null && menu.online && menu.enabled;
+  const showMember = !loadError && menu !== null && menu.drinks.length > 0;
+  const sidebar = showMember || saved.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50" data-testid="shop-menu-page">
@@ -95,9 +98,7 @@ export function DrinksShop({ sn }: { sn: string }) {
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-gray-600">{SHOP_COPY.lead}</p>
         </div>
 
-        {!loadError && menu !== null && menu.drinks.length > 0 && <MemberStrip sn={sn} customer={customer} />}
-
-        <section className="mt-6 space-y-5" aria-label="Menu">
+        <div className="mt-6 space-y-3 empty:hidden">
           {menu && !menu.online && <Banner tone="warn" testId="shop-offline">{SHOP_COPY.offlineNotice}</Banner>}
           {menu && menu.online && !menu.enabled && <Banner tone="warn" testId="shop-disabled">{SHOP_COPY.disabledNotice}</Banner>}
           {notice?.kind === "error" && (
@@ -114,31 +115,44 @@ export function DrinksShop({ sn }: { sn: string }) {
               </a>
             </Banner>
           )}
+        </div>
 
-          {loadError ? (
-            <LoadError sn={sn} message={loadError} onRetry={() => void load()} />
-          ) : menu === null ? (
-            <MenuSkeleton />
-          ) : menu.drinks.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600" data-testid="shop-empty">
-              {SHOP_COPY.emptyMenu}
-            </p>
-          ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4" data-testid="shop-drinks">
-              {menu.drinks.map((drink) => (
-                <DrinkCard
-                  key={drink.goodsId}
-                  drink={drink}
-                  selling={selling}
-                  busy={busy === drink.goodsId}
-                  locked={busy !== null}
-                  onBuy={() => startBuy(drink)}
-                />
-              ))}
-            </ul>
+        <div className={`mt-6 grid gap-6 lg:gap-8 ${sidebar ? "lg:grid-cols-12 lg:grid-rows-[auto_1fr]" : ""}`}>
+          {showMember && (
+            <div className="lg:col-span-4 lg:col-start-9 lg:row-start-1">
+              <MemberCard sn={sn} customer={customer} />
+            </div>
           )}
-
-          {saved.length > 0 && <SavedOrders orders={saved} sn={sn} signedIn={customer !== null} />}
+          <section className={sidebar ? "lg:col-span-8 lg:row-span-2 lg:row-start-1" : ""} aria-label="Menu">
+            {loadError ? (
+              <LoadError sn={sn} message={loadError} onRetry={() => void load()} />
+            ) : menu === null ? (
+              <MenuSkeleton wide={!sidebar} />
+            ) : menu.drinks.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-600" data-testid="shop-empty">
+                {SHOP_COPY.emptyMenu}
+              </p>
+            ) : (
+              <ul className={`grid gap-4 sm:grid-cols-2 lg:gap-6 ${sidebar ? "" : "lg:grid-cols-3 xl:grid-cols-4"}`} data-testid="shop-drinks">
+                {menu.drinks.map((drink) => (
+                  <DrinkCard
+                    key={drink.goodsId}
+                    drink={drink}
+                    selling={selling}
+                    busy={busy === drink.goodsId}
+                    locked={busy !== null}
+                    onBuy={() => startBuy(drink)}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+          {saved.length > 0 && (
+            <div className="lg:col-span-4 lg:col-start-9 lg:row-start-2">
+              <SavedOrders orders={saved} sn={sn} signedIn={customer !== null} />
+            </div>
+          )}
+        </div>
           <PayChoice
             sn={sn}
             drink={choosing}
@@ -150,7 +164,6 @@ export function DrinksShop({ sn }: { sn: string }) {
               void buy(drink, true);
             }}
           />
-        </section>
 
         <section className="mt-14 border-t border-gray-200 pt-10 lg:mt-20 lg:pt-14" aria-labelledby="how-title">
           <div className="grid gap-10 lg:grid-cols-12 lg:items-center lg:gap-12">
@@ -183,52 +196,41 @@ export function DrinksShop({ sn }: { sn: string }) {
   );
 }
 
-function MemberStrip({ sn, customer }: { sn: string; customer: ShopCustomer | null }) {
-  if (customer) {
-    return (
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4" data-testid="shop-signed-in">
-        <span className="flex min-w-0 items-center gap-3">
-          <Gift className="h-5 w-5 shrink-0 text-primary-ink" aria-hidden />
-          <span className="min-w-0">
-            <span className="block truncate text-sm text-gray-600">{PAY_COPY.signedInAs(customer.email)}</span>
-            <span className="block font-semibold text-gray-900">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</span>
-          </span>
-        </span>
-        <span className="flex w-full items-center gap-3 pl-8 sm:w-auto sm:pl-0">
-          <StampDots filled={Math.min(customer.stamps, 9)} />
-          <span className="text-sm font-semibold text-gray-700">{ACCOUNT_COPY.stampsCount(Math.min(customer.stamps, 9))}</span>
-        </span>
-      </div>
-    );
-  }
+function MemberCard({ sn, customer }: { sn: string; customer: ShopCustomer | null }) {
+  const filled = customer ? Math.min(customer.stamps, 9) : 0;
   return (
-    <div className="mt-6 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 sm:gap-4 sm:px-5" data-testid="shop-member-strip">
-      <Gift className="hidden h-5 w-5 shrink-0 text-primary-ink sm:block" aria-hidden />
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-gray-900 sm:text-base">{SHOP_COPY.memberTitle}</span>
-        <span className="block text-sm leading-snug text-gray-700">{SHOP_COPY.memberBody}</span>
-      </span>
-      <Link
-        href={accountHref(sn)}
-        className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {SHOP_COPY.memberCta}
-      </Link>
-    </div>
-  );
-}
-
-function StampDots({ filled }: { filled: number }) {
-  return (
-    <span className="flex items-center gap-1" aria-hidden>
-      {Array.from({ length: 10 }, (_, i) =>
-        i === 9 ? (
-          <Gift key={i} className="h-4 w-4 text-primary-ink" />
+    <div
+      className="relative overflow-hidden rounded-3xl bg-gray-900 p-5 text-white shadow-xl shadow-gray-900/10 sm:p-6"
+      data-testid={customer ? "shop-signed-in" : "shop-member-strip"}
+    >
+      <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/40 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-accent/30 blur-3xl" aria-hidden />
+      <div className="relative">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/80">{ACCOUNT_COPY.cardLabel}</span>
+          {customer && <span className="text-sm font-semibold">{ACCOUNT_COPY.stampsCount(filled)}</span>}
+        </div>
+        {customer ? (
+          <p className="mt-3 text-lg font-semibold leading-snug">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
         ) : (
-          <span key={i} className={`h-2.5 w-2.5 rounded-full ${i < filled ? "bg-primary" : "bg-gray-200"}`} />
-        ),
-      )}
-    </span>
+          <p className="mt-3 text-lg font-semibold leading-snug">{SHOP_COPY.memberTitle}</p>
+        )}
+        <StampSlots filled={filled} className="mt-4 grid grid-cols-10 gap-1.5 sm:gap-2 lg:grid-cols-5 lg:gap-2.5" />
+        {customer ? (
+          <p className="mt-4 truncate text-sm text-white/70">{PAY_COPY.signedInAs(customer.email)}</p>
+        ) : (
+          <>
+            <p className="mt-4 text-sm leading-relaxed text-white/75">{SHOP_COPY.memberBody}</p>
+            <Link
+              href={accountHref(sn)}
+              className="mt-4 inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-gray-900 transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
+            >
+              {SHOP_COPY.memberCta}
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -458,9 +460,9 @@ function LoadError({ sn, message, onRetry }: { sn: string; message: string; onRe
   );
 }
 
-function MenuSkeleton() {
+function MenuSkeleton({ wide }: { wide: boolean }) {
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4" aria-busy="true" aria-label="Loading the menu" data-testid="shop-loading">
+    <ul className={`grid gap-4 sm:grid-cols-2 lg:gap-6 ${wide ? "lg:grid-cols-3 xl:grid-cols-4" : ""}`} aria-busy="true" aria-label="Loading the menu" data-testid="shop-loading">
       {[0, 1, 2].map((i) => (
         <li key={i} className="flex animate-pulse overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200/80 sm:flex-col sm:rounded-3xl">
           <span className="h-28 w-32 shrink-0 bg-gray-100 sm:aspect-[4/3] sm:h-auto sm:w-full" />
@@ -477,36 +479,33 @@ function MenuSkeleton() {
 
 function SavedOrders({ orders, sn, signedIn }: { orders: SavedOrder[]; sn: string; signedIn: boolean }) {
   return (
-    <section className="mt-10" aria-labelledby="shop-saved-title" data-testid="shop-saved">
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <h2 id="shop-saved-title" className="text-xl font-bold text-gray-900">
+    <section className="rounded-2xl border border-gray-200 bg-white" aria-labelledby="shop-saved-title" data-testid="shop-saved">
+      <div className="flex items-baseline justify-between gap-3 px-4 pb-1 pt-4 sm:px-5">
+        <h2 id="shop-saved-title" className="text-base font-semibold tracking-tight text-gray-900">
           {SHOP_COPY.savedTitle}
         </h2>
         {signedIn && (
-          <Link href={accountHref(sn)} className="inline-flex items-center gap-1 text-sm font-semibold text-primary-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Link href={accountHref(sn)} className="text-sm font-semibold text-primary-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             {SHOP_COPY.savedAll}
-            <ChevronRight className="h-4 w-4" aria-hidden />
           </Link>
         )}
       </div>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+      <ul className="divide-y divide-gray-100 pb-1">
         {orders.slice(0, 3).map((order) => (
           <li key={order.token}>
             <a
               href={receiptHref(order.token)}
               aria-label={`${SHOP_COPY.savedOpen}: ${order.drinkName}`}
-              className="flex cursor-pointer items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200/80 transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors duration-200 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none sm:px-5"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <Receipt className="h-5 w-5 text-primary-ink" aria-hidden />
-              </span>
+              <Receipt className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-gray-900">{order.drinkName}</span>
-                <span className="block text-sm text-gray-600">
+                <span className="block truncate text-sm font-medium text-gray-900">{order.drinkName}</span>
+                <span className="block text-xs text-gray-600">
                   {new Date(order.savedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}
                 </span>
               </span>
-              <ChevronRight className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />
+              <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
             </a>
           </li>
         ))}
