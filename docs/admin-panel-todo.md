@@ -209,12 +209,17 @@ in a new AWS shop service, not Supabase.
         `/machines/shop-orders/[orderId]` with Refund, Try the refund again, Reissue for another
         drink, and Finish reissue when one was left half done. Every action needs a reason (200
         characters, the backend's limit). Reissue offers only drinks at or below the price paid.
-      - `/machines/customers` and `/machines/customers/[customerId]`. The customer's email is shown
-        only on their own page; list rows drop it. A guest's email is shown on the order page.
+      - `/machines/customers` and `/machines/customers/[customerId]`. A guest's email is shown on the
+        order page.
+      - Customers list (2026-10-03): each row leads with the email (the route already returns it, so
+        hiding it protected nothing), then name, joining machine, stamps, drinks, free drinks,
+        balance and join date. A deleted account shows "Deleted account" and no email. The find box
+        filters the rows already loaded, by email, name, id or machine; nothing typed in it is sent.
       - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
       - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
         Production is `https://api.muscleboxpro.com/shop-admin`. Restart `next dev` after setting it.
-      - Not used yet: `GET shop-admin/customers?email=` (an email in a query string), and the
+      - Not used yet: `GET shop-admin/customers?email=` (an email in a query string, so it would land
+        in API access logs), and the
         `already` and `resumed` flags, since the page reloads the order after every action.
 - **Not doing (decided 2026-10-01):** phone Start. No "Connect MQTT", certificate details or MQTT
       status on the machine page, and no "Website start" on orders. Customers type the code.

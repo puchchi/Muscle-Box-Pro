@@ -100,6 +100,7 @@ export const shopAdminOrderEnvelopeSchema = z
 
 export const shopCustomerRowSchema = z.object({
   customerId: z.string().min(1),
+  email: maybe,
   name: maybe,
   joinedSn: maybe,
   joinedGymId: maybe,
@@ -108,6 +109,7 @@ export const shopCustomerRowSchema = z.object({
   stamps: z.number().int(),
   lifetimeDrinks: tally,
   rewardsIssued: tally,
+  balancePaise: tally,
   deletedAt: stamp,
 });
 
@@ -123,7 +125,7 @@ const rewardSchema = z.object({
 });
 
 export const shopCustomerDetailSchema = z.object({
-  customer: shopCustomerRowSchema.extend({ email: maybe }),
+  customer: shopCustomerRowSchema,
   orders: listOf(shopAdminOrderSchema),
   nextCursor: cursor,
   rewards: listOf(rewardSchema),

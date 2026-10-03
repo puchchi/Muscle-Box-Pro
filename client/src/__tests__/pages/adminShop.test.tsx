@@ -178,16 +178,31 @@ describe("Shop order detail", () => {
 });
 
 describe("Customers", () => {
-  it("never shows an email in the list, and shows it on the customer's own page", async () => {
+  it("lists each customer by email with their balance, and finds one in the loaded rows", async () => {
+    const asha = shopCustomerRowSchema.parse({ customerId: "cu_1", email: "asha@example.com", name: "Asha", joinedSn: "GS805TEST01", stamps: 4, lifetimeDrinks: 13, rewardsIssued: 1, balancePaise: 25000, createdAt: 1 });
+    const ravi = shopCustomerRowSchema.parse({ customerId: "cu_2", email: "ravi@example.com", stamps: 0, createdAt: 2 });
+    const gone = shopCustomerRowSchema.parse({ customerId: "cu_3", email: null, stamps: 0, createdAt: 3, deletedAt: 4 });
+    m.fetchShopCustomers.mockResolvedValue(ok({ items: [asha, ravi, gone], nextCursor: "c2" }));
+    render(<AdminShopCustomers />);
+
+    const row = await screen.findByTestId("row-customer-cu_1");
+    expect(within(row).getByRole("link", { name: "asha@example.com" })).toHaveAttribute("href", "/machines/customers/cu_1");
+    expect(row).toHaveTextContent("₹250");
+    expect(screen.getByTestId("row-customer-cu_2")).toHaveTextContent("₹0");
+    expect(screen.getByTestId("row-customer-cu_3")).toHaveTextContent("Deleted account");
+    expect(screen.getByTestId("customers-count")).toHaveTextContent("3 loaded. Load more to search further.");
+
+    await userEvent.setup().type(screen.getByTestId("customers-find"), "RAVI");
+    expect(screen.queryByTestId("row-customer-cu_1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("row-customer-cu_2")).toBeInTheDocument();
+    expect(screen.getByTestId("customers-count")).toHaveTextContent("1 of 3 loaded");
+  });
+
+  it("shows the customer's own page", async () => {
     const row = shopCustomerRowSchema.parse({ customerId: "cu_1", name: "Asha", stamps: 4, lifetimeDrinks: 13, rewardsIssued: 1, createdAt: 1, email: "asha@example.com" });
-    m.fetchShopCustomers.mockResolvedValue(ok({ items: [row], nextCursor: null }));
-    const { unmount, container } = render(<AdminShopCustomers />);
-    await screen.findByTestId("row-customer-cu_1");
-    expect(container.textContent).not.toContain("asha@example.com");
-    unmount();
 
     m.fetchShopCustomer.mockResolvedValue(
-      ok(shopCustomerDetailSchema.parse({ customer: { ...row, email: "asha@example.com" }, orders: [wireOrder({ createdAt: 1 })], nextCursor: null, rewards: [{ n: 1, status: "coded", code: "55554444", createdAt: 1, codedAt: 2 }, { n: 2, status: "pending", createdAt: 3 }] })),
+      ok(shopCustomerDetailSchema.parse({ customer: row, orders: [wireOrder({ createdAt: 1 })], nextCursor: null, rewards: [{ n: 1, status: "coded", code: "55554444", createdAt: 1, codedAt: 2 }, { n: 2, status: "pending", createdAt: 3 }] })),
     );
     render(<AdminShopCustomerDetail customerId="cu_1" />);
     expect(await screen.findByTestId("customer-email")).toHaveTextContent("asha@example.com");

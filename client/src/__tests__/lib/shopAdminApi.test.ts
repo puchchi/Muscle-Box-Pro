@@ -59,12 +59,13 @@ describe("shopAdminApi", () => {
     expect(result.data.items[1]).toMatchObject({ status: "unknown", refundRequestedBy: "a@x.in", refundReason: "Jammed", refundRetries: 1 });
   });
 
-  it("drops a customer's email from list rows", async () => {
-    vi.stubGlobal("fetch", reply(200, { customers: [{ customerId: "cu_1", email: "a@b.in", stamps: 3, createdAt: 1 }], nextCursor: null }));
+  it("reads a customer row's email and balance, and a deleted account's missing email", async () => {
+    vi.stubGlobal("fetch", reply(200, { customers: [{ customerId: "cu_1", email: "a@b.in", stamps: 3, balancePaise: 5000, createdAt: 1 }, { customerId: "cu_2", email: null, stamps: 0, createdAt: 1 }], nextCursor: null }));
     const { fetchShopCustomers } = await api();
     const result = await fetchShopCustomers(null);
     if (!result.ok) throw new Error("expected ok");
-    expect(result.data.items[0]).not.toHaveProperty("email");
+    expect(result.data.items[0]).toMatchObject({ email: "a@b.in", balancePaise: 5000 });
+    expect(result.data.items[1]).toMatchObject({ email: null, balancePaise: 0 });
   });
 
   it("sends the reason with a reissue", async () => {
