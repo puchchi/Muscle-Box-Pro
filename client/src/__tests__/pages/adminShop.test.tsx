@@ -128,6 +128,37 @@ describe("Shop orders list, customers and free codes", () => {
     expect(kinds(withFreeCodes(orders, customers, { customerId: "cu_1" }, false, NOW))).toEqual(["free2", "so_2", "free1", "so_1", "free3"]);
   });
 
+  it("shows one customer's orders from the row, says it covers every month, and goes back to everyone", async () => {
+    m.fetchShopOrders.mockResolvedValue(ok({ items: [later(), order({ customerId: null })], nextCursor: null }));
+    m.fetchShopCustomer.mockResolvedValue(ok(known()));
+    render(<AdminShopOrders />);
+    const user = userEvent.setup();
+    expect(screen.queryByTestId("shop-orders-customer")).not.toBeInTheDocument();
+    expect(within(await screen.findByTestId("row-shop-order-so_1")).getByText("Guest")).toBeInTheDocument();
+
+    await user.click(await screen.findByRole("button", { name: "Show only orders from asha@example.com" }));
+    expect(m.fetchShopOrders).toHaveBeenLastCalledWith(expect.objectContaining({ customerId: "cu_1" }), null);
+    expect(screen.getByTestId("filter-shop-customer")).toHaveValue("cu_1");
+    const banner = await screen.findByTestId("shop-orders-customer");
+    expect(banner).toHaveTextContent("asha@example.com");
+    expect(banner).toHaveTextContent("in every month");
+    expect(screen.queryByTestId("customer-only-cu_1")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("button-all-customers"));
+    expect(m.fetchShopOrders).toHaveBeenLastCalledWith(expect.objectContaining({ customerId: undefined }), null);
+    expect(screen.queryByTestId("shop-orders-customer")).not.toBeInTheDocument();
+  });
+
+  it("copies the customer's email from the order page", async () => {
+    m.fetchShopOrder.mockResolvedValue(ok({ order: order() }));
+    m.fetchShopCustomer.mockResolvedValue(ok(known()));
+    render(<AdminShopOrderDetail orderId="so_1" />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Copy email" }));
+    expect(await navigator.clipboard.readText()).toBe("asha@example.com");
+    expect(await screen.findByRole("button", { name: "Copied" })).toBeInTheDocument();
+  });
+
   it("names the customer on the order page, and a deleted account as one", async () => {
     m.fetchShopOrder.mockResolvedValue(ok({ order: order() }));
     m.fetchShopCustomer.mockResolvedValue(ok(known([], null)));

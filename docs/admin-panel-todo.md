@@ -247,6 +247,12 @@ in a new AWS shop service, not Supabase.
         whose customer has no order in the loaded rows is not listed. That needs the backend to
         list rewards by month, and to put the email on the order row, which would also save the
         lookups.
+      - The customer cell (2026-10-04): the email alone, linked to the customer page, with the id in
+        its tooltip. A skeleton while the lookup runs, the id if it failed, "Deleted account" if the
+        account is gone. A filter button on hover (always shown on touch) lists only that customer,
+        under a banner that says it covers every month, since a `customerId` filter ignores the
+        month. The order page shows the email with a copy button and the id under it. Times sit on
+        two lines so the table fits at 1440.
       - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
       - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
         Production is `https://api.muscleboxpro.com/shop-admin`. Restart `next dev` after setting it.

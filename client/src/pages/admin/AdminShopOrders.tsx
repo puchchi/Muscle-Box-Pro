@@ -28,10 +28,10 @@ import {
 } from "./machines/MachinesUi";
 import { istToday } from "./machines/statsRules";
 import { SHOP_STATUS_LABEL, withFreeCodes, type FreeCode } from "./machines/shopOrderRules";
-import { CustomerCell, FREE_LABEL, ShopNotConfigured, shopOrderHref, ShopStatusPill } from "./machines/shopBits";
+import { CustomerCell, FREE_LABEL, ShopNotConfigured, shopOrderHref, ShopStatusPill, type CustomerLookup } from "./machines/shopBits";
 import { useShopCustomers } from "./machines/useShopCustomers";
 import { Pill } from "./AdminUi";
-import type { ShopCustomerRow } from "@shared/admin/shopAdminSchema";
+import { Button } from "@/components/ui/button";
 
 export default function AdminShopOrders() {
   const guard = useAdminGuard();
@@ -92,6 +92,13 @@ function ShopOrders({ session }: { session: AdminSession }) {
   const customers = useShopCustomers([...rows.map((o) => o.customerId), filters.customerId]);
   const list = withFreeCodes(rows, customers, filters, cursor !== null, Date.now());
 
+  const onlyCustomer = (customerId: string | null) => {
+    const next = { ...draft, customerId: customerId ?? "" };
+    setDraft(next);
+    setFilters(toFilters(next));
+  };
+  const filtered = filters.customerId ? customers.get(filters.customerId) : undefined;
+
   const set = (key: keyof Draft) => (value: string) => setDraft((d) => ({ ...d, [key]: value }));
 
   return (
@@ -115,6 +122,17 @@ function ShopOrders({ session }: { session: AdminSession }) {
             <TextFilter label="Customer ID" value={draft.customerId} onChange={set("customerId")} testId="filter-shop-customer" />
           </FilterBar>
 
+          {filters.customerId && (
+            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm" data-testid="shop-orders-customer">
+              <span className="text-muted-foreground">Orders from</span>
+              <CustomerCell customerId={filters.customerId} lookup={filtered} />
+              <span className="text-muted-foreground">in every month, with their free codes.</span>
+              <Button type="button" size="sm" variant="outline" onClick={() => onlyCustomer(null)} className="ml-auto rounded-lg cursor-pointer" data-testid="button-all-customers">
+                Show everyone
+              </Button>
+            </div>
+          )}
+
           <DataTable testId="shop-orders-table">
             <Head>
               <Col>Time</Col>
@@ -131,11 +149,20 @@ function ShopOrders({ session }: { session: AdminSession }) {
                 <NoData colSpan={8} loading={loading} />
               ) : (
                 list.map((row) => {
-                  if (row.kind === "free") return <FreeRow key={`free-${row.customerId}-${row.n}`} free={row} customer={customers.get(row.customerId)?.customer} />;
+                  if (row.kind === "free") {
+                    return (
+                      <FreeRow
+                        key={`free-${row.customerId}-${row.n}`}
+                        free={row}
+                        lookup={customers.get(row.customerId)}
+                        onOnly={filters.customerId ? undefined : () => onlyCustomer(row.customerId)}
+                      />
+                    );
+                  }
                   const order = row.order;
                   return (
-                  <tr key={order.shopOrderId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-shop-order-${order.shopOrderId}`}>
-                    <Cell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">{formatIstStamp(order.createdAt)}</Cell>
+                  <tr key={order.shopOrderId} className="group hover:bg-secondary/40 transition-colors" data-testid={`row-shop-order-${order.shopOrderId}`}>
+                    <StampCell iso={order.createdAt} />
                     <Cell className="whitespace-nowrap font-mono text-xs">
                       <Link href={shopOrderHref(order.shopOrderId)} className="text-primary hover:underline">
                         {order.shopOrderId}
@@ -148,11 +175,15 @@ function ShopOrders({ session }: { session: AdminSession }) {
                     <Cell className="min-w-[10rem]">{order.drinkName || <span className="font-mono text-xs text-muted-foreground">{order.goodsId}</span>}</Cell>
                     <Cell align="right" className="whitespace-nowrap tabular-nums">{formatInr(order.pricePaise)}</Cell>
                     <Cell className="whitespace-nowrap font-mono text-xs">
-                      {order.code ?? <span className="text-muted-foreground">—</span>}
+                      {order.code ?? <span className="font-sans text-muted-foreground">None yet</span>}
                       {order.reissues > 0 && <span className="block font-sans text-[11px] text-muted-foreground">Reissued</span>}
                     </Cell>
                     <Cell className="whitespace-nowrap">
-                      <CustomerCell customerId={order.customerId} customer={order.customerId ? customers.get(order.customerId)?.customer : undefined} />
+                      <CustomerCell
+                        customerId={order.customerId}
+                        lookup={order.customerId ? customers.get(order.customerId) : undefined}
+                        onOnly={order.customerId && !filters.customerId ? () => onlyCustomer(order.customerId) : undefined}
+                      />
                     </Cell>
                     <Cell className="whitespace-nowrap">
                       <ShopStatusPill status={order.status} testId={`shop-status-${order.shopOrderId}`} />
@@ -170,10 +201,10 @@ function ShopOrders({ session }: { session: AdminSession }) {
   );
 }
 
-function FreeRow({ free, customer }: { free: FreeCode; customer?: ShopCustomerRow }) {
+function FreeRow({ free, lookup, onOnly }: { free: FreeCode; lookup: CustomerLookup; onOnly?: () => void }) {
   return (
-    <tr className="bg-fuchsia-400/[0.03]" data-testid={`row-free-code-${free.customerId}-${free.n}`}>
-      <Cell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">{formatIstStamp(free.at)}</Cell>
+    <tr className="group bg-fuchsia-400/[0.03] hover:bg-secondary/40 transition-colors" data-testid={`row-free-code-${free.customerId}-${free.n}`}>
+      <StampCell iso={free.at} />
       <Cell className="whitespace-nowrap">
         <span className="block text-foreground">Free drink {free.n}</span>
         <span className="block text-xs text-muted-foreground">From the stamp card</span>
@@ -183,7 +214,7 @@ function FreeRow({ free, customer }: { free: FreeCode; customer?: ShopCustomerRo
       <Cell align="right" className="whitespace-nowrap">Free</Cell>
       <Cell className="whitespace-nowrap font-mono text-xs">
         {free.code ? (
-          <Link href={`/machines/redeem-codes/${encodeURIComponent(free.code)}`} className="text-primary hover:underline">
+          <Link href={`/machines/redeem-codes/${encodeURIComponent(free.code)}`} className="text-foreground hover:text-primary hover:underline">
             {free.code}
           </Link>
         ) : (
@@ -191,7 +222,7 @@ function FreeRow({ free, customer }: { free: FreeCode; customer?: ShopCustomerRo
         )}
       </Cell>
       <Cell className="whitespace-nowrap">
-        <CustomerCell customerId={free.customerId} customer={customer} />
+        <CustomerCell customerId={free.customerId} lookup={lookup} onOnly={onOnly} />
       </Cell>
       <Cell className="whitespace-nowrap">
         <Pill className={FREE_LABEL.className} testId={`free-status-${free.customerId}-${free.n}`}>
@@ -199,5 +230,15 @@ function FreeRow({ free, customer }: { free: FreeCode; customer?: ShopCustomerRo
         </Pill>
       </Cell>
     </tr>
+  );
+}
+
+function StampCell({ iso }: { iso: string | null }) {
+  const [date, time] = formatIstStamp(iso).split(" ");
+  return (
+    <Cell className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+      <span className="block">{date}</span>
+      {time && <span className="block">{time}</span>}
+    </Cell>
   );
 }

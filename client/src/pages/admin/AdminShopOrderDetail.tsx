@@ -18,7 +18,7 @@ import { ConfirmDialog, formatIstStamp, MachineDialog, MachinesHeader, problemOf
 import { WarningPanel } from "./machines/WarningPanel";
 import { ReasonDialog, ReasonField } from "./machines/ReasonDialog";
 import { canRefund, canReissue, canRetryRefund, reissueDrinks } from "./machines/shopOrderRules";
-import { CustomerCell, ShopNotConfigured, ShopStatusPill } from "./machines/shopBits";
+import { CustomerDetailCell, ShopNotConfigured, ShopStatusPill } from "./machines/shopBits";
 import { useShopCustomers } from "./machines/useShopCustomers";
 
 export default function AdminShopOrderDetail({ orderId }: { orderId: string }) {
@@ -158,7 +158,7 @@ function Row({ label, testId, children }: { label: string; testId?: string; chil
 const usedText = (used: boolean | null) => (used === null ? "Not known" : used ? "Yes" : "No");
 
 function OrderCard({ order }: { order: ShopAdminOrder }) {
-  const customer = useShopCustomers([order.customerId]).get(order.customerId ?? "")?.customer;
+  const lookup = useShopCustomers([order.customerId]).get(order.customerId ?? "");
   return (
     <Card title="Order" testId="card-shop-order">
       <Fields>
@@ -185,7 +185,7 @@ function OrderCard({ order }: { order: ShopAdminOrder }) {
         </Row>
         {order.code && <Field label="Code used" value={usedText(order.codeUsed)} testId="shop-order-used" />}
         <Row label="Customer">
-          <CustomerCell customerId={order.customerId} customer={customer} />
+          <CustomerDetailCell customerId={order.customerId} lookup={lookup} />
         </Row>
         {order.guestEmail && <Field label="Guest email" value={order.guestEmail} testId="shop-order-guest-email" />}
         <Field label="Razorpay payment" value={order.razorpayPaymentId} mono />

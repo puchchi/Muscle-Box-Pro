@@ -32,7 +32,7 @@ const utcMonth = (iso: string) => iso.slice(0, 7);
 
 export function withFreeCodes(
   orders: ShopAdminOrder[],
-  customers: ReadonlyMap<string, ShopCustomerDetail>,
+  customers: ReadonlyMap<string, ShopCustomerDetail | null>,
   filters: ShopOrderFilters,
   hasMore: boolean,
   now: number,
