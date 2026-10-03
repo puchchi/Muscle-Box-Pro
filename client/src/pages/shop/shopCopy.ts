@@ -39,6 +39,27 @@ export const DRINKS_COPY = {
   menuLink: "See every protein shake we make",
 };
 
+export const DRINKS_LIVE_COPY = {
+  badge: "Now on your phone",
+  titleHighlight: "on your phone.",
+  lead: "Scan the QR on a machine's screen to see its protein shakes. Pay by UPI or card, then type your code on the machine.",
+  quickStats: [
+    { val: "UPI", label: "or card" },
+    { val: "60s", label: "blend time" },
+    { val: "12", label: "blends" },
+  ],
+  stepsEyebrow: "How to buy",
+  stepsTitleLead: "Scan the machine.",
+  stepsTitleHighlight: "Pay on your phone.",
+  stepsLead: "It takes about a minute and you don't need an account. You can still pay on the machine's screen with any UPI app.",
+  steps: [
+    { icon: "qr", title: "Scan the QR", body: 'It\'s on the machine\'s screen, under "Scan to order from your account".' },
+    { icon: "phone", title: "Pick and pay", body: "Choose a protein shake and pay by UPI, card or net banking." },
+    { icon: "code", title: "Type your code", body: 'Type it under "Enter code to start drink" and tap Submit.' },
+  ],
+  joinLead: "Sign in with your email and every protein shake you buy on your phone earns a stamp.",
+};
+
 export const JOIN_COPY = {
   badge: "Member accounts are coming soon",
   titleLead: "Every 10th protein shake",

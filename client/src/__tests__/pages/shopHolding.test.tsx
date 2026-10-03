@@ -13,7 +13,7 @@ vi.mock("next/link", () => ({
 import { JoinHolding } from "@/pages/shop/JoinHolding";
 import { DrinksHolding } from "@/pages/shop/DrinksHolding";
 import { readableSn } from "@/pages/shop/ShopHolding";
-import { DRINKS_COPY, JOIN_COPY } from "@/pages/shop/shopCopy";
+import { DRINKS_COPY, DRINKS_LIVE_COPY, JOIN_COPY } from "@/pages/shop/shopCopy";
 
 describe("readableSn", () => {
   it("keeps a plain serial number and drops anything else", () => {
@@ -43,8 +43,14 @@ describe("DrinksHolding", () => {
     expect(screen.getByRole("link", { name: /See how it works/ })).toHaveAttribute("href", "/join");
   });
 
+  it("says phone buying is live when the shop is on, and never calls it coming soon", () => {
+    render(<DrinksHolding sn={null} live />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Protein shakes on your phone.");
+    expect(document.body).not.toHaveTextContent(/coming soon/i);
+  });
+
   it("uses no em dashes in what the customer reads", () => {
-    const copy = JSON.stringify([DRINKS_COPY, JOIN_COPY]);
+    const copy = JSON.stringify([DRINKS_COPY, DRINKS_LIVE_COPY, JOIN_COPY]);
     expect(copy).not.toContain("—");
   });
 });

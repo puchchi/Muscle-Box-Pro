@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sn = readableSn((await searchParams).sn);
   if (sn && SHOP_API_BASE_URL) return <DrinksShop sn={sn} />;
-  return <DrinksHolding sn={sn} />;
+  return <DrinksHolding sn={sn} live={Boolean(SHOP_API_BASE_URL)} />;
 }

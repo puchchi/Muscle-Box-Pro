@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, KeyRound } from "lucide-react";
 import { ShopHeader } from "./ShopHolding";
-import { DRINKS_COPY } from "./shopCopy";
+import { DRINKS_COPY, DRINKS_LIVE_COPY } from "./shopCopy";
 import {
   CHIP,
   CHIP_LABEL,
@@ -14,18 +14,19 @@ import {
   StepCards,
 } from "./shopUi";
 
-export function DrinksHolding({ sn }: { sn: string | null }) {
+export function DrinksHolding({ sn, live = false }: { sn: string | null; live?: boolean }) {
+  const copy = live ? { ...DRINKS_COPY, ...DRINKS_LIVE_COPY } : DRINKS_COPY;
   const joinHref = sn ? `/join?sn=${encodeURIComponent(sn)}` : "/join";
   return (
     <div className="min-h-screen bg-background" data-testid="shop-drinks">
       <ShopHeader sn={sn} />
       <main>
         <SplitHero
-          badge={DRINKS_COPY.badge}
-          titleLead={DRINKS_COPY.titleLead}
-          titleHighlight={DRINKS_COPY.titleHighlight}
-          lead={DRINKS_COPY.lead}
-          stats={DRINKS_COPY.quickStats}
+          badge={copy.badge}
+          titleLead={copy.titleLead}
+          titleHighlight={copy.titleHighlight}
+          lead={copy.lead}
+          stats={copy.quickStats}
           image={{
             src: "/images/premium_dark_chocolate_shake.png",
             alt: "A MuscleBoxPro chocolate protein shake",
@@ -33,20 +34,20 @@ export function DrinksHolding({ sn }: { sn: string | null }) {
           actions={
             <>
               <PillLink href="#buy-today" primary>
-                {DRINKS_COPY.buyCta}
+                {copy.buyCta}
               </PillLink>
-              <PillLink href="/menu">{DRINKS_COPY.menuCta}</PillLink>
+              <PillLink href="/menu">{copy.menuCta}</PillLink>
             </>
           }
           chips={
             <>
               <div className={`absolute -right-6 top-10 hidden px-5 py-4 lg:block ${CHIP}`}>
-                <p className={`mb-1 ${CHIP_LABEL}`}>{DRINKS_COPY.blendChip.label}</p>
+                <p className={`mb-1 ${CHIP_LABEL}`}>{copy.blendChip.label}</p>
                 <p
                   className={`font-display font-black leading-none ${GRADIENT_TEXT}`}
                   style={{ fontSize: "2.4rem" }}
                 >
-                  {DRINKS_COPY.blendChip.value}
+                  {copy.blendChip.value}
                 </p>
               </div>
               <a
@@ -59,10 +60,10 @@ export function DrinksHolding({ sn }: { sn: string | null }) {
                 </span>
                 <span>
                   <span className="block font-semibold text-foreground">
-                    {DRINKS_COPY.codeChip.title}
+                    {copy.codeChip.title}
                   </span>
                   <span className="mt-0.5 block text-sm leading-snug text-muted-foreground">
-                    {DRINKS_COPY.codeChip.body}
+                    {copy.codeChip.body}
                   </span>
                 </span>
               </a>
@@ -74,25 +75,25 @@ export function DrinksHolding({ sn }: { sn: string | null }) {
           <div className={CONTAINER}>
             <SectionHeader
               centered
-              eyebrow={DRINKS_COPY.stepsEyebrow}
-              titleLead={DRINKS_COPY.stepsTitleLead}
-              titleHighlight={DRINKS_COPY.stepsTitleHighlight}
-              lead={DRINKS_COPY.stepsLead}
+              eyebrow={copy.stepsEyebrow}
+              titleLead={copy.stepsTitleLead}
+              titleHighlight={copy.stepsTitleHighlight}
+              lead={copy.stepsLead}
             />
-            <StepCards steps={DRINKS_COPY.steps} />
+            <StepCards steps={copy.steps} />
           </div>
         </section>
 
         <section id="have-a-code" className="scroll-mt-16 py-16 lg:py-20">
           <div className={CONTAINER}>
             <SectionHeader
-              eyebrow={DRINKS_COPY.codeEyebrow}
-              titleLead={DRINKS_COPY.codeTitleLead}
-              titleHighlight={DRINKS_COPY.codeTitleHighlight}
-              lead={DRINKS_COPY.codeLead}
+              eyebrow={copy.codeEyebrow}
+              titleLead={copy.codeTitleLead}
+              titleHighlight={copy.codeTitleHighlight}
+              lead={copy.codeLead}
             />
-            <StepCards steps={DRINKS_COPY.codeSteps} />
-            <MenuLink label={DRINKS_COPY.menuLink} />
+            <StepCards steps={copy.codeSteps} />
+            <MenuLink label={copy.menuLink} />
           </div>
         </section>
 
@@ -102,16 +103,16 @@ export function DrinksHolding({ sn }: { sn: string | null }) {
               className="mb-5 font-display font-black uppercase leading-none text-white text-balance"
               style={{ fontSize: "clamp(2.25rem, 5vw, 4rem)" }}
             >
-              {DRINKS_COPY.joinTitleLead} {DRINKS_COPY.joinTitleHighlight}
+              {copy.joinTitleLead} {copy.joinTitleHighlight}
             </h2>
             <p className="mx-auto mb-8 max-w-lg text-lg leading-relaxed text-white/90">
-              {DRINKS_COPY.joinLead}
+              {copy.joinLead}
             </p>
             <Link
               href={joinHref}
               className="inline-flex h-14 cursor-pointer items-center gap-2 rounded-full bg-white px-10 text-base font-semibold text-gray-900 shadow-xl transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary-fill"
             >
-              {DRINKS_COPY.joinCta}
+              {copy.joinCta}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
