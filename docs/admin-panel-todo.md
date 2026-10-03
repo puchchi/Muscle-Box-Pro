@@ -149,7 +149,10 @@ backend is in `docs/stock-soon-feedback-asks.md`.
 - **Ratings**: a Rating column (`★ 4.6 (23)`, or "—") on the goods library and on a machine's
   goods, linking to the Feedback page filtered to reviews (and to that machine).
 - **Instagram page** on QR settings: `instagramLink`, `https` on `instagram.com` or
-  `www.instagram.com` with a profile name; `""` clears it.
+  `www.instagram.com` with a profile name; `""` clears it. One link for the whole fleet, not per
+  machine. The backend is built (mbp-backend `94d72b8`, the same rule and message) but not deployed:
+  until `MbpMachineAdmin-sandbox` and `MbpMachine-sandbox` are, the field does not stick and the
+  machine shows instagram.com/muscleboxpro.
 - Customer email and phone appear only on the Feedback page: not in URLs, analytics or logs.
 
 Open from this work:
