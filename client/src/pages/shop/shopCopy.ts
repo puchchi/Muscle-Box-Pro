@@ -17,7 +17,7 @@ export const DRINKS_COPY = {
     { val: "12", label: "blends" },
   ],
   blendChip: { label: "Blend time", value: "60s" },
-  codeChip: { title: "Have a code?", body: "Tap Get Drinks on the machine and type it in." },
+  codeChip: { title: "Have a code?", body: "Tap Get Drinks on the machine, type it in and tap Submit." },
   stepsEyebrow: "Buying today",
   stepsTitleLead: "Buy on the machine.",
   stepsTitleHighlight: "Pay with any UPI app.",
@@ -29,7 +29,7 @@ export const DRINKS_COPY = {
   codeLead: "If your gym or MuscleBoxPro gave you a code, use it on the machine instead of paying.",
   codeSteps: [
     { icon: "tap", title: "Tap Get Drinks", body: "Find the Get Drinks button on the machine's screen." },
-    { icon: "code", title: "Type your code", body: "Enter the code exactly as you got it." },
+    { icon: "code", title: "Type your code", body: 'Type it under "Enter code to start drink" and tap Submit.' },
     { icon: "cup", title: "Get your protein shake", body: "The machine makes your protein shake straight away." },
   ],
   joinTitleLead: "Every 10th protein shake",
@@ -53,7 +53,7 @@ export const DRINKS_LIVE_COPY = {
   stepsTitleHighlight: "Pay on your phone.",
   stepsLead: "It takes about a minute and you don't need an account. You can still pay on the machine's screen with any UPI app.",
   steps: [
-    { icon: "qr", title: "Scan the QR", body: 'It\'s on the machine\'s screen, under "Scan to order from your account".' },
+    { icon: "qr", title: "Scan the QR", body: 'Tap Get Drinks on the machine, then scan the QR under "Scan to order from your account".' },
     { icon: "phone", title: "Pick and pay", body: "Choose a protein shake and pay by UPI, card or net banking." },
     { icon: "code", title: "Type your code", body: 'Type it under "Enter code to start drink" and tap Submit.' },
   ],
@@ -156,9 +156,9 @@ export const SHOP_COPY = {
   steps: [
     { title: "Pick and pay", body: "Choose a protein shake here and pay by UPI, card or net banking." },
     { title: "Get your code", body: "Your 8-digit code shows up on this page as soon as you've paid." },
-    { title: "Type it on the machine", body: 'Type it under "Enter code to start drink" and tap Submit.' },
+    { title: "Type it on the machine", body: 'Tap Get Drinks, type it under "Enter code to start drink" and tap Submit.' },
   ],
-  machineCaption: "On the machine, type your 8-digit code under \"Enter code to start drink\" and tap Submit.",
+  machineCaption: "On the machine, tap Get Drinks, then type your 8-digit code under \"Enter code to start drink\" and tap Submit.",
 };
 
 export const RECEIPT_COPY = {
@@ -174,7 +174,7 @@ export const RECEIPT_COPY = {
   copy: "Copy code",
   copied: "Copied",
   howTitle: "At the machine",
-  howSteps: ["Tap Get Drinks on the screen.", "Type this code.", "Your protein shake is made straight away."],
+  howSteps: ["Tap Get Drinks on the machine.", 'Type this code under "Enter code to start drink" and tap Submit.', "Your protein shake is made straight away."],
   rules: "Works once, at this machine, for this drink. It never expires.",
   emailLabel: "Email me this code",
   emailHint: "So you have it even if you close this page.",
@@ -246,7 +246,7 @@ export const ACCOUNT_COPY = {
   statsFree: "Free ones earned",
   readyTitle: "Ready to use",
   readyEmpty: "No codes waiting. Codes you buy while signed in show up here.",
-  readyHint: 'On the machine, type the code under "Enter code to start drink" and tap Submit.',
+  readyHint: 'On the machine, tap Get Drinks, then type the code under "Enter code to start drink" and tap Submit.',
   usedTitle: (n: number) => `Used codes (${n})`,
   account: "My account",
   signOut: "Sign out",
