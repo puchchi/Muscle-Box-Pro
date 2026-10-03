@@ -187,18 +187,23 @@ export function StampSlots({ filled, className }: { filled: number; className: s
 
 export const readyRewards = (codes: ShopMyCode[] | null) => codes?.filter((c) => c.kind === "reward" && c.used !== true) ?? [];
 
-export const stampsShown = (stamps: number, rewards: ShopMyCode[]) => (rewards.length > 0 ? 10 : Math.min(stamps, 9));
+export const cardIsFull = (stamps: number, rewards: ShopMyCode[]) => rewards.length > 0 && stamps === 0;
 
-export function FreeShakeCodes({ rewards, stamps }: { rewards: ShopMyCode[]; stamps: number }) {
+export const stampsShown = (stamps: number, rewards: ShopMyCode[]) => (cardIsFull(stamps, rewards) ? 10 : Math.min(stamps, 9));
+
+export function FreeShakeCodes({ rewards }: { rewards: ShopMyCode[] }) {
   return (
     <div className="mt-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15" data-testid="free-shake-ready">
+      <p className="flex items-center gap-2 text-sm font-semibold">
+        <Gift className="h-4 w-4 text-primary" aria-hidden />
+        {ACCOUNT_COPY.freeReadyTitle(rewards.length)}
+      </p>
       {rewards.map((r) => (
-        <p key={r.code} className="font-mono text-2xl font-semibold tracking-[0.12em]">
+        <p key={r.code} className="mt-2 font-mono text-2xl font-semibold tracking-[0.12em]">
           {grouped(r.code)}
         </p>
       ))}
       <p className="mt-2 text-sm leading-relaxed text-white/80">{ACCOUNT_COPY.freeReadyBody}</p>
-      {stamps > 0 && <p className="mt-2 text-sm text-white/70">{ACCOUNT_COPY.freeReadyStamps(stamps)}</p>}
     </div>
   );
 }
@@ -231,6 +236,7 @@ function SignedIn({
 
   const rewards = readyRewards(codes);
   const filled = stampsShown(customer.stamps, rewards);
+  const full = cardIsFull(customer.stamps, rewards);
 
   async function leave() {
     setLeaving(true);
@@ -262,16 +268,10 @@ function SignedIn({
             <h2 id="stamps-title" className="sr-only">
               {ACCOUNT_COPY.stampsTitle}
             </h2>
-            {rewards.length > 0 ? (
-              <LoyaltyCard filled={filled} caption={ACCOUNT_COPY.freeReadyCaption}>
-                <p className="mt-5 font-semibold">{ACCOUNT_COPY.freeReadyTitle(rewards.length)}</p>
-                <FreeShakeCodes rewards={rewards} stamps={customer.stamps} />
-              </LoyaltyCard>
-            ) : (
-              <LoyaltyCard filled={filled} caption={ACCOUNT_COPY.stampsCount(filled)}>
-                <p className="mt-5 text-sm text-white/90">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
-              </LoyaltyCard>
-            )}
+            <LoyaltyCard filled={filled} caption={full ? ACCOUNT_COPY.freeReadyCaption : ACCOUNT_COPY.stampsCount(filled)}>
+              <p className="mt-5 text-sm text-white/90">{full ? ACCOUNT_COPY.cardFull : ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
+              {rewards.length > 0 && <FreeShakeCodes rewards={rewards} />}
+            </LoyaltyCard>
           </section>
           <dl className="grid grid-cols-2 gap-4">
             <Stat label={ACCOUNT_COPY.statsDrinks} value={customer.lifetimeDrinks} />

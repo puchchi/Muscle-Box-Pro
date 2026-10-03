@@ -115,6 +115,8 @@ describe("paying on /drinks", () => {
     render(<DrinksShop sn="S1" />);
     expect(await screen.findByTestId("free-shake-ready")).toHaveTextContent("9021 3948");
     const card = screen.getByTestId("shop-signed-in");
+    expect(card).toHaveTextContent("Free shake ready");
+    expect(card).toHaveTextContent("Your stamp card is full.");
     expect(card).toHaveTextContent("Your free protein shake is ready.");
     expect(card).not.toHaveTextContent("9 more");
   });
@@ -151,9 +153,10 @@ describe("/drinks/account", () => {
     );
     render(<DrinkAccount sn="S1" />);
     const user = userEvent.setup();
-    expect(await screen.findByTestId("free-shake-ready")).toHaveTextContent("5555 4444");
-    expect(screen.getByTestId("account-stamps")).toHaveTextContent("Your free protein shake is ready.");
-    expect(screen.getByTestId("account-stamps")).toHaveTextContent("You also have 4 of 9 stamps");
+    expect(await screen.findByTestId("free-shake-ready")).toHaveTextContent("Your free protein shake is ready.5555 4444");
+    expect(screen.getByTestId("account-stamps")).toHaveTextContent("4 of 9");
+    expect(screen.getByTestId("account-stamps")).toHaveTextContent("5 more protein shakes");
+    expect(screen.getByTestId("account-stamps")).not.toHaveTextContent("Free shake ready");
     expect(await screen.findByTestId("account-code-12345678")).toHaveTextContent("Used");
     expect(screen.getByTestId("account-code-55554444")).toHaveTextContent("Free protein shake");
     expect(screen.getByTestId("account-code-55554444")).toHaveTextContent("Ready to use");

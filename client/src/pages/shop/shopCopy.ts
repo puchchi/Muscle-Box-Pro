@@ -256,7 +256,7 @@ export const ACCOUNT_COPY = {
   freeReadyCaption: "Free shake ready",
   freeReadyTitle: (n: number) => (n === 1 ? "Your free protein shake is ready." : `${n} free protein shakes are ready.`),
   freeReadyBody: 'Any drink, at any machine. Tap Get Drinks and type it under "Enter code to start drink".',
-  freeReadyStamps: (stamps: number) => `You also have ${stamps} of 9 stamps toward the next one.`,
+  cardFull: "Your stamp card is full.",
   codesTitle: "My drink codes",
   codesEmpty: "No codes yet. Codes you buy while signed in show up here.",
   freeDrink: "Free protein shake",
