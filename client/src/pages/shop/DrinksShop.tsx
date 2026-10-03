@@ -328,25 +328,29 @@ function DrinkCard({
 }) {
   const unavailable = drink.comingSoon ? SHOP_COPY.comingSoon : drink.soldOut ? SHOP_COPY.soldOut : null;
   const price = formatInr(drink.pricePaise);
+  const saving = drink.listPricePaise !== null && drink.listPricePaise > drink.pricePaise ? drink.listPricePaise - drink.pricePaise : 0;
   return (
     <li
-      className={`flex gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-col sm:p-5 ${unavailable ? "opacity-75" : ""}`}
+      className="group flex overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200/80 transition-shadow duration-200 hover:shadow-lg sm:flex-col sm:rounded-3xl"
       data-testid={`shop-drink-${drink.goodsId}`}
     >
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-100 sm:aspect-[4/3] sm:h-auto sm:w-full">
+      <div className="relative w-32 shrink-0 overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-rose-100/70 sm:aspect-[4/3] sm:w-full">
         <DrinkPicture url={drink.image} alt={drink.name} dim={unavailable !== null} />
         {drink.serveTemp && <TempSticker temp={drink.serveTemp} />}
+        {saving > 0 && !unavailable && (
+          <span className="absolute bottom-2 left-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm sm:bottom-3 sm:left-3 sm:px-2.5 sm:py-1 sm:text-xs">
+            {SHOP_COPY.save(formatInr(saving))}
+          </span>
+        )}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-36 min-w-0 flex-1 flex-col p-4 sm:min-h-0 sm:p-5">
         <h2 className="text-base font-bold leading-snug text-gray-900 sm:text-lg">{drink.name}</h2>
-        {drink.spec && <p className="mt-0.5 text-sm text-muted-foreground">{drink.spec}</p>}
-        <div className="mt-auto flex flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-3">
+        {drink.spec && <p className="mt-1 text-sm text-gray-600">{drink.spec}</p>}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-4">
           {!drink.comingSoon && (
             <span className="flex items-baseline gap-2" data-testid={`shop-price-${drink.goodsId}`}>
-              <span className="font-display text-2xl font-black text-gray-900">{price}</span>
-              {drink.listPricePaise !== null && drink.listPricePaise > drink.pricePaise && (
-                <s className="text-sm text-muted-foreground">{formatInr(drink.listPricePaise)}</s>
-              )}
+              <span className="font-display text-2xl font-black leading-none text-gray-900">{price}</span>
+              {saving > 0 && <s className="text-sm text-gray-500">{formatInr(drink.listPricePaise!)}</s>}
             </span>
           )}
           <button
@@ -354,7 +358,11 @@ function DrinkCard({
             onClick={onBuy}
             disabled={unavailable !== null || !selling || locked}
             aria-label={unavailable ? `${drink.name}: ${unavailable}` : `${SHOP_COPY.buy} ${drink.name} for ${price}`}
-            className="ml-auto inline-flex h-11 min-w-[6.5rem] cursor-pointer items-center justify-center gap-2 rounded-full bg-primary-fill px-5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-colors hover:bg-primary-fill/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-600 disabled:shadow-none"
+            className={`ml-auto inline-flex h-11 min-w-[6.5rem] cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed ${
+              unavailable
+                ? "border border-gray-200 bg-white text-gray-600"
+                : "bg-primary-fill text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary-fill/90 disabled:bg-gray-200 disabled:text-gray-600 disabled:shadow-none"
+            }`}
             data-testid={`shop-buy-${drink.goodsId}`}
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
@@ -370,8 +378,8 @@ function DrinkPicture({ url, alt, dim }: { url: string; alt: string; dim: boolea
   const [broken, setBroken] = useState(false);
   if (!url || broken) {
     return (
-      <span className="flex h-full w-full items-center justify-center text-gray-400">
-        <CupSoda className="h-8 w-8" aria-hidden />
+      <span className="flex h-full min-h-28 w-full items-center justify-center text-primary/40">
+        <CupSoda className="h-10 w-10" aria-hidden />
       </span>
     );
   }
@@ -380,7 +388,7 @@ function DrinkPicture({ url, alt, dim }: { url: string; alt: string; dim: boolea
       src={url}
       alt={alt}
       loading="lazy"
-      className={`h-full w-full object-cover ${dim ? "grayscale" : ""}`}
+      className={`absolute inset-0 h-full w-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-[1.03] ${dim ? "opacity-60 saturate-50" : ""}`}
       onError={() => setBroken(true)}
     />
   );
@@ -390,7 +398,7 @@ function TempSticker({ temp }: { temp: "chilled" | "hot" }) {
   const Icon = temp === "hot" ? Flame : Snowflake;
   return (
     <span
-      className={`absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold shadow-sm sm:left-3 sm:top-3 sm:text-xs ${temp === "hot" ? "bg-orange-100 text-orange-800" : "bg-sky-100 text-sky-800"}`}
+      className={`absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold shadow-sm backdrop-blur sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs ${temp === "hot" ? "text-orange-800" : "text-sky-800"}`}
     >
       <Icon className="h-3 w-3" aria-hidden />
       {temp === "hot" ? SHOP_COPY.hot : SHOP_COPY.chilled}
@@ -437,9 +445,9 @@ function MenuSkeleton() {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6 xl:grid-cols-4" aria-busy="true" aria-label="Loading the menu" data-testid="shop-loading">
       {[0, 1, 2].map((i) => (
-        <li key={i} className="flex animate-pulse gap-4 rounded-2xl border border-gray-100 bg-white p-4 sm:flex-col sm:p-5">
-          <span className="h-24 w-24 shrink-0 rounded-xl bg-gray-100 sm:aspect-[4/3] sm:h-auto sm:w-full" />
-          <span className="flex flex-1 flex-col gap-2 pt-1">
+        <li key={i} className="flex animate-pulse overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200/80 sm:flex-col sm:rounded-3xl">
+          <span className="h-28 w-32 shrink-0 bg-gray-100 sm:aspect-[4/3] sm:h-auto sm:w-full" />
+          <span className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
             <span className="h-4 w-3/4 rounded bg-gray-100" />
             <span className="h-3 w-1/3 rounded bg-gray-100" />
             <span className="mt-auto h-11 w-28 self-end rounded-full bg-gray-100" />

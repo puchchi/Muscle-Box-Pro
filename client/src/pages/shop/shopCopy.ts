@@ -113,6 +113,7 @@ export const SHOP_COPY = {
   loadErrorHint: "You can always buy on the machine's screen.",
   retry: "Try again",
   buy: "Buy",
+  save: (amount: string) => `Save ${amount}`,
   opening: "Opening payment…",
   soldOut: "Sold out",
   comingSoon: "Coming soon",
