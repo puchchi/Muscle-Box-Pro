@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatInr } from "@shared/shop/shopSchema";
-import type { ShopCustomerDetail } from "@shared/admin/shopAdminSchema";
+import type { ShopBalanceRefund, ShopCustomerDetail, ShopPayout } from "@shared/admin/shopAdminSchema";
 import type { AdminSession } from "@/lib/adminSession";
-import { fetchShopCustomer, shopAdminConfigured } from "@/lib/shopAdminApi";
+import { fetchShopCustomer, refundCustomerBalance, resolveShopPayout, shopAdminConfigured, type PayoutOutcome } from "@/lib/shopAdminApi";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
 import { useAdminGuard } from "./useAdminGuard";
-import { Card, Empty, Field, Fields } from "./AdminUi";
+import { Card, Empty, Field, Fields, SuccessPanel } from "./AdminUi";
 import { Cell, Col, DataTable, formatIstStamp, Head, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 import { GymLink, FranchiseLink } from "./machines/ownerBits";
 import { CustomerBalance } from "./machines/CustomerBalance";
+import { ReasonDialog } from "./machines/ReasonDialog";
+import { WarningPanel } from "./machines/WarningPanel";
 import { ShopNotConfigured, shopOrderHref, ShopStatusPill } from "./machines/shopBits";
 
 export default function AdminShopCustomerDetail({ customerId }: { customerId: string }) {
@@ -23,11 +25,67 @@ export default function AdminShopCustomerDetail({ customerId }: { customerId: st
 
 const STAMPS_PER_REWARD = 9;
 
+type Notice = { tone: "done" | "warn"; text: string };
+
+export function balanceRefundNotice(r: ShopBalanceRefund): Notice {
+  const sent = r.refundedPaise > 0 ? `${formatInr(r.refundedPaise)} is queued to go back to the UPI or card it came from. Razorpay pays it within a few minutes.` : "Nothing could be refunded to a payment.";
+  const left =
+    r.remainderPaise === 0
+      ? ""
+      : r.remainderReason === "payout_cap"
+        ? ` ${formatInr(r.remainderPaise)} is still on the balance because there were too many top-ups for one go. Press Refund balance again.`
+        : ` ${formatInr(r.remainderPaise)} stays on the balance. It is past the 175-day refund window, or came from a refunded drink rather than a top-up, so it has to be returned another way.`;
+  return { tone: r.refundedPaise > 0 ? "done" : "warn", text: sent + left };
+}
+
 function CustomerPage({ session, customerId }: { session: AdminSession; customerId: string }) {
   const configured = shopAdminConfigured();
   const [detail, setDetail] = useState<ShopCustomerDetail | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loadingLedger, setLoadingLedger] = useState(false);
+  const [dialog, setDialog] = useState<{ kind: "refund" } | { kind: "resolve"; payout: ShopPayout } | null>(null);
+  const [outcome, setOutcome] = useState<PayoutOutcome | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
+
+  const reload = async () => {
+    const fresh = await fetchShopCustomer(customerId);
+    if (fresh.ok) setDetail(fresh.data);
+    else setProblem(problemOf(fresh));
+  };
+
+  const refund = async (reason: string) => {
+    setBusy(true);
+    const result = await refundCustomerBalance(customerId, reason);
+    setBusy(false);
+    setDialog(null);
+    if (!result.ok) {
+      setNotice(null);
+      setProblem(problemOf(result));
+      return;
+    }
+    setProblem(null);
+    setNotice(balanceRefundNotice(result.data));
+    await reload();
+  };
+
+  const resolve = async (payout: ShopPayout, chosen: PayoutOutcome, reason: string) => {
+    setBusy(true);
+    const result = await resolveShopPayout(payout.payoutId, chosen, reason);
+    setBusy(false);
+    setDialog(null);
+    if (!result.ok) {
+      setNotice(null);
+      setProblem(problemOf(result));
+      return;
+    }
+    setProblem(null);
+    setNotice({
+      tone: "done",
+      text: chosen === "refunded" ? `Recorded: ${formatInr(payout.amountPaise)} went back to the customer.` : `Recorded: not refunded. ${formatInr(payout.amountPaise)} is back on the balance.`,
+    });
+    await reload();
+  };
 
   const moreLedger = async () => {
     if (!detail?.ledgerCursor) return;
@@ -67,6 +125,11 @@ function CustomerPage({ session, customerId }: { session: AdminSession; customer
       />
       {!configured && <ShopNotConfigured />}
       <ProblemPanel problem={problem} testId="customer-error" />
+      {notice && (
+        <div className="mb-4">
+          {notice.tone === "done" ? <SuccessPanel testId="customer-done">{notice.text}</SuccessPanel> : <WarningPanel testId="customer-warn">{notice.text}</WarningPanel>}
+        </div>
+      )}
       {detail && c && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <Card title="Profile" testId="card-customer">
@@ -178,9 +241,58 @@ function CustomerPage({ session, customerId }: { session: AdminSession; customer
               loadingLedger={loadingLedger}
               topUps={detail.topUps}
               payouts={detail.payouts}
+              onRefund={() => setDialog({ kind: "refund" })}
+              onResolve={(payout) => {
+                setOutcome(null);
+                setDialog({ kind: "resolve", payout });
+              }}
             />
           </div>
         </div>
+      )}
+
+      {detail && c && (
+        <ReasonDialog
+          open={dialog?.kind === "refund"}
+          title="Refund the balance?"
+          description={`This takes ${formatInr(c.balancePaise)} off the balance and sends it back to the UPI or card it was topped up from, newest top-up first. Money past a top-up's refundable-until date, or from a refunded drink, stays on the balance. It can't be undone.`}
+          confirmLabel="Refund balance"
+          destructive
+          busy={busy}
+          onClose={() => setDialog(null)}
+          onConfirm={(reason) => void refund(reason)}
+          placeholder="For example: the customer asked for their money back"
+          testId="dialog-refund-balance"
+        />
+      )}
+      {dialog?.kind === "resolve" && (
+        <ReasonDialog
+          open
+          title="What does Razorpay show?"
+          description={`Razorpay didn't say whether this ${formatInr(dialog.payout.amountPaise)} refund went through. Find payment ${dialog.payout.paymentId ?? ""} in the Razorpay dashboard, then record what it shows.`}
+          confirmLabel="Record"
+          busy={busy}
+          ready={outcome !== null}
+          onClose={() => setDialog(null)}
+          onConfirm={(reason) => outcome && void resolve(dialog.payout, outcome, reason)}
+          placeholder="For example: Razorpay shows the refund as processed"
+          testId="dialog-resolve-payout"
+        >
+          <fieldset className="mb-4 space-y-2">
+            <legend className="mb-1.5 text-sm font-medium text-foreground">Razorpay shows</legend>
+            {(
+              [
+                ["refunded", "Refunded. The money went back to the customer."],
+                ["not_refunded", "Not refunded. Put it back on the balance."],
+              ] as const
+            ).map(([value, label]) => (
+              <label key={value} className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
+                <input type="radio" name="payout-outcome" value={value} checked={outcome === value} onChange={() => setOutcome(value)} className="mt-1" data-testid={`resolve-${value}`} />
+                {label}
+              </label>
+            ))}
+          </fieldset>
+        </ReasonDialog>
       )}
     </MachinesShell>
   );

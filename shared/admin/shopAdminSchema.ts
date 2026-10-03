@@ -158,6 +158,7 @@ const payoutSchema = z.object({
   status: oneOf(PAYOUT_STATUSES),
   amountPaise: z.number().int(),
   topUpId: maybe,
+  paymentId: maybe,
   refundId: maybe,
   error: maybe,
   requestedBy: maybe,
@@ -182,6 +183,17 @@ export const shopCustomerDetailSchema = z.object({
 });
 
 export type ShopAdminOrder = z.infer<typeof shopAdminOrderSchema>;
+export const shopBalanceRefundSchema = z.object({
+  payouts: listOf(payoutSchema),
+  refundedPaise: tally,
+  balancePaise: tally,
+  remainderPaise: tally,
+  remainderReason: z.enum(["none", "outside_refund_window", "payout_cap"]).catch("none"),
+});
+
+export const shopPayoutEnvelopeSchema = z.object({ payout: payoutSchema });
+
+export type ShopBalanceRefund = z.infer<typeof shopBalanceRefundSchema>;
 export type ShopCustomerRow = z.infer<typeof shopCustomerRowSchema>;
 export type ShopCustomerDetail = z.infer<typeof shopCustomerDetailSchema>;
 export type ShopLedgerEntry = ShopCustomerDetail["ledger"][number];

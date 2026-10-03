@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { formatInr } from "@shared/shop/shopSchema";
 import type { ShopLedgerEntry, ShopPayout, ShopTopUp } from "@shared/admin/shopAdminSchema";
 import { Card, Empty, Field, Fields, Pill } from "../AdminUi";
@@ -47,6 +48,8 @@ export function CustomerBalance({
   loadingLedger,
   topUps,
   payouts,
+  onRefund,
+  onResolve,
 }: {
   balancePaise: number;
   ledger: ShopLedgerEntry[];
@@ -55,12 +58,24 @@ export function CustomerBalance({
   loadingLedger: boolean;
   topUps: ShopTopUp[];
   payouts: ShopPayout[];
+  onRefund: () => void;
+  onResolve: (payout: ShopPayout) => void;
 }) {
   const toppedUp = topUps.filter((t) => t.status === "credited").reduce((sum, t) => sum + t.amountPaise, 0);
   const credited = topUps.filter((t) => t.status === "credited").length;
   const paidBack = payouts.filter((p) => p.status === "refunded").reduce((sum, p) => sum + p.amountPaise, 0);
   return (
-    <Card title="Balance" testId="card-customer-balance">
+    <Card
+      title="Balance"
+      testId="card-customer-balance"
+      action={
+        balancePaise > 0 && (
+          <Button type="button" size="sm" variant="outline" onClick={onRefund} className="rounded-lg cursor-pointer" data-testid="button-refund-balance">
+            Refund balance
+          </Button>
+        )
+      }
+    >
       <Fields>
         <Field label="Balance now" value={formatInr(balancePaise)} testId="customer-balance" />
         <Field label="Topped up" value={`${formatInr(toppedUp)} in ${credited} ${credited === 1 ? "top-up" : "top-ups"}`} />
@@ -157,6 +172,18 @@ export function CustomerBalance({
                   <Cell className="whitespace-nowrap">
                     <Pill className={PAYOUT_LABEL[p.status].className}>{PAYOUT_LABEL[p.status].text}</Pill>
                     {p.error && <span className="mt-1 block text-xs text-muted-foreground">{p.error}</span>}
+                    {p.status === "unknown" && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onResolve(p)}
+                        className="mt-2 block rounded-lg cursor-pointer"
+                        data-testid={`button-resolve-${p.payoutId}`}
+                      >
+                        Record what Razorpay shows
+                      </Button>
+                    )}
                   </Cell>
                   <Cell className="text-xs">{p.requestedBy}</Cell>
                   <Cell className="text-xs">

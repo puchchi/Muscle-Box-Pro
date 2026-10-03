@@ -10,6 +10,8 @@ const m = vi.hoisted(() => ({
   reissueShopOrder: vi.fn(),
   fetchShopCustomers: vi.fn(),
   fetchShopCustomer: vi.fn(),
+  refundCustomerBalance: vi.fn(),
+  resolveShopPayout: vi.fn(),
   fetchShopMenu: vi.fn(),
   fetchAllMachines: vi.fn(),
   search: vi.fn(() => new URLSearchParams()),
@@ -24,6 +26,8 @@ vi.mock("@/lib/shopAdminApi", () => ({
   reissueShopOrder: m.reissueShopOrder,
   fetchShopCustomers: m.fetchShopCustomers,
   fetchShopCustomer: m.fetchShopCustomer,
+  refundCustomerBalance: m.refundCustomerBalance,
+  resolveShopPayout: m.resolveShopPayout,
 }));
 vi.mock("@/lib/shopApi", () => ({ fetchShopMenu: m.fetchShopMenu }));
 vi.mock("@/lib/adminMachineApi", async (orig) => ({ ...(await orig<typeof import("@/lib/adminMachineApi")>()), fetchAllMachines: m.fetchAllMachines }));
@@ -42,12 +46,12 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import { shopAdminOrderEnvelopeSchema, shopCustomerDetailSchema, shopCustomerRowSchema } from "@shared/admin/shopAdminSchema";
+import { shopAdminOrderEnvelopeSchema, shopBalanceRefundSchema, shopCustomerDetailSchema, shopCustomerRowSchema } from "@shared/admin/shopAdminSchema";
 import { shopMenuSchema } from "@shared/shop/shopSchema";
 import AdminShopOrders from "@/pages/admin/AdminShopOrders";
 import AdminShopOrderDetail from "@/pages/admin/AdminShopOrderDetail";
 import AdminShopCustomers from "@/pages/admin/AdminShopCustomers";
-import AdminShopCustomerDetail from "@/pages/admin/AdminShopCustomerDetail";
+import AdminShopCustomerDetail, { balanceRefundNotice } from "@/pages/admin/AdminShopCustomerDetail";
 import { shopOrderOfCode } from "@/pages/admin/machines/shopBits";
 
 const wireOrder = (over: Record<string, unknown> = {}) => ({
@@ -241,6 +245,56 @@ describe("Customers", () => {
     expect(await within(ledger).findByText("Top-up")).toBeInTheDocument();
     expect(within(ledger).getAllByRole("row")).toHaveLength(4);
     expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument();
+  });
+
+  it("refunds the balance with a reason, says what stayed behind, and reloads", async () => {
+    const withBalance = shopCustomerDetailSchema.parse({ customer: { customerId: "cu_1", email: "a@b.in", stamps: 0, balancePaise: 30200, createdAt: 1 } });
+    const emptied = shopCustomerDetailSchema.parse({ customer: { customerId: "cu_1", email: "a@b.in", stamps: 0, balancePaise: 9900, createdAt: 1 } });
+    m.fetchShopCustomer.mockResolvedValueOnce(ok(withBalance)).mockResolvedValueOnce(ok(emptied));
+    m.refundCustomerBalance.mockResolvedValue(ok(shopBalanceRefundSchema.parse({ payouts: [], refundedPaise: 20300, balancePaise: 9900, remainderPaise: 9900, remainderReason: "outside_refund_window" })));
+    render(<AdminShopCustomerDetail customerId="cu_1" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-refund-balance"));
+    const confirm = screen.getByTestId("dialog-refund-balance-confirm");
+    expect(confirm).toBeDisabled();
+    await user.type(screen.getByTestId("dialog-refund-balance-reason"), "Moving city");
+    await user.click(confirm);
+
+    expect(m.refundCustomerBalance).toHaveBeenCalledWith("cu_1", "Moving city");
+    expect(await screen.findByTestId("customer-done")).toHaveTextContent("₹203 is queued to go back");
+    expect(screen.getByTestId("customer-done")).toHaveTextContent("₹99 stays on the balance");
+    expect(await screen.findByTestId("customer-balance")).toHaveTextContent("₹99");
+  });
+
+  it("warns when nothing could go back to a payment, and asks to press again past the cap", () => {
+    const none = balanceRefundNotice(shopBalanceRefundSchema.parse({ refundedPaise: 0, balancePaise: 9900, remainderPaise: 9900, remainderReason: "outside_refund_window" }));
+    expect(none.tone).toBe("warn");
+    expect(none.text).toContain("Nothing could be refunded");
+    expect(balanceRefundNotice(shopBalanceRefundSchema.parse({ refundedPaise: 100, remainderPaise: 50, remainderReason: "payout_cap" })).text).toContain("Press Refund balance again");
+  });
+
+  it("hides Refund balance at zero, and records Razorpay's answer for a stuck refund", async () => {
+    const payout = { payoutId: "po_1", status: "unknown", amountPaise: 10000, paymentId: "pay_9", requestedBy: "a@x.in", reason: "r", createdAt: 1 };
+    const stuck = shopCustomerDetailSchema.parse({ customer: { customerId: "cu_1", email: "a@b.in", stamps: 0, balancePaise: 0, createdAt: 1 }, payouts: [payout] });
+    const settled = shopCustomerDetailSchema.parse({ customer: { customerId: "cu_1", email: "a@b.in", stamps: 0, balancePaise: 10000, createdAt: 1 }, payouts: [{ ...payout, status: "failed" }] });
+    m.fetchShopCustomer.mockResolvedValueOnce(ok(stuck)).mockResolvedValueOnce(ok(settled));
+    m.resolveShopPayout.mockResolvedValue(ok({ payout: { ...payout, status: "failed" } }));
+    render(<AdminShopCustomerDetail customerId="cu_1" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-resolve-po_1"));
+    expect(screen.queryByTestId("button-refund-balance")).not.toBeInTheDocument();
+    expect(screen.getByTestId("dialog-resolve-payout")).toHaveTextContent("pay_9");
+    await user.type(screen.getByTestId("dialog-resolve-payout-reason"), "Dashboard shows no refund");
+    expect(screen.getByTestId("dialog-resolve-payout-confirm")).toBeDisabled();
+    await user.click(screen.getByTestId("resolve-not_refunded"));
+    await user.click(screen.getByTestId("dialog-resolve-payout-confirm"));
+
+    expect(m.resolveShopPayout).toHaveBeenCalledWith("po_1", "not_refunded", "Dashboard shows no refund");
+    expect(await screen.findByTestId("customer-done")).toHaveTextContent("₹100 is back on the balance");
+    expect(await screen.findByTestId("payout-po_1")).toHaveTextContent("Refused, put back");
+    expect(screen.queryByTestId("button-resolve-po_1")).not.toBeInTheDocument();
   });
 });
 

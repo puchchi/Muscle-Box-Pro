@@ -221,9 +221,16 @@ in a new AWS shop service, not Supabase.
         its order), the top-ups with their Razorpay payment and refundable-until date, and the
         refunds to the customer with who asked and why. A refund whose outcome is unknown shows
         "Check in Razorpay".
-      - Not built yet: the actions for the balance, `POST shop-admin/customers/{customerId}/balance/refund`
-        (`adminBalanceRefund`) and `POST shop-admin/payouts/{payoutId}/resolve`. The page only
-        shows them.
+      - Balance actions (2026-10-03), both with a reason (200 characters):
+        - **Refund balance**, shown while the balance is above zero:
+          `POST shop-admin/customers/{customerId}/balance/refund`. It only marks; the refund worker
+          pays within minutes. The page says what was queued and what stayed: past the 175-day
+          window or from a refunded drink ("returned another way", still an open question for the
+          owner), or past one go's payout cap ("press again"). Nothing queued shows as a warning.
+        - **Record what Razorpay shows**, on a refund whose outcome is unknown:
+          `POST shop-admin/payouts/{payoutId}/resolve` with refunded or not refunded. Not refunded
+          puts the amount back on the balance. The dialog names the Razorpay payment to look up.
+        - The page reloads the customer after either, so the balance and history are the server's.
       - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
       - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
         Production is `https://api.muscleboxpro.com/shop-admin`. Restart `next dev` after setting it.

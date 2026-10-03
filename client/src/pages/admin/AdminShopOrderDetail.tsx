@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { formatInr, type ShopDrink } from "@shared/shop/shopSchema";
 import type { ShopAdminOrder } from "@shared/admin/shopAdminSchema";
 import type { MachineRow } from "@shared/admin/machinesSchema";
@@ -17,6 +16,7 @@ import { useAdminGuard } from "./useAdminGuard";
 import { Card, Empty, Field, Fields, SuccessPanel } from "./AdminUi";
 import { ConfirmDialog, formatIstStamp, MachineDialog, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 import { WarningPanel } from "./machines/WarningPanel";
+import { ReasonDialog, ReasonField } from "./machines/ReasonDialog";
 import { canRefund, canReissue, canRetryRefund, reissueDrinks } from "./machines/shopOrderRules";
 import { CustomerCell, ShopNotConfigured, ShopStatusPill } from "./machines/shopBits";
 
@@ -279,78 +279,6 @@ function EarlierCodesCard({ order }: { order: ShopAdminOrder }) {
         ))}
       </ol>
     </Card>
-  );
-}
-
-const REASON_MAX = 200;
-
-function ReasonField({ value, onChange, testId }: { value: string; onChange: (v: string) => void; testId: string }) {
-  return (
-    <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
-      Reason
-      <Textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        maxLength={REASON_MAX}
-        rows={3}
-        placeholder="For example: the machine didn't pour the drink"
-        className="rounded-xl"
-        data-testid={testId}
-      />
-    </label>
-  );
-}
-
-function ReasonDialog({
-  open,
-  title,
-  description,
-  confirmLabel,
-  destructive = false,
-  busy,
-  onClose,
-  onConfirm,
-  testId,
-}: {
-  open: boolean;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  destructive?: boolean;
-  busy: boolean;
-  onClose: () => void;
-  onConfirm: (reason: string) => void;
-  testId: string;
-}) {
-  const [reason, setReason] = useState("");
-  const trimmed = reason.trim();
-  return (
-    <MachineDialog
-      open={open}
-      onClose={onClose}
-      title={title}
-      description={description}
-      testId={testId}
-      footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose} className="rounded-xl cursor-pointer">
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant={destructive ? "destructive" : "default"}
-            onClick={() => onConfirm(trimmed)}
-            disabled={busy || trimmed.length === 0}
-            className="rounded-xl cursor-pointer"
-            data-testid={`${testId}-confirm`}
-          >
-            {busy ? "Working…" : confirmLabel}
-          </Button>
-        </>
-      }
-    >
-      <ReasonField value={reason} onChange={setReason} testId={`${testId}-reason`} />
-    </MachineDialog>
   );
 }
 

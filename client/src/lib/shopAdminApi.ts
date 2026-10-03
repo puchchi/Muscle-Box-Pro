@@ -5,8 +5,10 @@ import { parseWith } from "@shared/admin/machinesSchema";
 import {
   shopAdminOrderEnvelopeSchema,
   shopAdminOrdersSchema,
+  shopBalanceRefundSchema,
   shopCustomerDetailSchema,
   shopCustomersSchema,
+  shopPayoutEnvelopeSchema,
   type ShopOrderFilters,
 } from "@shared/admin/shopAdminSchema";
 
@@ -47,3 +49,11 @@ export const fetchShopCustomers = (cursor: string | null) => call(shopCustomersS
 
 export const fetchShopCustomer = (id: string, ledgerCursor: string | null = null) =>
   call(shopCustomerDetailSchema, "GET", `/customers/${seg(id)}${queryString({ ledgerCursor })}`);
+
+export const refundCustomerBalance = (customerId: string, reason: string) =>
+  call(shopBalanceRefundSchema, "POST", `/customers/${seg(customerId)}/balance/refund`, { reason });
+
+export type PayoutOutcome = "refunded" | "not_refunded";
+
+export const resolveShopPayout = (payoutId: string, outcome: PayoutOutcome, reason: string) =>
+  call(shopPayoutEnvelopeSchema, "POST", `/payouts/${seg(payoutId)}/resolve`, { outcome, reason });
