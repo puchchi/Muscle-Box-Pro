@@ -180,6 +180,12 @@ in a new AWS shop service, not Supabase.
       `credentials: "omit"`. The phone keeps its last 10 orders (`savedOrders.ts`) so a closed
       checkout or a UPI app switch can find the order again. `/drinks/:path*` gets
       `Referrer-Policy: no-referrer` and the only CSP that allows Razorpay.
+- [x] **Account orders skip the email form** (2026-10-03). The backend's `codeEmail` already
+      sends a signed-in purchase's code to the account. So `buy` saves `account: true` with the
+      order, and the receipt says "We've emailed this code to the address on your account."
+      instead of the form. The receipt response has no owner, so an order claimed at sign-in, or
+      opened on another phone, still shows the form. That is right for claims, which `codeEmail`
+      skips.
       - Gated on `NEXT_PUBLIC_MBP_SHOP_API_URL`: unset keeps the holding page, so production is
         unchanged until it is set to `https://api.muscleboxpro.com/shop`.
       - Production also needs `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` for drink pictures, and the

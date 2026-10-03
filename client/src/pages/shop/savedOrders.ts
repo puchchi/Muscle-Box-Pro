@@ -3,6 +3,7 @@ export interface SavedOrder {
   sn: string;
   drinkName: string;
   savedAt: number;
+  account?: boolean;
 }
 
 const KEY = "mbp:shop-orders";
@@ -19,7 +20,7 @@ function store(): Storage | null {
 function isSaved(value: unknown): value is SavedOrder {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-  return typeof v.token === "string" && typeof v.sn === "string" && typeof v.drinkName === "string" && typeof v.savedAt === "number";
+  return typeof v.token === "string" && typeof v.sn === "string" && typeof v.drinkName === "string" && typeof v.savedAt === "number" && (v.account === undefined || typeof v.account === "boolean");
 }
 
 export function savedOrders(): SavedOrder[] {
@@ -39,6 +40,8 @@ export function saveOrder(order: SavedOrder): void {
     return;
   }
 }
+
+export const isAccountOrder = (token: string) => savedOrders().some((o) => o.token === token && o.account === true);
 
 export function receiptHref(token: string): string {
   return `/drinks/receipt#t=${encodeURIComponent(token)}`;

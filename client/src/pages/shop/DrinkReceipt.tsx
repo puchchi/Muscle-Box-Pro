@@ -8,7 +8,7 @@ import { emailShopCode, fetchShopReceipt } from "@/lib/shopApi";
 import { signedInHint } from "@/lib/shopSession";
 import { AccountLink, ShopHeader } from "./ShopHolding";
 import { RECEIPT_COPY } from "./shopCopy";
-import { tokenFromHash } from "./savedOrders";
+import { isAccountOrder, tokenFromHash } from "./savedOrders";
 
 export const POLL_FAST_MS = 3_000;
 export const POLL_SLOW_MS = 10_000;
@@ -117,7 +117,7 @@ function ReceiptBody({ receipt, token, slow }: { receipt: ShopReceipt; token: st
         <Status receipt={receipt} price={price} slow={slow} />
       </Panel>
       <OrderLine receipt={receipt} price={price} />
-      {receipt.status === "coded" && receipt.code && receipt.used !== true && <EmailCode token={token} />}
+      {receipt.status === "coded" && receipt.code && receipt.used !== true && (isAccountOrder(token) ? <AccountEmailed /> : <EmailCode token={token} />)}
     </>
   );
 }
@@ -267,6 +267,15 @@ function OrderLine({ receipt, price }: { receipt: ShopReceipt; price: string }) 
         <span className="block font-display text-lg font-black text-gray-900">{price}</span>
       </span>
     </div>
+  );
+}
+
+function AccountEmailed() {
+  return (
+    <p className="flex items-start gap-2 rounded-2xl border border-gray-100 bg-white p-4 text-sm text-gray-700 sm:p-5" data-testid="receipt-account-emailed">
+      <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary-ink" aria-hidden />
+      {RECEIPT_COPY.accountEmailed}
+    </p>
   );
 }
 

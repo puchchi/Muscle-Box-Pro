@@ -170,6 +170,7 @@ describe("DrinksShop", () => {
     expect(mockPay).toHaveBeenCalledWith({ ...created.data, description: "Chocolate protein shake" });
     expect(mockPush).toHaveBeenCalledWith(`/drinks/receipt#t=${TOKEN}`);
     expect(savedOrders()[0]).toMatchObject({ token: TOKEN, sn: "GS805TEST01", drinkName: "Chocolate protein shake" });
+    expect(savedOrders()[0].account).toBeUndefined();
   });
 
   it("links to the order when the payment window is closed, in case it was paid", async () => {
@@ -248,6 +249,22 @@ describe("DrinkReceipt", () => {
     expect(await screen.findByTestId("receipt-used")).toHaveTextContent(RECEIPT_COPY.used);
     expect(screen.getByText(RECEIPT_COPY.usedBody)).toBeInTheDocument();
     expect(screen.queryByTestId("receipt-email")).not.toBeInTheDocument();
+  });
+
+  it("says an account order's code was emailed, and offers no form", async () => {
+    saveOrder({ token: TOKEN, sn: "GS805TEST01", drinkName: "Chocolate protein shake", savedAt: 1, account: true });
+    mockReceipt.mockResolvedValue(receipt());
+    open();
+    expect(await screen.findByTestId("receipt-account-emailed")).toHaveTextContent(RECEIPT_COPY.accountEmailed);
+    expect(screen.queryByTestId("receipt-email")).not.toBeInTheDocument();
+  });
+
+  it("keeps the email form for an order this phone didn't buy signed in", async () => {
+    saveOrder({ token: TOKEN, sn: "GS805TEST01", drinkName: "Chocolate protein shake", savedAt: 1 });
+    mockReceipt.mockResolvedValue(receipt());
+    open();
+    expect(await screen.findByTestId("receipt-email")).toBeInTheDocument();
+    expect(screen.queryByTestId("receipt-account-emailed")).not.toBeInTheDocument();
   });
 
   it("emails the code, and shows the server's address error", async () => {

@@ -74,7 +74,7 @@ export function DrinksShop({ sn }: { sn: string }) {
       if (MENU_CHANGED.has(order.error.code)) void load();
       return;
     }
-    saveOrder({ token: order.data.token, sn, drinkName: drink.name, savedAt: Date.now() });
+    saveOrder({ token: order.data.token, sn, drinkName: drink.name, savedAt: Date.now(), ...(asCustomer ? { account: true } : {}) });
     setSaved(savedOrders());
     const outcome = await payWithRazorpay({ ...order.data, description: drink.name });
     if (outcome === "paid") {

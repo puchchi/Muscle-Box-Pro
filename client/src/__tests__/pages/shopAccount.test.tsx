@@ -31,7 +31,7 @@ vi.mock("next/link", () => ({
 import { shopCustomerSchema, shopMenuSchema, shopMyCodesSchema, shopMyOrdersSchema } from "@shared/shop/shopSchema";
 import { DrinksShop } from "@/pages/shop/DrinksShop";
 import { DrinkAccount } from "@/pages/shop/DrinkAccount";
-import { saveOrder } from "@/pages/shop/savedOrders";
+import { saveOrder, savedOrders } from "@/pages/shop/savedOrders";
 
 const TOKEN = "A".repeat(43);
 const ok = <T,>(data: T) => ({ ok: true, data });
@@ -79,6 +79,7 @@ describe("paying on /drinks", () => {
     expect(m.verifySignin).toHaveBeenCalledWith("asha@example.com", "123456", { sn: "S1", claimToken: "B".repeat(43) });
     expect(m.createShopOrder).toHaveBeenCalledWith("S1", "1001", { asCustomer: true });
     expect(m.push).toHaveBeenCalledWith(`/drinks/receipt#t=${TOKEN}`);
+    expect(savedOrders()[0]).toMatchObject({ token: TOKEN, account: true });
   });
 
   it("shows a wrong code as the server words it and stays on the code step", async () => {

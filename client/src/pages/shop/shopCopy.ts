@@ -178,6 +178,7 @@ export const RECEIPT_COPY = {
   rules: "Works once, at this machine, for this drink. It never expires.",
   emailLabel: "Email me this code",
   emailHint: "So you have it even if you close this page.",
+  accountEmailed: "We've emailed this code to the address on your account.",
   emailSend: "Send",
   emailSending: "Sending…",
   emailSent: (email: string) => `Done. If ${email} is right, the code arrives in a minute or two.`,
