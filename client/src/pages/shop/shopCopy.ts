@@ -117,7 +117,7 @@ export const MEMBER_COPY = {
   steps: [
     { title: "Join with your email", body: "Type the 6-digit code we email you. That's your account." },
     { title: "Buy on your phone", body: "Scan the QR on the machine, pick a protein shake and pay while signed in." },
-    { title: "Your 10th is free", body: "After 9 stamps, a free protein shake code shows up in your account." },
+    { title: "Your 10th is free", body: "After 9 stamps, a free protein shake code shows up in your account. Use it for any drink, at any machine." },
   ],
   guestNote: "Bought as a guest and emailed yourself the code? Join with that email and those protein shakes count too.",
 };
@@ -149,7 +149,7 @@ export const SHOP_COPY = {
   savedAll: "All orders",
   machineCode: (sn: string) => `Machine code: ${sn}`,
   memberTitle: "Every 10th protein shake is free",
-  memberBody: "Sign in when you pay to collect stamps. Or pay as a guest.",
+  memberBody: "Sign in when you pay to collect stamps. Your free protein shake works for any drink, at any machine. Or pay as a guest.",
   memberCta: "Sign in",
   stepsTitle: "How it works",
   stepsLead: "No account needed. The code works once, at this machine, for the drink you picked.",
