@@ -168,7 +168,13 @@ export function StampSlots({ filled, className }: { filled: number; className: s
           <li
             key={i}
             className={`flex aspect-square items-center justify-center rounded-full ${
-              reward ? "border-2 border-dashed border-white/70 text-white" : on ? "bg-white text-gray-900" : "border-2 border-white/25 text-white/30"
+              reward
+                ? on
+                  ? "bg-primary text-white ring-2 ring-white/80"
+                  : "border-2 border-dashed border-white/70 text-white"
+                : on
+                  ? "bg-white text-gray-900"
+                  : "border-2 border-white/25 text-white/30"
             }`}
           >
             {reward ? <Gift className="h-1/2 w-1/2" /> : <CupSoda className="h-[45%] w-[45%]" />}
@@ -176,6 +182,24 @@ export function StampSlots({ filled, className }: { filled: number; className: s
         );
       })}
     </ol>
+  );
+}
+
+export const readyRewards = (codes: ShopMyCode[] | null) => codes?.filter((c) => c.kind === "reward" && c.used !== true) ?? [];
+
+export const stampsShown = (stamps: number, rewards: ShopMyCode[]) => (rewards.length > 0 ? 10 : Math.min(stamps, 9));
+
+export function FreeShakeCodes({ rewards, stamps }: { rewards: ShopMyCode[]; stamps: number }) {
+  return (
+    <div className="mt-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15" data-testid="free-shake-ready">
+      {rewards.map((r) => (
+        <p key={r.code} className="font-mono text-2xl font-semibold tracking-[0.12em]">
+          {grouped(r.code)}
+        </p>
+      ))}
+      <p className="mt-2 text-sm leading-relaxed text-white/80">{ACCOUNT_COPY.freeReadyBody}</p>
+      {stamps > 0 && <p className="mt-2 text-sm text-white/70">{ACCOUNT_COPY.freeReadyStamps(stamps)}</p>}
+    </div>
   );
 }
 
@@ -191,7 +215,22 @@ function SignedIn({
   onDeleted: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
-  const filled = Math.min(customer.stamps, 9);
+  const [codes, setCodes] = useState<ShopMyCode[] | null>(null);
+  const [codesFailed, setCodesFailed] = useState(false);
+
+  const loadCodes = useCallback(async () => {
+    setCodesFailed(false);
+    const result = await fetchMyCodes();
+    if (result.ok) setCodes(result.data);
+    else setCodesFailed(true);
+  }, []);
+
+  useEffect(() => {
+    void loadCodes();
+  }, [loadCodes]);
+
+  const rewards = readyRewards(codes);
+  const filled = stampsShown(customer.stamps, rewards);
 
   async function leave() {
     setLeaving(true);
@@ -223,9 +262,16 @@ function SignedIn({
             <h2 id="stamps-title" className="sr-only">
               {ACCOUNT_COPY.stampsTitle}
             </h2>
-            <LoyaltyCard filled={filled} caption={ACCOUNT_COPY.stampsCount(filled)}>
-              <p className="mt-5 text-sm text-white/90">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
-            </LoyaltyCard>
+            {rewards.length > 0 ? (
+              <LoyaltyCard filled={filled} caption={ACCOUNT_COPY.freeReadyCaption}>
+                <p className="mt-5 font-semibold">{ACCOUNT_COPY.freeReadyTitle(rewards.length)}</p>
+                <FreeShakeCodes rewards={rewards} stamps={customer.stamps} />
+              </LoyaltyCard>
+            ) : (
+              <LoyaltyCard filled={filled} caption={ACCOUNT_COPY.stampsCount(filled)}>
+                <p className="mt-5 text-sm text-white/90">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
+              </LoyaltyCard>
+            )}
           </section>
           <dl className="grid grid-cols-2 gap-4">
             <Stat label={ACCOUNT_COPY.statsDrinks} value={customer.lifetimeDrinks} />
@@ -242,7 +288,7 @@ function SignedIn({
         </div>
 
         <div className="space-y-6 lg:col-span-7">
-          <MyCodes />
+          <MyCodes codes={codes} failed={codesFailed} onRetry={() => void loadCodes()} />
           <MyOrders />
         </div>
       </div>
@@ -261,21 +307,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function MyCodes() {
-  const [codes, setCodes] = useState<ShopMyCode[] | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  const load = useCallback(async () => {
-    setFailed(false);
-    const result = await fetchMyCodes();
-    if (result.ok) setCodes(result.data);
-    else setFailed(true);
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
+function MyCodes({ codes, failed, onRetry }: { codes: ShopMyCode[] | null; failed: boolean; onRetry: () => void }) {
   const ready = codes?.filter((c) => c.used !== true) ?? [];
   const used = codes?.filter((c) => c.used === true) ?? [];
 
@@ -285,7 +317,7 @@ function MyCodes() {
         {ACCOUNT_COPY.codesTitle}
       </h2>
       {failed ? (
-        <Retry onRetry={() => void load()} />
+        <Retry onRetry={onRetry} />
       ) : codes === null ? (
         <p className="mt-3 text-sm text-gray-600">{ACCOUNT_COPY.loading}</p>
       ) : (

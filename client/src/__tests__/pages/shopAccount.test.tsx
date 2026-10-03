@@ -46,7 +46,11 @@ beforeEach(() => {
   );
   m.createShopOrder.mockResolvedValue(created);
   m.pay.mockResolvedValue("paid");
+  m.fetchMyCodes.mockResolvedValue(ok([]));
 });
+
+const rewardCode = (used: boolean) =>
+  shopMyCodesSchema.parse({ codes: [{ kind: "reward", code: "90213948", drink: null, sn: null, machineName: null, used, createdAt: "2026-10-03T16:00:00Z" }] }).codes;
 
 describe("paying on /drinks", () => {
   it("signs in inside the pay sheet, claims this phone's last order, then pays as the customer", async () => {
@@ -104,6 +108,17 @@ describe("paying on /drinks", () => {
     expect(m.createShopOrder).toHaveBeenCalledWith("S1", "1001", { asCustomer: true });
   });
 
+  it("shows a free shake that is waiting, with its code, instead of counting stamps from zero", async () => {
+    localStorage.setItem("mbp:shop-signed-in", "1");
+    m.fetchMe.mockResolvedValue(ok(shopCustomerSchema.parse({ ...customer, stamps: 0, stampsToNext: 9 })));
+    m.fetchMyCodes.mockResolvedValue(ok(rewardCode(false)));
+    render(<DrinksShop sn="S1" />);
+    expect(await screen.findByTestId("free-shake-ready")).toHaveTextContent("9021 3948");
+    const card = screen.getByTestId("shop-signed-in");
+    expect(card).toHaveTextContent("Your free protein shake is ready.");
+    expect(card).not.toHaveTextContent("9 more");
+  });
+
   it("doesn't ask the server who is signed in on a phone that never signed in", async () => {
     render(<DrinksShop sn="S1" />);
     expect(await screen.findByTestId("shop-account-link")).toHaveTextContent("Sign in");
@@ -136,8 +151,9 @@ describe("/drinks/account", () => {
     );
     render(<DrinkAccount sn="S1" />);
     const user = userEvent.setup();
-    expect(await screen.findByTestId("account-stamps")).toHaveTextContent("4 of 9");
-    expect(screen.getByTestId("account-stamps")).toHaveTextContent("5 more protein shakes");
+    expect(await screen.findByTestId("free-shake-ready")).toHaveTextContent("5555 4444");
+    expect(screen.getByTestId("account-stamps")).toHaveTextContent("Your free protein shake is ready.");
+    expect(screen.getByTestId("account-stamps")).toHaveTextContent("You also have 4 of 9 stamps");
     expect(await screen.findByTestId("account-code-12345678")).toHaveTextContent("Used");
     expect(screen.getByTestId("account-code-55554444")).toHaveTextContent("Free protein shake");
     expect(screen.getByTestId("account-code-55554444")).toHaveTextContent("Ready to use");
@@ -149,6 +165,15 @@ describe("/drinks/account", () => {
     expect(screen.getByTestId("account-order-so_1")).toBeInTheDocument();
     expect(screen.queryByTestId("account-orders-more")).not.toBeInTheDocument();
     expect(screen.getByTestId("account-menu")).toHaveAttribute("href", "/drinks?sn=S1");
+  });
+
+  it("counts stamps once the free shake is used", async () => {
+    m.fetchMyCodes.mockResolvedValue(ok(rewardCode(true)));
+    render(<DrinkAccount sn="S1" />);
+    expect(await screen.findByTestId("account-code-90213948")).toHaveTextContent("Used");
+    expect(screen.getByTestId("account-stamps")).toHaveTextContent("4 of 9");
+    expect(screen.getByTestId("account-stamps")).toHaveTextContent("5 more protein shakes");
+    expect(screen.queryByTestId("free-shake-ready")).not.toBeInTheDocument();
   });
 
   it("offers sign-in when the session has ended", async () => {

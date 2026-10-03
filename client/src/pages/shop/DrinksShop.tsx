@@ -4,15 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, ChevronRight, CupSoda, Flame, Gift, Loader2, MapPin, Receipt, ReceiptIndianRupee, RotateCw, Snowflake, UserRound } from "lucide-react";
-import { formatInr, type ShopCustomer, type ShopDrink, type ShopErrorCode, type ShopMenu } from "@shared/shop/shopSchema";
+import { formatInr, type ShopCustomer, type ShopDrink, type ShopErrorCode, type ShopMenu, type ShopMyCode } from "@shared/shop/shopSchema";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { createShopOrder, fetchMe, fetchShopMenu } from "@/lib/shopApi";
+import { createShopOrder, fetchMe, fetchMyCodes, fetchShopMenu } from "@/lib/shopApi";
 import { signedInHint } from "@/lib/shopSession";
 import { payWithRazorpay } from "@/lib/razorpayCheckout";
 import { AccountLink, ShopHeader, accountHref } from "./ShopHolding";
 import { ACCOUNT_COPY, PAY_COPY, SHOP_COPY, SIGNIN_COPY } from "./shopCopy";
 import { MachineScreenMock } from "./MachineScreenMock";
-import { StampSlots } from "./DrinkAccount";
+import { FreeShakeCodes, readyRewards, StampSlots, stampsShown } from "./DrinkAccount";
 import { SignInForm } from "./SignInForm";
 import { CONTAINER } from "./shopUi";
 import { receiptHref, saveOrder, savedOrders, type SavedOrder } from "./savedOrders";
@@ -29,6 +29,7 @@ export function DrinksShop({ sn }: { sn: string }) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [saved, setSaved] = useState<SavedOrder[]>([]);
   const [customer, setCustomer] = useState<ShopCustomer | null>(null);
+  const [rewards, setRewards] = useState<ShopMyCode[]>([]);
   const [choosing, setChoosing] = useState<ShopDrink | null>(null);
 
   const load = useCallback(async () => {
@@ -49,7 +50,11 @@ export function DrinksShop({ sn }: { sn: string }) {
   useEffect(() => {
     if (!signedInHint()) return;
     void fetchMe().then((me) => {
-      if (me.ok) setCustomer(me.data);
+      if (!me.ok) return;
+      setCustomer(me.data);
+      void fetchMyCodes().then((codes) => {
+        if (codes.ok) setRewards(readyRewards(codes.data));
+      });
     });
   }, []);
 
@@ -120,7 +125,7 @@ export function DrinksShop({ sn }: { sn: string }) {
         <div className={`mt-6 grid gap-6 lg:gap-8 ${sidebar ? "lg:grid-cols-12 lg:grid-rows-[auto_1fr]" : ""}`}>
           {showMember && (
             <div className="lg:col-span-4 lg:col-start-9 lg:row-start-1">
-              <MemberCard sn={sn} customer={customer} />
+              <MemberCard sn={sn} customer={customer} rewards={rewards} />
             </div>
           )}
           <section className={sidebar ? "lg:col-span-8 lg:row-span-2 lg:row-start-1" : ""} aria-label="Menu">
@@ -196,8 +201,9 @@ export function DrinksShop({ sn }: { sn: string }) {
   );
 }
 
-function MemberCard({ sn, customer }: { sn: string; customer: ShopCustomer | null }) {
-  const filled = customer ? Math.min(customer.stamps, 9) : 0;
+function MemberCard({ sn, customer, rewards }: { sn: string; customer: ShopCustomer | null; rewards: ShopMyCode[] }) {
+  const filled = customer ? stampsShown(customer.stamps, rewards) : 0;
+  const freeReady = customer !== null && rewards.length > 0;
   return (
     <div
       className="relative overflow-hidden rounded-3xl bg-gray-900 p-5 text-white shadow-xl shadow-gray-900/10 sm:p-6"
@@ -208,14 +214,13 @@ function MemberCard({ sn, customer }: { sn: string; customer: ShopCustomer | nul
       <div className="relative">
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/80">{ACCOUNT_COPY.cardLabel}</span>
-          {customer && <span className="text-sm font-semibold">{ACCOUNT_COPY.stampsCount(filled)}</span>}
+          {customer && <span className="text-sm font-semibold">{freeReady ? ACCOUNT_COPY.freeReadyCaption : ACCOUNT_COPY.stampsCount(filled)}</span>}
         </div>
-        {customer ? (
-          <p className="mt-3 text-lg font-semibold leading-snug">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
-        ) : (
-          <p className="mt-3 text-lg font-semibold leading-snug">{SHOP_COPY.memberTitle}</p>
-        )}
+        <p className="mt-3 text-lg font-semibold leading-snug">
+          {!customer ? SHOP_COPY.memberTitle : freeReady ? ACCOUNT_COPY.freeReadyTitle(rewards.length) : ACCOUNT_COPY.stampsBody(customer.stampsToNext)}
+        </p>
         <StampSlots filled={filled} className="mt-4 grid grid-cols-10 gap-1.5 sm:gap-2 lg:grid-cols-5 lg:gap-2.5" />
+        {freeReady && <FreeShakeCodes rewards={rewards} stamps={customer.stamps} />}
         {customer ? (
           <p className="mt-4 truncate text-sm text-white/70">{PAY_COPY.signedInAs(customer.email)}</p>
         ) : (
