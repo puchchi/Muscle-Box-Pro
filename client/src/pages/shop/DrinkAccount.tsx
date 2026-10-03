@@ -15,7 +15,7 @@ import { PRIMARY_BUTTON, SignInForm } from "./SignInForm";
 
 const PAGE = "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8";
 const PANEL = "rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6";
-const PANEL_TITLE = "text-lg font-bold text-gray-900";
+const PANEL_TITLE = "text-lg font-semibold tracking-tight text-gray-900";
 const QUIET_BUTTON =
   "inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
 
@@ -204,10 +204,10 @@ function SignedIn({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <span className={EYEBROW}>{ACCOUNT_COPY.eyebrow}</span>
-          <h1 className="font-display font-black uppercase leading-[0.9] text-foreground" style={{ fontSize: "clamp(2.25rem, 5vw, 3.5rem)" }}>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             {ACCOUNT_COPY.hello(customer.name)}
           </h1>
-          <p className="mt-2 truncate text-gray-700" data-testid="account-email">
+          <p className="mt-1 truncate text-sm text-gray-600" data-testid="account-email">
             {customer.email}
           </p>
         </div>
@@ -224,7 +224,7 @@ function SignedIn({
               {ACCOUNT_COPY.stampsTitle}
             </h2>
             <LoyaltyCard filled={filled} caption={ACCOUNT_COPY.stampsCount(filled)}>
-              <p className="mt-5 text-white/90">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
+              <p className="mt-5 text-sm text-white/90">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</p>
             </LoyaltyCard>
           </section>
           <dl className="grid grid-cols-2 gap-4">
@@ -256,7 +256,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4">
       <dt className="text-sm text-gray-600">{label}</dt>
-      <dd className="mt-1 font-display text-3xl font-black text-gray-900">{value}</dd>
+      <dd className="mt-1 text-2xl font-bold tabular-nums text-gray-900">{value}</dd>
     </div>
   );
 }
@@ -304,7 +304,7 @@ function MyCodes() {
                   >
                     <CodeLabel code={c} />
                     <span className="sm:text-right">
-                      <span className="block font-mono text-2xl font-bold tracking-[0.15em] text-gray-900">{grouped(c.code)}</span>
+                      <span className="block font-mono text-xl font-semibold tracking-[0.12em] text-gray-900">{grouped(c.code)}</span>
                       <CodeState used={c.used} />
                     </span>
                   </li>
@@ -349,7 +349,7 @@ function CodeLabel({ code }: { code: ShopMyCode }) {
         </span>
       )}
       <span className="min-w-0">
-        <span className="block truncate font-semibold text-gray-900">{reward ? ACCOUNT_COPY.freeDrink : (code.drink?.name ?? "")}</span>
+        <span className="block truncate font-medium text-gray-900">{reward ? ACCOUNT_COPY.freeDrink : (code.drink?.name ?? "")}</span>
         <span className="block truncate text-sm text-gray-600">
           {reward ? ACCOUNT_COPY.freeDrinkWhere : [code.machineName, when(code.createdAt)].filter(Boolean).join(", ")}
         </span>
@@ -401,11 +401,11 @@ function MyOrders() {
             {orders.map((o) => (
               <li key={o.shopOrderId} className="flex items-center justify-between gap-4 py-3" data-testid={`account-order-${o.shopOrderId}`}>
                 <span className="min-w-0">
-                  <span className="block truncate font-semibold text-gray-900">{o.drink.name}</span>
+                  <span className="block truncate font-medium text-gray-900">{o.drink.name}</span>
                   <span className="block truncate text-sm text-gray-600">{[o.machineName, when(o.createdAt)].filter(Boolean).join(", ")}</span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block font-semibold text-gray-900">{formatInr(o.pricePaise)}</span>
+                  <span className="block font-medium tabular-nums text-gray-900">{formatInr(o.pricePaise)}</span>
                   <span className="block text-xs text-gray-600">{ACCOUNT_COPY.status[o.status] ?? ""}</span>
                 </span>
               </li>
