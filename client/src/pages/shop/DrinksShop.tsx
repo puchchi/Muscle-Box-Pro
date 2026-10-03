@@ -138,7 +138,7 @@ export function DrinksShop({ sn }: { sn: string }) {
             </ul>
           )}
 
-          {saved.length > 0 && <SavedOrders orders={saved} />}
+          {saved.length > 0 && <SavedOrders orders={saved} sn={sn} signedIn={customer !== null} />}
           <PayChoice
             sn={sn}
             drink={choosing}
@@ -194,7 +194,10 @@ function MemberStrip({ sn, customer }: { sn: string; customer: ShopCustomer | nu
             <span className="block font-semibold text-gray-900">{ACCOUNT_COPY.stampsBody(customer.stampsToNext)}</span>
           </span>
         </span>
-        <span className="text-sm font-semibold text-gray-700">{ACCOUNT_COPY.stampsCount(Math.min(customer.stamps, 9))}</span>
+        <span className="flex w-full items-center gap-3 pl-8 sm:w-auto sm:pl-0">
+          <StampDots filled={Math.min(customer.stamps, 9)} />
+          <span className="text-sm font-semibold text-gray-700">{ACCOUNT_COPY.stampsCount(Math.min(customer.stamps, 9))}</span>
+        </span>
       </div>
     );
   }
@@ -212,6 +215,20 @@ function MemberStrip({ sn, customer }: { sn: string; customer: ShopCustomer | nu
         {SHOP_COPY.memberCta}
       </Link>
     </div>
+  );
+}
+
+function StampDots({ filled }: { filled: number }) {
+  return (
+    <span className="flex items-center gap-1" aria-hidden>
+      {Array.from({ length: 10 }, (_, i) =>
+        i === 9 ? (
+          <Gift key={i} className="h-4 w-4 text-primary-ink" />
+        ) : (
+          <span key={i} className={`h-2.5 w-2.5 rounded-full ${i < filled ? "bg-primary" : "bg-gray-200"}`} />
+        ),
+      )}
+    </span>
   );
 }
 
@@ -458,31 +475,41 @@ function MenuSkeleton() {
   );
 }
 
-function SavedOrders({ orders }: { orders: SavedOrder[] }) {
+function SavedOrders({ orders, sn, signedIn }: { orders: SavedOrder[]; sn: string; signedIn: boolean }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5" data-testid="shop-saved">
-      <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-gray-900">
-        <Receipt className="h-4 w-4 text-primary" aria-hidden />
-        {SHOP_COPY.savedTitle}
-      </h2>
-      <ul className="divide-y divide-gray-100">
+    <section className="max-w-2xl rounded-2xl border border-gray-200 bg-white" aria-labelledby="shop-saved-title" data-testid="shop-saved">
+      <div className="flex items-center justify-between gap-3 px-4 pb-1 pt-4 sm:px-5">
+        <h2 id="shop-saved-title" className="flex items-center gap-2 text-base font-bold text-gray-900">
+          <Receipt className="h-4 w-4 text-primary" aria-hidden />
+          {SHOP_COPY.savedTitle}
+        </h2>
+        {signedIn && (
+          <Link href={accountHref(sn)} className="text-sm font-semibold text-primary-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {SHOP_COPY.savedAll}
+          </Link>
+        )}
+      </div>
+      <ul className="divide-y divide-gray-100 pb-1">
         {orders.slice(0, 3).map((order) => (
-          <li key={order.token} className="flex items-center justify-between gap-3 py-2 text-sm">
-            <span className="min-w-0">
-              <span className="block truncate font-medium text-gray-900">{order.drinkName}</span>
-              <span className="block text-xs text-muted-foreground">
-                {new Date(order.savedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}
-              </span>
-            </span>
+          <li key={order.token}>
             <a
               href={receiptHref(order.token)}
-              className="inline-flex h-11 shrink-0 items-center rounded-full px-4 font-semibold text-primary-ink hover:bg-primary/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none sm:px-5"
             >
-              {SHOP_COPY.savedOpen}
+              <span className="min-w-0">
+                <span className="block truncate font-medium text-gray-900">{order.drinkName}</span>
+                <span className="block text-sm text-gray-600">
+                  {new Date(order.savedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-primary-ink">
+                {SHOP_COPY.savedOpen}
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </span>
             </a>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }

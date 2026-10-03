@@ -58,7 +58,7 @@ export const JOIN_COPY = {
   benefitsTitleHighlight: "Earn every time.",
   benefitsLead: "Sign in once with your email. Every protein shake code you buy and every stamp you earn stay in your account.",
   benefits: [
-    { icon: "phone", title: "Buy on your phone", body: "Pick a protein shake, pay with any UPI app and get a code to type on the machine.", stat: "UPI", statLabel: "Any app" },
+    { icon: "phone", title: "Buy on your phone", body: "Pick a protein shake, pay by UPI or card and get a code to type on the machine.", stat: "UPI", statLabel: "Or card" },
     { icon: "expiry", title: "Codes never expire", body: "Every code you buy is saved in your account and works until you use it.", stat: "0", statLabel: "Expiry dates" },
     { icon: "email", title: "No password", body: "Sign in with a code we email you. There is nothing to remember.", stat: "6", statLabel: "Digit email code" },
   ],
@@ -103,7 +103,7 @@ export const MEMBER_COPY = {
 
 export const SHOP_COPY = {
   title: "Pick your protein shake",
-  lead: "Pay with any UPI app. You get a code to type on the machine, and it never expires.",
+  lead: "Pay by UPI, card or net banking. You get a code to type on the machine, and it never expires.",
   online: "Machine online",
   offline: "Machine offline",
   offlineNotice: "This machine is offline right now, so you can't buy here. Try again in a few minutes, or buy on the machine's screen.",
@@ -123,8 +123,9 @@ export const SHOP_COPY = {
   closedBody: "You're only charged if you completed the payment. If money left your account, your code is on your order.",
   openOrder: "Open my order",
   checkoutUnavailable: "We couldn't open the payment window. Check your connection and try again.",
-  savedTitle: "Your orders on this phone",
-  savedOpen: "Open",
+  savedTitle: "Recent orders",
+  savedOpen: "View order",
+  savedAll: "All orders",
   machineCode: (sn: string) => `Machine code: ${sn}`,
   memberTitle: "Every 10th protein shake is free",
   memberBody: "Sign in when you pay to collect stamps. Or pay as a guest.",
@@ -132,7 +133,7 @@ export const SHOP_COPY = {
   stepsTitle: "How it works",
   stepsLead: "No account needed. The code works once, at this machine, for the drink you picked.",
   steps: [
-    { title: "Pick and pay", body: "Choose a protein shake here and pay with any UPI app." },
+    { title: "Pick and pay", body: "Choose a protein shake here and pay by UPI, card or net banking." },
     { title: "Get your code", body: "Your 8-digit code shows up on this page as soon as you've paid." },
     { title: "Type it on the machine", body: 'Type it under "Enter code to start drink" and tap Submit.' },
   ],
