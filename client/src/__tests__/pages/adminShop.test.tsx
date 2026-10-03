@@ -211,6 +211,37 @@ describe("Customers", () => {
     expect(screen.getByRole("link", { name: "55554444" })).toHaveAttribute("href", "/machines/redeem-codes/55554444");
     expect(screen.getByText("Free drink 2, code being made")).toBeInTheDocument();
   });
+
+  it("shows the balance, its history with more on request, the top-ups and the refunds paid back", async () => {
+    const customer = { customerId: "cu_1", email: "asha@example.com", stamps: 0, balancePaise: 30200, createdAt: 1 };
+    const entry = (kind: string, amountPaise: number, balanceAfterPaise: number, extra: Record<string, string> = {}) => ({ kind, amountPaise, balanceAfterPaise, createdAt: 1, ...extra });
+    const first = shopCustomerDetailSchema.parse({
+      customer,
+      orders: [],
+      rewards: [],
+      ledger: [entry("purchase", -9900, 30200, { shopOrderId: "so_9" }), entry("support_refund", -10000, 40100, { payoutId: "po_1" })],
+      ledgerCursor: "l2",
+      topUps: [{ topUpId: "tu_1", status: "credited", amountPaise: 50100, refundedPaise: 10000, createdAt: 1, refundableUntil: 2 }],
+      payouts: [{ payoutId: "po_1", status: "unknown", amountPaise: 10000, requestedBy: "a@x.in", reason: "Moving city", createdAt: 1 }],
+    });
+    const second = shopCustomerDetailSchema.parse({ customer, ledger: [entry("top_up", 50100, 50100, { topUpId: "tu_1" })], ledgerCursor: null });
+    m.fetchShopCustomer.mockResolvedValueOnce(ok(first)).mockResolvedValueOnce(ok(second));
+    render(<AdminShopCustomerDetail customerId="cu_1" />);
+
+    expect(await screen.findByTestId("customer-balance")).toHaveTextContent("₹302");
+    expect(screen.getByTestId("card-customer-balance")).toHaveTextContent("₹501 in 1 top-up");
+    const ledger = screen.getByTestId("customer-ledger");
+    expect(within(ledger).getByRole("link", { name: "so_9" })).toHaveAttribute("href", "/machines/shop-orders/so_9");
+    expect(ledger).toHaveTextContent("Refunded to the customer");
+    expect(ledger).toHaveTextContent("−₹100");
+    expect(screen.getByTestId("payout-po_1")).toHaveTextContent("Check in Razorpay");
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /load more/i }));
+    expect(m.fetchShopCustomer).toHaveBeenLastCalledWith("cu_1", "l2");
+    expect(await within(ledger).findByText("Top-up")).toBeInTheDocument();
+    expect(within(ledger).getAllByRole("row")).toHaveLength(4);
+    expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument();
+  });
 });
 
 describe("shopOrderOfCode", () => {

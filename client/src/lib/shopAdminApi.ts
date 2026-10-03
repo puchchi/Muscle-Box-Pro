@@ -45,4 +45,5 @@ export const reissueShopOrder = (id: string, target: ReissueRequest) =>
 
 export const fetchShopCustomers = (cursor: string | null) => call(shopCustomersSchema, "GET", `/customers${queryString({ cursor })}`);
 
-export const fetchShopCustomer = (id: string) => call(shopCustomerDetailSchema, "GET", `/customers/${seg(id)}`);
+export const fetchShopCustomer = (id: string, ledgerCursor: string | null = null) =>
+  call(shopCustomerDetailSchema, "GET", `/customers/${seg(id)}${queryString({ ledgerCursor })}`);

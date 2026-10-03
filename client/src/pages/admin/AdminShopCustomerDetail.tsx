@@ -12,6 +12,7 @@ import { useAdminGuard } from "./useAdminGuard";
 import { Card, Empty, Field, Fields } from "./AdminUi";
 import { Cell, Col, DataTable, formatIstStamp, Head, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 import { GymLink, FranchiseLink } from "./machines/ownerBits";
+import { CustomerBalance } from "./machines/CustomerBalance";
 import { ShopNotConfigured, shopOrderHref, ShopStatusPill } from "./machines/shopBits";
 
 export default function AdminShopCustomerDetail({ customerId }: { customerId: string }) {
@@ -26,6 +27,19 @@ function CustomerPage({ session, customerId }: { session: AdminSession; customer
   const configured = shopAdminConfigured();
   const [detail, setDetail] = useState<ShopCustomerDetail | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const moreLedger = async () => {
+    if (!detail?.ledgerCursor) return;
+    setLoadingLedger(true);
+    const result = await fetchShopCustomer(customerId, detail.ledgerCursor);
+    setLoadingLedger(false);
+    if (!result.ok) {
+      setProblem(problemOf(result));
+      return;
+    }
+    setDetail((d) => d && { ...d, ledger: [...d.ledger, ...result.data.ledger], ledgerCursor: result.data.ledgerCursor });
+  };
 
   useEffect(() => {
     if (!configured) return;
@@ -98,7 +112,7 @@ function CustomerPage({ session, customerId }: { session: AdminSession; customer
               <ul className="divide-y divide-border/70 border-t border-border/70">
                 {detail.rewards.map((r) => (
                   <li key={r.n} className="flex justify-between gap-4 px-4 py-2 text-sm sm:px-5">
-                    {r.code ? (
+                    {r.status === "coded" && r.code ? (
                       <Link href={`/machines/redeem-codes/${encodeURIComponent(r.code)}`} className="font-mono text-primary hover:underline">
                         {r.code}
                       </Link>
@@ -153,6 +167,18 @@ function CustomerPage({ session, customerId }: { session: AdminSession; customer
                 </DataTable>
               )}
             </Card>
+          </div>
+
+          <div className="lg:col-span-2">
+            <CustomerBalance
+              balancePaise={c.balancePaise}
+              ledger={detail.ledger}
+              ledgerCursor={detail.ledgerCursor}
+              onMoreLedger={() => void moreLedger()}
+              loadingLedger={loadingLedger}
+              topUps={detail.topUps}
+              payouts={detail.payouts}
+            />
           </div>
         </div>
       )}

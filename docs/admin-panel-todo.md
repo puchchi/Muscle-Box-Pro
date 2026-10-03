@@ -215,6 +215,15 @@ in a new AWS shop service, not Supabase.
         hiding it protected nothing), then name, joining machine, stamps, drinks, free drinks,
         balance and join date. A deleted account shows "Deleted account" and no email. The find box
         filters the rows already loaded, by email, name, id or machine; nothing typed in it is sent.
+      - Customer page (2026-10-03): profile, stamp card with each free code (made or still being
+        made), orders, then the balance: balance now, total topped up, total refunded to the
+        customer, the history (newest first, `Load more` pages `?ledgerCursor=`, each row linked to
+        its order), the top-ups with their Razorpay payment and refundable-until date, and the
+        refunds to the customer with who asked and why. A refund whose outcome is unknown shows
+        "Check in Razorpay".
+      - Not built yet: the actions for the balance, `POST shop-admin/customers/{customerId}/balance/refund`
+        (`adminBalanceRefund`) and `POST shop-admin/payouts/{payoutId}/resolve`. The page only
+        shows them.
       - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
       - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
         Production is `https://api.muscleboxpro.com/shop-admin`. Restart `next dev` after setting it.

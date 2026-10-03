@@ -119,9 +119,55 @@ export const shopCustomersSchema = z
 
 const rewardSchema = z.object({
   n: tally,
+  status: z.enum(["pending", "coded"]).catch("pending"),
   code: maybe,
   createdAt: stamp,
   codedAt: stamp,
+});
+
+export const LEDGER_KINDS = ["top_up", "purchase", "drink_refund", "support_refund", "payout_reversed"] as const;
+export const TOP_UP_STATUSES = ["created", "credited", "failed"] as const;
+export const PAYOUT_STATUSES = ["owed", "refunding", "refunded", "failed", "unknown"] as const;
+
+const oneOf = <T extends readonly [string, ...string[]]>(values: T) => z.enum(values).or(z.string().transform(() => "other" as const));
+
+const ledgerEntrySchema = z.object({
+  kind: oneOf(LEDGER_KINDS),
+  amountPaise: z.number().int(),
+  balanceAfterPaise: z.number().int(),
+  shopOrderId: maybe,
+  topUpId: maybe,
+  payoutId: maybe,
+  createdAt: stamp,
+});
+
+const topUpSchema = z.object({
+  topUpId: z.string().min(1),
+  status: oneOf(TOP_UP_STATUSES),
+  amountPaise: z.number().int(),
+  refundedPaise: tally,
+  razorpayOrderId: maybe,
+  razorpayPaymentId: maybe,
+  createdAt: stamp,
+  creditedAt: stamp,
+  refundableUntil: stamp,
+});
+
+const payoutSchema = z.object({
+  payoutId: z.string().min(1),
+  status: oneOf(PAYOUT_STATUSES),
+  amountPaise: z.number().int(),
+  topUpId: maybe,
+  refundId: maybe,
+  error: maybe,
+  requestedBy: maybe,
+  reason: maybe,
+  resolvedBy: maybe,
+  resolveReason: maybe,
+  createdAt: stamp,
+  refundedAt: stamp,
+  failedAt: stamp,
+  resolvedAt: stamp,
 });
 
 export const shopCustomerDetailSchema = z.object({
@@ -129,11 +175,18 @@ export const shopCustomerDetailSchema = z.object({
   orders: listOf(shopAdminOrderSchema),
   nextCursor: cursor,
   rewards: listOf(rewardSchema),
+  ledger: listOf(ledgerEntrySchema),
+  ledgerCursor: cursor,
+  topUps: listOf(topUpSchema),
+  payouts: listOf(payoutSchema),
 });
 
 export type ShopAdminOrder = z.infer<typeof shopAdminOrderSchema>;
 export type ShopCustomerRow = z.infer<typeof shopCustomerRowSchema>;
 export type ShopCustomerDetail = z.infer<typeof shopCustomerDetailSchema>;
+export type ShopLedgerEntry = ShopCustomerDetail["ledger"][number];
+export type ShopTopUp = ShopCustomerDetail["topUps"][number];
+export type ShopPayout = ShopCustomerDetail["payouts"][number];
 
 export type ShopOrderFilters = {
   month?: string;
