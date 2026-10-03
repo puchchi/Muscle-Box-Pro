@@ -477,35 +477,36 @@ function MenuSkeleton() {
 
 function SavedOrders({ orders, sn, signedIn }: { orders: SavedOrder[]; sn: string; signedIn: boolean }) {
   return (
-    <section className="max-w-2xl rounded-2xl border border-gray-200 bg-white" aria-labelledby="shop-saved-title" data-testid="shop-saved">
-      <div className="flex items-center justify-between gap-3 px-4 pb-1 pt-4 sm:px-5">
-        <h2 id="shop-saved-title" className="flex items-center gap-2 text-base font-bold text-gray-900">
-          <Receipt className="h-4 w-4 text-primary" aria-hidden />
+    <section className="mt-10" aria-labelledby="shop-saved-title" data-testid="shop-saved">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <h2 id="shop-saved-title" className="text-xl font-bold text-gray-900">
           {SHOP_COPY.savedTitle}
         </h2>
         {signedIn && (
-          <Link href={accountHref(sn)} className="text-sm font-semibold text-primary-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Link href={accountHref(sn)} className="inline-flex items-center gap-1 text-sm font-semibold text-primary-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             {SHOP_COPY.savedAll}
+            <ChevronRight className="h-4 w-4" aria-hidden />
           </Link>
         )}
       </div>
-      <ul className="divide-y divide-gray-100 pb-1">
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         {orders.slice(0, 3).map((order) => (
           <li key={order.token}>
             <a
               href={receiptHref(order.token)}
-              className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none sm:px-5"
+              aria-label={`${SHOP_COPY.savedOpen}: ${order.drinkName}`}
+              className="flex cursor-pointer items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200/80 transition-shadow duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span className="min-w-0">
-                <span className="block truncate font-medium text-gray-900">{order.drinkName}</span>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <Receipt className="h-5 w-5 text-primary-ink" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-gray-900">{order.drinkName}</span>
                 <span className="block text-sm text-gray-600">
                   {new Date(order.savedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" })}
                 </span>
               </span>
-              <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-primary-ink">
-                {SHOP_COPY.savedOpen}
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </span>
+              <ChevronRight className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />
             </a>
           </li>
         ))}
