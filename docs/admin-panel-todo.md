@@ -120,6 +120,40 @@ Open from this work:
 - [x] **The QR save message.** The save returns `restartPending`, and the notice is
       `appStartNotice(restartPending)` like the other app-start settings.
 
+## Done 2026-10-04: remote control on the machine page (BACKEND-REQUESTS #13)
+
+Contract: mbp-backend `docs/remote-control-dashboard-api.md`, checked against
+`admin/handlers/remote.ts` and `mqtt.ts`. **Sandbox only.** The routes are on a third machine base
+URL, `NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL` (the `IotApiUrl` output of `MbpMachineIot-sandbox`),
+explicit only and never derived. Unset hides the tab. It is also in `connect-src`.
+
+- A **Remote control** tab (`MachineRemoteTab.tsx`). The MQTT card reads `machine.mqtt` from
+  `GET machines/{sn}` and shows one of four states. A certificate we didn't issue gets a warning in
+  the card and a pill in the page header.
+- **Connect MQTT** shows the code once, as `1234 5678`, with a countdown. After a reload,
+  `pendingCode` keeps the countdown without the code. While a code is open, the page re-reads the
+  machine every 10 s and drops the code once it has been used.
+- **Disconnect MQTT** asks for confirmation first.
+- **Commands** (`RemoteCommands.tsx`) appear only when the state is connected:
+  - unlock, restart app and reboot ask for confirmation first;
+  - each command's state is read every 2 s until it is final, and the outcome is in plain English
+    (`remoteRules.ts`);
+  - a 409 `in_use` shows the command that is still running (`fieldErrors.commandId`);
+  - Cancel shows only while the command is `sent`.
+- **Live status** (`RemoteLive.tsx`), also only when connected:
+  - opens a session of 1 to 10 minutes and shows its countdown;
+  - extends it 10 minutes at a time;
+  - reads `live` every 5 s and greys out a report more than 15 s old;
+  - says so on a 409 and opens nothing.
+
+  The panel ends the session when it closes, but only if this tab opened it, so another admin's
+  view isn't cut off.
+- `machine.mqtt` is optional in `machinesSchema.ts`, because the backend that sends it isn't
+  deployed. A settings save keeps the last MQTT block, since PATCH doesn't return one.
+- **Waiting on deploy:** `MbpMachineIot-sandbox`, then `MbpMachine` and `MbpMachineAdmin`. All
+  three are the owner's call. Then set the env var and restart `next dev` so the CSP picks up the
+  host.
+
 ## Done 2026-10-04: the machine console menu in four groups
 
 `MachinesShell.tsx`: Fleet (Machines, Statistics, Logs), Sales (Orders, Shop orders, Customers,

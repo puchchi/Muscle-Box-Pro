@@ -17,6 +17,8 @@ import { MachineGoodsTab } from "./machines/MachineGoodsTab";
 import { MachineStockTab } from "./machines/MachineStockTab";
 import { MachineVoicesTab } from "./machines/MachineVoicesTab";
 import { MachineOwnerTab } from "./machines/MachineOwnerTab";
+import { MachineRemoteTab } from "./machines/MachineRemoteTab";
+import { machineIotConfigured } from "@/lib/machineIotApi";
 
 const TABS = [
   { id: "settings", label: "Settings" },
@@ -25,14 +27,17 @@ const TABS = [
   { id: "stock", label: "Stock" },
   { id: "voices", label: "Voice prompts" },
   { id: "pin", label: "PINs" },
+  { id: "remote", label: "Remote control" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
+const VISIBLE_TABS = TABS.filter((t) => t.id !== "remote" || machineIotConfigured());
+
 const ONLINE_WINDOW_MS = 3 * 60 * 1000;
 
 function tabOf(raw: string | null): TabId {
-  return TABS.some((t) => t.id === raw) ? (raw as TabId) : "settings";
+  return VISIBLE_TABS.some((t) => t.id === raw) ? (raw as TabId) : "settings";
 }
 
 export default function AdminMachineDetail({ sn }: { sn: string }) {
@@ -68,6 +73,8 @@ function MachineDetail({ session, sn }: { session: AdminSession; sn: string }) {
     });
   }, [reload]);
 
+  const keepMqtt = useCallback((saved: Machine) => setMachine((was) => ({ ...saved, mqtt: saved.mqtt ?? was?.mqtt ?? null })), []);
+
   const online = machine?.lastSeenAt ? Date.now() - new Date(machine.lastSeenAt).getTime() < ONLINE_WINDOW_MS : false;
 
   return (
@@ -92,6 +99,11 @@ function MachineDetail({ session, sn }: { session: AdminSession; sn: string }) {
                 {!machine.enabled && (
                   <Pill className="bg-rose-400/15 text-rose-200" testId="machine-disabled">
                     Disabled
+                  </Pill>
+                )}
+                {machine.mqtt?.state === "not_issued_to_this_tablet" && (
+                  <Pill className="bg-rose-400/15 text-rose-200" testId="machine-mqtt-warning">
+                    MQTT: unknown certificate
                   </Pill>
                 )}
                 {machine.restartPending && (
@@ -128,7 +140,7 @@ function MachineDetail({ session, sn }: { session: AdminSession; sn: string }) {
       {machine && (
         <>
           <div className="mb-5 flex flex-wrap gap-1" role="tablist" aria-label="Machine">
-            {TABS.map((entry) => {
+            {VISIBLE_TABS.map((entry) => {
               const active = entry.id === tab;
               return (
                 <button
@@ -150,12 +162,13 @@ function MachineDetail({ session, sn }: { session: AdminSession; sn: string }) {
             })}
           </div>
 
-          {tab === "settings" && <MachineSettingsTab machine={machine} models={models} onReload={reload} onSaved={setMachine} />}
+          {tab === "settings" && <MachineSettingsTab machine={machine} models={models} onReload={reload} onSaved={keepMqtt} />}
           {tab === "owner" && <MachineOwnerTab machine={machine} onChanged={() => void reload()} />}
           {tab === "goods" && <MachineGoodsTab sn={machine.sn} />}
           {tab === "stock" && <MachineStockTab sn={machine.sn} />}
           {tab === "voices" && <MachineVoicesTab sn={machine.sn} onSaved={() => void reload()} />}
           {tab === "pin" && <MachinePinTab machine={machine} onChanged={() => void reload()} />}
+          {tab === "remote" && <MachineRemoteTab machine={machine} onReload={reload} />}
         </>
       )}
     </MachinesShell>

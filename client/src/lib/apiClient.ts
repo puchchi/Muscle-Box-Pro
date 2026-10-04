@@ -136,7 +136,7 @@ export const IS_PRODUCTION_API = hostnameOf(MBP_API_BASE_URL) === PRODUCTION_API
  *
  * In sandbox they are three different `execute-api` hosts, which cannot be derived from each other.
  */
-export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard" | "machineAdmin" | "shopAdmin";
+export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard" | "machineAdmin" | "machineIot" | "shopAdmin";
 
 /** The base path each stack is mapped onto where there is a custom domain to map onto. */
 const BASE_PATHS: Record<ApiTarget, string> = {
@@ -144,6 +144,7 @@ const BASE_PATHS: Record<ApiTarget, string> = {
   franchiseAdmin: "/franchise-admin",
   franchiseWizard: "/franchise-wizard",
   machineAdmin: "/machine-admin",
+  machineIot: "/machine-iot",
   shopAdmin: "/shop-admin",
 };
 
@@ -174,7 +175,8 @@ const BASE_URLS: Record<ApiTarget, string | null> = {
     process.env.NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL,
   ),
   machineAdmin: resolveBase("machineAdmin", process.env.NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL),
-  // Explicit only, never derived: the shop admin pages stay hidden until the routes are deployed.
+  // Explicit only, never derived: these pages stay hidden until the routes are deployed.
+  machineIot: process.env.NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL?.replace(/\/+$/, "") || null,
   shopAdmin: process.env.NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL?.replace(/\/+$/, "") || null,
 };
 
@@ -184,6 +186,7 @@ const BASE_URL_VARS: Record<ApiTarget, string> = {
   franchiseAdmin: "NEXT_PUBLIC_MBP_FRANCHISE_API_URL",
   franchiseWizard: "NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL",
   machineAdmin: "NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL",
+  machineIot: "NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL",
   shopAdmin: "NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL",
 };
 
@@ -760,8 +763,9 @@ export async function machineApiRequest<T>(
   method: ApiMethod,
   path: string,
   body?: unknown,
+  api: "machineAdmin" | "machineIot" = "machineAdmin",
 ): Promise<MachineAdminResult<T>> {
-  const outcome = await rawRequest(method, path, { api: "machineAdmin", body });
+  const outcome = await rawRequest(method, path, { api, body });
   if (outcome.kind === "ok") return { ok: true, data: outcome.data as T };
   if (outcome.kind === "network") return { ok: false, error: MACHINE_NETWORK_ERROR };
   return { ok: false, error: toMachineError(outcome.status, outcome.body) };

@@ -74,6 +74,7 @@ function nonProductionApiOrigins() {
     originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_API_URL),
     originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL),
     originOf(process.env.NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL),
+    originOf(process.env.NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL),
     originOf(process.env.NEXT_PUBLIC_MBP_SHOP_API_URL),
     originOf(process.env.NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL),
   ].filter((origin) => origin !== null && origin !== PRODUCTION_API_ORIGIN);

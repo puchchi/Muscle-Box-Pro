@@ -1,6 +1,7 @@
 import * as z from "zod";
 import { toParse, type AdminParse } from "./parse";
 import { OWNER_STATES } from "./ownership";
+import { mqttSchema } from "./remoteSchema";
 
 export type { AdminParse };
 
@@ -96,6 +97,7 @@ export const machineSchema = z.object({
   createdBy: actor,
   updatedAt: instant,
   updatedBy: actor,
+  mqtt: mqttSchema.nullable().optional().transform((v) => v ?? null),
 });
 
 export const machineEnvelopeSchema = z.object({ machine: machineSchema });
