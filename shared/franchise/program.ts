@@ -54,6 +54,8 @@ export type FranchiseTier = {
   marketRights: string;
   /** One line on who the tier is for. §2, §3. */
   positioning: string;
+  /** The one inclusion that differs between the tiers, short enough for the tier card. */
+  expansion: string;
   /**
    * The recovery threshold — **inclusive of GST**, and therefore not equal to `investmentInr`.
    *
@@ -92,7 +94,8 @@ export const FRANCHISE_TIERS: readonly FranchiseTier[] = [
     investmentInr: 25_00_000,
     initialMachines: 5,
     marketRights: "A defined geographic territory",
-    positioning: "For partners who want to develop a defined geographical territory.",
+    positioning: "For partners who want to develop a defined geographic territory.",
+    expansion: "Can add machines, subject to approval",
     // ₹25,00,000 plus 18% GST. §57, §53.
     capitalRecoveryInr: 29_50_000,
     paymentSchedule: [
@@ -125,6 +128,7 @@ export const FRANCHISE_TIERS: readonly FranchiseTier[] = [
     marketRights: "A defined city",
     positioning:
       "For partners who want responsibility for developing the network across an entire defined city.",
+    expansion: "Priority for more machines and expansion",
     // ₹50,00,000 plus 18% GST. §57, §54, §69.
     capitalRecoveryInr: 59_00_000,
     paymentSchedule: [
@@ -315,14 +319,18 @@ export const MACHINE_RIGHTS = {
 /** §9, §24, §26, §27, §29. Who does what, once the machines land. */
 export const RESPONSIBILITIES = {
   mbp: [
-    "The machines, built and delivered",
+    "The machines, ordered, built and delivered",
     "Protein, brought to your warehouse",
     "Software and updates",
+    "Machine monitoring and alerts",
     "Payment collection and payouts",
+    "Your financial dashboard",
+    "Advertising sold on your machines",
     "Recipes and shake prices",
-    "Gym leads and the standard gym deal",
+    "Gym leads and the gym profit split",
     "Repairs, diagnostics and warranty",
-    "Final say on every gym",
+    "Final say on every gym, including ones you find",
+    "Gym disputes",
   ],
   franchisee: [
     "A warehouse, kept in the right conditions",
@@ -441,12 +449,12 @@ export const FRANCHISE_JOURNEY = [
   {
     phase: "grow",
     title: "Capital recovery",
-    body: "You receive 100% of eligible protein-business distributable profit until the recovery threshold is met.",
+    body: `You receive ${FRANCHISE.proteinProfitSharePct.duringRecovery}% of eligible protein-business distributable profit until the recovery threshold is met.`,
   },
   {
     phase: "grow",
     title: "Long-term partnership",
-    body: "Protein profit moves to 50:50. Advertising stays at 25:75.",
+    body: `Your protein share moves to ${FRANCHISE.proteinProfitSharePct.afterRecovery}%. Your advertising share stays at ${FRANCHISE.advertising.franchiseeSharePct}%.`,
   },
 ] as const;
 

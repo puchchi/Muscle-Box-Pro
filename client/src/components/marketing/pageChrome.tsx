@@ -9,6 +9,7 @@
  * built the way it is are the reasons not to "simplify" them later.
  */
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -36,22 +37,46 @@ export function SkipLink() {
  *
  * Desktop only. The mobile equivalent of "let me get to the bit I care about" is a
  * horizontally scrolling strip, which is the one thing a phone layout should not
- * introduce; phones get the sticky CTA instead. No active-section highlighting. That
- * needs a scroll observer running on every marketing page view to move a colour, and
- * the anchors are already the useful part.
+ * introduce; phones get the sticky CTA instead. The rootMargin top matches the two
+ * stacked sticky bars, so a section counts as current once its heading clears them.
  */
 export function SectionNav({ sections }: { sections: readonly { id: string; label: string }[] }) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const idKey = sections.map((s) => s.id).join(",");
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = entry.target.id;
+          if (entry.isIntersecting) setActiveId(id);
+          else setActiveId((current) => (current === id ? null : current));
+        }
+      },
+      { rootMargin: "-128px 0px -60% 0px" },
+    );
+    for (const id of idKey.split(",")) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, [idKey]);
+
   return (
     <nav
       aria-label="On this page"
-      className="hidden lg:block sticky top-16 z-40 border-b border-border bg-white/90 backdrop-blur-md"
+      className="hidden lg:block sticky top-16 z-40 border-b border-border bg-white"
     >
       <ul className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 h-12">
         {sections.map((s) => (
           <li key={s.id}>
             <a
               href={`#${s.id}`}
-              className="block px-3 py-2 rounded-lg text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-current={activeId === s.id ? "location" : undefined}
+              className={`block px-3 py-2 rounded-lg text-[13px] font-semibold hover:text-primary hover:bg-primary/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                activeId === s.id ? "text-primary-ink bg-primary/[0.06]" : "text-muted-foreground"
+              }`}
             >
               {s.label}
             </a>

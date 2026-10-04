@@ -58,13 +58,13 @@ export const FRANCHISE_FAQ: FaqEntry[] = [
   {
     question: "How does capital recovery work?",
     answer:
-      `Until you have received cumulative eligible protein-business profit equal to your ` +
-      `${formatInr(territory.investmentInr)} investment plus GST, ` +
+      `Until you have received cumulative eligible protein-business profit equal to your investment plus GST ` +
+      `(${formatInr(territory.investmentInr)} plus GST on the ${territory.shortName}, ` +
+      `${formatInr(city.investmentInr)} plus GST on the ${city.shortName}), ` +
       `${FRANCHISE.proteinProfitSharePct.duringRecovery}% of the applicable ` +
       `MuscleBox Pro distributable protein-business profit from your machines goes to you. After that the split ` +
       `moves to ${FRANCHISE.proteinProfitSharePct.afterRecovery}:${FRANCHISE.proteinProfitSharePct.afterRecovery} ` +
-      `and you keep participating for the life of the franchise. The ${city.shortName} threshold is set in its own ` +
-      `agreement.`,
+      `and you keep participating for the life of the franchise.`,
   },
   {
     question: "Does advertising income count toward my capital recovery?",
