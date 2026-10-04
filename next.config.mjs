@@ -161,6 +161,7 @@ function contentSecurityPolicy({ razorpay = false } = {}) {
     sources(["script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-insights.com https://vitals.vercel-insights.com"], "script"),
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     sources(["img-src 'self' data: blob:", ...MACHINE_FILES_CDN_ORIGIN], "img"),
+    ["media-src 'self' blob:", ...MACHINE_FILES_CDN_ORIGIN].join(" "),
     "font-src 'self' https://fonts.gstatic.com",
     sources(["connect-src", ...CONNECT_SRC], "connect"),
     razorpay ? sources(["frame-src"], "frame") : "frame-src 'none'",

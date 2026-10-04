@@ -282,8 +282,8 @@ describe("the referrer policy the onboarding handle depends on", () => {
   );
 });
 
-describe("img-src and the goods pictures", () => {
-  async function imgSrcOfAFreshConfig(): Promise<string[]> {
+describe("img-src and media-src for the machine files", () => {
+  async function directiveOfAFreshConfig(name: string): Promise<string[]> {
     const fresh = await import("../../../../next.config.mjs");
     const rules = await fresh.default.headers!();
     const csp = rules
@@ -292,16 +292,17 @@ describe("img-src and the goods pictures", () => {
     const found = csp
       .split(";")
       .map((part) => part.trim())
-      .find((part) => part.startsWith("img-src "));
-    if (!found) throw new Error("expected an img-src directive in the CSP");
+      .find((part) => part.startsWith(`${name} `));
+    if (!found) throw new Error(`expected a ${name} directive in the CSP`);
     return found.split(/\s+/).slice(1);
   }
 
-  it("allows the files CDN that serves goods pictures", async () => {
+  it("allows the files CDN that serves goods pictures, ad videos and voice prompts", async () => {
     vi.stubEnv("NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN", "https://d1234abcd.cloudfront.net");
     vi.resetModules();
 
-    expect(await imgSrcOfAFreshConfig()).toContain("https://d1234abcd.cloudfront.net");
+    expect(await directiveOfAFreshConfig("img-src")).toContain("https://d1234abcd.cloudfront.net");
+    expect(await directiveOfAFreshConfig("media-src")).toEqual(["'self'", "blob:", "https://d1234abcd.cloudfront.net"]);
 
     vi.unstubAllEnvs();
     vi.resetModules();
@@ -311,7 +312,8 @@ describe("img-src and the goods pictures", () => {
     vi.stubEnv("NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN", "https://evil.example.com");
     vi.resetModules();
 
-    expect(await imgSrcOfAFreshConfig()).toEqual(["'self'", "data:", "blob:"]);
+    expect(await directiveOfAFreshConfig("img-src")).toEqual(["'self'", "data:", "blob:"]);
+    expect(await directiveOfAFreshConfig("media-src")).toEqual(["'self'", "blob:"]);
 
     vi.unstubAllEnvs();
     vi.resetModules();

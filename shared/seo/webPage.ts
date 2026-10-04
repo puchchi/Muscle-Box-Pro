@@ -29,5 +29,5 @@ export function webPageSchemas({ path, crumb, title, description, imageAlt }: { 
     dateModified: PAGE_CHANGED_ON[path],
     primaryImageOfPage: { "@type": "ImageObject", url: OG_IMAGE_URL, width: 1200, height: 800, caption: imageAlt },
   };
-  return [breadcrumb, webPage];
+  return [breadcrumb, webPage] as const;
 }
