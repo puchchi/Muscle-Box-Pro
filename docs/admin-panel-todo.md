@@ -120,6 +120,14 @@ Open from this work:
 - [x] **The QR save message.** The save returns `restartPending`, and the notice is
       `appStartNotice(restartPending)` like the other app-start settings.
 
+## Done 2026-10-04: the machine console menu in four groups
+
+`MachinesShell.tsx`: Fleet (Machines, Statistics, Logs), Sales (Orders, Shop orders, Customers,
+Redeem codes, Feedback), Menu (Goods library, Materials, Discounts, New products) and On screen
+(Ads, Voice prompts, QR and logo). Headings show from `lg` up; below that the strip scrolls
+sideways with a divider between groups. The current page is scrolled into view either way, and
+the sidebar scrolls on short screens.
+
 ## Done 2026-10-02: machine handoff (coming soon, Contact us, ratings, Instagram)
 
 The brief is `mbp-machine/docs/HANDOFF-FRONTEND-STOCK-SOON-FEEDBACK.md`; the admin API it builds

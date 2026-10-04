@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 
 const { mockList } = vi.hoisted(() => ({ mockList: vi.fn() }));
 vi.mock("@/lib/adminMachineApi", () => ({ listFeedback: mockList }));
@@ -42,5 +42,26 @@ describe("Feedback in the machine menu", () => {
 
     act(() => setNewFeedbackCount(0));
     expect(screen.queryByTestId("badge-new-feedback")).not.toBeInTheDocument();
+  });
+});
+
+describe("Machine menu groups", () => {
+  it("puts every page under one of four named groups, and marks the current one", () => {
+    mockList.mockResolvedValue({ ok: true, data: { items: [], nextCursor: null, newCount: 0, counts: null } });
+    render(
+      <MachinesShell session={session} section="qr">
+        x
+      </MachinesShell>,
+    );
+    const groups = screen.getAllByRole("group");
+    expect(groups.map((g) => g.getAttribute("aria-label"))).toEqual(["Fleet", "Sales", "Menu", "On screen"]);
+    const ids = (g: HTMLElement) => within(g).getAllByRole("link").map((a) => a.dataset.testid?.replace("machines-tab-", ""));
+    expect(groups.map(ids)).toEqual([
+      ["machines", "statistics", "logs"],
+      ["orders", "shopOrders", "customers", "redeemCodes", "feedback"],
+      ["goods", "materials", "discounts", "newProducts"],
+      ["ads", "voices", "qr"],
+    ]);
+    expect(within(groups[3]!).getByTestId("machines-tab-qr")).toHaveAttribute("aria-current", "page");
   });
 });

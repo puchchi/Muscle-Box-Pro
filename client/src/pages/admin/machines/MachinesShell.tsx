@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -26,27 +27,53 @@ import { apiBaseUrl } from "@/lib/apiClient";
 import { useAdminSignOut } from "../AdminShell";
 import { useNewFeedbackCount } from "./newFeedbackCount";
 
-const SECTIONS = [
-  { href: "/machines", label: "Machines", id: "machines", icon: CupSoda },
-  { href: "/machines/goods", label: "Goods library", id: "goods", icon: Package },
-  { href: "/machines/materials", label: "Materials", id: "materials", icon: Boxes },
-  { href: "/machines/ads", label: "Ads", id: "ads", icon: MonitorPlay },
-  { href: "/machines/voices", label: "Voice prompts", id: "voices", icon: Volume2 },
-  { href: "/machines/qr", label: "QR and logo", id: "qr", icon: QrCode },
-  { href: "/machines/discounts", label: "Discounts", id: "discounts", icon: Percent },
-  { href: "/machines/new-products", label: "New products", id: "newProducts", icon: Sparkles },
-  { href: "/machines/redeem-codes", label: "Redeem codes", id: "redeemCodes", icon: Ticket },
-  { href: "/machines/orders", label: "Orders", id: "orders", icon: ClipboardList },
-  { href: "/machines/shop-orders", label: "Shop orders", id: "shopOrders", icon: ShoppingBag, shop: true },
-  { href: "/machines/customers", label: "Customers", id: "customers", icon: Users, shop: true },
-  { href: "/machines/feedback", label: "Feedback", id: "feedback", icon: MessageSquare },
-  { href: "/machines/statistics", label: "Statistics", id: "statistics", icon: BarChart3 },
-  { href: "/machines/logs", label: "Logs", id: "logs", icon: ScrollText },
-] as const satisfies ReadonlyArray<{ href: string; label: string; id: string; icon: LucideIcon; shop?: true }>;
+type NavItem = { href: string; label: string; id: string; icon: LucideIcon; shop?: true };
 
-const VISIBLE_SECTIONS = SECTIONS.filter((s) => !("shop" in s) || apiBaseUrl("shopAdmin") !== null);
+const GROUPS = [
+  {
+    label: "Fleet",
+    items: [
+      { href: "/machines", label: "Machines", id: "machines", icon: CupSoda },
+      { href: "/machines/statistics", label: "Statistics", id: "statistics", icon: BarChart3 },
+      { href: "/machines/logs", label: "Logs", id: "logs", icon: ScrollText },
+    ],
+  },
+  {
+    label: "Sales",
+    items: [
+      { href: "/machines/orders", label: "Orders", id: "orders", icon: ClipboardList },
+      { href: "/machines/shop-orders", label: "Shop orders", id: "shopOrders", icon: ShoppingBag, shop: true },
+      { href: "/machines/customers", label: "Customers", id: "customers", icon: Users, shop: true },
+      { href: "/machines/redeem-codes", label: "Redeem codes", id: "redeemCodes", icon: Ticket },
+      { href: "/machines/feedback", label: "Feedback", id: "feedback", icon: MessageSquare },
+    ],
+  },
+  {
+    label: "Menu",
+    items: [
+      { href: "/machines/goods", label: "Goods library", id: "goods", icon: Package },
+      { href: "/machines/materials", label: "Materials", id: "materials", icon: Boxes },
+      { href: "/machines/discounts", label: "Discounts", id: "discounts", icon: Percent },
+      { href: "/machines/new-products", label: "New products", id: "newProducts", icon: Sparkles },
+    ],
+  },
+  {
+    label: "On screen",
+    items: [
+      { href: "/machines/ads", label: "Ads", id: "ads", icon: MonitorPlay },
+      { href: "/machines/voices", label: "Voice prompts", id: "voices", icon: Volume2 },
+      { href: "/machines/qr", label: "QR and logo", id: "qr", icon: QrCode },
+    ],
+  },
+] as const satisfies ReadonlyArray<{ label: string; items: ReadonlyArray<NavItem> }>;
 
-export type MachineSection = (typeof SECTIONS)[number]["id"];
+const shopConfigured = apiBaseUrl("shopAdmin") !== null;
+const VISIBLE_GROUPS = GROUPS.map((g) => ({
+  label: g.label,
+  items: (g.items as ReadonlyArray<NavItem>).filter((s) => !s.shop || shopConfigured),
+}));
+
+export type MachineSection = (typeof GROUPS)[number]["items"][number]["id"];
 
 export function MachinesShell({
   session,
@@ -59,6 +86,15 @@ export function MachinesShell({
 }) {
   const handleSignOut = useAdminSignOut();
   const newFeedback = useNewFeedbackCount();
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !active) return;
+    if (nav.scrollWidth > nav.clientWidth) nav.scrollLeft = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
+    if (nav.scrollHeight > nav.clientHeight) nav.scrollTop = active.offsetTop - (nav.clientHeight - active.offsetHeight) / 2;
+  }, [section]);
 
   return (
     <div className="dark theme-console min-h-screen bg-background text-foreground lg:flex">
@@ -82,37 +118,51 @@ export function MachinesShell({
         </div>
 
         <nav
+          ref={navRef}
           aria-label="Machine console"
-          className="flex gap-1 overflow-x-auto px-3 pb-2 lg:flex-1 lg:flex-col lg:overflow-visible lg:px-3 lg:pb-0"
+          className="relative flex gap-1 overflow-x-auto px-3 pb-2 lg:flex-1 lg:flex-col lg:gap-4 lg:overflow-y-auto lg:px-3 lg:pb-3"
         >
-          {VISIBLE_SECTIONS.map(({ href, label, id, icon: Icon }) => {
-            const active = id === section;
-            return (
-              <Link
-                key={id}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={`flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                }`}
-                data-testid={`machines-tab-${id}`}
-              >
-                <Icon className={`h-4 w-4 ${active ? "text-primary" : ""}`} aria-hidden />
-                {label}
-                {id === "feedback" && newFeedback > 0 && (
-                  <span
-                    className="relative ml-auto rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-5 tabular-nums text-primary-foreground"
-                    data-testid="badge-new-feedback"
+          {VISIBLE_GROUPS.map((group, i) => (
+            <div
+              key={group.label}
+              role="group"
+              aria-label={group.label}
+              className={`flex shrink-0 gap-1 lg:flex-col lg:gap-0.5 ${i > 0 ? "border-l border-border pl-1 lg:border-l-0 lg:pl-0" : ""}`}
+              data-testid={`machines-nav-group-${i}`}
+            >
+              <p className="hidden px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 lg:block" aria-hidden>
+                {group.label}
+              </p>
+              {group.items.map(({ href, label, id, icon: Icon }) => {
+                const active = id === section;
+                return (
+                  <Link
+                    key={id}
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors lg:py-1.5 ${
+                      active
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    }`}
+                    data-testid={`machines-tab-${id}`}
                   >
-                    {newFeedback}
-                    <span className="sr-only"> new</span>
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+                    <Icon className={`h-4 w-4 ${active ? "text-primary" : ""}`} aria-hidden />
+                    {label}
+                    {id === "feedback" && newFeedback > 0 && (
+                      <span
+                        className="relative ml-auto rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-5 tabular-nums text-primary-foreground"
+                        data-testid="badge-new-feedback"
+                      >
+                        {newFeedback}
+                        <span className="sr-only"> new</span>
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="hidden border-t border-border px-3 py-4 lg:block">
