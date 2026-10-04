@@ -163,7 +163,7 @@ export default function AdminFranchises() {
       <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
         <div>
           <h1
-            className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1"
+            className="text-2xl font-display font-black text-foreground tracking-tight mb-1"
             data-testid="admin-franchises-heading"
           >
             Franchises
@@ -347,6 +347,7 @@ export default function AdminFranchises() {
                   Status
                 </Th>
                 <Th>Contact</Th>
+                <Th className="hidden md:table-cell">Network</Th>
                 {/* Hidden below `lg`, where the five columns no longer fit and the choice is
                     between losing this one and scrolling "Last change" off the edge. The stall
                     flag lives on that column, so this is the one to drop. */}
@@ -404,6 +405,20 @@ export default function AdminFranchises() {
                     <td className="px-4 py-2.5">
                       <p className="text-foreground">{row.noticesEmail}</p>
                       <p className="text-xs text-muted-foreground">{row.noticesPhone}</p>
+                    </td>
+                    <td className="hidden md:table-cell px-4 py-2.5 whitespace-nowrap tabular-nums" data-testid={`network-${row.franchiseId}`}>
+                      {row.gymCount === 0 && row.machineCount === 0 ? (
+                        <span className="text-muted-foreground">None yet</span>
+                      ) : (
+                        <>
+                          <p className="text-foreground">
+                            {row.gymCount} {row.gymCount === 1 ? "gym" : "gyms"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {row.machineCount} {row.machineCount === 1 ? "machine" : "machines"}
+                          </p>
+                        </>
+                      )}
                     </td>
                     <td className="hidden lg:table-cell px-4 py-2.5 text-right text-muted-foreground whitespace-nowrap">
                       {formatIstDateTime(row.createdAt)}

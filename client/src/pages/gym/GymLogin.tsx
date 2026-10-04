@@ -15,6 +15,7 @@ import {
   fetchGymSession,
   signInToPortal,
 } from "@/lib/gymSession";
+import type { OnboardingError } from "@shared/onboarding/types";
 import { useEffect, useState } from "react";
 
 /**
@@ -59,7 +60,7 @@ const partnerPerks = [
 
 export default function GymLogin() {
   const router = useRouter();
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<OnboardingError | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   /**
    * Set on a successful sign-in and never cleared: this component is on its way out.
@@ -90,6 +91,13 @@ export default function GymLogin() {
     };
   }, [router]);
 
+  // Otherwise "Incorrect email or password" sits under the field being corrected until the
+  // next submit, because that is the only other place the notice is cleared.
+  useEffect(() => {
+    const subscription = form.watch(() => setNotice(null));
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setNotice(null);
     setIsSubmitting(true);
@@ -99,7 +107,11 @@ export default function GymLogin() {
         // The seam has already decided what a gym owner should read: one generic message
         // for every credential failure, so this page is not the thing that turns a
         // server's deliberate silence into an account-enumeration oracle.
-        setNotice(result.error.message);
+        setNotice(result.error);
+        // Disabling the focused button while the request was in flight sent focus to
+        // `<body>`, and re-enabling it does not bring focus back: without this a keyboard
+        // user tabs in from the top of the document to reach the field they were just in.
+        form.setFocus("password", { shouldSelect: true });
         return;
       }
 
@@ -182,6 +194,35 @@ export default function GymLogin() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {/*
+                Above the fields rather than next to the button. Sitting between the password
+                and the submit, it pushed the button down 46px and landed 18px of itself on
+                the rectangle the button had just left, so a second click after a failure hit
+                the message instead of retrying.
+              */}
+              {notice && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3.5"
+                  data-testid="login-notice"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  </div>
+                  <div className="text-sm text-red-700 leading-relaxed">
+                    <p className="font-semibold">{notice.message}</p>
+                    {/* Wrong advice when the request never arrived, so the network case is spared it. */}
+                    {notice.code !== "network" && (
+                      <Link href="/gym/forgot-password">
+                        <span className="font-semibold underline underline-offset-2 hover:text-red-800 transition-colors cursor-pointer">
+                          Reset your password
+                        </span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <FormField
                 control={form.control}
                 name="email"
@@ -192,6 +233,7 @@ export default function GymLogin() {
                       <Input
                         placeholder="you@yourgym.com"
                         type="email"
+                        autoComplete="email"
                         {...field}
                         className="bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl"
                         data-testid="input-email"
@@ -219,6 +261,7 @@ export default function GymLogin() {
                       <Input
                         placeholder="••••••••"
                         type="password"
+                        autoComplete="current-password"
                         {...field}
                         className="bg-gray-50 border-gray-200 text-foreground placeholder:text-gray-400 focus:border-primary focus:bg-white transition-colors h-11 rounded-xl"
                         data-testid="input-password"
@@ -229,21 +272,10 @@ export default function GymLogin() {
                 )}
               />
 
-              {notice && (
-                <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5">
-                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="w-4 h-4 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-red-700 mb-0.5">Sign in failed</p>
-                    <p className="text-xs text-red-600 leading-relaxed">{notice}</p>
-                  </div>
-                </div>
-              )}
-
               <Button
                 type="submit"
                 disabled={isSubmitting || isLeaving}
+                aria-busy={isSubmitting || isLeaving}
                 className="w-full h-11 bg-primary-fill text-primary-foreground font-bold text-sm hover:bg-primary-fill/90 transition-colors rounded-xl cursor-pointer shadow-md shadow-primary/20 mt-2"
                 data-testid="button-login"
               >

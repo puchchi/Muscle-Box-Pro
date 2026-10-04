@@ -52,17 +52,17 @@ describe("Franchise page", () => {
 
   it("shows the four headline commercials from the program data", () => {
     render(<Franchise />);
-    expect(screen.getByTestId("headline-Investment from")).toHaveTextContent(
-      formatLakh(territory.investmentInr),
-    );
-    expect(screen.getByTestId("headline-Machines from")).toHaveTextContent(
-      String(territory.initialMachines),
-    );
-    expect(screen.getByTestId("headline-Protein profit during recovery")).toHaveTextContent(
+    expect(screen.getByTestId("headline-Protein profit until recovery")).toHaveTextContent(
       `${FRANCHISE.proteinProfitSharePct.duringRecovery}%`,
     );
-    expect(screen.getByTestId("headline-Advertising profit share")).toHaveTextContent(
+    expect(screen.getByTestId("headline-Protein profit after recovery")).toHaveTextContent(
+      `${FRANCHISE.proteinProfitSharePct.afterRecovery}%`,
+    );
+    expect(screen.getByTestId("headline-Advertising profit, from day one")).toHaveTextContent(
       `${FRANCHISE.advertising.franchiseeSharePct}%`,
+    );
+    expect(screen.getByTestId("headline-Payment stages")).toHaveTextContent(
+      String(territory.paymentSchedule?.length ?? 1),
     );
   });
 
@@ -104,7 +104,7 @@ describe("Franchise page", () => {
 
   it("says the franchisee does not own the machines", () => {
     render(<Franchise />);
-    expect(screen.getByRole("heading", { name: /you operate them\. we own them\./i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /the machines stay ours/i })).toBeInTheDocument();
     expect(screen.getByText(/is not a purchase of the machines/i)).toBeInTheDocument();
   });
 

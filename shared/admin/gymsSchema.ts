@@ -122,6 +122,15 @@ const step = z.union([
   z.literal(6),
 ]);
 
+function gymOwnershipShape() {
+  return {
+    franchiseId: label.nullable(),
+    franchiseName: label.nullable(),
+    liveDeviceNo: label.nullable(),
+    ownershipVersion: count,
+  };
+}
+
 // ── The list ────────────────────────────────────────────────────────────────
 
 const adminGymListRowSchema = z.object({
@@ -139,6 +148,8 @@ const adminGymListRowSchema = z.object({
   // not have been returned by the query that found it.
   createdAt: z.string().datetime({ offset: true }),
   updatedAt: z.string().datetime({ offset: true }),
+  lifecycle: z.enum(["notice_served", "terminated", "machine_recovered", "settled"]).nullable(),
+  ...gymOwnershipShape(),
 });
 
 export const adminGymListSchema = z.object({
@@ -384,6 +395,7 @@ export const adminGymViewSchema = z.object({
   activatedAt: instant,
   activatedByEmail: label.nullable(),
   offboarding: adminOffboardingSchema.nullable(),
+  ...gymOwnershipShape(),
 });
 
 /**

@@ -221,6 +221,10 @@ const ADMIN_GYM_VIEW: AdminGymView = {
   // Null is the ordinary case and the one the panel must not confuse with a zeroed record. Use
   // `adminOffboardingFixture()` for the other.
   offboarding: null,
+  franchiseId: null,
+  franchiseName: null,
+  liveDeviceNo: "MBP-000241",
+  ownershipVersion: 1,
 };
 
 const ADMIN_GYM_LIST: AdminGymList = {
@@ -235,6 +239,11 @@ const ADMIN_GYM_LIST: AdminGymList = {
       noticesPhone: "+919812345678",
       createdAt: "2026-07-01T09:30:00.000Z",
       updatedAt: "2026-07-09T11:00:00.000Z",
+      lifecycle: null,
+      franchiseId: null,
+      franchiseName: null,
+      liveDeviceNo: "MBP-000241",
+      ownershipVersion: 1,
     },
     {
       // Trade name equal to the legal name, which the list renders as one line rather than two.
@@ -247,6 +256,11 @@ const ADMIN_GYM_LIST: AdminGymList = {
       noticesPhone: "+919900112233",
       createdAt: "2026-06-28T04:15:00.000Z",
       updatedAt: "2026-06-28T04:15:00.000Z",
+      lifecycle: null,
+      franchiseId: null,
+      franchiseName: null,
+      liveDeviceNo: null,
+      ownershipVersion: 0,
     },
     {
       gymId: "gym_01HQZV5H9K1L3M5N",
@@ -258,6 +272,11 @@ const ADMIN_GYM_LIST: AdminGymList = {
       noticesPhone: "+919845001122",
       createdAt: "2026-06-11T10:05:00.000Z",
       updatedAt: "2026-07-15T08:30:00.000Z",
+      lifecycle: null,
+      franchiseId: "fr_northline",
+      franchiseName: "Northline Nutrition",
+      liveDeviceNo: "MBP-000198",
+      ownershipVersion: 2,
     },
   ],
   nextCursor: "eyJwayI6IkdZTSNneW1fMDFIUVpWNUg5SzFMM001TiJ9",

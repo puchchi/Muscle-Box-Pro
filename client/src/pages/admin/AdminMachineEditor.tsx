@@ -7,13 +7,14 @@ import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import {
-  MACHINE_STATUSES,
+  LIVE_MACHINE_STATUSES,
   adminMachineFormSchema,
   toAdminMachineBody,
   type AdminMachineForm,
 } from "@shared/admin/writes";
 import { isPendingDeviceNo, type AdminGymView } from "@shared/admin/gyms";
 import { putGymMachine } from "@/lib/adminApi";
+import { ownershipProblem, plainOwnershipMessage } from "./machines/ownerRules";
 import { Card, Empty, ErrorPanel, Field, Fields, SuccessPanel } from "./AdminUi";
 import { AreaField, DateField, NumberField, SelectField, TextField } from "./adminFields";
 import {
@@ -29,8 +30,8 @@ import {
  * ## Three jobs, one route
  *
  * `PUT …/machine` decides between them by reading the current row: a `deviceNo` this gym already
- * holds is a patch, a different one is a replacement, which writes a new item and marks the old one
- * `replaced` rather than deleting it. The response says which happened, and so does this card.
+ * holds is a patch, a different one is a replacement, which writes a new item and sends the old unit
+ * back to MBP stock. The response says which happened, and so does this card.
  *
  * That is why the form always sends a **whole machine** even to change an installation date: the same
  * submission has to be a valid replacement if the device number turns out to be new, and a partial
@@ -75,7 +76,7 @@ export function AdminMachineEditor({ gym, onSaved }: { gym: AdminGymView; onSave
       }
       testId="card-machine"
       action={
-        editing ? null : (
+        editing || !hasUnit ? null : (
           <Button
             variant="outline"
             size="sm"
@@ -95,7 +96,7 @@ export function AdminMachineEditor({ gym, onSaved }: { gym: AdminGymView; onSave
       {editing ? (
         <MachineForm
           gym={gym}
-          currentStatus={unit?.status ?? "allocated"}
+          currentStatus={liveStatus(unit?.status)}
           onCancel={() => setEditing(false)}
           onSaved={(message) => {
             setSaved(message);
@@ -127,7 +128,7 @@ export function AdminMachineEditor({ gym, onSaved }: { gym: AdminGymView; onSave
             </Fields>
           ) : (
             <Empty testId="machine-none">
-              No unit allocated. Signing does not require one; activation does.
+              No machine at this gym. Place one from a machine&apos;s Owner tab in the machine console.
             </Empty>
           )}
         </>
@@ -169,7 +170,11 @@ export function AdminMachineEditor({ gym, onSaved }: { gym: AdminGymView; onSave
   );
 }
 
-const STATUS_OPTIONS = MACHINE_STATUSES.map((value) => ({
+function liveStatus(status: string | undefined): AdminMachineForm["status"] {
+  return (LIVE_MACHINE_STATUSES as readonly string[]).includes(status ?? "") ? (status as AdminMachineForm["status"]) : "allocated";
+}
+
+const STATUS_OPTIONS = LIVE_MACHINE_STATUSES.map((value) => ({
   value,
   label: MACHINE_STATUS_LABEL[value],
 }));
@@ -217,17 +222,16 @@ function MachineForm({
     try {
       const result = await putGymMachine(gym.gymId, toAdminMachineBody(values));
       if (!result.ok) {
-        if (result.error.fieldErrors) {
-          for (const [field, message] of Object.entries(result.error.fieldErrors)) {
-            form.setError(field as keyof AdminMachineForm, { message });
-          }
+        const found = ownershipProblem(result.error, "deviceNo");
+        for (const [field, message] of Object.entries(found.fieldErrors)) {
+          form.setError(field as keyof AdminMachineForm, { message });
         }
-        setProblem(result.error.message);
+        setProblem(plainOwnershipMessage(found.message));
         return;
       }
       onSaved(
         result.data.replaced
-          ? `Replaced. ${result.data.deviceNo} is now this gym's unit and the previous one is marked replaced.`
+          ? `Replaced. ${result.data.deviceNo} is now this gym's unit and the previous one is back in MBP stock.`
           : `Saved. ${result.data.deviceNo} updated.`,
       );
     } finally {
@@ -247,9 +251,8 @@ function MachineForm({
           >
             <p className="text-xs text-amber-200 leading-relaxed">
               This is a different device number to the one on file, so saving replaces the unit.{" "}
-              <span className="font-mono">{current.deviceNo}</span> will be kept and marked replaced,
-              because §4.1 dates the term from installation and which unit was here when has to stay
-              readable.
+              <span className="font-mono">{current.deviceNo}</span> goes back to MBP stock and stays in
+              this gym&apos;s unit history. The new unit must be registered and not placed at another gym.
             </p>
           </div>
         )}

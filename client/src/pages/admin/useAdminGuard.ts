@@ -24,25 +24,40 @@ import { fetchAdminSession, type AdminSession } from "@/lib/adminSession";
  * The cost of this shape is one `GET /admin/me` per page load, which §2.8 says is the intended
  * usage: one signature check and one `ADMIN#` read. That read is what buys revocation — a
  * disabled admin stops being one on their next request rather than whenever their 12-hour
- * session happens to lapse — so caching it away would be trading the property the design paid
- * for.
+ * session happens to lapse — so it still runs on every page. Only the first page in a tab
+ * waits for it; later pages render with the last verified session while it runs, and a
+ * failed probe still bounces them.
  */
 export type AdminGuard =
   | { state: "checking"; session: null }
   | { state: "ready"; session: AdminSession };
 
+let verified: AdminSession | null = null;
+
+export function forgetVerifiedSession() {
+  verified = null;
+}
+
+function stillValid(session: AdminSession | null): AdminSession | null {
+  if (!session?.expiresAt) return session;
+  return Date.parse(session.expiresAt) > Date.now() ? session : null;
+}
+
 export function useAdminGuard(): AdminGuard {
   const router = useRouter();
-  const [session, setSession] = useState<AdminSession | null>(null);
+  const [session, setSession] = useState<AdminSession | null>(() => stillValid(verified));
 
   useEffect(() => {
     let cancelled = false;
     fetchAdminSession().then((result) => {
       if (cancelled) return;
       if (!result) {
+        verified = null;
+        setSession(null);
         router.replace("/admin/login");
         return;
       }
+      verified = result;
       setSession(result);
     });
     return () => {

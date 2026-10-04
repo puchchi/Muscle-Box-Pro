@@ -122,6 +122,8 @@ const adminFranchiseListRowSchema = z.object({
   sourceApplicationId: label.nullable(),
   createdAt: label,
   updatedAt: label,
+  gymCount: z.number().int().min(0),
+  machineCount: z.number().int().min(0),
 });
 
 export const adminFranchiseListSchema = z.object({

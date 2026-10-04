@@ -73,6 +73,10 @@ function nonProductionApiOrigins() {
   const franchise = [
     originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_API_URL),
     originOf(process.env.NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL),
+    originOf(process.env.NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL),
+    originOf(process.env.NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL),
+    originOf(process.env.NEXT_PUBLIC_MBP_SHOP_API_URL),
+    originOf(process.env.NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL),
   ].filter((origin) => origin !== null && origin !== PRODUCTION_API_ORIGIN);
   return [...new Set([onboarding, ...franchise])];
 }
@@ -108,6 +112,24 @@ function franchiseDocsOrigin() {
 
 const FRANCHISE_DOCS_ORIGIN = franchiseDocsOrigin();
 
+/** Goods pictures: presigned PUTs to the files bucket, served back through its CloudFront host. */
+function checkedOrigin(value, hostPattern) {
+  const origin = originOf(value);
+  if (origin === null) return [];
+  const { protocol, hostname } = new URL(origin);
+  return protocol === "https:" && hostPattern.test(hostname) ? [origin] : [];
+}
+
+const MACHINE_FILES_BUCKET_ORIGIN = checkedOrigin(
+  process.env.NEXT_PUBLIC_MBP_MACHINE_FILES_BUCKET_ORIGIN,
+  /^mbp-machine-files-[a-z0-9-]+\.s3\.ap-south-1\.amazonaws\.com$/,
+);
+
+const MACHINE_FILES_CDN_ORIGIN = checkedOrigin(
+  process.env.NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN,
+  /^[a-z0-9]+\.cloudfront\.net$/,
+);
+
 const CONNECT_SRC = [
   "'self'",
   "https://va.vercel-insights.com",
@@ -121,7 +143,34 @@ const CONNECT_SRC = [
   "https://esyfzbcoufjcnakloahc.supabase.co",
   ...NON_PRODUCTION_API_ORIGINS,
   ...FRANCHISE_DOCS_ORIGIN,
+  ...MACHINE_FILES_BUCKET_ORIGIN,
 ];
+
+// Razorpay Checkout runs on /drinks only, so the rest of the site keeps frame-src 'none'.
+const RAZORPAY_CHECKOUT = {
+  script: ["https://checkout.razorpay.com"],
+  frame: ["https://api.razorpay.com", "https://checkout.razorpay.com"],
+  connect: ["https://api.razorpay.com", "https://lumberjack.razorpay.com"],
+  img: ["https://cdn.razorpay.com"],
+};
+
+function contentSecurityPolicy({ razorpay = false } = {}) {
+  const sources = (base, key) => [...base, ...(razorpay ? RAZORPAY_CHECKOUT[key] : [])].join(" ");
+  return [
+    "default-src 'self'",
+    sources(["script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-insights.com https://vitals.vercel-insights.com"], "script"),
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    sources(["img-src 'self' data: blob:", ...MACHINE_FILES_CDN_ORIGIN], "img"),
+    ["media-src 'self' blob:", ...MACHINE_FILES_CDN_ORIGIN].join(" "),
+    "font-src 'self' https://fonts.gstatic.com",
+    sources(["connect-src", ...CONNECT_SRC], "connect"),
+    razorpay ? sources(["frame-src"], "frame") : "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
 
 const INDEXNOW_KEY = "a3f7b2e8d4c1f9a6b5e0d7c3f2a8b1e4";
 
@@ -143,6 +192,8 @@ const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/specs",
   "https://www.muscleboxpro.com/advertise",
   "https://www.muscleboxpro.com/menu",
+  "https://www.muscleboxpro.com/drinks",
+  "https://www.muscleboxpro.com/join",
   "https://www.muscleboxpro.com/about",
   "https://www.muscleboxpro.com/contact",
   "https://www.muscleboxpro.com/help",
@@ -231,6 +282,8 @@ const nextConfig = {
         destination: "/gym/onboarding/link/:handle",
         permanent: false,
       },
+      { source: "/admin/machines", destination: "/machines", permanent: false },
+      { source: "/admin/machines/:path*", destination: "/machines/:path*", permanent: false },
     ];
   },
   async rewrites() {
@@ -246,22 +299,7 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-insights.com https://vitals.vercel-insights.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: blob:",
-              "font-src 'self' https://fonts.gstatic.com",
-              `connect-src ${CONNECT_SRC.join(" ")}`,
-              "frame-src 'none'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "upgrade-insecure-requests",
-            ].join("; "),
-          },
+          { key: "Content-Security-Policy", value: contentSecurityPolicy() },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -318,6 +356,14 @@ const nextConfig = {
         // got to click.
         source: "/franchise/set-password/:path*",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        // The receipt's #t= fragment is the guest's order token, which is a credential.
+        source: "/drinks/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: contentSecurityPolicy({ razorpay: true }) },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
       },
     ];
   },

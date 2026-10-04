@@ -37,13 +37,15 @@ vi.mock("@/lib/adminSession", () => ({
 
 // The six writes are mocked alongside the read, and they have to be: Vitest's module mock is
 // exhaustive, so an export the factory omits throws on import rather than arriving as undefined.
-const { mockFetchView, mockPatchTerms, mockPutMachine, mockNotice, mockTerminate } = vi.hoisted(
+const { mockFetchView, mockPatchTerms, mockPutMachine, mockNotice, mockTerminate, mockResendInvite, mockVoidInvite } = vi.hoisted(
   () => ({
     mockFetchView: vi.fn(),
     mockPatchTerms: vi.fn(),
     mockPutMachine: vi.fn(),
     mockNotice: vi.fn(),
     mockTerminate: vi.fn(),
+    mockResendInvite: vi.fn(),
+    mockVoidInvite: vi.fn(),
   }),
 );
 vi.mock("@/lib/adminApi", () => ({
@@ -54,8 +56,23 @@ vi.mock("@/lib/adminApi", () => ({
   terminateGym: mockTerminate,
   recordMachineRecovered: vi.fn(),
   recordOffboardingSettlement: vi.fn(),
+  activateGym: vi.fn(),
+  resendGymInvite: mockResendInvite,
+  voidGymInvite: mockVoidInvite,
   ADMIN_GYMS_QUERY_KEY: ["admin", "gyms"],
   adminGymQueryKey: (gymId: string) => ["admin", "gym", gymId],
+}));
+
+const { mockActiveFranchises, mockNetwork, mockSetGymFranchise } = vi.hoisted(() => ({
+  mockActiveFranchises: vi.fn(),
+  mockNetwork: vi.fn(),
+  mockSetGymFranchise: vi.fn(),
+}));
+vi.mock("@/lib/adminOwnershipApi", () => ({
+  OFFBOARDED_LIFECYCLES: new Set(["terminated", "machine_recovered", "settled"]),
+  fetchActiveFranchises: mockActiveFranchises,
+  fetchFranchiseNetwork: mockNetwork,
+  setGymFranchise: mockSetGymFranchise,
 }));
 
 vi.mock("@/lib/queryClient", () => ({
@@ -244,6 +261,34 @@ describe("AdminGymDetail", () => {
     // Scoped to the invite card: the shell's own footer legitimately prints the API's https
     // URL, and that is not the leak this test is about.
     expect(card).not.toHaveTextContent(/http/);
+  });
+
+  it("sends a new gym link to this gym and shows it once", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockResendInvite.mockResolvedValue({
+      ok: true,
+      data: { onboardingUrl: "https://muscleboxpro.com/onboarding/abc", tokenId: "t2", expiresAt: "2026-10-08T00:00:00.000Z", emailed: true },
+    });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    await userEvent.click(await screen.findByTestId("button-resend-invite"));
+    expect(screen.getByTestId("confirm-resend")).toHaveTextContent("rohit@ironhousegym.in");
+    await userEvent.click(screen.getByTestId("button-confirm-resend"));
+
+    expect(mockResendInvite).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R", { sendInvite: true });
+    expect(await screen.findByTestId("input-onboarding-url")).toHaveValue("https://muscleboxpro.com/onboarding/abc");
+  });
+
+  it("revokes the gym's link and says when nothing was live", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockVoidInvite.mockResolvedValue({ ok: true, data: { wasLive: false } });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    await userEvent.click(await screen.findByTestId("button-void-invite"));
+    await userEvent.click(screen.getByTestId("button-confirm-void"));
+
+    expect(mockVoidInvite).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R");
+    expect(await screen.findByTestId("invite-voided")).toHaveTextContent(/Nothing was live to revoke. .*this gym/);
   });
 
   it("says a gym with no signature is not signed, without erroring", async () => {
@@ -551,5 +596,87 @@ describe("AdminGymDetail — offboarding", () => {
 
     expect(await screen.findByText("Choose a cause.")).toBeInTheDocument();
     expect(mockTerminate).not.toHaveBeenCalled();
+  });
+});
+
+describe("AdminGymDetail — the franchise card", () => {
+  const franchises = [{ franchiseId: "fr_northline", name: "Northline Nutrition" }];
+  const network = (machineCount: number) => ({
+    ok: true,
+    data: {
+      franchiseId: "fr_northline",
+      franchiseName: "Northline Nutrition",
+      status: "active",
+      machineAllocation: 3,
+      machineCount,
+      overAllocated: false,
+      gyms: [],
+      unplacedMachines: [],
+    },
+  });
+
+  it("says an unlinked gym is MBP-direct and links to its machine and sales", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    expect(await screen.findByTestId("gym-franchise")).toHaveTextContent("MBP-direct");
+    expect(screen.getByTestId("gym-live-machine")).toHaveTextContent("MBP-000241");
+    expect(screen.getByTestId("gym-orders-link")).toHaveAttribute("href", "/machines/orders?gymId=gym_01HQZX9K2M4N6P8R");
+  });
+
+  it("says the machine moves with the gym, warns past the allocation, and sends the version it read", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockActiveFranchises.mockResolvedValue({ ok: true, data: franchises });
+    mockNetwork.mockResolvedValue(network(3));
+    mockSetGymFranchise.mockResolvedValue({
+      ok: true,
+      data: { gymId: "gym_01HQZX9K2M4N6P8R", changed: true, franchiseId: "fr_northline", franchiseName: "Northline Nutrition", ownershipVersion: 2, machine: null },
+    });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-open-gym-franchise"));
+    await waitFor(() => expect(screen.getByRole("option", { name: "Northline Nutrition" })).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText("Franchise"), "fr_northline");
+
+    expect(screen.getByTestId("gym-franchise-machine-note")).toHaveTextContent("MBP-000241, moves to Northline Nutrition");
+    expect(await screen.findByTestId("gym-franchise-allocation-note")).toHaveTextContent("will hold 4 machines");
+
+    await user.click(screen.getByTestId("button-save-gym-franchise"));
+    await waitFor(() => expect(mockSetGymFranchise).toHaveBeenCalledWith("gym_01HQZX9K2M4N6P8R", "fr_northline", 1));
+    expect(await screen.findByTestId("gym-franchise-saved")).toHaveTextContent("Northline Nutrition");
+  });
+
+  it("offers a reload when someone else changed the gym first", async () => {
+    mockFetchView.mockResolvedValue({ ok: true, data: adminGymFixture() });
+    mockActiveFranchises.mockResolvedValue({ ok: true, data: franchises });
+    mockNetwork.mockResolvedValue(network(0));
+    mockSetGymFranchise.mockResolvedValue({
+      ok: false,
+      error: { code: "already_signed", message: "This machine or gym changed since you loaded it. Reload and try again.", fieldErrors: { expectedVersion: "Stale." } },
+      issues: [],
+    });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByTestId("button-open-gym-franchise"));
+    await waitFor(() => expect(screen.getByRole("option", { name: "Northline Nutrition" })).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText("Franchise"), "fr_northline");
+    await user.click(screen.getByTestId("button-save-gym-franchise"));
+
+    expect(await screen.findByTestId("button-gym-franchise-reload")).toBeInTheDocument();
+  });
+});
+
+describe("AdminGymDetail — a gym with no machine", () => {
+  it("points to the machine console rather than offering a form the server would refuse", async () => {
+    const gym = adminGymFixture();
+    gym.machine = { model: "", deviceNo: null, serialNumber: null, valueInr: 0, accessories: "", installationDate: null };
+    gym.liveDeviceNo = null;
+    mockFetchView.mockResolvedValue({ ok: true, data: gym });
+    render(<AdminGymDetail gymId="gym_01HQZX9K2M4N6P8R" />);
+
+    expect(await screen.findByTestId("machine-none")).toHaveTextContent("Owner tab");
+    expect(screen.queryByTestId("button-edit-machine")).not.toBeInTheDocument();
   });
 });

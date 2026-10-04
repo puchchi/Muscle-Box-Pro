@@ -193,7 +193,7 @@ const deviceNo = z
   .max(64, "At most 64 characters.")
   .regex(/^[A-Za-z0-9_-]+$/, "Letters, digits, hyphen and underscore only.");
 
-export const MACHINE_STATUSES = ["allocated", "installed", "servicing", "replaced", "removed"] as const;
+export const LIVE_MACHINE_STATUSES = ["allocated", "installed", "servicing"] as const;
 
 /**
  * Assign, patch or replace the unit — one form over a route with two behaviours.
@@ -223,7 +223,7 @@ export const adminMachineFormSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use the date picker, or type YYYY-MM-DD.")
     .or(z.literal("")),
-  status: z.enum(MACHINE_STATUSES),
+  status: z.enum(LIVE_MACHINE_STATUSES),
 });
 
 export type AdminMachineForm = z.infer<typeof adminMachineFormSchema>;
@@ -235,7 +235,7 @@ export type AdminMachinePutBody = {
   valueInr: number;
   accessories: string;
   installationDate: string | null;
-  status: (typeof MACHINE_STATUSES)[number];
+  status: (typeof LIVE_MACHINE_STATUSES)[number];
 };
 
 /**

@@ -316,6 +316,8 @@ const ADMIN_FRANCHISE_LIST: AdminFranchiseList = {
       sourceApplicationId: "9c4d7e21-58ab-4f16-8d92-1e63b0af7c58",
       createdAt: "2026-07-28T06:40:00.000Z",
       updatedAt: "2026-08-21T12:40:00.000Z",
+      gymCount: 2,
+      machineCount: 3,
     },
     {
       // Invited and nothing more, which is what an invite alone can fill in: a trade name, an email
@@ -332,6 +334,8 @@ const ADMIN_FRANCHISE_LIST: AdminFranchiseList = {
       sourceApplicationId: null,
       createdAt: "2026-08-24T05:12:00.000Z",
       updatedAt: "2026-08-24T05:12:00.000Z",
+      gymCount: 0,
+      machineCount: 0,
     },
     {
       franchiseId: "6f1b8d30-72a4-4c95-b1e8-5d40a9c3e277",
@@ -345,6 +349,8 @@ const ADMIN_FRANCHISE_LIST: AdminFranchiseList = {
       sourceApplicationId: null,
       createdAt: "2026-06-30T09:05:00.000Z",
       updatedAt: "2026-07-22T06:40:00.000Z",
+      gymCount: 0,
+      machineCount: 0,
     },
   ],
   nextCursor: "eyJwayI6IkZSQU5DSElTRSM2ZjFiOGQzMC03MmE0LTRjOTUtYjFlOC01ZDQwYTljM2UyNzcifQ==",
@@ -365,6 +371,8 @@ const ADMIN_FRANCHISE_REVIEW_QUEUE: AdminFranchiseList = {
       sourceApplicationId: null,
       createdAt: "2026-08-06T07:15:00.000Z",
       updatedAt: "2026-08-14T10:02:00.000Z",
+      gymCount: 0,
+      machineCount: 0,
     },
     {
       // `kyc_submitted` rather than `under_review`, because the queue is the set awaiting a decision
@@ -380,6 +388,8 @@ const ADMIN_FRANCHISE_REVIEW_QUEUE: AdminFranchiseList = {
       sourceApplicationId: "5b28f70c-3a91-4d62-8e05-c47a916d3b28",
       createdAt: "2026-08-11T12:30:00.000Z",
       updatedAt: "2026-08-19T04:55:00.000Z",
+      gymCount: 0,
+      machineCount: 0,
     },
   ],
   // Always null on the queue. The sparse index is oldest-first and ignores `cursor` entirely.

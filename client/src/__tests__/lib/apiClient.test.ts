@@ -546,3 +546,24 @@ describe("the configured origin", () => {
     vi.resetModules();
   });
 });
+
+describe("base URLs", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("derives every stack from api.muscleboxpro.com, and none from a sandbox host", async () => {
+    const targets = ["franchiseAdmin", "franchiseWizard", "machineAdmin", "machineIot", "shop", "shopAdmin"] as const;
+    vi.resetModules();
+    const production = await import("@/lib/apiClient");
+    expect(targets.map((t) => production.apiBaseUrl(t))).toEqual(
+      ["/franchise-admin", "/franchise-wizard", "/machine-admin", "/machine-iot", "/shop", "/shop-admin"].map((p) => `https://api.muscleboxpro.com${p}`),
+    );
+
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "https://abc123.execute-api.ap-south-1.amazonaws.com/sandbox");
+    vi.resetModules();
+    const sandbox = await import("@/lib/apiClient");
+    expect(targets.map((t) => sandbox.apiBaseUrl(t))).toEqual(targets.map(() => null));
+  });
+});

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { fetchAdminGymView } from "@/lib/adminApi";
+import { fetchAdminGymView, resendGymInvite, voidGymInvite } from "@/lib/adminApi";
 import type { AdminGymView } from "@shared/admin/gyms";
 import type { OnboardingTimestamps } from "@shared/onboarding/types";
 import { useAdminGuard } from "./useAdminGuard";
@@ -12,7 +12,10 @@ import { Card, Empty, ErrorPanel, Field, Fields, Pill } from "./AdminUi";
 import { AdminGymDashboard } from "./AdminGymDashboard";
 import { AdminTermsEditor } from "./AdminTermsEditor";
 import { AdminMachineEditor } from "./AdminMachineEditor";
+import { GymFranchiseCard } from "./GymFranchiseCard";
 import { AdminOffboardingSection } from "./AdminOffboardingSection";
+import { GymActivationCard } from "./GymActivationCard";
+import { InviteActions } from "./InviteActions";
 import {
   DEPOSIT_CHOICE_LABEL,
   DEPOSIT_STATUS_LABEL,
@@ -55,8 +58,6 @@ import {
  * `AdminOffboardingSection` — because each carries a rule about *when* it may be used, and those
  * rules are the interesting part. `AdminGymDashboard` is the gym's own view, mirrored, blanks
  * included.
- *
- * Invite resend/void and activation remain read-only here.
  */
 
 export default function AdminGymDetail({ gymId }: { gymId: string }) {
@@ -123,6 +124,7 @@ const SECTIONS: Array<{ id: string; label: string }> = [
   { id: "progress", label: "Progress" },
   { id: "invite", label: "Link" },
   { id: "details", label: "Details" },
+  { id: "franchise", label: "Franchise" },
   { id: "terms", label: "Terms" },
   { id: "signature", label: "Signature" },
   { id: "deposit", label: "Deposit" },
@@ -138,7 +140,7 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
       <div>
         <div className="flex flex-wrap items-center gap-3 mb-1">
           <h1
-            className="text-2xl font-display font-black text-foreground uppercase tracking-tight"
+            className="text-2xl font-display font-black text-foreground tracking-tight"
             data-testid="gym-heading"
           >
             {gym.details.tradeName || gym.details.legalEntityName || gym.slug}
@@ -174,7 +176,7 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
       )}
 
       <nav
-        className="sticky top-[3.4rem] z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+        className="sticky top-2 z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80"
         aria-label="Sections of this gym"
       >
         {SECTIONS.map((section) => (
@@ -228,6 +230,15 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
             No live link. Either none was issued or it was voided. Resending mints a new one.
           </Empty>
         )}
+        <InviteActions
+          subject="gym"
+          invite={gym.invite}
+          noticesEmail={gym.details.noticesEmail}
+          voidBody="Whoever holds it gets a dead page. Nothing is emailed, and the token is kept as a record of which link they had."
+          onResend={(body) => resendGymInvite(gym.gymId, body)}
+          onVoid={() => voidGymInvite(gym.gymId)}
+          onChanged={onChanged}
+        />
       </Card>
 
       <Card
@@ -255,6 +266,8 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
           <Field label="Notices phone" value={gym.details.noticesPhone} />
         </Fields>
       </Card>
+
+      <GymFranchiseCard gym={gym} onChanged={onChanged} />
 
       <AdminTermsEditor gym={gym} onSaved={onChanged} />
 
@@ -378,16 +391,7 @@ function GymView({ gym, onChanged }: { gym: AdminGymView; onChanged: () => void 
 
       <AdminMachineEditor gym={gym} onSaved={onChanged} />
 
-      <Card id="activation" title="Activation" testId="card-activation">
-        {gym.activatedAt ? (
-          <Fields>
-            <Field label="Activated" value={formatIstDateTime(gym.activatedAt)} />
-            <Field label="By" value={gym.activatedByEmail} />
-          </Fields>
-        ) : (
-          <Empty testId="activation-none">Not activated.</Empty>
-        )}
-      </Card>
+      <GymActivationCard gym={gym} onChanged={onChanged} />
 
       <AdminGymDashboard gym={gym} />
 

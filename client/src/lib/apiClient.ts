@@ -56,6 +56,12 @@ import type {
   OnboardingStep,
 } from "@shared/onboarding/types";
 import { FRANCHISE_ONBOARDING_STEPS } from "@shared/franchise/onboarding/types";
+import {
+  MACHINE_ADMIN_ERROR_CODES,
+  type MachineAdminError,
+  type MachineAdminErrorCode,
+  type MachineAdminResult,
+} from "@shared/admin/machines";
 import type {
   FranchiseOnboardingError,
   FranchiseOnboardingErrorCode,
@@ -130,13 +136,17 @@ export const IS_PRODUCTION_API = hostnameOf(MBP_API_BASE_URL) === PRODUCTION_API
  *
  * In sandbox they are three different `execute-api` hosts, which cannot be derived from each other.
  */
-export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard";
+export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard" | "machineAdmin" | "machineIot" | "shop" | "shopAdmin";
 
 /** The base path each stack is mapped onto where there is a custom domain to map onto. */
 const BASE_PATHS: Record<ApiTarget, string> = {
   onboarding: "",
   franchiseAdmin: "/franchise-admin",
   franchiseWizard: "/franchise-wizard",
+  machineAdmin: "/machine-admin",
+  machineIot: "/machine-iot",
+  shop: "/shop",
+  shopAdmin: "/shop-admin",
 };
 
 /**
@@ -165,6 +175,10 @@ const BASE_URLS: Record<ApiTarget, string | null> = {
     "franchiseWizard",
     process.env.NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL,
   ),
+  machineAdmin: resolveBase("machineAdmin", process.env.NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL),
+  machineIot: resolveBase("machineIot", process.env.NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL),
+  shop: resolveBase("shop", process.env.NEXT_PUBLIC_MBP_SHOP_API_URL),
+  shopAdmin: resolveBase("shopAdmin", process.env.NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL),
 };
 
 /** The env var a caller is told to set when a target has no base URL. */
@@ -172,6 +186,10 @@ const BASE_URL_VARS: Record<ApiTarget, string> = {
   onboarding: "NEXT_PUBLIC_MBP_API_URL",
   franchiseAdmin: "NEXT_PUBLIC_MBP_FRANCHISE_API_URL",
   franchiseWizard: "NEXT_PUBLIC_MBP_FRANCHISE_WIZARD_API_URL",
+  machineAdmin: "NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL",
+  machineIot: "NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL",
+  shop: "NEXT_PUBLIC_MBP_SHOP_API_URL",
+  shopAdmin: "NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL",
 };
 
 export function apiBaseUrl(target: ApiTarget): string | null {
@@ -730,4 +748,98 @@ function asFranchiseStep(value: unknown): FranchiseOnboardingStep | null {
   return FRANCHISE_ONBOARDING_STEPS.includes(value as FranchiseOnboardingStep)
     ? (value as FranchiseOnboardingStep)
     : null;
+}
+
+// ── The machine admin vocabulary ────────────────────────────────────────────
+
+const RECOGNISED_MACHINE_CODES: ReadonlySet<string> = new Set<MachineAdminErrorCode>(
+  MACHINE_ADMIN_ERROR_CODES.filter((code) => code !== "network"),
+);
+
+const MACHINE_NETWORK_ERROR: MachineAdminError = {
+  code: "network",
+  message: "We couldn't reach the server. Check your connection and try again.",
+};
+
+export async function machineApiRequest<T>(
+  method: ApiMethod,
+  path: string,
+  body?: unknown,
+  api: "machineAdmin" | "machineIot" = "machineAdmin",
+): Promise<MachineAdminResult<T>> {
+  const outcome = await rawRequest(method, path, { api, body });
+  if (outcome.kind === "ok") return { ok: true, data: outcome.data as T };
+  if (outcome.kind === "network") return { ok: false, error: MACHINE_NETWORK_ERROR };
+  return { ok: false, error: toMachineError(outcome.status, outcome.body) };
+}
+
+const SHOP_ADMIN_CODES: Record<string, MachineAdminErrorCode> = {
+  invalid_request: "validation",
+  signed_out: "invalid_token",
+  order_not_found: "not_found",
+  customer_not_found: "not_found",
+  code_used: "conflict",
+  order_state: "conflict",
+  price_above_paid: "conflict",
+};
+
+export async function shopAdminRequest<T>(
+  method: ApiMethod,
+  path: string,
+  body?: unknown,
+): Promise<MachineAdminResult<T>> {
+  const outcome = await rawRequest(method, path, { api: "shopAdmin", body });
+  if (outcome.kind === "ok") return { ok: true, data: outcome.data as T };
+  if (outcome.kind === "network") return { ok: false, error: MACHINE_NETWORK_ERROR };
+  const envelope = isRecord(outcome.body) ? outcome.body : {};
+  const code = typeof envelope.code === "string" ? SHOP_ADMIN_CODES[envelope.code] : undefined;
+  if (code === undefined) {
+    return { ok: false, error: { code: machineCodeForStatus(outcome.status), message: machineMessageForStatus(outcome.status) } };
+  }
+  const error: MachineAdminError = {
+    code,
+    message:
+      typeof envelope.message === "string" && envelope.message.trim().length > 0
+        ? envelope.message
+        : machineMessageForStatus(outcome.status),
+  };
+  const fieldErrors = asFieldErrors(envelope.fieldErrors);
+  if (fieldErrors) error.fieldErrors = fieldErrors;
+  return { ok: false, error };
+}
+
+function toMachineError(status: number, body: unknown): MachineAdminError {
+  const envelope = isRecord(body) ? body : {};
+  const code =
+    typeof envelope.code === "string" && RECOGNISED_MACHINE_CODES.has(envelope.code)
+      ? (envelope.code as MachineAdminErrorCode)
+      : null;
+  if (code === null) return { code: machineCodeForStatus(status), message: machineMessageForStatus(status) };
+
+  const error: MachineAdminError = {
+    code,
+    message:
+      typeof envelope.message === "string" && envelope.message.trim().length > 0
+        ? envelope.message
+        : machineMessageForStatus(status),
+  };
+  const fieldErrors = asFieldErrors(envelope.fieldErrors);
+  if (fieldErrors) error.fieldErrors = fieldErrors;
+  return error;
+}
+
+function machineCodeForStatus(status: number): MachineAdminErrorCode {
+  if (status === 400 || status === 415) return "validation";
+  if (status === 401 || status === 403) return "invalid_token";
+  if (status === 404) return "not_found";
+  if (status === 409) return "conflict";
+  return "network";
+}
+
+function machineMessageForStatus(status: number): string {
+  if (status === 400 || status === 415) return "Some fields need fixing.";
+  if (status === 401 || status === 403) return "Please sign in again.";
+  if (status === 404) return "That was not found.";
+  if (status === 409) return "This was changed elsewhere. Reload to see the current values.";
+  return MACHINE_NETWORK_ERROR.message;
 }

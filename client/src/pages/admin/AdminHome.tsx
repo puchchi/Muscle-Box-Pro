@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, FileText, Megaphone, Plus, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchAdminGymList } from "@/lib/adminApi";
 import type { AdminGymListRow } from "@shared/admin/gyms";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
-import { Card, ErrorPanel, Field, Fields, Notice, Pill, StatCard, Unavailable } from "./AdminUi";
+import { Card, ErrorPanel, Pill } from "./AdminUi";
+import { Cell, Col, Head } from "./machines/MachinesUi";
 import { formatIstDateTime, STATUS_CLASS, STATUS_LABEL } from "./adminFormat";
 import {
   invitedSince,
@@ -27,9 +29,8 @@ import {
  * This page began as nothing but a `dl` of `GET /admin/me`, and that job has not gone away — login
  * succeeding only proves the password was right, while a cookie the browser refused to store and a
  * sandbox token that never reached the header both look like a successful login and then fail on the
- * first real request. So the identity block is still here, at the bottom, and it is still the first
- * thing to read when the panel is mysteriously empty. The API host in `AdminShell`'s footer is the
- * second.
+ * first real request. The identity block now lives in `AdminShell`'s sidebar, beside the API host in
+ * its footer, and those two are still the first things to read when the panel is mysteriously empty.
  *
  * ## Every number is counted client-side, and the page says so
  *
@@ -126,15 +127,15 @@ export default function AdminHome() {
 
   return (
     <AdminShell session={session}>
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1
-            className="text-2xl font-display font-black text-foreground uppercase tracking-tight mb-1"
+            className="mb-1 text-2xl font-display font-black tracking-tight text-foreground"
             data-testid="admin-home-heading"
           >
             Overview
           </h1>
-          <p className="text-muted-foreground text-sm" data-testid="admin-home-scope">
+          <p className="text-sm text-muted-foreground" data-testid="admin-home-scope">
             {isLoading
               ? "Counting gyms…"
               : complete
@@ -161,126 +162,126 @@ export default function AdminHome() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <StatCard
-          label="Active"
-          value={String(funnel.active)}
-          hint="Trading, or ready to."
-          tone="good"
-          testId="stat-active"
-        />
-        <StatCard
-          label="Signed, not live"
-          value={String(funnel.committed)}
-          hint="Committed. The remaining work is ours."
-          tone={funnel.committed > 0 ? "warn" : "plain"}
-          testId="stat-committed"
-        />
-        <StatCard
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Tile label="Active" value={funnel.active} tone="good" loading={isLoading} testId="stat-active" />
+        <Tile label="Signed, not live" value={funnel.committed} tone="warn" loading={isLoading} testId="stat-committed" />
+        <Tile
           label="In onboarding"
-          value={String(funnel.counted - funnel.active - funnel.committed)}
-          hint="Somewhere before signing."
+          value={funnel.counted - funnel.active - funnel.committed}
+          loading={isLoading}
           testId="stat-onboarding"
         />
-        <StatCard
-          label="Invited, 7 days"
-          value={String(newThisWeek)}
-          hint="New links sent this week."
-          testId="stat-invited-week"
-        />
+        <Tile label="Invited in the last 7 days" value={newThisWeek} loading={isLoading} testId="stat-invited-week" />
       </div>
 
-      {/* `items-start` so each card ends where its content does. Stretched to match its taller
-          neighbour, the funnel carried 200px of empty white below its last rung. */}
-      <div className="grid items-start lg:grid-cols-2 gap-6 mb-6">
+      <div className="mb-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-2">
+          <Stalled gyms={stalled} isLoading={isLoading} counted={funnel.counted} />
+        </div>
         <Funnel summary={funnel} isLoading={isLoading} />
-        <Stalled gyms={stalled} isLoading={isLoading} counted={funnel.counted} />
       </div>
 
       <div className="mb-6">
-        <Trading live={funnel.active} isLoading={isLoading} />
-      </div>
-
-      <div className="mb-6">
-        <Card title="Recent activity" note="Most recently changed first." testId="card-recent">
-          {recent.length === 0 ? (
-            <p className="px-5 py-4 text-sm text-muted-foreground" data-testid="recent-none">
-              {isLoading ? "Loading…" : "No gyms yet. Inviting one is the first step of onboarding."}
-            </p>
-          ) : (
-            <ul className="divide-y divide-border/70" data-testid="list-recent">
-              {recent.map((row) => (
-                <li key={row.gymId}>
-                  {/*
-                    The link is the row rather than just the name. The row already lit up on hover,
-                    and a highlight that spans 1300px over a click target of 100 is a promise the
-                    page was not keeping.
-                  */}
-                  <Link
-                    href={`/admin/gyms/${row.gymId}`}
-                    className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 sm:px-5 py-2.5 hover:bg-secondary/50 transition-colors"
-                    data-testid={`recent-gym-${row.gymId}`}
-                  >
-                    <span className="text-sm font-semibold text-foreground truncate">
-                      {row.tradeName || row.legalEntityName || row.slug}
-                    </span>
-                    <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
-                    {/* Its own line on a phone. Held on one line beside the name it took 130px and
-                        truncated "Anytime Fitness Sector 18" to "Anytime Fitnes…", which loses the
-                        one thing in the row that identifies the gym. */}
-                    <span className="w-full sm:w-auto sm:ml-auto text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-                      {formatIstDateTime(row.updatedAt)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="border-t border-border/70 px-4 sm:px-5 py-2.5">
+        <Card
+          title="Recent activity"
+          note="Most recently changed first."
+          testId="card-recent"
+          action={
             <Link
               href="/admin/gyms"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground hover:underline"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
               data-testid="link-all-gyms"
             >
               All gyms
               <ArrowRight className="w-3.5 h-3.5" aria-hidden />
             </Link>
-          </div>
+          }
+        >
+          {recent.length === 0 ? (
+            <p className="px-5 py-4 text-sm text-muted-foreground" data-testid="recent-none">
+              {isLoading ? "Loading…" : "No gyms yet. Inviting one is the first step of onboarding."}
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <Head>
+                  <Col>Gym</Col>
+                  <Col className="hidden sm:table-cell">Stage</Col>
+                  <Col align="right">Last change</Col>
+                </Head>
+                <tbody className="divide-y divide-border/70" data-testid="list-recent">
+                  {recent.map((row) => (
+                    <GymRow key={row.gymId} row={row} testId={`recent-gym-${row.gymId}`}>
+                      <Cell align="right" className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+                        {formatIstDateTime(row.updatedAt)}
+                      </Cell>
+                    </GymRow>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
       </div>
 
-      <Card
-        title="Your session"
-        // §9.3: sessions last 12 hours and do not refresh. The expiry is shown rather than hidden
-        // because the failure mode of not refreshing is a 401 halfway through an invite form, and
-        // an admin who can see the time can finish first.
-        note="Twelve hours, and it does not refresh."
-        testId="card-session"
-      >
-        <Fields>
-          <Field label="Name" value={session.displayName} testId="admin-name" />
-          <Field label="Email" value={session.email} testId="admin-email" />
-          <Field label="Role" value={session.role} testId="admin-role" />
-          {/*
-            "Unknown" rather than the dash `Field` would render for `""`: an absent expiry and an
-            expiry we failed to read are the same on screen otherwise, and only one of them means
-            the session is fine.
-          */}
-          <Field
-            label="Expires"
-            value={session.expiresAt ? formatIstDateTime(session.expiresAt) : "Unknown"}
-            testId="admin-expires"
-          />
-        </Fields>
-      </Card>
+      <Trading live={funnel.active} isLoading={isLoading} />
     </AdminShell>
+  );
+}
+
+const TONE = {
+  plain: "text-foreground",
+  good: "text-emerald-300",
+  warn: "text-amber-300",
+} as const;
+
+function Tile({
+  label,
+  value,
+  tone = "plain",
+  loading,
+  testId,
+}: {
+  label: string;
+  value: number;
+  tone?: keyof typeof TONE;
+  loading: boolean;
+  testId: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card px-3.5 py-3" data-testid={testId}>
+      <span className="block text-xs text-muted-foreground">{label}</span>
+      <span className={`block text-xl font-display font-black tabular-nums ${value ? TONE[tone] : "text-muted-foreground"}`}>
+        {loading ? "—" : value}
+      </span>
+    </div>
+  );
+}
+
+function GymRow({ row, testId, children }: { row: AdminGymListRow; testId: string; children: React.ReactNode }) {
+  const router = useRouter();
+  const href = `/admin/gyms/${row.gymId}`;
+  return (
+    <tr onClick={() => router.push(href)} className="cursor-pointer transition-colors hover:bg-secondary/40" data-testid={testId}>
+      <Cell className="min-w-[10rem]">
+        <Link href={href} className="font-semibold text-foreground hover:underline" onClick={(e) => e.stopPropagation()}>
+          {row.tradeName || row.legalEntityName || row.slug}
+        </Link>
+        {row.noticesEmail && <span className="block truncate text-xs text-muted-foreground">{row.noticesEmail}</span>}
+        <Pill className={`mt-1 sm:hidden ${STATUS_CLASS[row.status]}`}>{STATUS_LABEL[row.status]}</Pill>
+      </Cell>
+      <Cell className="hidden sm:table-cell">
+        <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
+      </Cell>
+      {children}
+    </tr>
   );
 }
 
 /**
  * The sales this panel cannot show, named.
  *
- * Four cards because these are four pipelines that will arrive on four different days, which is the
+ * Four figures because these are four pipelines that will arrive on four different days, which is the
  * same split `PortalSection` draws on the gym's side. A single "reporting coming soon" line would
  * lose that, and it is the part worth knowing: cup telemetry landing does not settle a statement.
  *
@@ -290,58 +291,35 @@ export default function AdminHome() {
  */
 function Trading({ live, isLoading }: { live: number; isLoading: boolean }) {
   return (
-    <Card
-      title="Trading"
-      note="What the gyms sell. None of it reaches us yet."
-      testId="card-trading"
-    >
-      <div className="p-4 sm:p-5">
-        {/* Two across on a phone rather than four stacked. Each of these cards holds one dash, and
-            stacked they were 270px of nothing before the sentence that explains them. */}
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <Unavailable
-            icon={BarChart3}
-            label="Cups sold"
-            caption="no ingestion from the machines"
-            testId="trading-cups"
-          />
-          <Unavailable
-            icon={Megaphone}
-            label="Advertising revenue"
-            caption="no ingestion"
-            testId="trading-advertising"
-          />
-          <Unavailable
-            icon={Zap}
-            label="Electricity"
-            caption="no meter readings"
-            testId="trading-electricity"
-          />
-          <Unavailable
-            icon={FileText}
-            label="Settled statements"
-            caption="no settlement job"
-            testId="trading-statements"
-          />
-        </div>
-
-        <div className="mt-4">
-          <Notice testId="trading-notice">
-            <span className="font-semibold text-foreground">
-              {isLoading
-                ? "Counting the gyms this would cover…"
-                : live === 0
-                  ? "No gym is live yet, so there would be nothing to report even with the pipeline built."
-                  : `${live} ${live === 1 ? "gym is" : "gyms are"} live. We hold no sales figures for any of them.`}
-            </span>{" "}
-            These four are blanks rather than zeros, and a figure in any of them would be invented.
-            Filling them in needs per-period cup counts arriving from the machines, then one route
-            that totals them across gyms. The same four cards, per gym, are on each gym&apos;s own
-            page.
-          </Notice>
-        </div>
+    <Card title="Trading" note="What the gyms sell. None of it reaches us yet." testId="card-trading">
+      <div className="grid grid-cols-2 divide-border/70 lg:grid-cols-4 lg:divide-x">
+        <Missing label="Cups sold" caption="no ingestion from the machines" testId="trading-cups" />
+        <Missing label="Advertising revenue" caption="no ingestion" testId="trading-advertising" />
+        <Missing label="Electricity" caption="no meter readings" testId="trading-electricity" />
+        <Missing label="Settled statements" caption="no settlement job" testId="trading-statements" />
       </div>
+      <p className="border-t border-border/70 px-4 py-3 text-xs leading-relaxed text-muted-foreground sm:px-5" data-testid="trading-notice">
+        <span className="font-semibold text-foreground">
+          {isLoading
+            ? "Counting the gyms this would cover…"
+            : live === 0
+              ? "No gym is live yet, so there would be nothing to report even with the pipeline built."
+              : `${live} ${live === 1 ? "gym is" : "gyms are"} live. We hold no sales figures for any of them.`}
+        </span>{" "}
+        These four are blanks rather than zeros, and a figure in any of them would be invented.
+      </p>
     </Card>
+  );
+}
+
+function Missing({ label, caption, testId }: { label: string; caption: string; testId: string }) {
+  return (
+    <div className="px-4 py-3 sm:px-5" data-testid={testId}>
+      <span className="block text-xs text-muted-foreground">{label}</span>
+      <span className="block text-sm text-muted-foreground" data-testid={`${testId}-unavailable`}>
+        <span className="font-display font-black text-foreground/60">—</span> {caption}
+      </span>
+    </div>
   );
 }
 
@@ -370,7 +348,7 @@ function Funnel({ summary, isLoading }: { summary: FunnelSummary; isLoading: boo
           Nothing to count yet.
         </p>
       ) : (
-        <ol className="px-4 sm:px-5 py-3 space-y-2" data-testid="funnel">
+        <ol className="space-y-1.5 px-4 py-3 sm:px-5" data-testid="funnel">
           {summary.rows.map((row) => (
             <li key={row.status} className="text-sm" data-testid={`funnel-${row.status}`}>
               <div className="flex items-baseline justify-between gap-3">
@@ -391,7 +369,7 @@ function Funnel({ summary, isLoading }: { summary: FunnelSummary; isLoading: boo
                 `aria-hidden` with the figures already beside it: the same information twice is
                 noise in a screen reader, and the numbers are the authoritative copy.
               */}
-              <div className="mt-1 h-1.5 rounded-full bg-secondary overflow-hidden" aria-hidden>
+              <div className="mt-0.5 h-1 rounded-full bg-secondary overflow-hidden" aria-hidden>
                 <div
                   className={`h-full rounded-full ${row.status === "active" ? "bg-emerald-400" : "bg-primary"}`}
                   style={{ width: `${row.pct}%` }}
@@ -436,33 +414,24 @@ function Stalled({
             : "Nothing stalled. Every unfinished gym has moved in the last three days."}
         </p>
       ) : (
-        <ul className="divide-y divide-border/70" data-testid="list-stalled">
-          {gyms.map(({ row, days }) => (
-            <li key={row.gymId} data-testid={`stalled-gym-${row.gymId}`}>
-              {/* The whole row, for the reason given on the recent list. This one is a to-do list,
-                  so it is the row an admin means to click. */}
-              <Link
-                href={`/admin/gyms/${row.gymId}`}
-                className="flex items-center gap-3 px-4 sm:px-5 py-2.5 hover:bg-secondary/50 transition-colors"
-              >
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-foreground truncate">
-                    {row.tradeName || row.legalEntityName || row.slug}
-                  </span>
-                  <span className="block text-xs text-muted-foreground truncate">
-                    {row.noticesEmail}
-                  </span>
-                </span>
-                <span className="ml-auto text-right flex-shrink-0">
-                  <Pill className={STATUS_CLASS[row.status]}>{STATUS_LABEL[row.status]}</Pill>
-                  <span className="block text-xs text-muted-foreground mt-0.5 tabular-nums">
-                    {days} {days === 1 ? "day" : "days"} quiet
-                  </span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <Head>
+              <Col>Gym</Col>
+              <Col className="hidden sm:table-cell">Stage</Col>
+              <Col align="right">Quiet for</Col>
+            </Head>
+            <tbody className="divide-y divide-border/70" data-testid="list-stalled">
+              {gyms.map(({ row, days }) => (
+                <GymRow key={row.gymId} row={row} testId={`stalled-gym-${row.gymId}`}>
+                  <Cell align="right" className="whitespace-nowrap tabular-nums text-muted-foreground">
+                    {days} {days === 1 ? "day" : "days"}
+                  </Cell>
+                </GymRow>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Card>
   );

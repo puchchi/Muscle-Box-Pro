@@ -16,6 +16,8 @@ import {
 } from "./AdminFranchiseActions";
 import { AdminFranchiseTermsEditor } from "./AdminFranchiseTermsEditor";
 import { FranchiseInviteActions } from "./AdminFranchiseInviteActions";
+import { FranchiseNetworkCard } from "./FranchiseNetworkCard";
+import { FranchiseActivationCard } from "./FranchiseActivationCard";
 import { formatCalendarDate, formatIstDateTime } from "./adminFormat";
 import {
   FRANCHISE_DOC_TYPE_LABEL,
@@ -113,6 +115,8 @@ const SECTIONS: Array<{ id: string; label: string }> = [
   { id: "progress", label: "Progress" },
   { id: "decision", label: "Decision" },
   { id: "instalments", label: "Instalments" },
+  { id: "activation", label: "Activation" },
+  { id: "network", label: "Gyms and machines" },
   { id: "details", label: "Details" },
   { id: "terms", label: "Terms" },
   { id: "kyc", label: "Documents" },
@@ -137,7 +141,7 @@ function FranchiseView({
       <div>
         <div className="flex flex-wrap items-center gap-3 mb-1">
           <h1
-            className="text-2xl font-display font-black text-foreground uppercase tracking-tight"
+            className="text-2xl font-display font-black text-foreground tracking-tight"
             data-testid="franchise-heading"
           >
             {franchise.details.tradeName || franchise.details.legalEntityName || franchise.slug}
@@ -175,14 +179,8 @@ function FranchiseView({
         </a>
       )}
 
-      {/*
-        Sticky from `md` up and no lower, because the offset has to clear the shell's header and that
-        header is not one height: its nav wraps below 768px, so it stands 157px tall on a phone and
-        57px here. Pinned at 57px on a phone this bar was painted under the header and could not be
-        clicked, which is worse than scrolling away with the page.
-      */}
       <nav
-        className="z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:sticky md:top-[57px]"
+        className="z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card/95 px-1.5 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80 sticky top-2"
         aria-label="Sections of this franchise"
       >
         {SECTIONS.map((section) => (
@@ -225,6 +223,10 @@ function FranchiseView({
       <FranchiseDecisionSection franchise={franchise} onSaved={onChanged} />
 
       <FranchiseInstalmentsSection franchise={franchise} onSaved={onChanged} />
+
+      <FranchiseActivationCard franchise={franchise} onChanged={onChanged} />
+
+      <FranchiseNetworkCard franchiseId={franchise.franchiseId} />
 
       <Card
         id="details"
@@ -541,6 +543,14 @@ function whatWeOwe(
       what: "a bank check on step 8",
       detail: "They say the first instalment has been sent. Nobody has looked at a statement yet.",
       since: franchise.timestamps.paymentClaimedAt,
+    };
+  }
+  if (franchise.status === "payment_verified") {
+    return {
+      section: "activation",
+      what: "switching them on",
+      detail: "The first instalment is confirmed. Nobody has activated the franchise yet.",
+      since: franchise.timestamps.paymentVerifiedAt,
     };
   }
   return null;

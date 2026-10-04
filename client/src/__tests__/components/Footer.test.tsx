@@ -64,6 +64,12 @@ describe("Footer component", () => {
     expect(contactLink).toHaveAttribute("href", "/contact");
   });
 
+  it("links to the two customer shop pages", () => {
+    render(<Footer />);
+    expect(screen.getByRole("link", { name: "Buy a Shake" })).toHaveAttribute("href", "/drinks");
+    expect(screen.getByRole("link", { name: "Every 10th Shake Free" })).toHaveAttribute("href", "/join");
+  });
+
   it("shows Privacy Policy link", () => {
     render(<Footer />);
     const privacyLink = screen.getByRole("link", { name: /privacy policy/i });

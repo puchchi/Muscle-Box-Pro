@@ -93,7 +93,6 @@ import {
   AlertCircle,
   ArrowRight,
   BadgeIndianRupee,
-  Boxes,
   Building2,
   CheckCircle2,
   Clock,
@@ -109,6 +108,7 @@ import {
   Megaphone,
   Monitor,
   PackageCheck,
+  Scale,
   ShieldCheck,
   Warehouse,
   Wifi,
@@ -135,7 +135,6 @@ import {
   franchiseTier,
   journeyByPhase,
   recoveryExample,
-  tierIncludes,
   type FranchiseTierId,
 } from "@shared/franchise/program";
 import { FRANCHISE_FAQ } from "@shared/franchise/faq";
@@ -151,7 +150,6 @@ import { scrollIntoViewGently } from "@/lib/motion";
 const territory = franchiseTier("territory");
 const city = franchiseTier("city");
 const example = recoveryExample("territory");
-const includes = tierIncludes();
 const journey = journeyByPhase();
 
 /**
@@ -161,8 +159,8 @@ const journey = journeyByPhase();
 const sections = [
   { id: "tiers", label: "The franchises" },
   { id: "economics", label: "The money" },
-  { id: "ownership", label: "Machines" },
   { id: "network", label: "Who does what" },
+  { id: "ownership", label: "Machines" },
   { id: "growth", label: "Territory & growth" },
   { id: "journey", label: "How it works" },
   { id: "apply", label: "Apply" },
@@ -171,37 +169,35 @@ const sections = [
 
 const headlines = [
   {
-    icon: BadgeIndianRupee,
-    label: "Investment from",
-    value: formatLakh(territory.investmentInr),
-  },
-  {
-    icon: Boxes,
-    label: "Machines from",
-    value: String(territory.initialMachines),
-  },
-  {
     icon: Gauge,
-    label: "Protein profit during recovery",
+    label: "Protein profit until recovery",
     value: `${FRANCHISE.proteinProfitSharePct.duringRecovery}%`,
   },
   {
+    icon: Scale,
+    label: "Protein profit after recovery",
+    value: `${FRANCHISE.proteinProfitSharePct.afterRecovery}%`,
+  },
+  {
     icon: Megaphone,
-    label: "Advertising profit share",
+    label: "Advertising profit, from day one",
     value: `${FRANCHISE.advertising.franchiseeSharePct}%`,
+  },
+  {
+    icon: BadgeIndianRupee,
+    label: "Payment stages",
+    value: String(territory.paymentSchedule?.length ?? 1),
   },
 ];
 
 /**
  * Facts from the program, phrased for the hero. Never a claim the data does not carry,
- * and never one the headline strip below it already makes. The machine count and both
- * profit shares are in that strip, so repeating them here would print the page's four
- * headline numbers twice inside one screen.
+ * and never a number the tier card or the headline strip beside it already shows.
  */
 const heroProof = [
-  `${FRANCHISE.proteinProfitSharePct.duringRecovery}% of protein profit until you recover your investment`,
+  "Machines, protein, software and gym leads supplied by us",
   "No separate technical service fee while you recover",
-  "Machine-level financial dashboard",
+  "Every machine's numbers on your own dashboard",
 ];
 
 const machineFacts = [
@@ -382,9 +378,9 @@ export default function Franchise() {
                 */}
                 <ul className="space-y-2 mt-6">
                   {heroProof.map((item) => (
-                    <li key={item} className="flex items-start gap-1.5 text-gray-300 text-[13px]">
+                    <li key={item} className="flex items-start gap-2 text-gray-300 text-[15px]">
                       <CheckCircle2
-                        className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-[3px]"
+                        className="w-4 h-4 text-primary flex-shrink-0 mt-[3px]"
                         aria-hidden="true"
                       />
                       {item}
@@ -450,7 +446,7 @@ export default function Franchise() {
                             <p className="text-white font-bold text-[15px] leading-snug">
                               {tier.shortName}
                             </p>
-                            <p className="text-gray-400 text-[13px] leading-snug truncate">
+                            <p className="text-gray-400 text-[13px] leading-snug">
                               {tier.marketRights}
                             </p>
                           </div>
@@ -458,7 +454,7 @@ export default function Franchise() {
                             <p className="text-white font-display font-black text-lg sm:text-xl leading-none tabular-nums">
                               {formatLakh(tier.investmentInr)}
                             </p>
-                            <p className="text-gray-500 text-[11px] mt-1.5">
+                            <p className="text-gray-400 text-xs mt-1.5">
                               {tier.initialMachines} machines
                             </p>
                           </div>
@@ -556,7 +552,7 @@ export default function Franchise() {
           <SectionHeading
             eyebrow="The franchises"
             title="Two ways in"
-            blurb="They differ in one thing: how much market you take responsibility for."
+            blurb="Same machines, same support, same profit shares. The difference is how much market you take on, held exclusively while you meet its targets."
           />
 
           <div className="grid lg:grid-cols-2 gap-5 mt-10">
@@ -608,11 +604,15 @@ export default function Franchise() {
                         {tier.marketRights}
                       </dd>
                     </div>
+                    <div className="col-span-2 rounded-xl border border-border bg-muted/40 px-3.5 py-3">
+                      <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                        Adding machines
+                      </dt>
+                      <dd className="font-bold text-[15px] mt-0.5 leading-snug">
+                        {tier.expansion}
+                      </dd>
+                    </div>
                   </dl>
-
-                  <p className="text-muted-foreground text-[15px] leading-relaxed mt-5">
-                    {tier.positioning}
-                  </p>
 
                   {/*
                     The payment schedule, or an honest statement that it is not published.
@@ -639,19 +639,6 @@ export default function Franchise() {
                       readiness, with the exact schedule set in the definitive agreement.
                     </p>
                   )}
-
-                  <CardLabel>Specific to this franchise</CardLabel>
-                  <ul className="space-y-2">
-                    {includes.unique[tier.id].map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-[14px]">
-                        <CheckCircle2
-                          className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
-                          aria-hidden="true"
-                        />
-                        <span className="leading-snug">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
 
                 <div className="px-6 sm:px-7 pb-6 sm:pb-7">
@@ -668,40 +655,18 @@ export default function Franchise() {
             ))}
           </div>
 
-          {/*
-            The twelve inclusions both tiers share, stated once. Printed inside both
-            cards it was 24 rows the reader had to compare line by line to find the two
-            that actually differ.
-          */}
-          <div className="bg-card border border-border rounded-2xl shadow-sm p-6 sm:p-7 mt-5">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-5">
-              <CardHeading>Included in both franchises</CardHeading>
-              <p className="text-muted-foreground text-[13px]">
-                {includes.shared.length} inclusions, identical either way
-              </p>
-            </div>
-            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2.5">
-              {includes.shared.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-[14px]">
-                  <CheckCircle2
-                    className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
-                    aria-hidden="true"
-                  />
-                  <span className="leading-snug">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/*
-            Ownership used to be stated here too, and again as the whole subject of the
-            very next section. It now lives once, in that section's standfirst.
-          */}
           <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 max-w-3xl flex items-start gap-2">
             <MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span>
-              The exact territory is mutually defined and documented before the franchise
-              becomes operational. For the market itself, see{" "}
+              Everything we supply is the same on both, and is listed under{" "}
+              <a
+                href="#network"
+                className="text-primary-ink font-semibold underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                who does what
+              </a>
+              . The exact territory is agreed and documented before the franchise starts. For the
+              market itself, see{" "}
               <Link
                 href="/protein-vending-machine-india"
                 className="text-primary-ink font-semibold underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -742,12 +707,9 @@ export default function Franchise() {
               note={
                 <>
                   <p>
-                    The {FRANCHISE.proteinProfitSharePct.duringRecovery}% is a capital
-                    recovery mechanism, not a margin. It runs until you have received
-                    cumulative eligible protein-business profit equal to your{" "}
-                    {formatInr(territory.investmentInr)} investment plus GST on the{" "}
-                    {territory.shortName}, and the {city.shortName} threshold is set in its
-                    own agreement.
+                    The {FRANCHISE.proteinProfitSharePct.duringRecovery}% is a capital recovery
+                    mechanism, not a margin. It runs until you have received cumulative eligible
+                    protein-business profit equal to your investment plus GST, on either franchise.
                   </p>
                   {/*
                     One paragraph, no nested elements around the phrase itself: this is the
@@ -755,10 +717,9 @@ export default function Franchise() {
                     and it is the term people most often read the other way round.
                   */}
                   <p className="mt-2">
-                    Advertising across machine displays, digital screens and campaign
-                    placements is monetised centrally, your share is calculated after
-                    applicable advertising costs, and it never counts toward capital
-                    recovery.
+                    Advertising on machine displays, digital screens and campaign placements is sold
+                    centrally. Your share is calculated after advertising costs, and it never counts
+                    toward capital recovery.
                   </p>
                 </>
               }
@@ -906,7 +867,7 @@ export default function Franchise() {
                   className="w-2 h-2 rounded-full bg-primary flex-shrink-0"
                   aria-hidden="true"
                 />
-                also comes off a gym&rsquo;s own share
+                Also comes off a gym&rsquo;s own share
               </p>
             </div>
             <p className="text-gray-400 text-[13px] leading-relaxed mb-4">
@@ -938,10 +899,30 @@ export default function Franchise() {
               })}
             </ul>
             <p className="text-gray-400 text-[13px] leading-relaxed mt-4">
-              Gym arrangements themselves run at splits such as{" "}
-              {FRANCHISE.gymProfitSharingExamples.join(" or ")}, set by MuscleBox Pro per
-              location.
+              Gym deals use splits such as {FRANCHISE.gymProfitSharingExamples.join(" or ")}.
+              MuscleBox Pro sets the split for each location, including which side gets the larger
+              share.
             </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:p-7 mt-5">
+            <CardHeading icon={LayoutDashboard} dark className="mb-2.5">
+              Your dashboard
+            </CardHeading>
+            <p className="text-gray-400 text-[14px] leading-relaxed mb-4">
+              Machine by machine, not one territory total. Every number your share is worked out
+              from is there.
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {DASHBOARD_VISIBILITY.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[13px] text-gray-200"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* A CTA where conviction forms, rather than only at the top and the bottom. */}
@@ -961,12 +942,119 @@ export default function Franchise() {
           </div>
         </Section>
 
+        {/* ── Who does what ────────────────────────────────────────────────── */}
+        <Section id="network">
+          <SectionHeading
+            eyebrow="Who does what"
+            title="We supply. You operate."
+            blurb="Your warehouse is the dividing line. Everything before it is ours. Everything after it is yours."
+          />
+
+          {/*
+            One diagram where there were four prose cards, two lists and a fifth card.
+            The cards were a paragraph-length retelling of the very list beside them
+            ("Machines and procurement" against "Machine procurement, OEM coordination and
+            delivery"), so the section said everything it had to say twice, at four times
+            the length. The lists are the canonical version, and the seam between them is
+            the one thing the lists could not show: where the handover actually happens.
+          */}
+          <div className="bg-card border border-border rounded-2xl shadow-sm grid lg:grid-cols-[1fr_auto_1fr] mt-10 overflow-hidden">
+            <ResponsibilityColumn
+              icon={Cpu}
+              title="MuscleBox Pro provides"
+              items={RESPONSIBILITIES.mbp}
+              party="mbp"
+            />
+
+            {/*
+              The seam. A labelled boundary on desktop, a labelled divider on a phone,
+              where a vertical rail would either rotate text or eat the column.
+            */}
+            <div className="flex lg:flex-col items-center gap-3 px-6 py-4 lg:px-5 lg:py-8 bg-muted/50 border-y lg:border-y-0 lg:border-x border-border">
+              <span className="h-px flex-1 lg:h-auto lg:w-px lg:flex-1 bg-border" />
+              <span className="flex items-center gap-2 lg:flex-col text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground whitespace-nowrap">
+                <Warehouse className="w-4 h-4 text-primary" aria-hidden="true" />
+                <span className="lg:[writing-mode:vertical-rl] lg:rotate-180">Your warehouse</span>
+              </span>
+              <span className="h-px flex-1 lg:h-auto lg:w-px lg:flex-1 bg-border" />
+            </div>
+
+            <ResponsibilityColumn
+              icon={Warehouse}
+              title="You provide"
+              items={RESPONSIBILITIES.franchisee}
+              party="you"
+            />
+          </div>
+
+          {/*
+            The diagram above stops at the warehouse, which is where the split between
+            the two sides is. This is the leg after it, and it is the one thing a
+            prospective franchisee most often assumes the gym does.
+          */}
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
+            <CardHeading icon={PackageCheck} className="mb-2.5">
+              Keeping machines stocked
+            </CardHeading>
+            <p className="text-muted-foreground text-[14px] leading-relaxed mb-6 max-w-2xl">
+              Every machine has to be working and stocked whenever the gym is open. That is the job,
+              day to day.
+            </p>
+
+            {/*
+              Across the card rather than in a column beside the notes. Seven short lines
+              stacked next to two paragraphs left the bottom-left corner of the card empty,
+              which read as something failing to load.
+            */}
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2.5">
+              {MACHINE_UPKEEP.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-[14px]">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-[7px]"
+                    aria-hidden="true"
+                  />
+                  <span className="leading-snug">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <ul className="grid sm:grid-cols-2 gap-3 mt-7 pt-7 border-t border-border">
+              <li className="rounded-xl bg-muted/40 border border-border p-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                  You cannot hand this over
+                </p>
+                <p className="text-[14px] leading-relaxed">
+                  Stocking and daily running stay with you. You cannot pass them to the gym, its
+                  staff or anyone else without our written approval. A gym gives you access, nothing
+                  more. Any exception we approve covers that one gym only.
+                </p>
+              </li>
+              <li className="rounded-xl bg-muted/40 border border-border p-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
+                  If machines sit empty
+                </p>
+                <p className="text-[14px] leading-relaxed">
+                  Empty or broken machines count against the{" "}
+                  <a
+                    href="#growth"
+                    className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    targets
+                  </a>{" "}
+                  your exclusivity depends on. Exact service levels are set in the franchise
+                  agreement.
+                </p>
+              </li>
+            </ul>
+          </div>
+        </Section>
+
         {/* ── Machines ─────────────────────────────────────────────────────── */}
-        <Section id="ownership">
+        <Section id="ownership" tone="tinted">
           <SectionHeading
             eyebrow="Machines"
-            title="You operate them. We own them."
-            blurb="The franchise investment is not a purchase of the machines. It buys the right to operate them in your territory, and they stay ours for as long as the franchise runs."
+            title="The machines stay ours"
+            blurb="The franchise investment is not a purchase of the machines. It buys the right to operate them in your territory, for as long as the franchise runs."
           />
 
           {/*
@@ -1076,150 +1164,15 @@ export default function Franchise() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5 max-w-3xl">
+          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
             <CardSubheading icon={Factory} className="mb-2.5">
               Procurement transparency
             </CardSubheading>
             <p className="text-muted-foreground text-[14px] leading-relaxed">
-              You get visibility into the OEM order, specifications, manufacturing and
-              dispatch status, and the procurement documentation for your allocation.
-              Transparency about where your investment is, not a transfer of ownership.
+              You get visibility into the OEM order, specifications, manufacturing and dispatch
+              status, and the procurement documentation for your allocation, so you can see where
+              your investment is at every stage.
             </p>
-          </div>
-        </Section>
-
-        {/* ── Who does what ────────────────────────────────────────────────── */}
-        <Section id="network" tone="tinted">
-          <SectionHeading
-            eyebrow="Who does what"
-            title="We supply. You operate."
-            blurb="Your warehouse is the dividing line. Everything before it is ours. Everything after it is yours."
-          />
-
-          {/*
-            One diagram where there were four prose cards, two lists and a fifth card.
-            The cards were a paragraph-length retelling of the very list beside them
-            ("Machines and procurement" against "Machine procurement, OEM coordination and
-            delivery"), so the section said everything it had to say twice, at four times
-            the length. The lists are the canonical version, and the seam between them is
-            the one thing the lists could not show: where the handover actually happens.
-          */}
-          <div className="bg-card border border-border rounded-2xl shadow-sm grid lg:grid-cols-[1fr_auto_1fr] mt-10 overflow-hidden">
-            <ResponsibilityColumn
-              icon={Cpu}
-              title="MuscleBox Pro provides"
-              items={RESPONSIBILITIES.mbp}
-              party="mbp"
-            />
-
-            {/*
-              The seam. A labelled boundary on desktop, a labelled divider on a phone,
-              where a vertical rail would either rotate text or eat the column.
-            */}
-            <div className="flex lg:flex-col items-center gap-3 px-6 py-4 lg:px-5 lg:py-8 bg-muted/50 border-y lg:border-y-0 lg:border-x border-border">
-              <span className="h-px flex-1 lg:h-auto lg:w-px lg:flex-1 bg-border" />
-              <span className="flex items-center gap-2 lg:flex-col text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground whitespace-nowrap">
-                <Warehouse className="w-4 h-4 text-primary" aria-hidden="true" />
-                <span className="lg:[writing-mode:vertical-rl] lg:rotate-180">Your warehouse</span>
-              </span>
-              <span className="h-px flex-1 lg:h-auto lg:w-px lg:flex-1 bg-border" />
-            </div>
-
-            <ResponsibilityColumn
-              icon={Warehouse}
-              title="You provide"
-              items={RESPONSIBILITIES.franchisee}
-              party="you"
-            />
-          </div>
-
-          <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 max-w-3xl flex items-start gap-2">
-            <Lock className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
-            <span>
-              Shake prices, the gym profit split and any disputes stay with MuscleBox Pro,
-              even at gyms you found.
-            </span>
-          </p>
-
-          {/*
-            The diagram above stops at the warehouse, which is where the split between
-            the two sides is. This is the leg after it, and it is the one thing a
-            prospective franchisee most often assumes the gym does.
-          */}
-          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5">
-            <CardHeading icon={PackageCheck} className="mb-2.5">
-              Keeping machines stocked
-            </CardHeading>
-            <p className="text-muted-foreground text-[14px] leading-relaxed mb-6 max-w-2xl">
-              Every machine has to be working and stocked whenever the gym is open. That is
-              the job, day to day.
-            </p>
-
-            {/*
-              Across the card rather than in a column beside the notes. Seven short lines
-              stacked next to two paragraphs left the bottom-left corner of the card empty,
-              which read as something failing to load.
-            */}
-            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2.5">
-              {MACHINE_UPKEEP.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-[14px]">
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-[7px]"
-                    aria-hidden="true"
-                  />
-                  <span className="leading-snug">{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <ul className="grid sm:grid-cols-2 gap-3 mt-7 pt-7 border-t border-border">
-              <li className="rounded-xl bg-muted/40 border border-border p-4">
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
-                  You cannot hand this over
-                </p>
-                <p className="text-[14px] leading-relaxed">
-                  Stocking and daily running stay with you. You cannot pass them to the gym,
-                  its staff or anyone else without our written approval. A gym gives you
-                  access, nothing more. Any exception we approve covers that one gym only.
-                </p>
-              </li>
-              <li className="rounded-xl bg-muted/40 border border-border p-4">
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
-                  If machines sit empty
-                </p>
-                <p className="text-[14px] leading-relaxed">
-                  Empty or broken machines count against the{" "}
-                  <a
-                    href="#growth"
-                    className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    targets
-                  </a>{" "}
-                  your exclusivity depends on. Exact service levels are set in the franchise
-                  agreement.
-                </p>
-              </li>
-            </ul>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm mt-5 max-w-3xl">
-            <CardSubheading icon={LayoutDashboard} className="mb-2.5">
-              Your dashboard
-            </CardSubheading>
-            <p className="text-muted-foreground text-[14px] leading-relaxed mb-4">
-              Machine by machine, not one territory total. Every number your share is worked
-              out from is there.
-            </p>
-            <ul className="flex flex-wrap gap-2">
-              {DASHBOARD_VISIBILITY.map((item) => (
-                <li
-                  key={item}
-                  className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px]"
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
         </Section>
 
@@ -1228,7 +1181,7 @@ export default function Franchise() {
           <SectionHeading
             eyebrow="Territory & growth"
             title="Keep your territory by building it"
-            blurb="Territorial exclusivity is real, and it is conditional. A franchisee cannot pay for a city, leave most of it undeveloped, and block MuscleBox Pro from expanding into it."
+            blurb="Exclusivity is real, and it is conditional. You keep it by deploying machines and developing the market, not by holding it."
           />
 
           <div className="grid md:grid-cols-2 gap-5 mt-10">
@@ -1238,9 +1191,9 @@ export default function Franchise() {
               </CardHeading>
               <ul className="space-y-2">
                 {PERFORMANCE_REQUIREMENTS.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-[14px]">
-                    <CheckCircle2
-                      className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
+                  <li key={item} className="flex items-start gap-2.5 text-[14px]">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-[7px]"
                       aria-hidden="true"
                     />
                     <span className="leading-snug">{item}</span>
@@ -1248,10 +1201,9 @@ export default function Franchise() {
                 ))}
               </ul>
               <p className="text-muted-foreground text-[13px] leading-relaxed mt-4 pt-4 border-t border-border">
-                A {territory.shortName} may be required to deploy all{" "}
-                {territory.initialMachines} machines within an agreed period, and a{" "}
-                {city.shortName} its {city.initialMachines} progressively. Missing those can
-                put exclusivity under review.
+                A {territory.shortName} may be required to deploy all {territory.initialMachines}{" "}
+                machines within an agreed period, and a {city.shortName} its {city.initialMachines}{" "}
+                progressively. Missing those can put exclusivity under review.
               </p>
             </div>
 
@@ -1325,7 +1277,7 @@ export default function Franchise() {
                 </li>
                 <li className="rounded-xl bg-muted/40 border border-border p-4">
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
-                    Or this
+                    It also does not mean
                   </p>
                   <p className="text-[14px] leading-relaxed">
                     That they enlarge your territory. Expansion of the territory itself is
@@ -1342,8 +1294,8 @@ export default function Franchise() {
         <Section id="journey" tone="tinted">
           <SectionHeading
             eyebrow="How it works"
-            title="What happens after you apply"
-            blurb="Eleven steps in four stages, of which the first is a conversation about whether your market has room for a MuscleBox Pro network at all."
+            title="From application to payouts"
+            blurb="Four stages. Nothing is paid until we have checked your market and the agreement is signed."
           />
 
           {/*
@@ -1359,7 +1311,7 @@ export default function Franchise() {
             than described. `aria-hidden` on it and on every numeral: the nested `ol`s
             already carry the order.
           */}
-          <ol className="grid sm:grid-cols-2 lg:grid-cols-4 items-start gap-4 mt-10">
+          <ol className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
             {journey.map((phase, phaseIndex) => (
               <li
                 key={phase.id}
@@ -1377,12 +1329,9 @@ export default function Franchise() {
                   >
                     {phaseIndex + 1}
                   </span>
-                  <h3 className="font-display font-black uppercase text-[13px] tracking-tight leading-tight">
+                  <h3 className="font-display font-black text-[15px] tracking-tight leading-tight">
                     {phase.title}
                   </h3>
-                  {phaseIndex < journey.length - 1 && (
-                    <span className="hidden lg:block h-px flex-1 bg-border" aria-hidden="true" />
-                  )}
                 </div>
 
                 <ol className="space-y-3.5">
@@ -1404,7 +1353,7 @@ export default function Franchise() {
                       </span>
                       <div>
                         <h4 className="font-bold text-[14px] leading-snug">{step.title}</h4>
-                        <p className="text-muted-foreground text-[13px] leading-relaxed mt-1">
+                        <p className="text-muted-foreground text-[14px] leading-relaxed mt-1">
                           {step.body}
                         </p>
                       </div>
@@ -1531,9 +1480,7 @@ function ResponsibilityColumn({
           <li
             key={item}
             className={`rounded-full border px-3 py-1.5 text-[13px] leading-snug ${
-              you
-                ? "border-primary/25 bg-primary/[0.06]"
-                : "border-border bg-muted/50 text-muted-foreground"
+              you ? "border-primary/25 bg-primary/[0.06]" : "border-border bg-muted/50"
             }`}
           >
             {item}
@@ -1614,7 +1561,7 @@ function CardHeading({
   className?: string;
   children: React.ReactNode;
 }) {
-  const base = `font-display font-black uppercase text-lg tracking-tight leading-tight ${
+  const base = `font-display font-black text-lg tracking-tight leading-tight ${
     dark ? "text-white" : ""
   } ${className}`;
   if (!Icon) return <h3 className={base}>{children}</h3>;
@@ -1732,7 +1679,7 @@ function ApplicationSection({
         */}
         <div className="bg-primary/[0.05] border-b lg:border-b-0 lg:border-r border-border p-8 sm:p-10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/20 to-accent/10 blur-[80px] pointer-events-none" />
-          <div className="relative z-10 flex flex-col h-full">
+          <div className="relative z-10">
             <span className="inline-block text-primary-ink text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
               Apply
             </span>
@@ -1763,53 +1710,6 @@ function ApplicationSection({
                 </li>
               ))}
             </ul>
-
-            {/*
-              Pushed to the foot of the rail on desktop. The rail is as tall as the form
-              beside it and its content is not, so anchored to the bottom rather than
-              left mid-panel with the rest of the height empty below it.
-            */}
-            {/*
-              Two ways to reach us that are not this form, because both get sent through it
-              otherwise. /invest is the one worth naming: it sells equity in the company and
-              this page sells a territory, and an enquiry meant for one arriving at the
-              other costs a real conversation.
-            */}
-            <p className="text-muted-foreground text-[14px] leading-relaxed mt-8 lg:mt-auto lg:pt-10">
-              Running a gym instead?{" "}
-              <Link
-                href="/gym-partnership"
-                className="text-primary-ink font-semibold underline underline-offset-2 hover:text-primary-fill rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-              >
-                See the gym partnership
-              </Link>
-              , where the machine costs your gym nothing. Want to back the company rather
-              than operate a territory?{" "}
-              <Link
-                href="/invest"
-                className="text-primary-ink font-semibold underline underline-offset-2 hover:text-primary-fill rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-              >
-                That is the investor page
-              </Link>
-              .
-            </p>
-            {/*
-              A signed franchisee reaching this section otherwise files a second enquiry,
-              which is the same reason the paragraph above names the two other destinations.
-              `nofollow` because robots.txt disallows /franchise/login.
-            */}
-            <p className="text-muted-foreground text-[14px] leading-relaxed mt-3">
-              Already a franchise partner?{" "}
-              <Link
-                href="/franchise/login"
-                rel="nofollow"
-                className="text-primary-ink font-semibold underline underline-offset-2 hover:text-primary-fill rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-                data-testid="link-franchise-login"
-              >
-                Sign in to your portal
-              </Link>
-              .
-            </p>
           </div>
         </div>
 
@@ -1846,8 +1746,8 @@ function ApplicationSection({
 
               <CardHeading className="mb-2">Application received</CardHeading>
               <p className="text-muted-foreground text-[15px] leading-relaxed max-w-sm">
-                We will review the market you have asked for and come back within two working
-                days, including if the territory is already taken.
+                We will review the market you asked for and tell you if the territory is already
+                taken.
               </p>
 
               {/*
@@ -1898,7 +1798,7 @@ function ApplicationSection({
                 <div>
                   {/* On a white card, so the darker step of the hue. See index.css. */}
                   <span className="inline-block text-primary-ink text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
-                    Franchise enquiry
+                    Franchise application
                   </span>
                   <CardHeading>Your details</CardHeading>
                 </div>
@@ -2142,6 +2042,47 @@ function ApplicationSection({
           )}
         </div>
       </div>
+      {/*
+            Two ways to reach us that are not this form, because both get sent through it
+            otherwise. /invest is the one worth naming: it sells equity in the company and
+            this page sells a territory, and an enquiry meant for one arriving at the
+            other costs a real conversation.
+          */}
+      <p className="text-gray-400 text-[14px] leading-relaxed mt-8">
+        Running a gym instead?{" "}
+        <Link
+          href="/gym-partnership"
+          className="text-white font-semibold underline underline-offset-2 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+        >
+          See the gym partnership
+        </Link>
+        , where the machine costs your gym nothing. Want to back the company rather than operate a
+        territory?{" "}
+        <Link
+          href="/invest"
+          className="text-white font-semibold underline underline-offset-2 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+        >
+          That is the investor page
+        </Link>
+        .
+      </p>
+      {/*
+            A signed franchisee reaching this section otherwise files a second enquiry,
+            which is the same reason the paragraph above names the two other destinations.
+            `nofollow` because robots.txt disallows /franchise/login.
+          */}
+      <p className="text-gray-400 text-[14px] leading-relaxed mt-3">
+        Already a franchise partner?{" "}
+        <Link
+          href="/franchise/login"
+          rel="nofollow"
+          className="text-white font-semibold underline underline-offset-2 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+          data-testid="link-franchise-login"
+        >
+          Sign in to your portal
+        </Link>
+        .
+      </p>
     </Section>
   );
 }

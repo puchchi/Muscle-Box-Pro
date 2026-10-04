@@ -332,6 +332,42 @@ export async function voidFranchiseInvite(
   return { ok: true, data: parsed.data };
 }
 
+export type FranchiseActivateResult = {
+  franchise: AdminFranchiseView;
+  changed: boolean;
+  emailed: boolean | null;
+  emailReason?: string;
+};
+
+export async function activateFranchise(
+  franchiseId: string,
+  body: { notify: boolean },
+): Promise<AdminReadResult<FranchiseActivateResult>> {
+  const result = await apiRequest<unknown>(
+    "POST",
+    `${FRANCHISES}/${encodeURIComponent(franchiseId)}/activate`,
+    { ...FRANCHISE_ADMIN, body },
+  );
+  if (!result.ok) return { ok: false, error: result.error, issues: [] };
+  const parsed = parseAdminFranchiseView(result.data);
+  if (!parsed.ok) return { ok: false, error: MALFORMED_AFTER_ACTIVATE, issues: parsed.issues };
+  const extra = result.data as { changed?: unknown; emailed?: unknown; emailReason?: unknown };
+  return {
+    ok: true,
+    data: {
+      franchise: parsed.data,
+      changed: extra.changed === true,
+      emailed: typeof extra.emailed === "boolean" ? extra.emailed : null,
+      ...(typeof extra.emailReason === "string" ? { emailReason: extra.emailReason } : {}),
+    },
+  };
+}
+
+const MALFORMED_AFTER_ACTIVATE: OnboardingError = {
+  code: "network",
+  message: "The franchise may have been activated, but the reply came back in a shape this page doesn't recognise. Reload before trying again.",
+};
+
 /**
  * `instalmentNo` is a path segment, so it is stringified from a number the caller cannot make into
  * anything else. The handler answers 404 rather than 400 for a segment that does not parse.
