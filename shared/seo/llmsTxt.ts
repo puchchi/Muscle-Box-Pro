@@ -60,6 +60,18 @@ const PRODUCT: Entry[] = [
       "12 protein shake blends including whey isolate, plant protein, banana, chocolate, and milk-based variants. Starting from ₹120.",
   },
   {
+    title: "How to Buy a Shake",
+    path: "/drinks",
+    description:
+      "How to buy at a machine: pay with any UPI app, or type a code on the machine's screen. No account needed.",
+  },
+  {
+    title: "Join: Every 10th Shake Free",
+    path: "/join",
+    description:
+      "Email sign-in for customers. Every protein shake bought on the phone earns a stamp, and the 10th is free.",
+  },
+  {
     title: "Machine Specifications",
     path: "/specs",
     description:

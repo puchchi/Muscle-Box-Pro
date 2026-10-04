@@ -31,9 +31,11 @@ Disallow: /franchise/login
 Disallow: /franchise/forgot-password
 Disallow: /franchise/set-password/
 Disallow: /franchise/dashboard
+Disallow: /drinks/account
+Disallow: /drinks/receipt
 
 # `/gym/login` and `/admin/login` are covered by the prefixes above; `/franchise/login` needs its
-# own line because `/franchise` itself is indexed. The trailing slash on `/gym/` matters: it does
+# own line because `/franchise` itself is indexed, and so do the two `/drinks/` pages. The trailing slash on `/gym/` matters: it does
 # not match `/gym-demo`, `/gym-partnership` or `/gym-protein-shake-machine`, all three of which are
 # in the sitemap.
 

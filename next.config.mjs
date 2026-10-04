@@ -191,6 +191,8 @@ const INDEXNOW_URLS = [
   "https://www.muscleboxpro.com/specs",
   "https://www.muscleboxpro.com/advertise",
   "https://www.muscleboxpro.com/menu",
+  "https://www.muscleboxpro.com/drinks",
+  "https://www.muscleboxpro.com/join",
   "https://www.muscleboxpro.com/about",
   "https://www.muscleboxpro.com/contact",
   "https://www.muscleboxpro.com/help",

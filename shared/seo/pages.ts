@@ -24,6 +24,8 @@ export const PAGE_CHANGED_ON = {
   "/gym-protein-shake-machine": "2026-03-28",
   "/protein-vending-machine-india": "2026-03-28",
   "/menu": "2026-03-28",
+  "/drinks": "2026-10-03",
+  "/join": "2026-10-03",
   "/about": "2026-09-04",
   "/contact": "2026-03-28",
   "/help": "2026-03-28",
