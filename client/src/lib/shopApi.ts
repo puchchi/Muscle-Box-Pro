@@ -19,10 +19,10 @@ import {
   type ShopResult,
   type ShopSignedIn,
 } from "@shared/shop/shopSchema";
+import { apiBaseUrl } from "./apiClient";
 import { rememberSandboxBearer, sandboxBearer, setSignedInHint } from "./shopSession";
 
-// Explicit only, never derived from the onboarding host: an unset variable keeps /drinks on its holding page.
-export const SHOP_API_BASE_URL: string | null = process.env.NEXT_PUBLIC_MBP_SHOP_API_URL?.replace(/\/+$/, "") || null;
+export const SHOP_API_BASE_URL: string | null = apiBaseUrl("shop");
 
 const TOKEN_HEADER = "x-shop-order-token";
 const TIMEOUT_MS = 20_000;

@@ -52,19 +52,17 @@ says what each one does.
    because production derives its host as `api.muscleboxpro.com/machine-admin`. `MbpShop-prod` is approved
    for production (2026-10-04).
 2. **Vercel production environment**
-   - Leave unset, because they derive: `NEXT_PUBLIC_MBP_API_URL`, the two franchise API URLs and
-     `NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL`.
+   - Leave unset, because they derive from `api.muscleboxpro.com`: `NEXT_PUBLIC_MBP_API_URL`, the
+     two franchise API URLs, and the machine admin, machine IoT, shop and shop admin URLs.
    - Set `NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN` to the production franchise docs bucket.
    - Once `MbpMachineAdmin-prod` is deployed, set `NEXT_PUBLIC_MBP_MACHINE_FILES_BUCKET_ORIGIN` to
      `https://mbp-machine-files-prod-863181491735.s3.ap-south-1.amazonaws.com` and
      `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` to that stack's `FilesBaseUrl`. Without them, drink
      picture uploads and images are blocked by the CSP.
-   - Once `MbpMachine-prod` exists, set `NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL` to
-     `https://api.muscleboxpro.com/machine-iot`. Until then the Remote control tab stays hidden.
-   - Once `MbpShop-prod` answers on `api.muscleboxpro.com/shop` (JSON, not API Gateway's
-     `Missing Authentication Token`), set `NEXT_PUBLIC_MBP_SHOP_API_URL` to
-     `https://api.muscleboxpro.com/shop` and `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL` to `…/shop-admin`.
-     Until then `/join` and `/drinks` show their holding pages and the Shop pages are hidden.
+   - There is no switch for the shop: `/join`, `/drinks`, the Shop pages and Remote control go live
+     with the deploy. So merge only once `/shop`, `/shop-admin` and `/machine-admin` on
+     `api.muscleboxpro.com` answer with JSON, not API Gateway's `Missing Authentication Token`.
+   - Register the Razorpay shop webhook for production, or paid orders never get their code.
 3. **SEO side effects.** A production build pings IndexNow with every URL in `INDEXNOW_URLS`
    (`next.config.mjs`), `/join` and `/drinks` included. A local `next build` pings it too.
 4. **After the deploy**, check `/sitemap.xml`, `/robots.txt` and `/llms.txt`. Check that `/machines`

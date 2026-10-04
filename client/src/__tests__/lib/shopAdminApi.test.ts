@@ -18,9 +18,16 @@ afterEach(() => {
 });
 
 describe("shopAdminApi", () => {
-  it("is off and calls nothing when the variable is unset", async () => {
+  it("derives api.muscleboxpro.com/shop-admin in production", async () => {
+    await api("");
+    const { apiBaseUrl } = await import("@/lib/apiClient");
+    expect(apiBaseUrl("shopAdmin")).toBe("https://api.muscleboxpro.com/shop-admin");
+  });
+
+  it("is off and calls nothing off production when the variable is unset", async () => {
     const fetch = reply(200, {});
     vi.stubGlobal("fetch", fetch);
+    vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "https://abc123.execute-api.ap-south-1.amazonaws.com/sandbox");
     const { shopAdminConfigured, fetchShopOrders } = await api("");
     expect(shopAdminConfigured()).toBe(false);
     expect((await fetchShopOrders({}, null)).ok).toBe(false);

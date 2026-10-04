@@ -124,8 +124,8 @@ Open from this work:
 
 Contract: mbp-backend `docs/remote-control-dashboard-api.md`, checked against
 `admin/handlers/remote.ts` and `mqtt.ts`. The routes are on a third machine base URL,
-`NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL`, explicit only and never derived. Unset hides the tab. It is
-also in `connect-src`. Sandbox: the `IotApiUrl` output of `MbpMachineIot-sandbox`. Production:
+`NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL`. Production derives it, like the other stacks; elsewhere unset
+hides the tab. It is also in `connect-src`. Sandbox: the `IotApiUrl` output of `MbpMachineIot-sandbox`. Production:
 `https://api.muscleboxpro.com/machine-iot`.
 
 - A **Remote control** tab (`MachineRemoteTab.tsx`). The MQTT card reads `machine.mqtt` from
@@ -243,9 +243,9 @@ in a new AWS shop service, not Supabase.
       - Production uses the `mbp_shop` cookie. Sandbox keeps the returned bearer in sessionStorage
         (`mbp:shop-sandbox-session`), never against `api.muscleboxpro.com`. localStorage holds only
         `mbp:shop-signed-in`, so a phone that never signed in doesn't call `GET me`.
-- **Going live (all of the shop).** Gated on `NEXT_PUBLIC_MBP_SHOP_API_URL`: unset keeps the
-      holding pages, so production is unchanged until it is set to
-      `https://api.muscleboxpro.com/shop`. `MbpShop-prod` is approved (2026-10-04). Production also
+- **Going live (all of the shop).** Production derives `https://api.muscleboxpro.com/shop` and
+      `/shop-admin` (decided 2026-10-04), so the shop goes live with the deploy that carries this
+      code, with no switch. Merge only once `MbpShop-prod` answers there. Production also
       needs `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` for drink pictures, and the Razorpay shop
       webhook registered, before a real paid order reaches `coded`. After changing the variable,
       restart `next dev`: the CSP is built when the config loads. The full checklist is in the
@@ -259,8 +259,7 @@ in a new AWS shop service, not Supabase.
       `WebPage` JSON-LD (`shared/seo/webPage.ts`), dated from `PAGE_CHANGED_ON`. They are in the
       sitemap, `INDEXNOW_URLS` and `llms.txt`. robots.txt disallows `/drinks/account` and
       `/drinks/receipt`, which also stay `noindex`. The site footer links both, and `/join` links on
-      to `/drinks` and `/menu`. In production the pages show their holding versions until the shop is
-      switched on.
+      to `/drinks` and `/menu`. The holding versions show only where the shop URL can't be derived.
 - Sign in with Google: parked 2026-10-02. Sign-in is the email code only. The asks are kept
       in `docs/shop-google-signin-asks.md`, not sent.
 - [x] **Dashboard: Redeem Codes source** (2026-10-02). A Source column and filter (Admin, Shop
@@ -312,9 +311,9 @@ in a new AWS shop service, not Supabase.
         month. The order page shows the email with a copy button and the id under it. Times sit on
         two lines so the table fits at 1440.
       - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
-      - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
-        Production is `https://api.muscleboxpro.com/shop-admin`, set together with the shop
-        URL once `MbpShop-prod` answers. Restart `next dev` after setting it.
+      - `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`: production derives
+        `https://api.muscleboxpro.com/shop-admin`; elsewhere unset hides both sections. Restart
+        `next dev` after setting it.
       - Not used yet: `GET shop-admin/customers?email=` (an email in a query string, so it would land
         in API access logs), and the
         `already` and `resumed` flags, since the page reloads the order after every action.
