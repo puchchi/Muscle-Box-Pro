@@ -193,7 +193,8 @@ Behind the admin session, like `machine-admin`:
   digits with a QR. The token goes in the page URL so the page is the receipt, and it is also kept on the phone.
 - **`/join?sn=`:** what an account gets you → email → code → signed in → on to `/drinks?sn=`.
 - The site's CSP gains the shop host and Razorpay Checkout (`checkout.razorpay.com`, `api.razorpay.com`).
-- Both pages are kept out of search indexing.
+- Both pages are kept out of search indexing. (Changed 2026-10-04: `/join` and `/drinks` are indexed;
+  `/drinks/account` and `/drinks/receipt` are not.)
 - Until the shop is live, both pages are holding pages that tell the customer to pay on the machine.
 
 ## 7. Order of work

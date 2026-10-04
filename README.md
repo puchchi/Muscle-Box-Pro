@@ -42,6 +42,34 @@ Note: `next.config.mjs` sets a strict CSP whose `connect-src` hardcodes the Supa
 URL. If the project ref changes, update it or **every form fails silently in production only**
 (`next dev` does not apply these headers the same way).
 
+### Production go-live: machine console, shop, /join and /drinks
+
+Every `NEXT_PUBLIC_MBP_*` value is read at build time, so redeploy after changing one. `.env.example`
+says what each one does.
+
+1. **Backend first** (mbp-backend, the owner's call). `MbpMachineIot-prod` is deployed. Next are
+   `MbpMachine-prod`, then `MbpMachineAdmin-prod`. The `/machines` console needs `MbpMachineAdmin-prod`,
+   because production derives its host as `api.muscleboxpro.com/machine-admin`. `MbpShop-prod` is not
+   authorised yet.
+2. **Vercel production environment**
+   - Leave unset, because they derive: `NEXT_PUBLIC_MBP_API_URL`, the two franchise API URLs and
+     `NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL`.
+   - Set `NEXT_PUBLIC_MBP_FRANCHISE_DOCS_ORIGIN` to the production franchise docs bucket.
+   - Once `MbpMachineAdmin-prod` is deployed, set `NEXT_PUBLIC_MBP_MACHINE_FILES_BUCKET_ORIGIN` to
+     `https://mbp-machine-files-prod-863181491735.s3.ap-south-1.amazonaws.com` and
+     `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` to that stack's `FilesBaseUrl`. Without them, drink
+     picture uploads and images are blocked by the CSP.
+   - Once `MbpMachine-prod` exists, set `NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL` to
+     `https://api.muscleboxpro.com/machine-iot`. Until then the Remote control tab stays hidden.
+   - Once `MbpShop-prod` is deployed, set `NEXT_PUBLIC_MBP_SHOP_API_URL` to
+     `https://api.muscleboxpro.com/shop` and `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL` to `…/shop-admin`.
+     Until then `/join` and `/drinks` show their holding pages and the Shop pages are hidden.
+3. **SEO side effects.** A production build pings IndexNow with every URL in `INDEXNOW_URLS`
+   (`next.config.mjs`), `/join` and `/drinks` included. A local `next build` pings it too.
+4. **After the deploy**, check `/sitemap.xml`, `/robots.txt` and `/llms.txt`. Check that `/machines`
+   loads a machine and that a drink picture shows. Once the shop is on, buy a drink on `/drinks` to
+   check that the Razorpay checkout passes the CSP.
+
 **Edge Functions** — deploy via Supabase CLI:
 
 ```bash

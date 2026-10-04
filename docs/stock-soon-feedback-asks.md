@@ -1,6 +1,8 @@
 # Coming soon, Contact us and ratings: asks from the dashboard
 
-Status: written 2026-10-02, not yet sent. Both open decisions are settled. These add to `mbp-machine/docs/HANDOFF-BACKEND-STOCK-SOON-FEEDBACK.md`
+Status: written 2026-10-02. Updated 2026-10-04: A6 (complaint email) is built and in sandbox. A1, A3 and A4 are
+not in the backend handlers yet, so the dashboard still filters and counts only the rows it got back. Both open
+decisions are settled. These add to `mbp-machine/docs/HANDOFF-BACKEND-STOCK-SOON-FEEDBACK.md`
 (§2.5, §3.3, §4). The dashboard side is built against that brief and is on branch `machine-dashboard`.
 
 ## Backend (mbp-backend)

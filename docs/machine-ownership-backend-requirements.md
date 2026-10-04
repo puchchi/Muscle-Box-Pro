@@ -1,6 +1,7 @@
 # Machine ownership: backend requirements
 
-Status: ready for the backend, 2026-09-30. All decisions below, including §9, were confirmed by Anurag on 2026-09-30.
+Status: ready for the backend, 2026-09-30. Updated 2026-10-04: the frontend is built (81b84f2) and the
+backend is in sandbox; production waits on `MbpMachine-prod`. All decisions below, including §9, were confirmed by Anurag on 2026-09-30.
 
 Goal: every vending machine has a known owner (MBP stock, a franchise, or a gym), a gym can
 belong to a franchise, and every order records who owned the machine when it was made. Only

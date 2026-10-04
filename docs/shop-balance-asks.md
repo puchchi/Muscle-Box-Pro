@@ -1,8 +1,9 @@
 # Shop balance: asks from the website
 
-Status: decided by Anurag 2026-10-02, not sent yet. The website has no balance UI until these routes
-exist. Everything else in the signed-in flow (sign-in, "My drink codes", orders, stamps) is built
-against `mbp-backend/services/shop/src/handlers/` and waits only on those routes being deployed.
+Status: decided by Anurag 2026-10-02. Updated 2026-10-04: the backend has built S1 to S7, and the
+dashboard side is built (balance refund and stuck-refund buttons on the customer page). The customer
+website still has no balance UI: top up and pay from balance are the next website work. The rest of
+the signed-in flow (sign-in, "My drink codes", orders, stamps) is built.
 
 ## Decisions
 

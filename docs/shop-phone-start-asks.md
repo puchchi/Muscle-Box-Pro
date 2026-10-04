@@ -17,8 +17,9 @@ What follows is the request as sent.
 
 1. **No phone Start on the website or the dashboard.** The website shows the 8-digit code and the customer types it
    on the machine. There is no "Start my drink" button and no time parameter in the Get Drinks link. The dashboard
-   gets no "Connect MQTT", certificate details or MQTT status on the machine page, and no "Website start" on
-   orders. Spec §6.1's Start routes, §6.5's dashboard items and §6.7 have no website or dashboard caller.
+   gets no "Website start" on orders. Spec §6.1's Start routes and §6.7 have no website or dashboard caller.
+   (Later, 2026-10-04: the machine page did get "Connect MQTT" and MQTT status, for admin remote control,
+   BACKEND-REQUESTS #13. Customers still never start a drink from a phone.)
 2. **A guest can email themselves the code.** No SMS (it needs DLT). Emailing does not create an account.
 3. **The 10th drink is free, not the 11th** (decided 2026-10-02). Nine paid drinks, then a free one.
 

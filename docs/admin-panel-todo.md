@@ -123,9 +123,10 @@ Open from this work:
 ## Done 2026-10-04: remote control on the machine page (BACKEND-REQUESTS #13)
 
 Contract: mbp-backend `docs/remote-control-dashboard-api.md`, checked against
-`admin/handlers/remote.ts` and `mqtt.ts`. **Sandbox only.** The routes are on a third machine base
-URL, `NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL` (the `IotApiUrl` output of `MbpMachineIot-sandbox`),
-explicit only and never derived. Unset hides the tab. It is also in `connect-src`.
+`admin/handlers/remote.ts` and `mqtt.ts`. The routes are on a third machine base URL,
+`NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL`, explicit only and never derived. Unset hides the tab. It is
+also in `connect-src`. Sandbox: the `IotApiUrl` output of `MbpMachineIot-sandbox`. Production:
+`https://api.muscleboxpro.com/machine-iot`.
 
 - A **Remote control** tab (`MachineRemoteTab.tsx`). The MQTT card reads `machine.mqtt` from
   `GET machines/{sn}` and shows one of four states. A certificate we didn't issue gets a warning in
@@ -150,9 +151,9 @@ explicit only and never derived. Unset hides the tab. It is also in `connect-src
   view isn't cut off.
 - `machine.mqtt` is optional in `machinesSchema.ts`, because the backend that sends it isn't
   deployed. A settings save keeps the last MQTT block, since PATCH doesn't return one.
-- **Waiting on deploy:** `MbpMachineIot-sandbox`, then `MbpMachine` and `MbpMachineAdmin`. All
-  three are the owner's call. Then set the env var and restart `next dev` so the CSP picks up the
-  host.
+- **Deploys (2026-10-04):** all three machine stacks are in sandbox, and `MbpMachineIot-prod` is
+  deployed but not yet proven. In production, set the variable only once `MbpMachine-prod` exists,
+  since the routes read its table. Restart `next dev` after setting it so the CSP picks up the host.
 
 ## Done 2026-10-04: the machine console menu in four groups
 
@@ -165,8 +166,8 @@ the sidebar scrolls on short screens.
 ## Done 2026-10-02: machine handoff (coming soon, Contact us, ratings, Instagram)
 
 The brief is `mbp-machine/docs/HANDOFF-FRONTEND-STOCK-SOON-FEEDBACK.md`; the admin API it builds
-against is the backend brief's §2.5, §3.3 and §4. The backend has not shipped any of it yet, so
-every new field parses as off or none when it is missing. What this repo still needs from the
+against is the backend brief's §2.5, §3.3 and §4. The backend shipped #8, #9, #9b and #11 to sandbox
+on 2026-10-02. Every new field still parses as off or none when it is missing. What this repo still needs from the
 backend is in `docs/stock-soon-feedback-asks.md`.
 
 - **Coming soon** on a drink: a switch in the goods form (`ComingSoonField`), a pill and a Status
@@ -217,7 +218,8 @@ expires; every 10th drink is free for signed-in customers; sign-in is an email c
 in a new AWS shop service, not Supabase.
 
 - [x] Holding pages at `/join` and `/drinks` (`client/src/pages/shop/`). The machine app already
-      draws QRs to them. They say what is coming and how to buy on the machine now. Not indexed.
+      draws QRs to them. They say what is coming and how to buy on the machine now. `/join` and `/drinks` are indexed since
+      2026-10-04 (see the SEO entry below). `/drinks/account` and `/drinks/receipt` are not.
 - [x] **Phase 1b, website** (2026-10-02). `/drinks?sn=` shows the live menu and buys with Razorpay
       Checkout (`DrinksShop.tsx`). The receipt is `/drinks/receipt#t=…` (`DrinkReceipt.tsx`): it
       polls until the code arrives, shows refunds in plain words, and has "Email me this code".
@@ -231,11 +233,6 @@ in a new AWS shop service, not Supabase.
       instead of the form. The receipt response has no owner, so an order claimed at sign-in, or
       opened on another phone, still shows the form. That is right for claims, which `codeEmail`
       skips.
-      - Gated on `NEXT_PUBLIC_MBP_SHOP_API_URL`: unset keeps the holding page, so production is
-        unchanged until it is set to `https://api.muscleboxpro.com/shop`.
-      - Production also needs `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` for drink pictures, and the
-        Razorpay shop webhook registered, before a real paid order reaches `coded`.
-      - After changing the variable, restart `next dev`: the CSP is built when the config loads.
 - [x] **Phase 1c, website: signed-in `/drinks`** (2026-10-02), against `shop/auth/*` and
       `shop/me*` as built (spec §5.2, not deployed in sandbox yet, so tested with mocks).
       - Buy opens a sheet: "Sign in and pay" or "Pay as a guest". Sign-in is the email code inside
@@ -246,8 +243,24 @@ in a new AWS shop service, not Supabase.
       - Production uses the `mbp_shop` cookie. Sandbox keeps the returned bearer in sessionStorage
         (`mbp:shop-sandbox-session`), never against `api.muscleboxpro.com`. localStorage holds only
         `mbp:shop-signed-in`, so a phone that never signed in doesn't call `GET me`.
-- [ ] **Phase 1c, website:** `/join`.
-- [ ] **Prepaid balance:** decided, needs backend. See `docs/shop-balance-asks.md`.
+- **Going live (all of the shop).** Gated on `NEXT_PUBLIC_MBP_SHOP_API_URL`: unset keeps the
+      holding pages, so production is unchanged until it is set to
+      `https://api.muscleboxpro.com/shop`. `MbpShop-prod` is not authorised yet. Production also
+      needs `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` for drink pictures, and the Razorpay shop
+      webhook registered, before a real paid order reaches `coded`. After changing the variable,
+      restart `next dev`: the CSP is built when the config loads. The full checklist is in the
+      README under "Production go-live".
+- [x] **Phase 1c, website:** `/join`, a real join page (f9f4332).
+- [ ] **Prepaid balance.** The backend has built S1 to S7. The dashboard side is done (balance
+      refund and stuck-refund buttons, 3f850ae and 1d0258b). Still to build on the website: top up
+      and pay from balance. See `docs/shop-balance-asks.md`.
+- [x] **SEO for `/join` and `/drinks`** (2026-10-04, 567f794 and 61567d7). Both are indexable, with
+      a title, description, canonical (which drops `?sn=`), share preview, and `BreadcrumbList` plus
+      `WebPage` JSON-LD (`shared/seo/webPage.ts`), dated from `PAGE_CHANGED_ON`. They are in the
+      sitemap, `INDEXNOW_URLS` and `llms.txt`. robots.txt disallows `/drinks/account` and
+      `/drinks/receipt`, which also stay `noindex`. The site footer links both, and `/join` links on
+      to `/drinks` and `/menu`. In production the pages show their holding versions until the shop is
+      switched on.
 - Sign in with Google: parked 2026-10-02. Sign-in is the email code only. The asks are kept
       in `docs/shop-google-signin-asks.md`, not sent.
 - [x] **Dashboard: Redeem Codes source** (2026-10-02). A Source column and filter (Admin, Shop
@@ -300,12 +313,13 @@ in a new AWS shop service, not Supabase.
         two lines so the table fits at 1440.
       - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
       - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
-        Production is `https://api.muscleboxpro.com/shop-admin`. Restart `next dev` after setting it.
+        Production is `https://api.muscleboxpro.com/shop-admin`, blocked until `MbpShop-prod` is
+        authorised. Restart `next dev` after setting it.
       - Not used yet: `GET shop-admin/customers?email=` (an email in a query string, so it would land
         in API access logs), and the
         `already` and `resumed` flags, since the page reloads the order after every action.
-- **Not doing (decided 2026-10-01):** phone Start. No "Connect MQTT", certificate details or MQTT
-      status on the machine page, and no "Website start" on orders. Customers type the code.
+- **Not doing (decided 2026-10-01):** phone Start, and no "Website start" on orders. Customers type
+      the code. MQTT on the machine page was built later for admins only, as remote control (#13).
 
 ## Parked — the panel is cheap, the API's metrics are not
 
