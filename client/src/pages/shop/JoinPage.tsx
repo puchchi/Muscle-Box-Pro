@@ -92,6 +92,16 @@ export function JoinPage({ sn }: { sn: string | null }) {
             ))}
           </ol>
           <p className="mt-8 max-w-2xl text-sm leading-relaxed text-gray-600">{MEMBER_COPY.guestNote}</p>
+          <nav className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="More about our protein shakes" data-testid="join-more">
+            <Link href={menuHref(sn) ?? "/drinks"} className={`${TEXT_LINK} min-h-11`}>
+              {MEMBER_COPY.buyLink}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link href="/menu" className={`${TEXT_LINK} min-h-11`}>
+              {MEMBER_COPY.menuLink}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </nav>
         </section>
       </main>
     </div>

@@ -113,6 +113,8 @@ export const MEMBER_COPY = {
   doneBody: "Buy while signed in and every protein shake earns a stamp.",
   doneCta: "Pick a protein shake",
   accountCta: "My account",
+  buyLink: "How to buy a protein shake",
+  menuLink: "See every protein shake we make",
   stepsTitle: "How it works",
   steps: [
     { title: "Join with your email", body: "Type the 6-digit code we email you. That's your account." },

@@ -68,6 +68,16 @@ describe("/join", () => {
     expect(screen.getByTestId("join-account")).toHaveAttribute("href", "/drinks/account");
   });
 
+  it("always links on to buying and the menu, keeping the machine when there is one", () => {
+    const { unmount } = render(<JoinPage sn={null} />);
+    const more = () => within(screen.getByTestId("join-more"));
+    expect(more().getByRole("link", { name: MEMBER_COPY.buyLink })).toHaveAttribute("href", "/drinks");
+    expect(more().getByRole("link", { name: MEMBER_COPY.menuLink })).toHaveAttribute("href", "/menu");
+    unmount();
+    render(<JoinPage sn="GS805TEST01" />);
+    expect(more().getByRole("link", { name: MEMBER_COPY.buyLink })).toHaveAttribute("href", "/drinks?sn=GS805TEST01");
+  });
+
   it("uses no em dashes in what the customer reads", () => {
     expect(JSON.stringify(MEMBER_COPY)).not.toContain("—");
   });
