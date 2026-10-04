@@ -49,8 +49,8 @@ says what each one does.
 
 1. **Backend first** (mbp-backend, the owner's call). `MbpMachineIot-prod` is deployed. Next are
    `MbpMachine-prod`, then `MbpMachineAdmin-prod`. The `/machines` console needs `MbpMachineAdmin-prod`,
-   because production derives its host as `api.muscleboxpro.com/machine-admin`. `MbpShop-prod` is not
-   authorised yet.
+   because production derives its host as `api.muscleboxpro.com/machine-admin`. `MbpShop-prod` is approved
+   for production (2026-10-04).
 2. **Vercel production environment**
    - Leave unset, because they derive: `NEXT_PUBLIC_MBP_API_URL`, the two franchise API URLs and
      `NEXT_PUBLIC_MBP_MACHINE_ADMIN_API_URL`.
@@ -61,7 +61,8 @@ says what each one does.
      picture uploads and images are blocked by the CSP.
    - Once `MbpMachine-prod` exists, set `NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL` to
      `https://api.muscleboxpro.com/machine-iot`. Until then the Remote control tab stays hidden.
-   - Once `MbpShop-prod` is deployed, set `NEXT_PUBLIC_MBP_SHOP_API_URL` to
+   - Once `MbpShop-prod` answers on `api.muscleboxpro.com/shop` (JSON, not API Gateway's
+     `Missing Authentication Token`), set `NEXT_PUBLIC_MBP_SHOP_API_URL` to
      `https://api.muscleboxpro.com/shop` and `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL` to `…/shop-admin`.
      Until then `/join` and `/drinks` show their holding pages and the Shop pages are hidden.
 3. **SEO side effects.** A production build pings IndexNow with every URL in `INDEXNOW_URLS`

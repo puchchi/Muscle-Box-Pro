@@ -245,7 +245,7 @@ in a new AWS shop service, not Supabase.
         `mbp:shop-signed-in`, so a phone that never signed in doesn't call `GET me`.
 - **Going live (all of the shop).** Gated on `NEXT_PUBLIC_MBP_SHOP_API_URL`: unset keeps the
       holding pages, so production is unchanged until it is set to
-      `https://api.muscleboxpro.com/shop`. `MbpShop-prod` is not authorised yet. Production also
+      `https://api.muscleboxpro.com/shop`. `MbpShop-prod` is approved (2026-10-04). Production also
       needs `NEXT_PUBLIC_MBP_MACHINE_FILES_CDN_ORIGIN` for drink pictures, and the Razorpay shop
       webhook registered, before a real paid order reaches `coded`. After changing the variable,
       restart `next dev`: the CSP is built when the config loads. The full checklist is in the
@@ -313,8 +313,8 @@ in a new AWS shop service, not Supabase.
         two lines so the table fits at 1440.
       - Redeem Codes takes `?shopOrderId=` and links each shop code back to its order.
       - Gated on `NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL`, never derived: unset hides both sections.
-        Production is `https://api.muscleboxpro.com/shop-admin`, blocked until `MbpShop-prod` is
-        authorised. Restart `next dev` after setting it.
+        Production is `https://api.muscleboxpro.com/shop-admin`, set together with the shop
+        URL once `MbpShop-prod` answers. Restart `next dev` after setting it.
       - Not used yet: `GET shop-admin/customers?email=` (an email in a query string, so it would land
         in API access logs), and the
         `already` and `resumed` flags, since the page reloads the order after every action.
