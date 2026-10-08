@@ -230,6 +230,10 @@ Admin endpoints are under `/admin`, and franchise endpoints under the franchise 
 4. Dashboard: operator sign-in pages, and an Operators page for admins and franchise owners.
 5. Production after both pass on sandbox.
 
+Status on 2026-10-09: steps 1 to 4 are done on sandbox (mbp-backend `operator` branch, b78a8ee, and
+this repo's `operator` branch). Step 5 is waiting. Production has no `/me` yet, so the console
+falls back to the admin session with every permission until the backend ships there.
+
 ## 11. Out of scope
 
 - Franchise-owned goods, recipes, ads, voice defaults or QR settings. They stay fleet-wide and

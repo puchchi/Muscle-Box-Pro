@@ -215,3 +215,14 @@ Decided:
 4. **One operator on many machines?** Yes. The franchise or an admin picks which machines each
   operator can use, and can remove an operator at any time.
 
+## Where this lives in the dashboard
+
+- The console reads `GET /machine-admin/me` and shows each role only the menu items, tabs, fields
+  and buttons this matrix gives it. A page the role can't open shows "You don't have access".
+- Franchise and gym owners open the console from their dashboards. A gym sees the link once its
+  machine is installed.
+- Operators sign in at `/operator/login`. The invite and reset emails link to
+  `/operator/set-password/<link>`, and `/operator/forgot-password` sends a new one.
+  `/machines/sign-in` lists all four sign-ins.
+- Admins and franchise owners manage operators at `/machines/operators`. When the invite email
+  doesn't go out, the page shows the link once so it can be sent by hand.
