@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import type { MachineCreateInput, MachineEditInput } from "@shared/admin/machines";
 import type { Machine, MachineModel } from "@shared/admin/machinesSchema";
 import type { MachineCall } from "@/lib/adminMachineApi";
+import type { Permission } from "@shared/admin/viewerSchema";
 import { FormRow, NativeSelect, parseNumber, TextInput } from "./formBits";
 import { ConfirmDialog, formatIstStamp, ProblemPanel, type Problem } from "./MachinesUi";
 
@@ -26,6 +27,37 @@ type Values = {
   qrPay: boolean;
   freeVend: boolean;
 };
+
+const SETTING_FIELDS = {
+  machineNumber: ["deviceExtNo"],
+  name: ["name"],
+  servicePhone: ["servicePhone"],
+  location: ["address", "latitude", "longitude"],
+  hotWater: ["hotMax", "hotMin"],
+  coldWater: ["coldMax", "coldMin"],
+  enabled: ["enabled"],
+  qrPay: ["qrPay"],
+  freeVend: ["freeVend"],
+} as const satisfies Record<string, ReadonlyArray<keyof MachineEditInput>>;
+
+type SettingGroup = keyof typeof SETTING_FIELDS;
+type Access = "edit" | "view" | "hidden";
+export type SettingAccess = Record<SettingGroup, Access>;
+
+const GROUPS = Object.keys(SETTING_FIELDS) as SettingGroup[];
+
+export const FULL_ACCESS: SettingAccess = Object.fromEntries(GROUPS.map((g) => [g, "edit"])) as SettingAccess;
+
+export function settingAccess(can: (p: Permission) => boolean): SettingAccess {
+  return Object.fromEntries(
+    GROUPS.map((g) => [
+      g,
+      can(`settings.${g}.edit` as Permission) ? "edit" : can(`settings.${g}.view` as Permission) ? "view" : "hidden",
+    ]),
+  ) as SettingAccess;
+}
+
+const groupOf = (field: string) => GROUPS.find((g) => (SETTING_FIELDS[g] as ReadonlyArray<string>).includes(field));
 
 function valuesOf(machine: Machine | null, models: MachineModel[]): Values {
   if (!machine) {
@@ -50,17 +82,17 @@ function valuesOf(machine: Machine | null, models: MachineModel[]): Values {
   return {
     sn: machine.sn,
     modelId: machine.modelId,
-    deviceExtNo: machine.deviceExtNo,
+    deviceExtNo: machine.deviceExtNo ?? "",
     name: machine.name,
     servicePhone: machine.servicePhone,
     address: machine.address,
     latitude: machine.latitude === null ? "" : String(machine.latitude),
     longitude: machine.longitude === null ? "" : String(machine.longitude),
-    hotMax: String(machine.hotMax),
-    hotMin: String(machine.hotMin),
-    coldMax: String(machine.coldMax),
-    coldMin: String(machine.coldMin),
-    enabled: machine.enabled,
+    hotMax: String(machine.hotMax ?? ""),
+    hotMin: String(machine.hotMin ?? ""),
+    coldMax: String(machine.coldMax ?? ""),
+    coldMin: String(machine.coldMin ?? ""),
+    enabled: machine.enabled ?? true,
     qrPay: machine.qrPay,
     freeVend: machine.freeVend,
   };
@@ -69,7 +101,8 @@ function valuesOf(machine: Machine | null, models: MachineModel[]): Values {
 export function validateMachine(
   v: Values,
   adding: boolean,
-): { errors: Record<string, string>; input: MachineCreateInput | null } {
+  access: SettingAccess = FULL_ACCESS,
+): { errors: Record<string, string>; input: MachineCreateInput | Partial<MachineEditInput> | null } {
   const errors: Record<string, string> = {};
   const sn = v.sn.trim();
   if (adding) {
@@ -113,27 +146,31 @@ export function validateMachine(
   if (!errors.hotMin && !errors.hotMax && hotMin >= hotMax) errors.hotMin = "Must be below the maximum.";
   if (!errors.coldMin && !errors.coldMax && coldMin >= coldMax) errors.coldMin = "Must be below the maximum.";
 
+  for (const key of Object.keys(errors)) {
+    const group = groupOf(key);
+    if (group && access[group] !== "edit") delete errors[key];
+  }
   if (Object.keys(errors).length > 0) return { errors, input: null };
-  return {
-    errors,
-    input: {
-      sn,
-      modelId: v.modelId,
-      deviceExtNo,
-      name,
-      servicePhone,
-      address,
-      latitude,
-      longitude,
-      hotMax,
-      hotMin,
-      coldMax,
-      coldMin,
-      enabled: v.enabled,
-      qrPay: v.qrPay,
-      freeVend: v.freeVend,
-    },
+  const full: MachineCreateInput = {
+    sn,
+    modelId: v.modelId,
+    deviceExtNo,
+    name,
+    servicePhone,
+    address,
+    latitude,
+    longitude,
+    hotMax,
+    hotMin,
+    coldMax,
+    coldMin,
+    enabled: v.enabled,
+    qrPay: v.qrPay,
+    freeVend: v.freeVend,
   };
+  if (GROUPS.every((g) => access[g] === "edit")) return { errors, input: full };
+  const editable = GROUPS.filter((g) => access[g] === "edit").flatMap((g) => SETTING_FIELDS[g]);
+  return { errors, input: Object.fromEntries(editable.map((k) => [k, full[k]])) as Partial<MachineEditInput> };
 }
 
 export function MachineForm({
@@ -143,11 +180,13 @@ export function MachineForm({
   onCancel,
   submitLabel,
   skipPaymentBackupAt = null,
+  access = FULL_ACCESS,
 }: {
   machine: Machine | null;
   models: MachineModel[];
   skipPaymentBackupAt?: string | null;
-  onSubmit: (input: MachineCreateInput | MachineEditInput) => Promise<MachineCall<unknown>>;
+  access?: SettingAccess;
+  onSubmit: (input: MachineCreateInput | Partial<MachineEditInput>) => Promise<MachineCall<unknown>>;
   onCancel?: () => void;
   submitLabel: string;
 }) {
@@ -162,11 +201,11 @@ export function MachineForm({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    const checked = validateMachine(values, adding);
+    const checked = validateMachine(values, adding, access);
     setErrors(checked.errors);
     if (!checked.input) return;
     setSaving(true);
-    const { sn: _sn, modelId: _modelId, ...edit } = checked.input;
+    const { sn: _sn, modelId: _modelId, ...edit } = checked.input as Partial<MachineCreateInput>;
     const result = await onSubmit(adding ? checked.input : edit);
     setSaving(false);
     if (result.ok) {
@@ -176,6 +215,10 @@ export function MachineForm({
     setErrors(result.error.fieldErrors ?? {});
     setProblem({ message: result.error.message, issues: result.issues });
   }
+
+  const shown = (g: SettingGroup) => access[g] !== "hidden";
+  const locked = (g: SettingGroup) => access[g] !== "edit";
+  const canSave = GROUPS.some((g) => access[g] === "edit");
 
   const modelOptions = models.map((m) => ({ value: m.id, label: m.name }));
   if (machine && !models.some((m) => m.id === machine.modelId)) {
@@ -208,80 +251,115 @@ export function MachineForm({
             disabled={!adding}
           />
         </FormRow>
-        <FormRow label="Machine Number" htmlFor="deviceExtNo" error={errors.deviceExtNo} hint="For example E01904.">
-          <TextInput id="deviceExtNo" value={values.deviceExtNo} onChange={set("deviceExtNo")} />
-        </FormRow>
-        <FormRow label="Name" htmlFor="name" error={errors.name}>
-          <TextInput id="name" value={values.name} onChange={set("name")} />
-        </FormRow>
-        <FormRow label="Service phone" htmlFor="servicePhone" error={errors.servicePhone} hint="Shown in the machine's header.">
-          <TextInput id="servicePhone" value={values.servicePhone} onChange={set("servicePhone")} inputMode="numeric" />
-        </FormRow>
-        <FormRow label="Address" htmlFor="address" error={errors.address}>
-          <TextInput id="address" value={values.address} onChange={set("address")} />
-        </FormRow>
-        <FormRow label="Latitude" htmlFor="latitude" error={errors.latitude}>
-          <TextInput id="latitude" value={values.latitude} onChange={set("latitude")} inputMode="decimal" />
-        </FormRow>
-        <FormRow label="Longitude" htmlFor="longitude" error={errors.longitude}>
-          <TextInput id="longitude" value={values.longitude} onChange={set("longitude")} inputMode="decimal" />
-        </FormRow>
-        <FormRow label="Hot water max (°C)" htmlFor="hotMax" error={errors.hotMax}>
-          <TextInput id="hotMax" value={values.hotMax} onChange={set("hotMax")} inputMode="numeric" />
-        </FormRow>
-        <FormRow label="Hot water min (°C)" htmlFor="hotMin" error={errors.hotMin}>
-          <TextInput id="hotMin" value={values.hotMin} onChange={set("hotMin")} inputMode="numeric" />
-        </FormRow>
-        <FormRow label="Cold water max (°C)" htmlFor="coldMax" error={errors.coldMax}>
-          <TextInput id="coldMax" value={values.coldMax} onChange={set("coldMax")} inputMode="numeric" />
-        </FormRow>
-        <FormRow label="Cold water min (°C)" htmlFor="coldMin" error={errors.coldMin}>
-          <TextInput id="coldMin" value={values.coldMin} onChange={set("coldMin")} inputMode="numeric" />
-        </FormRow>
+        {shown("machineNumber") && (
+          <FormRow label="Machine Number" htmlFor="deviceExtNo" error={errors.deviceExtNo} hint="For example E01904.">
+            <TextInput id="deviceExtNo" value={values.deviceExtNo} onChange={set("deviceExtNo")} disabled={locked("machineNumber")} />
+          </FormRow>
+        )}
+        {shown("name") && (
+          <FormRow label="Name" htmlFor="name" error={errors.name}>
+            <TextInput id="name" value={values.name} onChange={set("name")} disabled={locked("name")} />
+          </FormRow>
+        )}
+        {shown("servicePhone") && (
+          <FormRow label="Service phone" htmlFor="servicePhone" error={errors.servicePhone} hint="Shown in the machine's header.">
+            <TextInput
+              id="servicePhone"
+              value={values.servicePhone}
+              onChange={set("servicePhone")}
+              inputMode="numeric"
+              disabled={locked("servicePhone")}
+            />
+          </FormRow>
+        )}
+        {shown("location") && (
+          <>
+            <FormRow label="Address" htmlFor="address" error={errors.address}>
+              <TextInput id="address" value={values.address} onChange={set("address")} disabled={locked("location")} />
+            </FormRow>
+            <FormRow label="Latitude" htmlFor="latitude" error={errors.latitude}>
+              <TextInput id="latitude" value={values.latitude} onChange={set("latitude")} inputMode="decimal" disabled={locked("location")} />
+            </FormRow>
+            <FormRow label="Longitude" htmlFor="longitude" error={errors.longitude}>
+              <TextInput id="longitude" value={values.longitude} onChange={set("longitude")} inputMode="decimal" disabled={locked("location")} />
+            </FormRow>
+          </>
+        )}
+        {shown("hotWater") && (
+          <>
+            <FormRow label="Hot water max (°C)" htmlFor="hotMax" error={errors.hotMax}>
+              <TextInput id="hotMax" value={values.hotMax} onChange={set("hotMax")} inputMode="numeric" disabled={locked("hotWater")} />
+            </FormRow>
+            <FormRow label="Hot water min (°C)" htmlFor="hotMin" error={errors.hotMin}>
+              <TextInput id="hotMin" value={values.hotMin} onChange={set("hotMin")} inputMode="numeric" disabled={locked("hotWater")} />
+            </FormRow>
+          </>
+        )}
+        {shown("coldWater") && (
+          <>
+            <FormRow label="Cold water max (°C)" htmlFor="coldMax" error={errors.coldMax}>
+              <TextInput id="coldMax" value={values.coldMax} onChange={set("coldMax")} inputMode="numeric" disabled={locked("coldWater")} />
+            </FormRow>
+            <FormRow label="Cold water min (°C)" htmlFor="coldMin" error={errors.coldMin}>
+              <TextInput id="coldMin" value={values.coldMin} onChange={set("coldMin")} inputMode="numeric" disabled={locked("coldWater")} />
+            </FormRow>
+          </>
+        )}
       </div>
 
-      <SwitchRow
-        checked={values.enabled}
-        onChange={(checked) => setValues((v) => ({ ...v, enabled: checked }))}
-        label="Enabled"
-        help="A disabled machine is refused service."
-        testId="input-enabled"
-      />
+      {shown("enabled") && (
+        <SwitchRow
+          checked={values.enabled}
+          onChange={(checked) => setValues((v) => ({ ...v, enabled: checked }))}
+          label="Enabled"
+          help="A disabled machine is refused service."
+          testId="input-enabled"
+          disabled={locked("enabled")}
+        />
+      )}
 
-      <fieldset className="rounded-xl border border-border px-4 pb-4 pt-2" data-testid="pay-settings">
-        <legend className="px-1 text-sm font-semibold text-foreground">Payment</legend>
-        <div className="space-y-4">
-          <SwitchRow
-            checked={values.qrPay}
-            onChange={(checked) => setValues((v) => ({ ...v, qrPay: checked }))}
-            label="QR payment"
-            help="Customers pay by scanning a UPI QR code on the machine."
-            testId="input-qrPay"
-          />
-          <SwitchRow
-            checked={values.freeVend}
-            onChange={(checked) => {
-              if (checked) setConfirmFreeVend(true);
-              else setValues((v) => ({ ...v, freeVend: false }));
-            }}
-            label="Free vend"
-            help="Customers can take drinks without paying. Every free drink is recorded as a free order. The machine can also turn free vend on locally (Skip payment, No pay); turning this off doesn't turn those off."
-            testId="input-freeVend"
-          >
-            {machine?.freeVendChangedAt && (
-              <span className="mt-1 block text-xs text-muted-foreground" data-testid="free-vend-changed">
-                Last changed {formatIstStamp(machine.freeVendChangedAt)}
-                {machine.freeVendChangedBy ? ` by ${machine.freeVendChangedBy}` : ""}
-              </span>
+      {(shown("qrPay") || shown("freeVend")) && (
+        <fieldset className="rounded-xl border border-border px-4 pb-4 pt-2" data-testid="pay-settings">
+          <legend className="px-1 text-sm font-semibold text-foreground">Payment</legend>
+          <div className="space-y-4">
+            {shown("qrPay") && (
+              <SwitchRow
+                checked={values.qrPay}
+                onChange={(checked) => setValues((v) => ({ ...v, qrPay: checked }))}
+                label="QR payment"
+                help="Customers pay by scanning a UPI QR code on the machine."
+                testId="input-qrPay"
+                disabled={locked("qrPay")}
+              />
             )}
-            {skipPaymentBackupAt && (
-              <span className="mt-1 block text-xs text-amber-200" data-testid="skip-payment-note">
-                Skip payment is on at the machine (backup of {formatIstStamp(skipPaymentBackupAt)})
-              </span>
+            {shown("freeVend") && (
+              <SwitchRow
+                disabled={locked("freeVend")}
+                checked={values.freeVend}
+                onChange={(checked) => {
+                  if (checked) setConfirmFreeVend(true);
+                  else setValues((v) => ({ ...v, freeVend: false }));
+                }}
+                label="Free vend"
+                help="Customers can take drinks without paying. Every free drink is recorded as a free order. The machine can also turn free vend on locally (Skip payment, No pay); turning this off doesn't turn those off."
+                testId="input-freeVend"
+              >
+                {machine?.freeVendChangedAt && (
+                  <span className="mt-1 block text-xs text-muted-foreground" data-testid="free-vend-changed">
+                    Last changed {formatIstStamp(machine.freeVendChangedAt)}
+                    {machine.freeVendChangedBy ? ` by ${machine.freeVendChangedBy}` : ""}
+                  </span>
+                )}
+                {skipPaymentBackupAt && (
+                  <span className="mt-1 block text-xs text-amber-200" data-testid="skip-payment-note">
+                    Skip payment is on at the machine (backup of {formatIstStamp(skipPaymentBackupAt)})
+                  </span>
+                )}
+              </SwitchRow>
             )}
-          </SwitchRow>
-        </div>
-      </fieldset>
+          </div>
+        </fieldset>
+      )}
 
       <ConfirmDialog
         open={confirmFreeVend}
@@ -296,16 +374,18 @@ export function MachineForm({
         testId="confirm-free-vend"
       />
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={saving} className="rounded-xl cursor-pointer" data-testid="button-save-machine">
-          {saving ? "Saving…" : submitLabel}
-        </Button>
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl cursor-pointer">
-            Cancel
+      {canSave && (
+        <div className="flex gap-2">
+          <Button type="submit" disabled={saving} className="rounded-xl cursor-pointer" data-testid="button-save-machine">
+            {saving ? "Saving…" : submitLabel}
           </Button>
-        )}
-      </div>
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl cursor-pointer">
+              Cancel
+            </Button>
+          )}
+        </div>
+      )}
     </form>
   );
 }
@@ -317,6 +397,7 @@ function SwitchRow({
   help,
   testId,
   children,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -324,10 +405,11 @@ function SwitchRow({
   help: string;
   testId: string;
   children?: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-start gap-3 text-sm text-foreground">
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} className="mt-0.5 shrink-0" data-testid={testId} />
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} aria-label={label} className="mt-0.5 shrink-0" data-testid={testId} />
       <span>
         {label}
         <span className="block max-w-prose text-xs text-muted-foreground">{help}</span>

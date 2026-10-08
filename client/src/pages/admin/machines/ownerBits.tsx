@@ -7,6 +7,7 @@ import type { OwnerState } from "@shared/admin/ownership";
 import { Pill } from "../AdminUi";
 import { SelectFilter } from "./MachinesUi";
 import { OWNER_STATE_LABEL } from "./ownerRules";
+import { useViewer } from "./viewer";
 
 const OWNER_STATE_TONE: Record<OwnerState, string> = {
   stock: "bg-secondary text-muted-foreground",
@@ -43,6 +44,7 @@ export function OwnerCellText({ owner, empty = "MBP stock" }: { owner: OwnerName
 }
 
 export function GymLink({ gymId, name, className = "" }: { gymId: string; name: string | null; className?: string }) {
+  if (useViewer().role !== "admin") return <span className={className}>{name ?? "A gym"}</span>;
   return (
     <Link href={`/admin/gyms/${encodeURIComponent(gymId)}`} className={`hover:text-primary hover:underline ${className}`}>
       {name ?? <span className="font-mono text-xs">{gymId}</span>}
@@ -51,6 +53,7 @@ export function GymLink({ gymId, name, className = "" }: { gymId: string; name: 
 }
 
 export function FranchiseLink({ franchiseId, name, className = "" }: { franchiseId: string; name: string | null; className?: string }) {
+  if (useViewer().role !== "admin") return <span className={className}>{name ?? "A franchise"}</span>;
   return (
     <Link href={`/admin/franchises/${encodeURIComponent(franchiseId)}`} className={`hover:text-primary hover:underline ${className}`}>
       {name ?? <span className="font-mono text-xs">{franchiseId}</span>}

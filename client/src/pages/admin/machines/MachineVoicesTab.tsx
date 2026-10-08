@@ -9,6 +9,7 @@ import { Card, SuccessPanel } from "../AdminUi";
 import { appStartNotice } from "./mediaBits";
 import { toPositionsInput, VoiceSlots, type VoiceFiles } from "./VoiceSlots";
 import { formatIstStamp, problemOf, ProblemPanel, type Problem } from "./MachinesUi";
+import { useCan } from "./viewer";
 
 export function MachineVoicesTab({ sn, onSaved }: { sn: string; onSaved: () => void }) {
   const [data, setData] = useState<MachineVoices | null>(null);
@@ -19,6 +20,7 @@ export function MachineVoicesTab({ sn, onSaved }: { sn: string; onSaved: () => v
   const [stale, setStale] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const canEditDefaults = useCan()("voiceDefaults.edit");
 
   const load = useCallback(async () => {
     const result = await fetchMachineVoices(sn);
@@ -81,9 +83,13 @@ export function MachineVoicesTab({ sn, onSaved }: { sn: string; onSaved: () => v
           <>
             <VoiceSlots files={files} onChange={setFiles} inherited={data.defaults.positions} errors={errors} onUploading={setUploading} />
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
-              <Link href="/machines/voices" className="text-xs font-semibold text-primary hover:underline">
-                Edit the default prompts
-              </Link>
+              {canEditDefaults ? (
+                <Link href="/machines/voices" className="text-xs font-semibold text-primary hover:underline">
+                  Edit the default prompts
+                </Link>
+              ) : (
+                <span />
+              )}
               <Button type="button" onClick={() => void save()} disabled={saving || uploading} className="rounded-xl cursor-pointer" data-testid="button-save-machine-voices">
                 {saving ? "Saving…" : "Save prompts"}
               </Button>

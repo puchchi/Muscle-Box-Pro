@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { fetchMachine, fetchModels } from "@/lib/adminMachineApi";
 import type { Machine, MachineModel } from "@shared/admin/machinesSchema";
-import type { MachineViewer } from "@shared/admin/viewerSchema";
+import type { MachineViewer, Permission } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
 import { useMachineGuard } from "./machines/viewer";
@@ -20,24 +20,40 @@ import { MachineOwnerTab } from "./machines/MachineOwnerTab";
 import { MachineRemoteTab } from "./machines/MachineRemoteTab";
 import { machineIotConfigured } from "@/lib/machineIotApi";
 
+const REMOTE_PERMISSIONS: Permission[] = [
+  "remote.mqtt.edit",
+  "remote.clean.edit",
+  "remote.door.edit",
+  "remote.lock.edit",
+  "remote.unlock.edit",
+  "remote.water.edit",
+  "remote.uploadLog.edit",
+  "remote.reload.edit",
+  "remote.restart.edit",
+  "remote.live.view",
+];
+
 const TABS = [
-  { id: "settings", label: "Settings" },
-  { id: "owner", label: "Owner" },
-  { id: "goods", label: "Goods" },
-  { id: "stock", label: "Stock" },
-  { id: "voices", label: "Voice prompts" },
-  { id: "pin", label: "PINs" },
-  { id: "remote", label: "Remote control" },
-] as const;
+  { id: "settings", label: "Settings", needs: ["settings.facts.view"] },
+  { id: "owner", label: "Owner", needs: ["owner.view"] },
+  { id: "goods", label: "Goods", needs: ["machineGoods.view"] },
+  { id: "stock", label: "Stock", needs: ["stock.view"] },
+  { id: "voices", label: "Voice prompts", needs: ["machineVoices.view"] },
+  { id: "pin", label: "PINs", needs: ["pins.operator.view", "pins.factory.view"] },
+  { id: "remote", label: "Remote control", needs: REMOTE_PERMISSIONS },
+] as const satisfies ReadonlyArray<{ id: string; label: string; needs: ReadonlyArray<Permission> }>;
 
 type TabId = (typeof TABS)[number]["id"];
 
-const VISIBLE_TABS = TABS.filter((t) => t.id !== "remote" || machineIotConfigured());
+export const visibleTabs = (viewer: MachineViewer) =>
+  TABS.filter(
+    (t) => (t.id !== "remote" || machineIotConfigured()) && t.needs.some((p: Permission) => viewer.can.has(p)),
+  );
 
 const ONLINE_WINDOW_MS = 3 * 60 * 1000;
 
-function tabOf(raw: string | null): TabId {
-  return VISIBLE_TABS.some((t) => t.id === raw) ? (raw as TabId) : "settings";
+function tabOf(raw: string | null, tabs: ReadonlyArray<{ id: TabId }>): TabId {
+  return tabs.some((t) => t.id === raw) ? (raw as TabId) : (tabs[0]?.id ?? "settings");
 }
 
 export default function AdminMachineDetail({ sn }: { sn: string }) {
@@ -50,7 +66,11 @@ function MachineDetail({ session, sn }: { session: MachineViewer; sn: string }) 
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const search = useSearchParams();
-  const tab = tabOf(search?.get("tab") ?? null);
+  const can = (p: Permission) => session.can.has(p);
+  const tabs = visibleTabs(session);
+  const tab = tabOf(search?.get("tab") ?? null, tabs);
+  const showLogs = can("logs.equipment.view") || can("logs.operations.view");
+  const showFiles = can("files.logs.view") || can("files.backups.view");
   const [machine, setMachine] = useState<Machine | null>(null);
   const [models, setModels] = useState<MachineModel[]>([]);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -96,7 +116,7 @@ function MachineDetail({ session, sn }: { session: MachineViewer; sn: string }) 
                 >
                   {online ? "Online" : "Offline"}
                 </Pill>
-                {!machine.enabled && (
+                {machine.enabled === false && (
                   <Pill className="bg-rose-400/15 text-rose-200" testId="machine-disabled">
                     Disabled
                   </Pill>
@@ -116,22 +136,28 @@ function MachineDetail({ session, sn }: { session: MachineViewer; sn: string }) 
           </span>
         }
         action={
-          <span className="flex gap-4">
-            <Link
-              href={`/machines/logs?sn=${encodeURIComponent(sn)}`}
-              className="text-sm font-semibold text-primary hover:underline"
-              data-testid="link-machine-logs"
-            >
-              Logs
-            </Link>
-            <Link
-              href={`/machines/${encodeURIComponent(sn)}/files`}
-              className="text-sm font-semibold text-primary hover:underline"
-              data-testid="link-machine-files"
-            >
-              Files
-            </Link>
-          </span>
+          (showLogs || showFiles) && (
+            <span className="flex gap-4">
+              {showLogs && (
+                <Link
+                  href={`/machines/logs?sn=${encodeURIComponent(sn)}`}
+                  className="text-sm font-semibold text-primary hover:underline"
+                  data-testid="link-machine-logs"
+                >
+                  Logs
+                </Link>
+              )}
+              {showFiles && (
+                <Link
+                  href={`/machines/${encodeURIComponent(sn)}/files`}
+                  className="text-sm font-semibold text-primary hover:underline"
+                  data-testid="link-machine-files"
+                >
+                  Files
+                </Link>
+              )}
+            </span>
+          )
         }
       />
 
@@ -140,7 +166,7 @@ function MachineDetail({ session, sn }: { session: MachineViewer; sn: string }) 
       {machine && (
         <>
           <div className="mb-5 flex flex-wrap gap-1" role="tablist" aria-label="Machine">
-            {VISIBLE_TABS.map((entry) => {
+            {tabs.map((entry) => {
               const active = entry.id === tab;
               return (
                 <button

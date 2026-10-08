@@ -13,7 +13,7 @@ const flag = z.boolean().optional().transform((v) => v ?? false);
 const optionalInstant = instant.optional().transform((v) => v ?? null);
 
 const machineOwnerFields = {
-  ownerState: z.enum(OWNER_STATES),
+  ownerState: z.enum(OWNER_STATES).optional(),
   owner: z
     .object({
       franchiseId: z.string().nullable(),
@@ -22,8 +22,9 @@ const machineOwnerFields = {
       gymName: z.string().nullable(),
       since: instant,
     })
-    .nullable(),
-  ownerVersion: count,
+    .nullable()
+    .optional(),
+  ownerVersion: count.optional(),
 };
 
 export const summarySchema = z.object({
@@ -33,13 +34,13 @@ export const summarySchema = z.object({
   faulty: count,
   lowStock: count,
   restartPending: count,
-  ordersToday: count,
-  salesTodayInr: inr,
+  ordersToday: count.optional(),
+  salesTodayInr: inr.optional(),
 });
 
 export const machineRowSchema = z.object({
   sn: z.string().min(1),
-  deviceExtNo: z.string(),
+  deviceExtNo: z.string().optional(),
   name: z.string(),
   modelId: z.string(),
   modelName: z.string(),
@@ -62,7 +63,7 @@ export const machineListSchema = z.object({ items: z.array(machineRowSchema), to
 
 export const machineSchema = z.object({
   sn: z.string().min(1),
-  deviceExtNo: z.string(),
+  deviceExtNo: z.string().optional(),
   name: z.string(),
   modelId: z.string(),
   modelName: z.string(),
@@ -72,11 +73,11 @@ export const machineSchema = z.object({
   address: z.string(),
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
-  hotMax: z.number(),
-  hotMin: z.number(),
-  coldMax: z.number(),
-  coldMin: z.number(),
-  enabled: z.boolean(),
+  hotMax: z.number().optional(),
+  hotMin: z.number().optional(),
+  coldMax: z.number().optional(),
+  coldMin: z.number().optional(),
+  enabled: z.boolean().optional(),
   qrPay: flag,
   freeVend: flag,
   freeVendChangedAt: optionalInstant,
@@ -85,8 +86,8 @@ export const machineSchema = z.object({
   lastSeenAt: instant,
   lastBootAt: instant,
   restartPending: z.boolean(),
-  hasPin: z.boolean(),
-  pinChangedAt: instant,
+  hasPin: flag,
+  pinChangedAt: optionalInstant,
   pinChangedBy: actor,
   hasFactoryPin: flag,
   factoryPinChangedAt: optionalInstant,

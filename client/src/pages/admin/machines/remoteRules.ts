@@ -1,4 +1,5 @@
 import type { CommandName, LiveStatus, MqttState, RemoteCommand } from "@shared/admin/remoteSchema";
+import type { Permission } from "@shared/admin/viewerSchema";
 
 export const COMMAND_POLL_MS = 2_000;
 export const LIVE_POLL_MS = 5_000;
@@ -22,6 +23,26 @@ export const MQTT_STATE_LABEL: Record<MqttState, { text: string; className: stri
 };
 
 export type CommandSpec = { name: CommandName; label: string; confirm?: { title: string; message: string; label: string } };
+
+export const COMMAND_PERMISSION: Record<CommandName, Permission> = {
+  clean: "remote.clean.edit",
+  resetTrack: "remote.clean.edit",
+  doorOpen: "remote.door.edit",
+  doorClose: "remote.door.edit",
+  lock: "remote.lock.edit",
+  unlock: "remote.unlock.edit",
+  addWater: "remote.water.edit",
+  empty: "remote.water.edit",
+  uploadLog: "remote.uploadLog.edit",
+  reloadAll: "remote.reload.edit",
+  restartApp: "remote.restart.edit",
+  reboot: "remote.restart.edit",
+};
+
+export const allowedCommandGroups = (can: (p: Permission) => boolean) =>
+  COMMAND_GROUPS.map((g) => ({ ...g, commands: g.commands.filter((c) => can(COMMAND_PERMISSION[c.name])) })).filter(
+    (g) => g.commands.length > 0,
+  );
 
 export const COMMAND_GROUPS: ReadonlyArray<{ title: string; commands: ReadonlyArray<CommandSpec> }> = [
   {

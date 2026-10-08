@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchRestockHistory, fetchStock, restock } from "@/lib/adminMachineApi";
+import { useCan } from "./viewer";
 import type { RestockLine } from "@shared/admin/machines";
 import type { RestockEvent, StockSlot } from "@shared/admin/machinesSchema";
 import { SuccessPanel } from "../AdminUi";
@@ -53,6 +54,9 @@ function trim(n: number): string {
 }
 
 export function MachineStockTab({ sn }: { sn: string }) {
+  const can = useCan();
+  const canRestock = can("stock.restock.edit");
+  const canHistory = can("stock.history.view");
   const [slots, setSlots] = useState<StockSlot[]>([]);
   const [adds, setAdds] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -115,43 +119,51 @@ export function MachineStockTab({ sn }: { sn: string }) {
         </div>
       )}
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        {FILLS.map((share) => (
-          <Button
-            key={share}
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => fill(share)}
-            disabled={slots.length === 0}
-            className="rounded-lg cursor-pointer"
-            data-testid={`button-fill-${share * 100}`}
-          >
-            {share === 1 ? "Fill 100%" : `${share * 100}%`}
-          </Button>
-        ))}
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            setAdds({});
-            setErrors({});
-          }}
-          className="rounded-lg cursor-pointer"
-          data-testid="button-clear"
-        >
-          Clear
-        </Button>
-        <button
-          type="button"
-          onClick={() => setHistory(true)}
-          className="ml-auto text-sm font-semibold text-primary hover:underline cursor-pointer"
-          data-testid="link-restock-history"
-        >
-          History
-        </button>
-      </div>
+      {(canRestock || canHistory) && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {canRestock && (
+            <>
+              {FILLS.map((share) => (
+                <Button
+                  key={share}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fill(share)}
+                  disabled={slots.length === 0}
+                  className="rounded-lg cursor-pointer"
+                  data-testid={`button-fill-${share * 100}`}
+                >
+                  {share === 1 ? "Fill 100%" : `${share * 100}%`}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setAdds({});
+                  setErrors({});
+                }}
+                className="rounded-lg cursor-pointer"
+                data-testid="button-clear"
+              >
+                Clear
+              </Button>
+            </>
+          )}
+          {canHistory && (
+            <button
+              type="button"
+              onClick={() => setHistory(true)}
+              className="ml-auto text-sm font-semibold text-primary hover:underline cursor-pointer"
+              data-testid="link-restock-history"
+            >
+              History
+            </button>
+          )}
+        </div>
+      )}
 
       <DataTable testId="stock-table">
         <Head>
@@ -160,11 +172,11 @@ export function MachineStockTab({ sn }: { sn: string }) {
           <Col align="right">Capacity</Col>
           <Col align="right" className="hidden sm:table-cell">Warning</Col>
           <Col>Current</Col>
-          <Col>Add</Col>
+          {canRestock && <Col>Add</Col>}
         </Head>
         <tbody className="divide-y divide-border/70">
           {slots.length === 0 ? (
-            <NoData colSpan={6} loading={loading} />
+            <NoData colSpan={canRestock ? 6 : 5} loading={loading} />
           ) : (
             slots.map((slot) => {
               const text = adds[slot.slotId] ?? "";
@@ -193,56 +205,63 @@ export function MachineStockTab({ sn }: { sn: string }) {
                       />
                     </span>
                   </Cell>
-                  <Cell>
-                    <Input
-                      value={text}
-                      onChange={(event) => setAdds((a) => ({ ...a, [slot.slotId]: event.target.value }))}
-                      inputMode="numeric"
-                      aria-label={`Add to ${slot.name}`}
-                      aria-invalid={Boolean(errors[slot.slotId])}
-                      className="h-8 w-24 rounded-lg bg-secondary/50 border-border text-sm tabular-nums"
-                      data-testid={`add-${slot.slotId}`}
-                    />
-                    {errors[slot.slotId] ? (
-                      <span className="mt-0.5 block text-[11px] text-rose-300">{errors[slot.slotId]}</span>
-                    ) : (
-                      preview !== null && (
-                        <span className="mt-0.5 block text-[11px] text-muted-foreground" data-testid={`new-level-${slot.slotId}`}>
-                          New level: {trim(preview)}
-                        </span>
-                      )
-                    )}
-                  </Cell>
+                  {canRestock && (
+                    <Cell>
+                      <Input
+                        value={text}
+                        onChange={(event) => setAdds((a) => ({ ...a, [slot.slotId]: event.target.value }))}
+                        inputMode="numeric"
+                        aria-label={`Add to ${slot.name}`}
+                        aria-invalid={Boolean(errors[slot.slotId])}
+                        className="h-8 w-24 rounded-lg bg-secondary/50 border-border text-sm tabular-nums"
+                        data-testid={`add-${slot.slotId}`}
+                      />
+                      {errors[slot.slotId] ? (
+                        <span className="mt-0.5 block text-[11px] text-rose-300">{errors[slot.slotId]}</span>
+                      ) : (
+                        preview !== null && (
+                          <span className="mt-0.5 block text-[11px] text-muted-foreground" data-testid={`new-level-${slot.slotId}`}>
+                            New level: {trim(preview)}
+                          </span>
+                        )
+                      )}
+                    </Cell>
+                  )}
                 </tr>
               );
             })
           )}
         </tbody>
       </DataTable>
-      <p className="mt-2 text-xs text-muted-foreground">
-        A negative amount corrects a level down. Capacity and Warning are set per model in Materials.
-      </p>
+      {canRestock && (
+        <>
+          <p className="mt-2 text-xs text-muted-foreground">
+            A negative amount corrects a level down.
+            {can("materials.edit") && " Capacity and Warning are set per model in Materials."}
+          </p>
 
-      <div className="mt-4 flex gap-2">
-        <Button type="button" onClick={submit} disabled={saving} className="rounded-xl cursor-pointer" data-testid="button-submit-stock">
-          {saving ? "Submitting…" : "Submit"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setAdds({});
-            setErrors({});
-            setProblem(null);
-          }}
-          className="rounded-xl cursor-pointer"
-          data-testid="button-cancel-stock"
-        >
-          Cancel
-        </Button>
-      </div>
+          <div className="mt-4 flex gap-2">
+            <Button type="button" onClick={submit} disabled={saving} className="rounded-xl cursor-pointer" data-testid="button-submit-stock">
+              {saving ? "Submitting…" : "Submit"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setAdds({});
+                setErrors({});
+                setProblem(null);
+              }}
+              className="rounded-xl cursor-pointer"
+              data-testid="button-cancel-stock"
+            >
+              Cancel
+            </Button>
+          </div>
+        </>
+      )}
 
-      <RestockHistory open={history} sn={sn} onClose={() => setHistory(false)} />
+      {canHistory && <RestockHistory open={history} sn={sn} onClose={() => setHistory(false)} />}
     </div>
   );
 }

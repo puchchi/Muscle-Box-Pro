@@ -90,7 +90,7 @@ export function MachinePicker({
   const picked = useMemo(() => new Set(chosen), [chosen]);
   const q = query.trim().toLowerCase();
   const shown = machines.filter(
-    (m) => !q || m.sn.toLowerCase().includes(q) || m.deviceExtNo.toLowerCase().includes(q) || m.name.toLowerCase().includes(q),
+    (m) => !q || m.sn.toLowerCase().includes(q) || (m.deviceExtNo ?? "").toLowerCase().includes(q) || m.name.toLowerCase().includes(q),
   );
   const toggle = (sn: string) => onChange(picked.has(sn) ? chosen.filter((s) => s !== sn) : [...chosen, sn]);
 

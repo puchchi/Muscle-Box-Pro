@@ -136,7 +136,7 @@ export const fetchMachine = (sn: string) => call(machineEnvelopeSchema, "GET", `
 export const createMachine = (input: MachineCreateInput) =>
   call(machineEnvelopeSchema, "POST", "/machines", input);
 
-export const updateMachine = (sn: string, input: MachineEditInput, expectedVersion: number) =>
+export const updateMachine = (sn: string, input: Partial<MachineEditInput>, expectedVersion: number) =>
   call(machineEnvelopeSchema, "PATCH", `/machines/${seg(sn)}`, { ...input, expectedVersion });
 
 export const setMachinePin = (sn: string, pin: string, confirmPin: string) =>
