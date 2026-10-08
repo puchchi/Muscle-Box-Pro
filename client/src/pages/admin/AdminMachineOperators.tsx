@@ -153,9 +153,12 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
                     <span className="block font-semibold text-foreground">{o.name}</span>
                     <span className="block text-xs text-muted-foreground">{o.email}</span>
                     {o.phone && <span className="block text-xs text-muted-foreground">{o.phone}</span>}
+                    <span className="mt-1.5 block lg:hidden">
+                      <MachineList sns={o.machines} label={label} />
+                    </span>
                   </Cell>
                   {as === "admin" && <Cell className="whitespace-nowrap">{o.franchiseId ? (o.franchiseName ?? "A franchise") : "MBP"}</Cell>}
-                  <Cell className="min-w-[10rem]">
+                  <Cell className="hidden min-w-[10rem] lg:table-cell">
                     <MachineList sns={o.machines} label={label} />
                   </Cell>
                   <Cell className="whitespace-nowrap">
@@ -166,12 +169,12 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
                       <span className="mt-1 block max-w-[14rem] whitespace-normal text-xs text-muted-foreground">{o.disabledReason}</span>
                     )}
                   </Cell>
-                  <Cell className="whitespace-nowrap text-xs text-muted-foreground">
+                  <Cell className="min-w-[5.5rem] text-xs text-muted-foreground">
                     {o.lastLoginAt ? formatIstStamp(o.lastLoginAt) : "Never"}
                   </Cell>
                   <Cell align="right">
                     {canEdit && (
-                      <span className="flex flex-wrap justify-end gap-3 whitespace-nowrap">
+                      <span className="flex flex-col items-end gap-1.5 whitespace-nowrap lg:flex-row lg:gap-3">
                         <ActionLink
                           onClick={() => {
                             clearMessages();
@@ -252,7 +255,7 @@ function Head({ as }: { as: OperatorManager }) {
       <tr>
         <Col>Operator</Col>
         {as === "admin" && <Col>Franchise</Col>}
-        <Col>Machines</Col>
+        <Col className="hidden lg:table-cell">Machines</Col>
         <Col>Status</Col>
         <Col>Last signed in</Col>
         <Col align="right">
@@ -268,7 +271,12 @@ function MachineList({ sns, label }: { sns: string[]; label: ReadonlyMap<string,
   const shown = sns.slice(0, 3).map((sn) => label.get(sn) ?? sn);
   return (
     <span className="text-sm">
-      {shown.join(", ")}
+      {shown.map((name, i) => (
+        <span key={name} className="whitespace-nowrap">
+          {name}
+          {i < shown.length - 1 && ", "}
+        </span>
+      ))}
       {sns.length > 3 && <span className="text-muted-foreground"> and {sns.length - 3} more</span>}
     </span>
   );

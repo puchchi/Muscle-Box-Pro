@@ -85,7 +85,7 @@ describe("Operators page", () => {
     expect(row).toHaveTextContent("Ravi");
     expect(row).toHaveTextContent("Never");
     expect(within(row).getByTestId("operator-status-ravi@x.in")).toHaveTextContent("Active");
-    expect(await within(row).findByText("101")).toBeInTheDocument();
+    expect(await within(row).findAllByText("101")).toHaveLength(2);
     expect(screen.queryByText("Franchise")).not.toBeInTheDocument();
     expect(mockChoices).not.toHaveBeenCalled();
   });

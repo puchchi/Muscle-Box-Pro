@@ -169,7 +169,7 @@ export function MachineStockTab({ sn }: { sn: string }) {
         <Head>
           <Col className="hidden sm:table-cell">Position</Col>
           <Col>Material</Col>
-          <Col align="right">Capacity</Col>
+          <Col align="right" className="hidden sm:table-cell">Capacity</Col>
           <Col align="right" className="hidden sm:table-cell">Warning</Col>
           <Col>Current</Col>
           {canRestock && <Col>Add</Col>}
@@ -187,16 +187,20 @@ export function MachineStockTab({ sn }: { sn: string }) {
                 <tr key={slot.slotId} data-testid={`row-slot-${slot.slotId}`}>
                   <Cell className="hidden tabular-nums sm:table-cell">{slot.position}</Cell>
                   <Cell className="font-semibold">{slot.name}</Cell>
-                  <Cell align="right" className="tabular-nums whitespace-nowrap">
+                  <Cell align="right" className="hidden tabular-nums whitespace-nowrap sm:table-cell">
                     {trim(slot.capacity)} {slot.unit}
                   </Cell>
                   <Cell align="right" className="hidden tabular-nums sm:table-cell">{trim(slot.warnCapacity)}</Cell>
-                  <Cell className="min-w-[6rem] sm:min-w-[10rem]">
+                  <Cell className="min-w-[5rem] sm:min-w-[10rem]">
                     <span
                       className={`block tabular-nums font-semibold ${slot.low ? "text-rose-300" : "text-foreground"}`}
                       data-testid={`current-${slot.slotId}`}
                     >
                       {trim(slot.residueQty)}
+                      <span className="font-normal text-muted-foreground sm:hidden">
+                        {" "}
+                        of {trim(slot.capacity)} {slot.unit}
+                      </span>
                     </span>
                     <span className="mt-1 block h-1.5 w-full rounded-full bg-secondary" aria-hidden>
                       <span
@@ -213,7 +217,7 @@ export function MachineStockTab({ sn }: { sn: string }) {
                         inputMode="numeric"
                         aria-label={`Add to ${slot.name}`}
                         aria-invalid={Boolean(errors[slot.slotId])}
-                        className="h-8 w-24 rounded-lg bg-secondary/50 border-border text-sm tabular-nums"
+                        className="h-8 w-20 sm:w-24 rounded-lg bg-secondary/50 border-border text-sm tabular-nums"
                         data-testid={`add-${slot.slotId}`}
                       />
                       {errors[slot.slotId] ? (
