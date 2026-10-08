@@ -1,4 +1,5 @@
-import type { Cpu } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, CupSoda, type Cpu } from "lucide-react";
 
 /**
  * The card shell the portal is built out of, and the two-column rows inside it.
@@ -58,5 +59,24 @@ export function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-semibold tabular-nums text-foreground">{value}</dd>
     </div>
+  );
+}
+
+export function MachineConsoleLink({ body }: { body: string }) {
+  return (
+    <Link
+      href="/machines"
+      className="mt-6 flex items-center gap-4 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/50"
+      data-testid="link-machine-console"
+    >
+      <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+        <CupSoda className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-foreground">Machine console</span>
+        <span className="block text-sm text-muted-foreground">{body}</span>
+      </span>
+      <ArrowRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" aria-hidden="true" />
+    </Link>
   );
 }

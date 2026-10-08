@@ -54,7 +54,7 @@ import {
   fetchPayoutAccount,
 } from "@/lib/gymPayoutAccountApi";
 import PayoutAccountCard from "./PayoutAccountCard";
-import { Card, Row, RowGroup, type CardProps } from "./portalCards";
+import { Card, MachineConsoleLink, Row, RowGroup, type CardProps } from "./portalCards";
 import { formatIstDate, formatIstDateTime } from "./istDates";
 
 /**
@@ -372,6 +372,8 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
       </div>
 
       {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
+
+      {!preInstall && <MachineConsoleLink body="See how your machine is doing and what it has sold." />}
 
       {needsPayoutAccount && (
         <PayoutAccountPrompt

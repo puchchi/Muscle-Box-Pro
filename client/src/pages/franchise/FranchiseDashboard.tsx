@@ -43,7 +43,7 @@ import type {
   FranchiseOnboardingStatus,
   FranchisePayment,
 } from "@shared/franchise/onboarding/types";
-import { Card, Row, RowGroup, type CardProps } from "../gym/portalCards";
+import { Card, MachineConsoleLink, Row, RowGroup, type CardProps } from "../gym/portalCards";
 import { formatIstDate, formatIstDateTime } from "../gym/istDates";
 
 /**
@@ -182,7 +182,7 @@ const LOGISTICS_LABEL: Record<"own_vehicle" | "contracted" | "undecided", string
 };
 
 /**
- * The ten sections that wait on the settlement pipeline, in the order the program lists them.
+ * The nine sections that wait on the settlement pipeline, in the order the program lists them.
  *
  * Written out against the snapshot rather than as a list of key names, so each entry is typed as
  * the section it names. A list of keys would need a cast at the point of reading, and the cast
@@ -199,7 +199,6 @@ function unbuiltSections(
     { label: "Distributable profit", section: snapshot.profit },
     { label: "Payouts to you", section: snapshot.payouts },
     { label: "Capital recovered so far", section: snapshot.capitalRecoveryProgress },
-    { label: "Status of each machine", section: snapshot.machines },
     { label: "Monthly statements", section: snapshot.statements },
     { label: "Alerts", section: snapshot.alerts },
   ];
@@ -316,6 +315,8 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
       </div>
 
       {snapshot.onboardingStatus !== "active" && <NotLiveBanner status={snapshot.onboardingStatus} />}
+
+      <MachineConsoleLink body="Stock, sales and settings for each of your machines. Add the operators who restock them." />
 
       <Tabs defaultValue="figures" className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1019,7 +1020,7 @@ function DocumentsCard({ documents }: { documents: FranchisePortalSnapshot["docu
 }
 
 /**
- * The ten sections that have no answer yet, in one panel behind its own tab.
+ * The nine sections that have no answer yet, in one panel behind its own tab.
  *
  * **Not ten cards.** `GymDashboard` renders an `UnavailableCard` per absent section, and that is
  * right there because it is three or four cards among nine that carry figures, so the empty one
