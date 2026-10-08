@@ -25,6 +25,7 @@ Disallow: /onboarding/
 Disallow: /auth/
 Disallow: /admin/
 Disallow: /machines
+Disallow: /operator/
 Disallow: /franchise/onboarding/
 Disallow: /franchise/esign-return
 Disallow: /franchise/login
