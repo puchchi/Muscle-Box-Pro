@@ -31,7 +31,7 @@ function NewGood({ session }: { session: MachineViewer }) {
   }, []);
 
   return (
-    <MachinesShell session={session} section="goods">
+    <MachinesShell session={session} section="goods" needs="goodsLibrary.edit">
       <MachinesHeader
         title="New goods"
         subtitle={

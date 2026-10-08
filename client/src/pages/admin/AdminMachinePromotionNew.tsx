@@ -28,7 +28,7 @@ function NewPromotion({ session, kind }: { session: MachineViewer; kind: Promoti
   const { goods, machines } = useGoodsAndMachines(setProblem);
 
   return (
-    <MachinesShell session={session} section={copy.section}>
+    <MachinesShell session={session} section={copy.section} needs={kind === "discount" ? "discounts.edit" : "newProducts.edit"}>
       <MachinesHeader
         title={`Add ${copy.one}`}
         subtitle={

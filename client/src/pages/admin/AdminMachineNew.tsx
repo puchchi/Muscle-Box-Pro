@@ -38,7 +38,7 @@ function NewMachine({ session }: { session: MachineViewer }) {
   }, []);
 
   return (
-    <MachinesShell session={session} section="machines">
+    <MachinesShell session={session} section="machines" needs="machines.add.edit">
       <MachinesHeader
         title="Add machine"
         subtitle={

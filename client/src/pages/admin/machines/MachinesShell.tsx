@@ -107,27 +107,39 @@ export function NoAccess() {
 export function MachinesShell({
   session,
   section,
+  needs,
   children,
 }: {
   session: MachineViewer;
   section: MachineSection;
+  needs?: NavItem["needs"];
   children: React.ReactNode;
 }) {
   return (
     <ViewerProvider value={session}>
-      <Shell session={session} section={section}>
+      <Shell session={session} section={section} needs={needs}>
         {children}
       </Shell>
     </ViewerProvider>
   );
 }
 
-function Shell({ session, section, children }: { session: MachineViewer; section: MachineSection; children: React.ReactNode }) {
+function Shell({
+  session,
+  section,
+  needs,
+  children,
+}: {
+  session: MachineViewer;
+  section: MachineSection;
+  needs?: NavItem["needs"];
+  children: React.ReactNode;
+}) {
   const handleSignOut = useMachineSignOut();
   const newFeedback = useNewFeedbackCount(session.can.has("feedback.view"));
   const groups = visibleGroups(session);
   const current = ALL_ITEMS.find((item) => item.id === section);
-  const allowed = !current || allows(session, current.needs);
+  const allowed = (!current || allows(session, current.needs)) && (!needs || allows(session, needs));
   const back = BACK_LINK[session.role];
   const navRef = useRef<HTMLElement>(null);
 

@@ -44,6 +44,7 @@ export default function AdminMachineRedeemCodes() {
 }
 
 function RedeemCodes({ session }: { session: MachineViewer }) {
+  const canEdit = session.can.has("redeemCodes.edit");
   const search = useSearchParams();
   const [draft, setDraft] = useState({ q: "", status: "", source: "", shopOrderId: search?.get("shopOrderId") ?? "" });
   const [filters, setFilters] = useState(draft);
@@ -119,12 +120,14 @@ function RedeemCodes({ session }: { session: MachineViewer }) {
         title="Redeem codes"
         subtitle="Codes customers type on the machine to get a free drink."
         action={
-          <Button asChild className="rounded-xl cursor-pointer">
-            <Link href="/machines/redeem-codes/new" data-testid="button-add-code">
-              <Plus className="h-4 w-4" aria-hidden />
-              Add code
-            </Link>
-          </Button>
+          canEdit && (
+            <Button asChild className="rounded-xl cursor-pointer">
+              <Link href="/machines/redeem-codes/new" data-testid="button-add-code">
+                <Plus className="h-4 w-4" aria-hidden />
+                Add code
+              </Link>
+            </Button>
+          )
         }
       />
 
@@ -212,12 +215,12 @@ function RedeemCodes({ session }: { session: MachineViewer }) {
                   <Cell>
                     <span className="flex gap-3 whitespace-nowrap">
                       <Link href={href} className="text-xs font-semibold text-primary hover:underline" data-testid={`edit-code-${c.code}`}>
-                        {shop ? "View" : "Edit"}
+                        {shop || !canEdit ? "View" : "Edit"}
                       </Link>
                       <Link href={`${href}#usage`} className="text-xs font-semibold text-primary hover:underline" data-testid={`usage-code-${c.code}`}>
                         Usage
                       </Link>
-                      {!shop && (
+                      {!shop && canEdit && (
                         <button
                           type="button"
                           onClick={() => void toggleDisabled(c)}
@@ -228,7 +231,7 @@ function RedeemCodes({ session }: { session: MachineViewer }) {
                           {c.disabled ? "Enable" : "Disable"}
                         </button>
                       )}
-                      {c.canDelete && (
+                      {c.canDelete && canEdit && (
                         <button
                           type="button"
                           onClick={() => {

@@ -40,7 +40,7 @@ function EditGood({ session, goodsId }: { session: MachineViewer; goodsId: strin
   }, [load]);
 
   return (
-    <MachinesShell session={session} section="goods">
+    <MachinesShell session={session} section="goods" needs="goodsLibrary.edit">
       <MachinesHeader
         title={good ? good.name : "Goods"}
         subtitle={

@@ -26,7 +26,7 @@ function NewCode({ session }: { session: MachineViewer }) {
   const { goods, machines } = useGoodsAndMachines(setProblem);
 
   return (
-    <MachinesShell session={session} section="redeemCodes">
+    <MachinesShell session={session} section="redeemCodes" needs="redeemCodes.edit">
       <MachinesHeader
         title="Add redeem code"
         subtitle={

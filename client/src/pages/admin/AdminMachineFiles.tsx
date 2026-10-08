@@ -66,7 +66,7 @@ function MachineFiles({ session, sn }: { session: MachineViewer; sn: string }) {
   }, [sn]);
 
   return (
-    <MachinesShell session={session} section="machines">
+    <MachinesShell session={session} section="machines" needs={["files.logs.view", "files.backups.view"]}>
       <MachinesHeader
         title={machine ? `Files · ${machine.deviceExtNo || machine.sn}` : "Files"}
         subtitle="Files the machine sent: log files, crash reports and settings backups. Times are IST."

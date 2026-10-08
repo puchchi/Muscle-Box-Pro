@@ -42,6 +42,7 @@ export default function AdminMachinePromotions({ kind }: { kind: PromotionKind }
 }
 
 function Promotions({ session, kind }: { session: MachineViewer; kind: PromotionKind }) {
+  const canEdit = session.can.has(kind === "discount" ? "discounts.edit" : "newProducts.edit");
   const copy = KIND_COPY[kind];
   const [draft, setDraft] = useState({ name: "", status: "", hideEnded: false });
   const [filters, setFilters] = useState(draft);
@@ -127,12 +128,14 @@ function Promotions({ session, kind }: { session: MachineViewer; kind: Promotion
             : "Put the New badge on goods for a set time."
         }
         action={
-          <Button asChild className="rounded-xl cursor-pointer">
-            <Link href={`${copy.href}/new`} data-testid="button-add-promotion">
-              <Plus className="h-4 w-4" aria-hidden />
-              Add {copy.one}
-            </Link>
-          </Button>
+          canEdit && (
+            <Button asChild className="rounded-xl cursor-pointer">
+              <Link href={`${copy.href}/new`} data-testid="button-add-promotion">
+                <Plus className="h-4 w-4" aria-hidden />
+                Add {copy.one}
+              </Link>
+            </Button>
+          )
         }
       />
 
@@ -215,9 +218,9 @@ function Promotions({ session, kind }: { session: MachineViewer; kind: Promotion
                   <Cell>
                     <span className="flex gap-3 whitespace-nowrap">
                       <Link href={href} className="text-xs font-semibold text-primary hover:underline" data-testid={`edit-promotion-${p.promoId}`}>
-                        Edit
+                        {canEdit ? "Edit" : "View"}
                       </Link>
-                      {p.status !== "ended" && (
+                      {canEdit && p.status !== "ended" && (
                         <button
                           type="button"
                           onClick={() => void togglePaused(p)}
@@ -228,17 +231,19 @@ function Promotions({ session, kind }: { session: MachineViewer; kind: Promotion
                           {p.paused ? "Resume" : "Pause"}
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNotice(null);
-                          setDeleting(p);
-                        }}
-                        className="text-xs font-semibold text-rose-300 hover:underline cursor-pointer"
-                        data-testid={`delete-promotion-${p.promoId}`}
-                      >
-                        Delete
-                      </button>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNotice(null);
+                            setDeleting(p);
+                          }}
+                          className="text-xs font-semibold text-rose-300 hover:underline cursor-pointer"
+                          data-testid={`delete-promotion-${p.promoId}`}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </span>
                   </Cell>
                 </tr>
