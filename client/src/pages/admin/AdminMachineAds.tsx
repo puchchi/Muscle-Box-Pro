@@ -7,10 +7,10 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createAd, deleteAd, fetchAds } from "@/lib/adminMachineApi";
 import type { Ad } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { SuccessPanel } from "./AdminUi";
 import { AdForm, AdPreview, mediaOfAd } from "./machines/AdForm";
 import { whereShown } from "./machines/adRules";
@@ -34,12 +34,12 @@ import {
 } from "./machines/MachinesUi";
 
 export default function AdminMachineAds() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <Ads session={guard.session} />;
 }
 
-function Ads({ session }: { session: AdminSession }) {
+function Ads({ session }: { session: MachineViewer }) {
   const router = useRouter();
   const [draftName, setDraftName] = useState("");
   const [name, setName] = useState("");

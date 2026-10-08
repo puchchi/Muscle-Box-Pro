@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPromotion } from "@/lib/adminMachineApi";
 import type { PromotionKind } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { PromotionForm } from "./machines/PromotionForm";
 import { setFlash } from "./machines/flash";
 import { useGoodsAndMachines } from "./machines/usePromotionRefs";
@@ -16,12 +16,12 @@ import { KIND_COPY, overlapWarning, savedNotice } from "./machines/promotionRule
 import { MachinesHeader, ProblemPanel, type Problem } from "./machines/MachinesUi";
 
 export default function AdminMachinePromotionNew({ kind }: { kind: PromotionKind }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <NewPromotion session={guard.session} kind={kind} />;
 }
 
-function NewPromotion({ session, kind }: { session: AdminSession; kind: PromotionKind }) {
+function NewPromotion({ session, kind }: { session: MachineViewer; kind: PromotionKind }) {
   const copy = KIND_COPY[kind];
   const router = useRouter();
   const [problem, setProblem] = useState<Problem | null>(null);

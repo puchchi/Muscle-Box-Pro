@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { fetchVoices, setVoiceDefaults } from "@/lib/adminMachineApi";
 import type { Voices } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card, SuccessPanel } from "./AdminUi";
 import { appStartNotice } from "./machines/mediaBits";
 import { toPositionsInput, VoiceSlots, type VoiceFiles } from "./machines/VoiceSlots";
@@ -27,12 +27,12 @@ import {
 } from "./machines/MachinesUi";
 
 export default function AdminMachineVoices() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <VoicesPage session={guard.session} />;
 }
 
-function VoicesPage({ session }: { session: AdminSession }) {
+function VoicesPage({ session }: { session: MachineViewer }) {
   const [data, setData] = useState<Voices | null>(null);
   const [files, setFiles] = useState<VoiceFiles | null>(null);
   const [loading, setLoading] = useState(true);

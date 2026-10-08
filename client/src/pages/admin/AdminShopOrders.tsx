@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatInr, SHOP_ORDER_STATUSES } from "@shared/shop/shopSchema";
 import type { ShopAdminOrder, ShopOrderFilters } from "@shared/admin/shopAdminSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { fetchShopOrders, shopAdminConfigured } from "@/lib/shopAdminApi";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import {
   Cell,
   Col,
@@ -34,7 +34,7 @@ import { Pill } from "./AdminUi";
 import { Button } from "@/components/ui/button";
 
 export default function AdminShopOrders() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <ShopOrders session={guard.session} />;
 }
@@ -52,7 +52,7 @@ function toFilters(d: Draft): ShopOrderFilters {
 
 const STATUS_OPTIONS = [{ value: "", label: "All" }, ...SHOP_ORDER_STATUSES.map((value) => ({ value, label: SHOP_STATUS_LABEL[value].text }))];
 
-function ShopOrders({ session }: { session: AdminSession }) {
+function ShopOrders({ session }: { session: MachineViewer }) {
   const search = useSearchParams();
   const thisMonth = istToday(Date.now()).slice(0, 7);
   const empty: Draft = { month: thisMonth, status: "", sn: "", customerId: "" };

@@ -775,6 +775,7 @@ export async function machineApiRequest<T>(
 
 const SHOP_ADMIN_CODES: Record<string, MachineAdminErrorCode> = {
   invalid_request: "validation",
+  forbidden: "forbidden",
   signed_out: "invalid_token",
   order_not_found: "not_found",
   customer_not_found: "not_found",
@@ -830,7 +831,8 @@ function toMachineError(status: number, body: unknown): MachineAdminError {
 
 function machineCodeForStatus(status: number): MachineAdminErrorCode {
   if (status === 400 || status === 415) return "validation";
-  if (status === 401 || status === 403) return "invalid_token";
+  if (status === 401) return "invalid_token";
+  if (status === 403) return "forbidden";
   if (status === 404) return "not_found";
   if (status === 409) return "conflict";
   return "network";
@@ -838,7 +840,8 @@ function machineCodeForStatus(status: number): MachineAdminErrorCode {
 
 function machineMessageForStatus(status: number): string {
   if (status === 400 || status === 415) return "Some fields need fixing.";
-  if (status === 401 || status === 403) return "Please sign in again.";
+  if (status === 401) return "Please sign in again.";
+  if (status === 403) return "You don't have access to this.";
   if (status === 404) return "That was not found.";
   if (status === 409) return "This was changed elsewhere. Reload to see the current values.";
   return MACHINE_NETWORK_ERROR.message;

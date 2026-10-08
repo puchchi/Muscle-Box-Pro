@@ -5,20 +5,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createGood, fetchModels } from "@/lib/adminMachineApi";
 import type { MachineModel } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { GoodEditor } from "./machines/GoodEditor";
 import { MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 
 export default function AdminMachineGoodNew() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <NewGood session={guard.session} />;
 }
 
-function NewGood({ session }: { session: AdminSession }) {
+function NewGood({ session }: { session: MachineViewer }) {
   const router = useRouter();
   const [models, setModels] = useState<MachineModel[] | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);

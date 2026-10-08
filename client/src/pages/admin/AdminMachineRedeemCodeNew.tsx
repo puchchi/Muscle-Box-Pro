@@ -4,10 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createRedeemCode } from "@/lib/adminMachineApi";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { CodeForm } from "./machines/CodeForm";
 import { setFlash } from "./machines/flash";
 import { codeSavedNotice } from "./machines/codeRules";
@@ -15,12 +15,12 @@ import { useGoodsAndMachines } from "./machines/usePromotionRefs";
 import { MachinesHeader, ProblemPanel, type Problem } from "./machines/MachinesUi";
 
 export default function AdminMachineRedeemCodeNew() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <NewCode session={guard.session} />;
 }
 
-function NewCode({ session }: { session: AdminSession }) {
+function NewCode({ session }: { session: MachineViewer }) {
   const router = useRouter();
   const [problem, setProblem] = useState<Problem | null>(null);
   const { goods, machines } = useGoodsAndMachines(setProblem);

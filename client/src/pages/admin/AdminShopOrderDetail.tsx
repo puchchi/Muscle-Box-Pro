@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { formatInr, type ShopDrink } from "@shared/shop/shopSchema";
 import type { ShopAdminOrder } from "@shared/admin/shopAdminSchema";
 import type { MachineRow } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { fetchAllMachines } from "@/lib/adminMachineApi";
 import { fetchShopMenu } from "@/lib/shopApi";
 import { fetchShopOrder, refundShopOrder, reissueShopOrder, retryShopRefund, shopAdminConfigured, type ReissueRequest } from "@/lib/shopAdminApi";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card, Empty, Field, Fields, SuccessPanel } from "./AdminUi";
 import { ConfirmDialog, formatIstStamp, MachineDialog, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 import { WarningPanel } from "./machines/WarningPanel";
@@ -22,14 +22,14 @@ import { CustomerDetailCell, ShopNotConfigured, ShopStatusPill } from "./machine
 import { useShopCustomers } from "./machines/useShopCustomers";
 
 export default function AdminShopOrderDetail({ orderId }: { orderId: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <ShopOrderPage session={guard.session} orderId={orderId} />;
 }
 
 type Dialog = "refund" | "retry" | "reissue" | "finish" | null;
 
-function ShopOrderPage({ session, orderId }: { session: AdminSession; orderId: string }) {
+function ShopOrderPage({ session, orderId }: { session: MachineViewer; orderId: string }) {
   const configured = shopAdminConfigured();
   const [order, setOrder] = useState<ShopAdminOrder | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);

@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { deletePromotion, fetchPromotion, setPromotionPaused, updatePromotion } from "@/lib/adminMachineApi";
 import type { Promotion, PromotionKind } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Pill, SuccessPanel } from "./AdminUi";
 import { PromotionForm } from "./machines/PromotionForm";
 import { WarningPanel } from "./machines/WarningPanel";
@@ -19,12 +19,12 @@ import { KIND_COPY, overlapWarning, PROMOTION_STATUS_LABEL, savedNotice } from "
 import { ConfirmDialog, formatIstStamp, MachinesHeader, problemOf, ProblemPanel, REFRESH_NOTE, type Problem } from "./machines/MachinesUi";
 
 export default function AdminMachinePromotionDetail({ kind, promoId }: { kind: PromotionKind; promoId: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <PromotionDetail session={guard.session} kind={kind} promoId={promoId} />;
 }
 
-function PromotionDetail({ session, kind, promoId }: { session: AdminSession; kind: PromotionKind; promoId: string }) {
+function PromotionDetail({ session, kind, promoId }: { session: MachineViewer; kind: PromotionKind; promoId: string }) {
   const copy = KIND_COPY[kind];
   const router = useRouter();
   const [promotion, setPromotion] = useState<Promotion | null>(null);

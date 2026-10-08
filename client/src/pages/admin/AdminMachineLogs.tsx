@@ -6,10 +6,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { fetchEquipmentLog, fetchOperationsLog, type MachineCall } from "@/lib/adminMachineApi";
 import type { EquipmentLogFilters, OperationsLogFilters } from "@shared/admin/machines";
 import type { EquipmentLogRow, OperationsLogRow } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Notice } from "./AdminUi";
 import {
   Cell,
@@ -34,12 +34,12 @@ type Tab = "equipment" | "operations";
 const OPERATE_TYPE_LABEL: Record<string, string> = { "1": "Replenishment", "2": "Cleaning", "3": "Repair" };
 
 export default function AdminMachineLogs() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <Logs session={guard.session} />;
 }
 
-function Logs({ session }: { session: AdminSession }) {
+function Logs({ session }: { session: MachineViewer }) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const search = useSearchParams();

@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { fetchBackup, fetchBackups, fetchCrashFiles, fetchLogFiles, fetchMachine, fetchMachineFile, type MachineCall } from "@/lib/adminMachineApi";
 import type { MachineFileKind } from "@shared/admin/machines";
 import type { BackupPair, BackupRow, CrashFile, LogFile, Machine, MachineFile } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card } from "./AdminUi";
 import {
   Cell,
@@ -45,12 +45,12 @@ const tabOf = (raw: string | null): TabId => (TABS.some((t) => t.id === raw) ? (
 const linkClass = "text-sm font-semibold text-primary hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline";
 
 export default function AdminMachineFiles({ sn }: { sn: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <MachineFiles session={guard.session} sn={sn} />;
 }
 
-function MachineFiles({ session, sn }: { session: AdminSession; sn: string }) {
+function MachineFiles({ session, sn }: { session: MachineViewer; sn: string }) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const search = useSearchParams();

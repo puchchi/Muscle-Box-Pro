@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { fetchAllOrders, fetchOrders } from "@/lib/adminMachineApi";
 import type { OrderFilters } from "@shared/admin/machines";
 import type { Order } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import {
   Cell,
   Col,
@@ -38,7 +38,7 @@ import { WarningPanel } from "./machines/WarningPanel";
 import { OwnerCellText, OwnerSelectFilters, useOwnerChoices } from "./machines/ownerBits";
 
 export default function AdminMachineOrders() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <Orders session={guard.session} />;
 }
@@ -71,7 +71,7 @@ function toFilters(d: Draft): OrderFilters {
   };
 }
 
-function Orders({ session }: { session: AdminSession }) {
+function Orders({ session }: { session: MachineViewer }) {
   const search = useSearchParams();
   const [draft, setDraft] = useState<Draft>(() => ({
     ...EMPTY,

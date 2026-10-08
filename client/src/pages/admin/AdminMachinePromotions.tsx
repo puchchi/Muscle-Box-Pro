@@ -6,10 +6,10 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deletePromotion, fetchPromotions, setPromotionPaused } from "@/lib/adminMachineApi";
 import { PROMOTION_STATUSES, type Promotion, type PromotionKind, type PromotionStatus } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Pill, SuccessPanel } from "./AdminUi";
 import { takeFlash } from "./machines/flash";
 import { KIND_COPY, PROMOTION_STATUS_LABEL, savedNotice, whereLabel } from "./machines/promotionRules";
@@ -36,12 +36,12 @@ import {
 const STATUS_OPTIONS = [{ value: "", label: "Any status" }, ...PROMOTION_STATUSES.map((s) => ({ value: s, label: PROMOTION_STATUS_LABEL[s].text }))];
 
 export default function AdminMachinePromotions({ kind }: { kind: PromotionKind }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <Promotions session={guard.session} kind={kind} />;
 }
 
-function Promotions({ session, kind }: { session: AdminSession; kind: PromotionKind }) {
+function Promotions({ session, kind }: { session: MachineViewer; kind: PromotionKind }) {
   const copy = KIND_COPY[kind];
   const [draft, setDraft] = useState({ name: "", status: "", hideEnded: false });
   const [filters, setFilters] = useState(draft);

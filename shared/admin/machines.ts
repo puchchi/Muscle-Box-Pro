@@ -3,6 +3,7 @@ import type { OwnerState } from "./ownership";
 export const MACHINE_ADMIN_ERROR_CODES = [
   "validation",
   "invalid_token",
+  "forbidden",
   "not_found",
   "conflict",
   "stale_write",

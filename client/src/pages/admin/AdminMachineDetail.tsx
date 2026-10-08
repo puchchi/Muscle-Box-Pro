@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { fetchMachine, fetchModels } from "@/lib/adminMachineApi";
 import type { Machine, MachineModel } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Pill } from "./AdminUi";
 import { MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 import { MachineSettingsTab } from "./machines/MachineSettingsTab";
@@ -41,12 +41,12 @@ function tabOf(raw: string | null): TabId {
 }
 
 export default function AdminMachineDetail({ sn }: { sn: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <MachineDetail session={guard.session} sn={sn} />;
 }
 
-function MachineDetail({ session, sn }: { session: AdminSession; sn: string }) {
+function MachineDetail({ session, sn }: { session: MachineViewer; sn: string }) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const search = useSearchParams();

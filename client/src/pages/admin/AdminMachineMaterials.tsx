@@ -7,10 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { createMaterial, fetchMaterials, fetchModels, updateMaterial } from "@/lib/adminMachineApi";
 import type { MaterialInput } from "@shared/admin/machines";
 import type { MachineModel, Material } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { SuccessPanel } from "./AdminUi";
 import { FormRow, NativeSelect, parseNumber, TextInput } from "./machines/formBits";
 import {
@@ -81,14 +81,14 @@ export function validateMaterial(v: Values): { errors: Record<string, string>; i
 }
 
 export default function AdminMachineMaterials() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <Materials session={guard.session} />;
 }
 
 type Editing = { material: Material | null } | null;
 
-function Materials({ session }: { session: AdminSession }) {
+function Materials({ session }: { session: MachineViewer }) {
   const [models, setModels] = useState<MachineModel[]>([]);
   const [modelId, setModelId] = useState("");
   const [rows, setRows] = useState<Material[]>([]);

@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { createMachine, fetchModels } from "@/lib/adminMachineApi";
 import type { MachineCreateInput } from "@shared/admin/machines";
 import type { MachineModel } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card } from "./AdminUi";
 import { MachineForm } from "./machines/MachineForm";
 import {
@@ -20,12 +20,12 @@ import {
 } from "./machines/MachinesUi";
 
 export default function AdminMachineNew() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <NewMachine session={guard.session} />;
 }
 
-function NewMachine({ session }: { session: AdminSession }) {
+function NewMachine({ session }: { session: MachineViewer }) {
   const router = useRouter();
   const [models, setModels] = useState<MachineModel[] | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);

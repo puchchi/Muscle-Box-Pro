@@ -17,11 +17,11 @@ import {
   type FeedbackState,
   type FeedbackType,
 } from "@shared/admin/feedbackSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { Chip, Pill } from "./AdminUi";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { FormRow, NativeSelect, inputClass } from "./machines/formBits";
 import {
   Cell,
@@ -54,7 +54,7 @@ import {
 import { adjustNewFeedbackCount, setNewFeedbackCount } from "./machines/newFeedbackCount";
 
 export default function AdminMachineFeedback() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <FeedbackPage session={guard.session} />;
 }
@@ -63,7 +63,7 @@ function isType(v: string | null | undefined): v is FeedbackType {
   return (FEEDBACK_TYPES as readonly string[]).includes(v ?? "");
 }
 
-function FeedbackPage({ session }: { session: AdminSession }) {
+function FeedbackPage({ session }: { session: MachineViewer }) {
   const search = useSearchParams();
   const [initial] = useState(() => {
     const type = search?.get("type");

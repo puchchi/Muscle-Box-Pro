@@ -10,10 +10,10 @@ import { fetchMachines, fetchMachineSummary, fetchModels } from "@/lib/adminMach
 import type { MachineListFilters } from "@shared/admin/machines";
 import type { OwnerState } from "@shared/admin/ownership";
 import type { MachineModel, MachineRow, MachineSummary } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { FactoryPinBulkDialog } from "./machines/FactoryPinBulkDialog";
 import { Pill } from "./AdminUi";
 import { OwnerCellText } from "./machines/ownerBits";
@@ -33,7 +33,7 @@ import {
 } from "./machines/MachinesUi";
 
 export default function AdminMachines() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <MachinesOverview session={guard.session} />;
 }
@@ -79,7 +79,7 @@ export function machineFilters(
 
 const selectClass = "h-9 rounded-lg border border-border bg-card px-2 text-sm text-foreground cursor-pointer";
 
-function MachinesOverview({ session }: { session: AdminSession }) {
+function MachinesOverview({ session }: { session: MachineViewer }) {
   const [summary, setSummary] = useState<MachineSummary | null>(null);
   const [models, setModels] = useState<MachineModel[]>([]);
   const [rows, setRows] = useState<MachineRow[]>([]);

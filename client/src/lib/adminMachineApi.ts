@@ -24,6 +24,7 @@ import type {
   UploadKind,
   VoicePositionsInput,
 } from "@shared/admin/machines";
+import { viewerSchema } from "@shared/admin/viewerSchema";
 import { feedbackListSchema, feedbackSchema, type FeedbackFilters, type FeedbackPatch } from "@shared/admin/feedbackSchema";
 import {
   adDeleteSchema,
@@ -112,6 +113,8 @@ export function queryString(params: Record<string, string | number | undefined |
 }
 
 const seg = encodeURIComponent;
+
+export const fetchViewer = () => call(viewerSchema, "GET", "/me");
 
 export const fetchMachineSummary = () => call(summarySchema, "GET", "/summary");
 

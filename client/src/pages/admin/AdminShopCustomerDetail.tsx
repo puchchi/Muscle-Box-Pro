@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatInr } from "@shared/shop/shopSchema";
 import type { ShopBalanceRefund, ShopCustomerDetail, ShopPayout } from "@shared/admin/shopAdminSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { fetchShopCustomer, refundCustomerBalance, resolveShopPayout, shopAdminConfigured, type PayoutOutcome } from "@/lib/shopAdminApi";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card, Empty, Field, Fields, SuccessPanel } from "./AdminUi";
 import { Cell, Col, DataTable, formatIstStamp, Head, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 import { GymLink, FranchiseLink } from "./machines/ownerBits";
@@ -18,7 +18,7 @@ import { WarningPanel } from "./machines/WarningPanel";
 import { ShopNotConfigured, shopOrderHref, ShopStatusPill } from "./machines/shopBits";
 
 export default function AdminShopCustomerDetail({ customerId }: { customerId: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <CustomerPage session={guard.session} customerId={customerId} />;
 }
@@ -38,7 +38,7 @@ export function balanceRefundNotice(r: ShopBalanceRefund): Notice {
   return { tone: r.refundedPaise > 0 ? "done" : "warn", text: sent + left };
 }
 
-function CustomerPage({ session, customerId }: { session: AdminSession; customerId: string }) {
+function CustomerPage({ session, customerId }: { session: MachineViewer; customerId: string }) {
   const configured = shopAdminConfigured();
   const [detail, setDetail] = useState<ShopCustomerDetail | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);

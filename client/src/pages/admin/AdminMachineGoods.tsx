@@ -13,13 +13,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { deleteGood, fetchGoods, fetchModels, setGoodListing } from "@/lib/adminMachineApi";
 import type { Good, MachineModel } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
 import { ComingSoonPill } from "./machines/ComingSoonField";
 import { RatingLink } from "./machines/RatingLink";
 import { SERVE_TEMP_LABEL } from "./machines/ServeTempField";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { SuccessPanel } from "./AdminUi";
 import {
   Cell,
@@ -43,7 +43,7 @@ import {
 } from "./machines/MachinesUi";
 
 export default function AdminMachineGoods() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <GoodsLibrary session={guard.session} />;
 }
@@ -54,7 +54,7 @@ type Pending =
   | { kind: "listing"; good: Good; listed: boolean; count: number }
   | { kind: "delete"; good: Good };
 
-function GoodsLibrary({ session }: { session: AdminSession }) {
+function GoodsLibrary({ session }: { session: MachineViewer }) {
   const [models, setModels] = useState<MachineModel[]>([]);
   const [rows, setRows] = useState<Good[]>([]);
   const [total, setTotal] = useState(0);

@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { fetchQrSettings, setQrSettings, uploadMachineFile } from "@/lib/adminMachineApi";
 import type { QrInput } from "@shared/admin/machines";
 import type { QrSettings, UploadedFile } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card, SuccessPanel } from "./AdminUi";
 import { FormRow, TextInput } from "./machines/formBits";
 import { ACCEPT, appStartNotice, FileButton, formatBytes, precheckMedia } from "./machines/mediaBits";
@@ -100,12 +100,12 @@ export function validateQr(v: Values): { errors: Record<string, string>; input: 
 }
 
 export default function AdminMachineQr() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <QrPage session={guard.session} />;
 }
 
-function QrPage({ session }: { session: AdminSession }) {
+function QrPage({ session }: { session: MachineViewer }) {
   const [settings, setSettings] = useState<QrSettings | null>(null);
   const [values, setValues] = useState<Values | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);

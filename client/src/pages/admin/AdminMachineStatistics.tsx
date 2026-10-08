@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { fetchAdStats, fetchOrderStats, fetchSalesStats } from "@/lib/adminMachineApi";
 import type { StatFilters } from "@shared/admin/machines";
 import { STAT_PERIODS, type AdStats, type OrderStats, type SalesStats, type StatPeriod } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { StatCard } from "./AdminUi";
 import {
   Cell,
@@ -89,12 +89,12 @@ async function load(report: ReportId, filters: StatFilters) {
 }
 
 export default function AdminMachineStatistics() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <Statistics session={guard.session} />;
 }
 
-function Statistics({ session }: { session: AdminSession }) {
+function Statistics({ session }: { session: MachineViewer }) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const search = useSearchParams();
