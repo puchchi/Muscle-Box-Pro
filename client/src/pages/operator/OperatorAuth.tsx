@@ -3,17 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, Building2, CheckCircle2, Dumbbell, MailCheck, ShieldCheck, Wrench } from "lucide-react";
+import { AlertCircle, CheckCircle2, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  fetchOperatorSession,
-  requestOperatorPasswordReset,
-  setOperatorPassword,
-  signInAsOperator,
-} from "@/lib/operatorSession";
+import { setOperatorPassword } from "@/lib/operatorSession";
+import { requestMachineConsolePasswordReset, signInToMachineConsole, signOutOfMachineConsole } from "@/lib/machineConsoleSignIn";
 import type { OnboardingErrorCode } from "@shared/onboarding/types";
-import { forgetVerifiedViewer } from "../admin/machines/viewer";
+import { forgetVerifiedViewer, resolveViewer } from "../admin/machines/viewer";
 
 const EMAIL_HANDOFF = "mbp.operator.email";
 const looksLikeEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
@@ -72,12 +68,12 @@ function Alert({ title, body, testId }: { title: string; body: string; testId: s
   );
 }
 
-export function OperatorLogin() {
+export function MachinesSignIn() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ title: string; body: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -87,8 +83,8 @@ export function OperatorLogin() {
       setEmail(handedOver);
     }
     let cancelled = false;
-    fetchOperatorSession().then((session) => {
-      if (session && !cancelled) router.replace("/machines");
+    resolveViewer().then((viewer) => {
+      if (viewer && !cancelled) router.replace("/machines");
     });
     return () => {
       cancelled = true;
@@ -98,74 +94,77 @@ export function OperatorLogin() {
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     const found = {
-      ...(looksLikeEmail(email.trim()) ? {} : { email: "Enter the email you were invited with." }),
+      ...(looksLikeEmail(email.trim()) ? {} : { email: "Enter the email you sign in with." }),
       ...(password ? {} : { password: "Enter your password." }),
     };
     setErrors(found);
     setNotice(null);
     if (Object.keys(found).length > 0) return;
     setBusy(true);
-    const result = await signInAsOperator(email.trim(), password);
+    const result = await signInToMachineConsole(email.trim(), password);
     if (!result.ok) {
       setBusy(false);
-      setNotice(result.error.message);
+      setNotice({ title: "Sign in failed", body: result.error.message });
       return;
     }
     forgetVerifiedViewer();
-    router.push("/machines");
+    if (await resolveViewer()) {
+      router.push("/machines");
+      return;
+    }
+    await signOutOfMachineConsole(result.role);
+    setBusy(false);
+    setNotice({
+      title: "Machine access isn't on for this account yet",
+      body: "Your email and password are right. Sign in to your own dashboard for now.",
+    });
   }
 
   return (
-    <Frame title="Operator sign in" subtitle="Restock and test the machines you look after.">
+    <Frame title="Sign in" subtitle="You'll see the machines your account looks after.">
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <div>
-          <Label htmlFor="operator-email">Email</Label>
+          <Label htmlFor="console-email">Email</Label>
           <Input
-            id="operator-email"
+            id="console-email"
             type="email"
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             aria-invalid={Boolean(errors.email)}
-            aria-describedby={errors.email ? "operator-email-error" : undefined}
+            aria-describedby={errors.email ? "console-email-error" : undefined}
             className={fieldClass}
             data-testid="input-email"
           />
-          <FieldMessage id="operator-email-error" message={errors.email ?? null} />
+          <FieldMessage id="console-email-error" message={errors.email ?? null} />
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label htmlFor="operator-password" className="text-gray-700 text-sm font-semibold">
+            <label htmlFor="console-password" className="text-gray-700 text-sm font-semibold">
               Password
             </label>
-            <Link href="/operator/forgot-password" className="text-xs text-primary hover:text-primary/80 font-medium">
+            <Link href="/machines/forgot-password" className="text-xs text-primary hover:text-primary/80 font-medium">
               Forgot password?
             </Link>
           </div>
           <Input
-            id="operator-password"
+            id="console-password"
             type="password"
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             aria-invalid={Boolean(errors.password)}
-            aria-describedby={errors.password ? "operator-password-error" : undefined}
+            aria-describedby={errors.password ? "console-password-error" : undefined}
             className={fieldClass}
             data-testid="input-password"
           />
-          <FieldMessage id="operator-password-error" message={errors.password ?? null} />
+          <FieldMessage id="console-password-error" message={errors.password ?? null} />
         </div>
-        {notice && <Alert title="Sign in failed" body={notice} testId="login-notice" />}
+        {notice && <Alert title={notice.title} body={notice.body} testId="login-notice" />}
         <Button type="submit" disabled={busy} className={primaryClass} data-testid="button-login">
           {busy ? "Signing in..." : "Sign in"}
         </Button>
       </form>
-      <p className="text-muted-foreground text-sm text-center mt-6">
-        Not an operator?{" "}
-        <Link href="/machines/sign-in" className="text-primary hover:text-primary/80 font-semibold">
-          Other sign-ins
-        </Link>
-      </p>
     </Frame>
   );
 }
@@ -239,7 +238,7 @@ export function OperatorSetPassword({ handle }: { handle: string }) {
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed mt-2">Sign in with it to see your machines. This link will not work again.</p>
         </div>
-        <Button type="button" onClick={() => router.push("/operator/login")} className={`${primaryClass} mt-6`} data-testid="button-go-to-login">
+        <Button type="button" onClick={() => router.push("/machines/sign-in")} className={`${primaryClass} mt-6`} data-testid="button-go-to-login">
           Sign in
         </Button>
       </Frame>
@@ -253,7 +252,7 @@ export function OperatorSetPassword({ handle }: { handle: string }) {
           <p className="text-sm font-semibold text-amber-800">{problem.title}</p>
           <p className="text-xs text-amber-700 leading-relaxed mt-1">{problem.body}</p>
           {problem.askForNew && (
-            <Link href="/operator/forgot-password" className="mt-2 inline-block text-xs font-semibold text-primary hover:text-primary/80">
+            <Link href="/machines/forgot-password" className="mt-2 inline-block text-xs font-semibold text-primary hover:text-primary/80">
               Forgot password
             </Link>
           )}
@@ -296,7 +295,7 @@ export function OperatorSetPassword({ handle }: { handle: string }) {
   );
 }
 
-export function OperatorForgotPassword() {
+export function MachinesForgotPassword() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -309,9 +308,9 @@ export function OperatorForgotPassword() {
     if (!looksLikeEmail(email.trim())) return setError("Enter the email you sign in with.");
     setError(null);
     setBusy(true);
-    const result = await requestOperatorPasswordReset(email.trim());
+    const result = await requestMachineConsolePasswordReset(email.trim());
     setBusy(false);
-    if (!result.ok) return setNotice(result.error.message);
+    if (!result.ok) return setNotice("We couldn't reach the server. Check your connection and try again.");
     setSent(true);
   }
 
@@ -325,7 +324,7 @@ export function OperatorForgotPassword() {
               Request received
             </p>
             <p className="text-sm text-foreground leading-relaxed mt-3">
-              If that address has an operator account, a link is on its way. Never set a password? Ask the person who added you to send the invite again.
+              If that address has an account, a link is on its way. Never set a password? Ask the person who added you to send the invite again.
             </p>
           </div>
           <button
@@ -361,44 +360,10 @@ export function OperatorForgotPassword() {
         </form>
       )}
       <p className="text-muted-foreground text-sm text-center mt-6">
-        <Link href="/operator/login" className="text-primary hover:text-primary/80 font-semibold">
+        <Link href="/machines/sign-in" className="text-primary hover:text-primary/80 font-semibold">
           Back to sign in
         </Link>
       </p>
-    </Frame>
-  );
-}
-
-const SIGN_INS = [
-  { href: "/operator/login", title: "Operator", body: "You restock or test machines.", icon: Wrench },
-  { href: "/franchise/login", title: "Franchise owner", body: "You own MBP machines in your territory.", icon: Building2 },
-  { href: "/gym/login", title: "Gym owner", body: "An MBP machine is at your gym.", icon: Dumbbell },
-  { href: "/admin/login", title: "MBP team", body: "You work at MuscleBoxPro.", icon: ShieldCheck },
-] as const;
-
-export function MachinesSignIn() {
-  return (
-    <Frame title="Sign in" subtitle="Choose how you use MBP machines.">
-      <ul className="space-y-3">
-        {SIGN_INS.map(({ href, title, body, icon: Icon }) => (
-          <li key={href}>
-            <Link
-              href={href}
-              className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 hover:border-primary/50 hover:bg-gray-50 transition-colors"
-              data-testid={`sign-in-${href.split("/")[1]}`}
-            >
-              <span className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Icon className="w-4 h-4 text-primary" aria-hidden />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-foreground">{title}</span>
-                <span className="block text-xs text-muted-foreground">{body}</span>
-              </span>
-              <ArrowRight className="w-4 h-4 text-muted-foreground" aria-hidden />
-            </Link>
-          </li>
-        ))}
-      </ul>
     </Frame>
   );
 }

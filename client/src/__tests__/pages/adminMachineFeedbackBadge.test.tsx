@@ -8,6 +8,7 @@ vi.mock("@/pages/admin/machines/viewer", async (importOriginal) => ({
   useMachineSignOut: () => vi.fn(),
 }));
 vi.mock("@/lib/apiClient", () => ({ apiBaseUrl: () => "https://api.example" }));
+vi.mock("@/lib/machineConsoleSignIn", () => ({ signOutOfMachineConsole: vi.fn() }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
     <a href={href} {...rest}>

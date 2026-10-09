@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
-import { OperatorLogin } from "@/pages/operator/OperatorAuth";
-
-export const metadata: Metadata = {
-  title: "Operator sign in | MuscleBoxPro",
-  robots: { index: false, follow: false },
-};
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <OperatorLogin />;
+  redirect("/machines/sign-in");
 }

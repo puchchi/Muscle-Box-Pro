@@ -3,13 +3,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchViewer } from "@/lib/adminMachineApi";
-import { fetchAdminSession, signOutAsAdmin } from "@/lib/adminSession";
-import { signOutOfFranchisePortal } from "@/lib/franchiseSession";
-import { signOutOfPortal } from "@/lib/gymSession";
-import { signOutAsOperator } from "@/lib/operatorSession";
-import { forgetBearerSession } from "@/lib/apiClient";
+import { fetchAdminSession } from "@/lib/adminSession";
+import { signOutOfMachineConsole } from "@/lib/machineConsoleSignIn";
 import { queryClient } from "@/lib/queryClient";
-import { adminViewer, type MachineViewer, type Permission, type ViewerRole } from "@shared/admin/viewerSchema";
+import { adminViewer, type MachineViewer, type Permission } from "@shared/admin/viewerSchema";
 import { forgetVerifiedSession } from "../useAdminGuard";
 
 // Components rendered outside a shell (tests, mostly) behave as an admin, which is what they were written for.
@@ -35,7 +32,7 @@ export function forgetVerifiedViewer() {
 }
 
 // Production may not serve /me yet; an admin session still opens the console with everything.
-async function resolveViewer(): Promise<MachineViewer | null> {
+export async function resolveViewer(): Promise<MachineViewer | null> {
   const me = await fetchViewer();
   if (me.ok) return me.data;
   const admin = await fetchAdminSession();
@@ -62,23 +59,14 @@ export function useMachineGuard(): MachineGuard {
   return session ? { state: "ready", session } : { state: "checking", session: null };
 }
 
-const SIGN_OUT: Record<ViewerRole, { run: () => Promise<void>; then: string }> = {
-  admin: { run: signOutAsAdmin, then: "/admin/login" },
-  franchise: { run: signOutOfFranchisePortal, then: "/franchise/login" },
-  gym: { run: signOutOfPortal, then: "/gym/login" },
-  operator: { run: signOutAsOperator, then: "/operator/login" },
-};
-
 export function useMachineSignOut() {
   const router = useRouter();
   const viewer = useViewer();
   return async function signOut() {
-    const step = SIGN_OUT[viewer.role];
-    await step.run();
-    forgetBearerSession();
+    await signOutOfMachineConsole(viewer.role);
     forgetVerifiedViewer();
     forgetVerifiedSession();
     queryClient.removeQueries();
-    router.replace(step.then);
+    router.replace(SIGN_IN_PAGE);
   };
 }

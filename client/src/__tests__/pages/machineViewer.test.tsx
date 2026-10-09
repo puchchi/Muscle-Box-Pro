@@ -7,7 +7,8 @@ const { mockViewer, mockAdmin, mockReplace } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
 }));
 vi.mock("@/lib/adminMachineApi", () => ({ fetchViewer: mockViewer }));
-vi.mock("@/lib/adminSession", () => ({ fetchAdminSession: mockAdmin, signOutAsAdmin: vi.fn() }));
+vi.mock("@/lib/adminSession", () => ({ fetchAdminSession: mockAdmin }));
+vi.mock("@/lib/machineConsoleSignIn", () => ({ signOutOfMachineConsole: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mockReplace }) }));
 
 import { forgetVerifiedViewer, SIGN_IN_PAGE, useMachineGuard } from "@/pages/admin/machines/viewer";
@@ -36,7 +37,7 @@ describe("useMachineGuard", () => {
     expect(result.current.session?.can.size).toBe(PERMISSIONS.length);
   });
 
-  it("sends anyone without a session to the sign-in chooser", async () => {
+  it("sends anyone without a session to the sign-in page", async () => {
     mockViewer.mockResolvedValue({ ok: false, error: { code: "invalid_token", message: "" } });
     mockAdmin.mockResolvedValue(null);
     renderHook(() => useMachineGuard());

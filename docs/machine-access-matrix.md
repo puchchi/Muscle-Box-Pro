@@ -221,8 +221,15 @@ Decided:
   and buttons this matrix gives it. A page the role can't open shows "You don't have access".
 - Franchise and gym owners open the console from their dashboards. A gym sees the link once its
   machine is installed.
-- Operators sign in at `/operator/login`. The invite and reset emails link to
-  `/operator/set-password/<link>`, and `/operator/forgot-password` sends a new one.
-  `/machines/sign-in` lists all four sign-ins.
+- Everyone signs in to the console at `/machines/sign-in` with one email and password form. It tries the
+  admin, franchise, gym and operator sign-ins in that order and keeps the first that accepts the password,
+  then the console shows what `/me` says that role may see. Each type has its own attempt counter on the
+  backend, so this doesn't lock anyone out sooner. Operators are skipped where the backend has no operator
+  routes, which is prod today; `OPERATOR_ACCOUNTS_LIVE` in `client/src/lib/machineConsoleSignIn.ts` is the
+  switch to flip when it does. If the password is right but the console can't open for that role (prod
+  has no `/me` yet), the form signs back out and says so.
+- `/machines/forgot-password` asks the franchise, gym and operator reset routes at once. Admins have no reset.
+  The invite and reset emails for operators link to `/operator/set-password/<link>`, which then sends them
+  to `/machines/sign-in`. `/operator/login` and `/operator/forgot-password` redirect to the new pages.
 - Admins and franchise owners manage operators at `/machines/operators`. When the invite email
   doesn't go out, the page shows the link once so it can be sent by hand.
