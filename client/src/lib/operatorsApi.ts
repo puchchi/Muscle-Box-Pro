@@ -20,7 +20,10 @@ const MALFORMED: OnboardingError = {
 };
 
 const base = (as: OperatorManager) => (as === "admin" ? "/admin/operators" : "/franchise/operators");
-const one = (as: OperatorManager, email: string) => `${base(as)}/${encodeURIComponent(email)}`;
+// The operator routes read {email} without decoding it, so leave raw what a path segment allows.
+const emailSegment = (email: string) =>
+  encodeURIComponent(email).replace(/%(40|2B|24|26|3D)/gi, (escaped) => decodeURIComponent(escaped));
+const one = (as: OperatorManager, email: string) => `${base(as)}/${emailSegment(email)}`;
 
 async function call<S extends z.ZodTypeAny>(schema: S, method: ApiMethod, path: string, body?: unknown): Promise<AdminReadResult<z.infer<S>>> {
   const result = await apiRequest<unknown>(method, path, { api: "franchiseAdmin", ...(body === undefined ? {} : { body }) });

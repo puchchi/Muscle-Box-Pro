@@ -123,6 +123,19 @@ describe("Operators page", () => {
     expect(screen.getByTestId("operator-status-asha@x.in")).toHaveTextContent("Invite sent");
   });
 
+  it("keeps the franchise name after an edit, which the server only sends in the list", async () => {
+    viewerRef.current = viewer("admin", ["operators.view", "operators.edit"]);
+    api.fetchOperators.mockResolvedValue({ ok: true, data: [ravi] });
+    api.setOperatorDisabled.mockResolvedValue({ ok: true, data: { ...ravi, status: "disabled", franchiseName: null } });
+    const user = userEvent.setup();
+    render(<AdminMachineOperators />);
+    await user.click(await screen.findByTestId("disable-operator-ravi@x.in"));
+    await user.click(screen.getByTestId("button-confirm-disable"));
+    const row = await screen.findByTestId("row-operator-ravi@x.in");
+    await within(row).findByText("Turned off");
+    expect(row).toHaveTextContent("Pune Fitness");
+  });
+
   it("turns an operator off with a reason", async () => {
     viewerRef.current = viewer("franchise", ["operators.view", "operators.edit"]);
     api.fetchOperators.mockResolvedValue({ ok: true, data: [ravi] });
@@ -147,6 +160,14 @@ describe("operator form rules", () => {
       email: "Enter a valid email address.",
     });
     expect(checkOperator({ ...values, email: "" }, false)).toEqual({});
+  });
+
+  it("takes the same phone numbers the server does", () => {
+    const phone = (p: string) => checkOperator({ ...values, phone: p }, false).phone;
+    expect(phone("+91 (982) 000-0000")).toBeUndefined();
+    expect(phone("98200 00")).toBeUndefined();
+    expect(phone("982000")).toBeDefined();
+    expect(phone("98+2000000")).toBeDefined();
   });
 
   it("sends only what changed", () => {

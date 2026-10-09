@@ -76,7 +76,8 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
 
   const label = useMemo(() => new Map(machines.map((m) => [m.sn, m.deviceExtNo || m.name || m.sn])), [machines]);
 
-  const replace = (next: Operator) => setOperators((list) => list.map((o) => (o.email === next.email ? next : o)));
+  const replace = (next: Operator) =>
+    setOperators((list) => list.map((o) => (o.email === next.email ? { ...next, franchiseName: next.franchiseName ?? o.franchiseName } : o)));
 
   function clearMessages() {
     setProblem(null);
@@ -360,7 +361,7 @@ export function checkOperator(v: Values, adding: boolean): Record<string, string
   if (!name) errors.name = "Enter the operator's name.";
   else if (name.length > OPERATOR_NAME_MAX) errors.name = `Up to ${OPERATOR_NAME_MAX} characters.`;
   if (adding && !looksLikeEmail(v.email.trim())) errors.email = "Enter a valid email address.";
-  if (v.phone.trim() && !/^[0-9+ ]{6,20}$/.test(v.phone.trim())) errors.phone = "Digits, + and spaces only.";
+  if (v.phone.trim() && !/^\+?[0-9 ()-]{8,20}$/.test(v.phone.trim())) errors.phone = "Use 8 to 20 digits. Spaces, brackets and a leading + are fine.";
   if (v.machines.length > OPERATOR_MACHINES_MAX) errors.machines = `Up to ${OPERATOR_MACHINES_MAX} machines.`;
   return errors;
 }
