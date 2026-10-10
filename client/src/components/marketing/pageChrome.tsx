@@ -164,7 +164,7 @@ export function Section({
       ref={ref}
       // `scroll-mt` clears the navbar alone on mobile and the navbar plus the jump nav
       // on desktop, where both are pinned.
-      className={`scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-14 sm:py-16 lg:py-20 ${surface}`}
+      className={`scroll-mt-20 lg:scroll-mt-32 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24 ${surface}`}
     >
       <div className="max-w-5xl mx-auto">{children}</div>
     </section>
@@ -200,14 +200,14 @@ export function SectionHeading({
         darker step is the one that fails.
       */}
       <span
-        className={`inline-block text-xs font-bold tracking-[0.2em] uppercase mb-2.5 ${
+        className={`block text-xs font-bold tracking-[0.25em] uppercase mb-3 ${
           dark ? "text-primary" : "text-primary-ink"
         }`}
       >
         {eyebrow}
       </span>
       <h2
-        className={`font-display font-black uppercase text-2xl sm:text-3xl tracking-tight leading-[1.05] text-balance ${
+        className={`font-display font-black uppercase text-[clamp(2rem,4.5vw,3.5rem)] leading-none text-balance ${
           dark ? "text-white" : ""
         }`}
       >
@@ -216,13 +216,13 @@ export function SectionHeading({
     </div>
   );
   const standfirst = blurb && (
-    <p className={`text-[15px] leading-relaxed ${dark ? "text-gray-300" : "text-muted-foreground"}`}>
+    <p className={`text-base leading-relaxed ${dark ? "text-gray-300" : "text-muted-foreground"}`}>
       {blurb}
     </p>
   );
 
   return (
-    <div className="max-w-2xl space-y-3">
+    <div className="max-w-2xl space-y-4">
       {heading}
       {standfirst}
     </div>

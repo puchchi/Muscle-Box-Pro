@@ -243,7 +243,7 @@ export default function GymPartnership() {
               breadcrumb someone tries to click mid-flight.
             */}
             <nav aria-label="Breadcrumb" className="mb-7">
-              <ol className="flex items-center gap-2 text-[13px]">
+              <ol className="flex items-center gap-2 text-sm">
                 <li>
                   <Link
                     href="/"
@@ -291,7 +291,7 @@ export default function GymPartnership() {
                   HTML-to-text pass some crawlers and AI scrapers use would otherwise
                   read "machineat no cost".
                 */}
-                <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] leading-[0.95] tracking-tight mb-5 text-balance">
+                <h1 className="font-display font-black text-white uppercase text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[0.9] mb-6 text-balance">
                   A protein shake vending machine{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                     at no cost to your gym
@@ -302,14 +302,14 @@ export default function GymPartnership() {
                   with "Nothing to buy or maintain", which is the same claim in the same
                   eyeful.
                 */}
-                <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl text-balance">
+                <p className="text-gray-300 text-lg leading-relaxed max-w-xl text-balance">
                   We install and run the machine, then share the profit with you every month.
                 </p>
 
                 {/* Factual reassurances, straight from PARTNERSHIP — not testimonials. */}
                 <ul className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-x-5 mt-6">
                   {heroProof.map((item) => (
-                    <li key={item} className="flex items-start gap-1.5 text-gray-300 text-[13px]">
+                    <li key={item} className="flex items-start gap-1.5 text-gray-300 text-sm">
                       <CheckCircle2
                         className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-[3px]"
                         aria-hidden="true"
@@ -411,7 +411,7 @@ export default function GymPartnership() {
                       precedes its `dd` in the DOM. */}
                   <div className="flex flex-col-reverse gap-1">
                     <dt className="text-gray-300 text-xs leading-snug">{h.label}</dt>
-                    <dd className="text-white font-display font-black text-xl sm:text-2xl leading-none tabular-nums">
+                    <dd className="text-white font-display font-black text-2xl sm:text-[2rem] leading-none tabular-nums">
                       {h.value}
                     </dd>
                   </div>
@@ -432,7 +432,7 @@ export default function GymPartnership() {
           the footer; repeating them here is what turns a notice into small print people
           skip.
 
-          Left-aligned rather than centred: centred ragged text at 13px is the hardest
+          Left-aligned rather than centred: centred ragged text at 14px is the hardest
           thing on the page to read.
 
           **The linked PDF is not `shared/agreement/v2_3.ts`, and the sentence about the copy you
@@ -445,7 +445,7 @@ export default function GymPartnership() {
           from v2_3 and the gap closes; until then do not reword that sentence away.
         */}
         <div className="bg-amber-50 border-b border-amber-200 py-3.5 px-4 sm:px-6 lg:px-8" role="note">
-          <p className="max-w-4xl mx-auto text-amber-900 text-[13px] leading-relaxed flex items-start gap-2.5">
+          <p className="max-w-4xl mx-auto text-amber-900 text-sm leading-relaxed flex items-start gap-2.5">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-700" aria-hidden="true" />
             <span>
               <strong>Indicative terms. Your signed agreement governs.</strong> Figures are the
@@ -524,7 +524,7 @@ export default function GymPartnership() {
                   ))}
                 </dl>
 
-                <p className="text-[13px] leading-relaxed mt-7">
+                <p className="text-sm leading-relaxed mt-7">
                   <Link
                     href="/specs"
                     className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -570,7 +570,7 @@ export default function GymPartnership() {
                 <p className="text-[15px] font-semibold mb-1.5">
                   A refundable deposit of {formatInr(PARTNERSHIP.securityDepositInr)}
                 </p>
-                <p className="text-muted-foreground text-[13px] leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   Held against loss or avoidable damage, returned at the end less anything properly
                   due. Not a fee, and never netted off your payouts.
                 </p>
@@ -765,7 +765,7 @@ export default function GymPartnership() {
               <p className="font-bold text-[15px] text-white mb-1">
                 Want these numbers for your own footfall?
               </p>
-              <p className="text-gray-400 text-[13px] leading-relaxed">
+              <p className="text-gray-400 text-sm leading-relaxed">
                 Tell us your member count and we will run the same maths.
               </p>
             </div>
@@ -929,7 +929,7 @@ export default function GymPartnership() {
                     aria-hidden="true"
                   />
                 </h3>
-                <p className="text-muted-foreground text-[13px] leading-relaxed">{firstMove.body}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed">{firstMove.body}</p>
               </Link>
             </li>
 
@@ -968,7 +968,7 @@ export default function GymPartnership() {
                   </span>
                 </div>
                 <h3 className="font-bold text-[15px] mb-1.5">{step.title}</h3>
-                <p className="text-muted-foreground text-[13px] leading-relaxed">{step.body}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed">{step.body}</p>
               </li>
             ))}
           </ol>
@@ -986,7 +986,7 @@ export default function GymPartnership() {
             The rail is sticky below both pinned bars, so the visitor keeps the heading
             while working down eleven questions.
           */}
-          <div className="grid lg:grid-cols-[17rem_1fr] gap-8 lg:gap-14">
+          <div className="grid lg:grid-cols-[24rem_1fr] gap-8 lg:gap-12">
             <div className="lg:sticky lg:top-32 lg:self-start">
               <SectionHeading eyebrow="Questions" title="Frequently asked" />
             </div>
@@ -1035,7 +1035,7 @@ export default function GymPartnership() {
             }}
           />
           <div className="max-w-3xl mx-auto text-center relative z-10">
-            <h2 className="font-display font-black uppercase text-white text-2xl sm:text-4xl tracking-tight leading-tight mb-4">
+            <h2 className="font-display font-black uppercase text-white text-[clamp(2.5rem,6vw,4.5rem)] leading-none mb-5">
               See whether your gym is a fit
             </h2>
             {/*
@@ -1044,7 +1044,7 @@ export default function GymPartnership() {
               white is 3.25:1 there, which is still under 4.5 because `--primary`
               cannot carry small white text at all; see the note on `Section`.
             */}
-            <p className="text-white text-[15px] sm:text-lg leading-relaxed mb-8">
+            <p className="text-white text-lg leading-relaxed mb-10">
               We will come back honestly, including if your volumes would not justify a machine.
               No cost, no commitment.
             </p>
@@ -1067,7 +1067,7 @@ export default function GymPartnership() {
                 <Link href="/specs">See the machine specs</Link>
               </Button>
             </div>
-            <p className="text-white text-[13px] mt-7">
+            <p className="text-white text-sm mt-7">
               Already a partner?{" "}
               {/*
                 `nofollow` because robots.txt disallows `/gym/`. Without it this is the one
@@ -1084,7 +1084,7 @@ export default function GymPartnership() {
                 Sign in to your dashboard
               </Link>
             </p>
-            <p className="text-white/80 text-[13px] mt-2">
+            <p className="text-white/80 text-sm mt-2">
               Want to run a network of machines rather than host one?{" "}
               <Link
                 href="/franchise"
@@ -1196,7 +1196,7 @@ function MoneyCard({
             these four are unreachable by heading navigation. */}
         <h3 className={`font-bold text-[15px] ${dark ? "text-white" : ""}`}>{title}</h3>
       </div>
-      <p className={`text-[13px] leading-relaxed ${dark ? "text-gray-400" : "text-muted-foreground"}`}>
+      <p className={`text-sm leading-relaxed ${dark ? "text-gray-400" : "text-muted-foreground"}`}>
         {body}
       </p>
     </div>
@@ -1234,7 +1234,7 @@ function TermCard({
       <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
         {label}
       </h3>
-      <p className="text-muted-foreground text-[13px] leading-relaxed">{body}</p>
+      <p className="text-muted-foreground text-sm leading-relaxed">{body}</p>
     </div>
   );
 }
