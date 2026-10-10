@@ -45,7 +45,8 @@ readers and crawlers then get normal text.
 |---|---|---|
 | Hero h1, short headline, wide column | `font-display font-black uppercase leading-[0.88]` + `style={{ fontSize: "clamp(3rem, 6vw, 5rem)" }}` | Home |
 | Hero h1, centred | same, `clamp(2.5rem, 6vw, 5rem)` | Specs |
-| Hero h1, long headline in a split hero | `font-display font-black uppercase text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[0.9] text-balance` | Partnership, Franchise |
+| Hero h1, long headline in a split hero | `font-display font-black uppercase text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[0.9] text-balance` | Partnership |
+| Hero h1, very long headline in a split hero | same, `text-[clamp(2rem,4vw,3rem)] leading-[0.95]` | Franchise, Gym Demo |
 | Section h2 | `font-display font-black uppercase leading-none` + `clamp(2rem, 4.5vw, 3.5rem)` | Every section; `SectionHeading` does this |
 | Minor section h2 | same, `clamp(1.8rem, 3.5vw, 2.8rem)` | Secondary sections on Specs |
 | CTA band h2 | `font-display font-black uppercase leading-none text-white` + `clamp(2.5rem, 6vw, 4.5rem)` | Bottom gradient band |

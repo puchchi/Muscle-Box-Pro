@@ -360,7 +360,7 @@ export default function Franchise() {
                   The `{" "}` is load-bearing all the same: the HTML-to-text pass some
                   crawlers and AI scrapers use would otherwise read "aProtein".
                 */}
-                <h1 className="font-display font-black text-white uppercase text-[clamp(2.25rem,4.5vw,3.5rem)] leading-[0.9] mb-6 text-balance">
+                <h1 className="font-display font-black text-white uppercase text-[clamp(2rem,4vw,3rem)] leading-[0.95] mb-6 text-balance">
                   Build and operate a{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                     protein vending machine franchise
