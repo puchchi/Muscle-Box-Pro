@@ -273,6 +273,14 @@ reference implementations are [FranchiseDashboard](../client/src/pages/franchise
 [GymDashboard](../client/src/pages/gym/GymDashboard.tsx) and the shared cards in
 [portalCards.tsx](../client/src/pages/gym/portalCards.tsx).
 
+### One product with the console
+
+A portal is not a separate site that links to the machine console. It renders inside
+`MachinesShell`, and its pages are a sidebar group (`PORTAL_GROUPS`) above the console's own.
+Each page is a route, not a tab, and opens with `MachinesHeader`. A figure the console has
+detail for links straight to that console page. The franchise dashboard works this way. The
+gym dashboard still has its own chrome and tabs, and moves next.
+
 ### Theme
 
 The root carries `dark theme-console`. That switches the brand to magenta and inverts the
@@ -289,7 +297,7 @@ Do not hardcode orange or magenta. Use the tokens and the theme decides.
 
 | Role | Classes |
 |---|---|
-| Page h1 | `font-display text-2xl sm:text-3xl font-black uppercase tracking-tight` |
+| Page h1 | `MachinesHeader`: `font-display text-2xl font-black tracking-tight`, sentence case |
 | Card title (h2) | `text-sm font-semibold text-foreground`, or the metric label below |
 | Metric label (h2) | `text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground` |
 | Metric figure | `font-display font-black leading-none tabular-nums text-[26px]` |
@@ -311,7 +319,9 @@ Do not hardcode orange or magenta. Use the tokens and the theme decides.
 - **Metric card:** label top left, `h-8 w-8 rounded-lg` icon chip top right, figure, caption.
   At most one per row gets `accent` (gradient hairline and glow).
 - **Rows:** `Row` and `RowGroup` from portalCards, a `<dl>` with label left and value right.
-- **Tabs:** `rounded-xl border bg-card p-1` list. Inactive tabs are `text-muted-foreground
+- **Clickable metric card:** `MetricCard` with `href`. It turns into a link with a hover border
+  and a focus ring. Without `href` it does not react to hover.
+- **Tabs (gym dashboard only, until it moves):** `rounded-xl border bg-card p-1` list. Inactive tabs are `text-muted-foreground
   hover:text-foreground`. The selected tab is `bg-primary-fill text-primary-foreground`. A
   grey-on-grey selected state is about 1.1:1 and nobody can see it.
 - **Grids of uneven cards** get `items-start`, or pack them into columns by hand. A
