@@ -33,7 +33,9 @@ import {
   fetchFranchiseSession,
   signOutOfFranchisePortal,
 } from "@/lib/franchiseSession";
+import { fetchMachineSummary } from "@/lib/adminMachineApi";
 import { formatInr } from "@shared/partnership/summary";
+import type { MachineSummary } from "@shared/admin/machinesSchema";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
 import { franchiseTier } from "@shared/franchise/program";
 import type { FranchisePortalSnapshot, UnbuiltSection } from "@shared/franchise/portal";
@@ -227,6 +229,7 @@ export default function FranchiseDashboard() {
     // who has pressed Sign out must leave the screen either way.
     await signOutOfFranchisePortal();
     queryClient.removeQueries({ queryKey: FRANCHISE_PORTAL_QUERY_KEY });
+    queryClient.removeQueries({ queryKey: FRANCHISE_FLEET_QUERY_KEY });
     queryClient.removeQueries({ queryKey: FRANCHISE_SESSION_QUERY_KEY });
     router.replace("/franchise/login");
   }
@@ -287,9 +290,36 @@ export default function FranchiseDashboard() {
   );
 }
 
+const FRANCHISE_FLEET_QUERY_KEY = ["franchise", "fleet-summary"] as const;
+
+export function MachinesMetric({ allocation, fleet }: { allocation: number; fleet: MachineSummary | null }) {
+  if (!fleet) {
+    return (
+      <MetricCard icon={Cpu} label="Machines allocated" testId="metric-machines">
+        <Figure value={count(allocation)} caption="Under your terms. Deployment is planned with you." />
+      </MetricCard>
+    );
+  }
+  return (
+    <MetricCard icon={Cpu} label="Your machines" testId="metric-machines">
+      <Figure
+        value={count(fleet.machines)}
+        caption={`${count(fleet.online)} online now. Your agreement has ${count(allocation)}.`}
+      />
+    </MetricCard>
+  );
+}
+
 /** The loaded dashboard. Its own component so every derivation below runs against a real snapshot. */
 function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
   const { terms, payments, territory, agreement, operations, documents } = snapshot;
+  const { data: fleet } = useQuery({
+    queryKey: FRANCHISE_FLEET_QUERY_KEY,
+    queryFn: async () => {
+      const result = await fetchMachineSummary();
+      return result.ok ? result.data : null;
+    },
+  });
 
   const confirmed = payments.filter((payment) => payment.verifiedAt !== null);
   const confirmedPaise = confirmed.reduce(
@@ -369,12 +399,7 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
               />
             </MetricCard>
 
-            <MetricCard icon={Cpu} label="Machines allocated" testId="metric-machines">
-              <Figure
-                value={count(terms.machineAllocation)}
-                caption="Under your terms. Deployment is planned with you."
-              />
-            </MetricCard>
+            <MachinesMetric allocation={terms.machineAllocation} fleet={fleet ?? null} />
 
             <MetricCard icon={Wallet} label="Capital to recover" testId="metric-recovery">
               <Figure
