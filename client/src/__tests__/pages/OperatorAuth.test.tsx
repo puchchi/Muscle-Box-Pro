@@ -41,6 +41,14 @@ describe("Machine console sign in", () => {
     expect(screen.queryByTestId("sign-in-operator")).not.toBeInTheDocument();
   });
 
+  it("opens a franchise's own dashboard even where the console can't read who it is", async () => {
+    consoleSignIn.signInToMachineConsole.mockResolvedValue({ ok: true, role: "franchise" });
+    render(<MachinesSignIn />);
+    await signIn("p@x.in", "secret-phrase");
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/franchise/dashboard"));
+    expect(consoleSignIn.signOutOfMachineConsole).not.toHaveBeenCalled();
+  });
+
   it("shows the one message when no account takes the password", async () => {
     consoleSignIn.signInToMachineConsole.mockResolvedValue({ ok: false, error: { code: "wrong", message: "Incorrect email or password. Please try again." } });
     render(<MachinesSignIn />);

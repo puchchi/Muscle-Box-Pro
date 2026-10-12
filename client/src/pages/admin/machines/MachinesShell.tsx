@@ -124,38 +124,27 @@ export function NoAccess() {
   );
 }
 
-export function MachinesShell({
-  session,
-  section,
-  needs,
-  children,
-}: {
+type ShellProps = {
   session: MachineViewer;
   section: MachineSection | PortalSection;
   needs?: NavItem["needs"];
+  onSignOut?: () => void;
   children: React.ReactNode;
-}) {
+};
+
+export function MachinesShell({ session, section, needs, onSignOut, children }: ShellProps) {
   return (
     <ViewerProvider value={session}>
-      <Shell session={session} section={section} needs={needs}>
+      <Shell session={session} section={section} needs={needs} onSignOut={onSignOut}>
         {children}
       </Shell>
     </ViewerProvider>
   );
 }
 
-function Shell({
-  session,
-  section,
-  needs,
-  children,
-}: {
-  session: MachineViewer;
-  section: MachineSection | PortalSection;
-  needs?: NavItem["needs"];
-  children: React.ReactNode;
-}) {
-  const handleSignOut = useMachineSignOut();
+function Shell({ session, section, needs, onSignOut, children }: ShellProps) {
+  const consoleSignOut = useMachineSignOut();
+  const handleSignOut = onSignOut ?? consoleSignOut;
   const newFeedback = useNewFeedbackCount(session.can.has("feedback.view"));
   const groups = visibleGroups(session);
   const current = ALL_ITEMS.find((item) => item.id === section);

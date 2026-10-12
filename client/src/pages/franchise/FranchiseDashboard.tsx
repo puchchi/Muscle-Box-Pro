@@ -27,7 +27,15 @@ import {
   FranchisePortalRequestError,
   fetchFranchisePortalSnapshot,
 } from "@/lib/franchisePortalApi";
-import { fetchMachineSummary, fetchSalesStats } from "@/lib/adminMachineApi";
+import { fetchMachineSummary, fetchSalesStats, fetchViewer } from "@/lib/adminMachineApi";
+import {
+  FRANCHISE_SESSION_QUERY_KEY,
+  fetchFranchiseSession,
+  signOutOfFranchisePortal,
+  type FranchiseSession,
+} from "@/lib/franchiseSession";
+import { queryClient } from "@/lib/queryClient";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { istToday } from "../admin/machines/statsRules";
 import { formatInr } from "@shared/partnership/summary";
 import type { MachineSummary, SalesStats } from "@shared/admin/machinesSchema";
@@ -42,9 +50,9 @@ import type {
 } from "@shared/franchise/onboarding/types";
 import { Card, Row, RowGroup, type CardProps } from "../gym/portalCards";
 import { AdminChecking } from "../admin/AdminShell";
-import { MachinesShell, homeFor, type PortalSection } from "../admin/machines/MachinesShell";
+import { MachinesShell, type PortalSection } from "../admin/machines/MachinesShell";
 import { MachinesHeader } from "../admin/machines/MachinesUi";
-import { SIGN_IN_PAGE, forgetVerifiedViewer, useMachineGuard } from "../admin/machines/viewer";
+import { forgetVerifiedViewer } from "../admin/machines/viewer";
 import { formatIstDate, formatIstDateTime } from "../gym/istDates";
 
 /**
@@ -202,13 +210,21 @@ function unbuiltSections(
 
 export default function FranchiseDashboard({ view = "overview" }: { view?: PortalSection }) {
   const router = useRouter();
-  const guard = useMachineGuard();
-  const viewer = guard.session;
-  const isFranchise = viewer?.role === "franchise";
 
-  useEffect(() => {
-    if (viewer && !isFranchise) router.replace(homeFor(viewer.role));
-  }, [viewer, isFranchise, router]);
+  const { data: session, isPending: isCheckingSession } = useQuery({
+    queryKey: FRANCHISE_SESSION_QUERY_KEY,
+    queryFn: fetchFranchiseSession,
+  });
+  const signedOut = !isCheckingSession && !session;
+
+  // The portal does not need the console: production has no /me yet, and /me refuses a
+  // franchise that is not active, which the portal still lets in.
+  const { data: consoleViewer } = useQuery({
+    queryKey: FRANCHISE_CONSOLE_VIEWER_QUERY_KEY,
+    queryFn: fetchConsoleViewer,
+    enabled: session != null,
+    retry: false,
+  });
 
   const {
     data: snapshot,
@@ -220,25 +236,30 @@ export default function FranchiseDashboard({ view = "overview" }: { view?: Porta
   } = useQuery({
     queryKey: FRANCHISE_PORTAL_QUERY_KEY,
     queryFn: fetchFranchisePortalSnapshot,
-    enabled: isFranchise,
+    enabled: session != null,
     // A rejected session is not transient, so retrying it only delays the redirect below by a
     // few seconds of backoff while a franchisee reads the wrong explanation.
     retry: (attempt, err) => !isSessionGone(err) && attempt < 2,
   });
 
-  // The guard proved there was a session; this covers it ending afterwards, on a tab left
-  // open overnight or an account disabled while it was open.
   const sessionGone = isError && isSessionGone(error);
   useEffect(() => {
-    if (!sessionGone) return;
-    forgetVerifiedViewer();
-    router.replace(SIGN_IN_PAGE);
-  }, [sessionGone, router]);
+    if (signedOut || sessionGone) router.replace("/franchise/login");
+  }, [signedOut, sessionGone, router]);
 
-  if (!viewer || !isFranchise || sessionGone) return <AdminChecking />;
+  async function handleSignOut() {
+    await signOutOfFranchisePortal();
+    forgetVerifiedViewer();
+    queryClient.removeQueries();
+    router.replace("/franchise/login");
+  }
+
+  if (!session || sessionGone || consoleViewer === undefined) return <AdminChecking />;
+
+  const viewer = consoleViewer ?? portalOnlyViewer(session);
 
   return (
-    <MachinesShell session={viewer} section={view}>
+    <MachinesShell session={viewer} section={view} onSignOut={handleSignOut}>
       {isPending ? (
         <PortalLoading />
       ) : isError || !snapshot ? (
@@ -248,6 +269,25 @@ export default function FranchiseDashboard({ view = "overview" }: { view?: Porta
       )}
     </MachinesShell>
   );
+}
+
+const FRANCHISE_CONSOLE_VIEWER_QUERY_KEY = ["franchise", "console-viewer"] as const;
+
+async function fetchConsoleViewer(): Promise<MachineViewer | null> {
+  const me = await fetchViewer();
+  return me.ok && me.data.role === "franchise" ? me.data : null;
+}
+
+function portalOnlyViewer(session: FranchiseSession): MachineViewer {
+  return {
+    role: "franchise",
+    name: session.franchiseDisplayName || session.email,
+    email: session.email,
+    operatorId: null,
+    franchiseId: session.franchiseId,
+    gymId: null,
+    can: new Set(),
+  };
 }
 
 const FRANCHISE_FLEET_QUERY_KEY = ["franchise", "fleet-summary"] as const;

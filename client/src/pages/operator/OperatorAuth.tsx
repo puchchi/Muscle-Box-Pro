@@ -104,8 +104,8 @@ export function MachinesSignIn() {
     }
     forgetVerifiedViewer();
     const viewer = await resolveViewer();
-    if (viewer) {
-      router.push(homeFor(viewer.role));
+    if (viewer || result.role === "franchise") {
+      router.push(homeFor(viewer?.role ?? result.role));
       return;
     }
     await signOutOfMachineConsole(result.role);
