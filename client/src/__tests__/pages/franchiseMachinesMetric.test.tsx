@@ -11,10 +11,13 @@ describe("franchise dashboard machines figure", () => {
     expect(card).toHaveTextContent("Your machines");
     expect(card).toHaveTextContent("1");
     expect(card).toHaveTextContent("0 online now. Your agreement has 5.");
+    expect(card).toHaveAttribute("href", "/machines");
   });
 
   it("falls back to the agreement when the console can't be read", () => {
     render(<MachinesMetric allocation={5} fleet={null} />);
-    expect(screen.getByTestId("metric-machines")).toHaveTextContent("Machines allocated");
+    const card = screen.getByTestId("metric-machines");
+    expect(card).toHaveTextContent("Machines allocated");
+    expect(card).not.toHaveAttribute("href");
   });
 });

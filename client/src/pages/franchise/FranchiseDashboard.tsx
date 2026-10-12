@@ -270,7 +270,13 @@ export function SalesPanel({ sales }: { sales: SalesStats }) {
   return (
     <section data-testid="sales-panel">
       <div className="grid gap-4 sm:grid-cols-3">
-        <MetricCard icon={IndianRupee} label="Sales this month" testId="metric-sales-month" accent>
+        <MetricCard
+          icon={IndianRupee}
+          label="Sales this month"
+          testId="metric-sales-month"
+          href="/machines/statistics"
+          accent
+        >
           <Figure
             value={formatInr(sales.totals.amountInr)}
             caption={`${drinks(sales.totals.drinks)} since ${since}, across your machines`}
@@ -315,7 +321,7 @@ export function MachinesMetric({ allocation, fleet }: { allocation: number; flee
     );
   }
   return (
-    <MetricCard icon={Cpu} label="Your machines" testId="metric-machines">
+    <MetricCard icon={Cpu} label="Your machines" testId="metric-machines" href="/machines">
       <Figure
         value={count(fleet.machines)}
         caption={`${count(fleet.online)} online now. Your agreement has ${count(allocation)}.`}
@@ -601,15 +607,18 @@ function MetricCard({
   label,
   testId,
   accent = false,
+  href,
   children,
-}: CardProps & { accent?: boolean }) {
-  return (
-    <div
-      className={`relative flex flex-col overflow-hidden rounded-2xl border bg-card p-5 ${
-        accent ? "border-primary/25" : "border-border"
-      }`}
-      data-testid={testId}
-    >
+}: CardProps & { accent?: boolean; href?: string }) {
+  const className = `relative flex flex-col overflow-hidden rounded-2xl border bg-card p-5 ${
+    accent ? "border-primary/25" : "border-border"
+  } ${
+    href
+      ? "cursor-pointer transition-colors hover:border-primary/50 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      : ""
+  }`;
+  const body = (
+    <>
       {accent && (
         <>
           <span
@@ -637,6 +646,15 @@ function MetricCard({
         </span>
       </div>
       <div className="relative mt-4 flex flex-1 flex-col gap-3">{children}</div>
+    </>
+  );
+  return href ? (
+    <Link href={href} className={className} data-testid={testId}>
+      {body}
+    </Link>
+  ) : (
+    <div className={className} data-testid={testId}>
+      {body}
     </div>
   );
 }
