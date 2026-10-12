@@ -5,7 +5,7 @@ const { api, admin, franchise, gym, operator } = vi.hoisted(() => ({
   admin: { signInAsAdmin: vi.fn(), signOutAsAdmin: vi.fn() },
   franchise: { signInToFranchisePortal: vi.fn(), signOutOfFranchisePortal: vi.fn(), requestFranchisePasswordReset: vi.fn() },
   gym: { signInToPortal: vi.fn(), signOutOfPortal: vi.fn(), requestPortalPasswordReset: vi.fn() },
-  operator: { signInAsOperator: vi.fn(), signOutAsOperator: vi.fn(), requestOperatorPasswordReset: vi.fn() },
+  operator: { signInAsOperator: vi.fn(), signOutAsOperator: vi.fn() },
 }));
 vi.mock("@/lib/apiClient", () => api);
 vi.mock("@/lib/adminSession", () => admin);
@@ -31,9 +31,17 @@ describe("one sign-in for the machine console", () => {
     expect(operator.signInAsOperator).not.toHaveBeenCalled();
   });
 
-  it("reaches operators last", async () => {
+  it("sends an operator ID only to the operator route", async () => {
     operator.signInAsOperator.mockResolvedValue({ ok: true, data: {} });
-    expect(await signInToMachineConsole("r@x.in", "pw")).toEqual({ ok: true, role: "operator" });
+    expect(await signInToMachineConsole(" op_mbp_01 ", "pw")).toEqual({ ok: true, role: "operator" });
+    expect(operator.signInAsOperator).toHaveBeenCalledWith("op_mbp_01", "pw");
+    expect(admin.signInAsAdmin).not.toHaveBeenCalled();
+    expect(gym.signInToPortal).not.toHaveBeenCalled();
+  });
+
+  it("never sends an email to the operator route", async () => {
+    expect(await signInToMachineConsole("r@x.in", "pw")).toMatchObject({ ok: false, error: { code: "wrong" } });
+    expect(operator.signInAsOperator).not.toHaveBeenCalled();
   });
 
   it("says wrong password, throttled or unreachable, in that order of what is known", async () => {
@@ -48,7 +56,7 @@ describe("one sign-in for the machine console", () => {
     vi.resetModules();
     api.IS_PRODUCTION_API = true;
     const { signInToMachineConsole: inProduction } = await import("@/lib/machineConsoleSignIn");
-    expect(await inProduction("x@x.in", "pw")).toMatchObject({ ok: false, error: { code: "wrong" } });
+    expect(await inProduction("op_mbp_01", "pw")).toMatchObject({ ok: false, error: { code: "wrong" } });
     expect(operator.signInAsOperator).not.toHaveBeenCalled();
     api.IS_PRODUCTION_API = false;
   });

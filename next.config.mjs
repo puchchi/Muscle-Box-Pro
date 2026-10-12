@@ -358,10 +358,6 @@ const nextConfig = {
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
       {
-        source: "/operator/set-password/:path*",
-        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
-      },
-      {
         // The receipt's #t= fragment is the guest's order token, which is a credential.
         source: "/drinks/:path*",
         headers: [

@@ -1,14 +1,22 @@
 import * as z from "zod";
 
-export const OPERATOR_STATUSES = ["invited", "active", "disabled"] as const;
+export const OPERATOR_STATUSES = ["active", "disabled"] as const;
 export type OperatorStatus = (typeof OPERATOR_STATUSES)[number];
 
+export const OPERATOR_ID_PATTERN = /^[a-z][a-z0-9_]{2,31}$/;
+export const OPERATOR_PASSWORD_MIN = 8;
+export const OPERATOR_PASSWORD_MAX = 200;
+export const OPERATOR_NAME_MAX = 80;
+export const OPERATOR_MACHINES_MAX = 200;
+
 const instant = z.string().nullable().optional().transform((v) => v ?? null);
+const optionalText = z.string().nullable().optional().transform((v) => v || null);
 
 export const operatorSchema = z.object({
-  email: z.string().min(1),
+  operatorId: z.string().min(1),
   name: z.string(),
-  phone: z.string().nullable().optional().transform((v) => v ?? null),
+  email: optionalText,
+  phone: optionalText,
   status: z.enum(OPERATOR_STATUSES),
   franchiseId: z.string().nullable().optional().transform((v) => v ?? null),
   franchiseName: z.string().nullable().optional().transform((v) => v ?? null),
@@ -20,6 +28,7 @@ export const operatorSchema = z.object({
     .transform((v) => v ?? null),
   createdAt: instant,
   updatedAt: instant,
+  passwordSetAt: instant,
   lastLoginAt: instant,
   disabledAt: instant,
   disabledReason: z.string().nullable().optional().transform((v) => v ?? null),
@@ -29,18 +38,17 @@ export const operatorsSchema = z.object({ operators: z.array(operatorSchema) });
 
 export const operatorEnvelopeSchema = z.object({ operator: operatorSchema });
 
-export const operatorInviteSchema = z.object({
-  operator: operatorSchema,
-  inviteUrl: z.string().min(1),
-  inviteExpiresAt: instant,
-  emailed: z.boolean(),
-});
+export const suggestedOperatorIdSchema = z.object({ operatorId: z.string().min(1) });
 
 export type Operator = z.infer<typeof operatorSchema>;
-export type OperatorInvite = z.infer<typeof operatorInviteSchema>;
 
-export type OperatorCreateInput = { email: string; name: string; phone: string | null; machines: string[]; franchiseId?: string | null };
-export type OperatorPatch = Partial<{ name: string; phone: string | null; machines: string[] }>;
-
-export const OPERATOR_NAME_MAX = 80;
-export const OPERATOR_MACHINES_MAX = 200;
+export type OperatorCreateInput = {
+  operatorId: string;
+  password: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  machines: string[];
+  franchiseId?: string | null;
+};
+export type OperatorPatch = Partial<{ name: string; email: string | null; phone: string | null; machines: string[] }>;

@@ -75,6 +75,7 @@ const viewer = (role: MachineViewer["role"], can: Permission[]): MachineViewer =
   role,
   name: "Pune Fitness",
   email: "p@x.in",
+  operatorId: null,
   franchiseId: role === "franchise" ? "f1" : null,
   gymId: role === "gym" ? "g1" : null,
   can: new Set(can),

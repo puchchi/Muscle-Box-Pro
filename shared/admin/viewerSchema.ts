@@ -98,7 +98,8 @@ export type ViewerRole = (typeof VIEWER_ROLES)[number];
 export type MachineViewer = {
   role: ViewerRole;
   name: string;
-  email: string;
+  email: string | null;
+  operatorId: string | null;
   franchiseId: string | null;
   gymId: string | null;
   can: ReadonlySet<Permission>;
@@ -108,7 +109,8 @@ export const viewerSchema = z
   .object({
     role: z.enum(VIEWER_ROLES),
     name: z.string(),
-    email: z.string(),
+    email: z.string().nullable().catch(null),
+    operatorId: z.string().nullable().optional().catch(null).transform((v) => v ?? null),
     franchiseId: z.string().nullable().catch(null),
     gymId: z.string().nullable().catch(null),
     can: z.array(z.string()),
@@ -124,6 +126,7 @@ export const adminViewer = (name: string, email: string): MachineViewer => ({
   role: "admin",
   name,
   email,
+  operatorId: null,
   franchiseId: null,
   gymId: null,
   can: new Set(PERMISSIONS),

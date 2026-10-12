@@ -22,6 +22,7 @@ const viewer = (role: MachineViewer["role"], can: Permission[]): MachineViewer =
   role,
   name: "Pune Fitness",
   email: "p@x.in",
+  operatorId: null,
   franchiseId: null,
   gymId: null,
   can: new Set(can),

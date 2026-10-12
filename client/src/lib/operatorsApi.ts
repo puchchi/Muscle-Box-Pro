@@ -3,11 +3,10 @@ import type { AdminReadResult } from "./adminApi";
 import { apiRequest, type ApiMethod } from "./apiClient";
 import {
   operatorEnvelopeSchema,
-  operatorInviteSchema,
   operatorsSchema,
+  suggestedOperatorIdSchema,
   type Operator,
   type OperatorCreateInput,
-  type OperatorInvite,
   type OperatorPatch,
 } from "@shared/admin/operatorsSchema";
 import type { OnboardingError } from "@shared/onboarding/types";
@@ -20,10 +19,7 @@ const MALFORMED: OnboardingError = {
 };
 
 const base = (as: OperatorManager) => (as === "admin" ? "/admin/operators" : "/franchise/operators");
-// The operator routes read {email} without decoding it, so leave raw what a path segment allows.
-const emailSegment = (email: string) =>
-  encodeURIComponent(email).replace(/%(40|2B|24|26|3D)/gi, (escaped) => decodeURIComponent(escaped));
-const one = (as: OperatorManager, email: string) => `${base(as)}/${emailSegment(email)}`;
+const one = (as: OperatorManager, operatorId: string) => `${base(as)}/${encodeURIComponent(operatorId)}`;
 
 async function call<S extends z.ZodTypeAny>(schema: S, method: ApiMethod, path: string, body?: unknown): Promise<AdminReadResult<z.infer<S>>> {
   const result = await apiRequest<unknown>(method, path, { api: "franchiseAdmin", ...(body === undefined ? {} : { body }) });
@@ -35,28 +31,29 @@ async function call<S extends z.ZodTypeAny>(schema: S, method: ApiMethod, path: 
   return { ok: true, data: parsed.data };
 }
 
+async function operatorCall(method: ApiMethod, path: string, body?: unknown): Promise<AdminReadResult<Operator>> {
+  const result = await call(operatorEnvelopeSchema, method, path, body);
+  return result.ok ? { ok: true, data: result.data.operator } : result;
+}
+
 export async function fetchOperators(as: OperatorManager): Promise<AdminReadResult<Operator[]>> {
   const result = await call(operatorsSchema, "GET", base(as));
   return result.ok ? { ok: true, data: result.data.operators } : result;
 }
 
-export const createOperator = (as: OperatorManager, input: OperatorCreateInput): Promise<AdminReadResult<OperatorInvite>> =>
-  call(operatorInviteSchema, "POST", base(as), input);
-
-export async function updateOperator(as: OperatorManager, email: string, patch: OperatorPatch): Promise<AdminReadResult<Operator>> {
-  const result = await call(operatorEnvelopeSchema, "PATCH", one(as, email), patch);
-  return result.ok ? { ok: true, data: result.data.operator } : result;
+export async function fetchSuggestedOperatorId(as: OperatorManager, franchiseId: string | null): Promise<string | null> {
+  const query = as === "admin" && franchiseId ? `?franchiseId=${encodeURIComponent(franchiseId)}` : "";
+  const result = await call(suggestedOperatorIdSchema, "GET", `${base(as)}/suggested-id${query}`);
+  return result.ok ? result.data.operatorId : null;
 }
 
-export async function setOperatorDisabled(
-  as: OperatorManager,
-  email: string,
-  disabled: boolean,
-  reason?: string,
-): Promise<AdminReadResult<Operator>> {
-  const result = await call(operatorEnvelopeSchema, "PUT", `${one(as, email)}/disabled`, { disabled, ...(reason ? { reason } : {}) });
-  return result.ok ? { ok: true, data: result.data.operator } : result;
-}
+export const createOperator = (as: OperatorManager, input: OperatorCreateInput) => operatorCall("POST", base(as), input);
 
-export const resendOperatorInvite = (as: OperatorManager, email: string): Promise<AdminReadResult<OperatorInvite>> =>
-  call(operatorInviteSchema, "POST", `${one(as, email)}/invite`, {});
+export const updateOperator = (as: OperatorManager, operatorId: string, patch: OperatorPatch) =>
+  operatorCall("PATCH", one(as, operatorId), patch);
+
+export const setOperatorPassword = (as: OperatorManager, operatorId: string, password: string) =>
+  operatorCall("PUT", `${one(as, operatorId)}/password`, { password });
+
+export const setOperatorDisabled = (as: OperatorManager, operatorId: string, disabled: boolean, reason?: string) =>
+  operatorCall("PUT", `${one(as, operatorId)}/disabled`, { disabled, ...(reason ? { reason } : {}) });

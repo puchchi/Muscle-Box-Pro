@@ -8,17 +8,20 @@ import type { AdminReadResult } from "@/lib/adminApi";
 import {
   createOperator,
   fetchOperators,
-  resendOperatorInvite,
+  fetchSuggestedOperatorId,
   setOperatorDisabled,
+  setOperatorPassword,
   updateOperator,
   type OperatorManager,
 } from "@/lib/operatorsApi";
 import type { MachineRow } from "@shared/admin/machinesSchema";
 import {
+  OPERATOR_ID_PATTERN,
   OPERATOR_MACHINES_MAX,
   OPERATOR_NAME_MAX,
+  OPERATOR_PASSWORD_MAX,
+  OPERATOR_PASSWORD_MIN,
   type Operator,
-  type OperatorInvite,
   type OperatorPatch,
   type OperatorStatus,
 } from "@shared/admin/operatorsSchema";
@@ -39,14 +42,14 @@ export default function AdminMachineOperators() {
 }
 
 export const OPERATOR_STATUS_LABEL: Record<OperatorStatus, { text: string; className: string }> = {
-  invited: { text: "Invite sent", className: "bg-amber-400/15 text-amber-200" },
   active: { text: "Active", className: "bg-emerald-400/15 text-emerald-200" },
   disabled: { text: "Turned off", className: "bg-secondary text-muted-foreground" },
 };
 
 const problemFrom = <T,>(result: AdminReadResult<T>): Problem | null => (result.ok ? null : { message: result.error.message, issues: result.issues });
 
-type Editing = { kind: "add" } | { kind: "edit"; operator: Operator } | null;
+type Editing = { kind: "add" } | { kind: "edit"; operator: Operator } | { kind: "password"; operator: Operator } | null;
+type Credentials = { name: string; operatorId: string; password: string; isNew: boolean };
 
 function OperatorsPage({ session }: { session: MachineViewer }) {
   const as: OperatorManager = session.role === "admin" ? "admin" : "franchise";
@@ -58,7 +61,7 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
   const [editing, setEditing] = useState<Editing>(null);
   const [disabling, setDisabling] = useState<Operator | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [invite, setInvite] = useState<OperatorInvite | null>(null);
+  const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -75,38 +78,30 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
   }, [load]);
 
   const label = useMemo(() => new Map(machines.map((m) => [m.sn, m.deviceExtNo || m.name || m.sn])), [machines]);
+  const takenIds = useMemo(() => new Set(operators.map((o) => o.operatorId)), [operators]);
 
   const replace = (next: Operator) =>
-    setOperators((list) => list.map((o) => (o.email === next.email ? { ...next, franchiseName: next.franchiseName ?? o.franchiseName } : o)));
+    setOperators((list) => list.map((o) => (o.operatorId === next.operatorId ? { ...next, franchiseName: next.franchiseName ?? o.franchiseName } : o)));
 
   function clearMessages() {
     setProblem(null);
     setNotice(null);
-    setInvite(null);
+    setCredentials(null);
   }
 
-  async function resend(operator: Operator) {
+  function open(next: Editing) {
     clearMessages();
-    setBusy(operator.email);
-    const result = await resendOperatorInvite(as, operator.email);
-    setBusy(null);
-    if (!result.ok) return setProblem(problemFrom(result));
-    replace(result.data.operator);
-    setInvite(result.data);
+    setEditing(next);
   }
 
   async function enable(operator: Operator) {
     clearMessages();
-    setBusy(operator.email);
-    const result = await setOperatorDisabled(as, operator.email, false);
+    setBusy(operator.operatorId);
+    const result = await setOperatorDisabled(as, operator.operatorId, false);
     setBusy(null);
     if (!result.ok) return setProblem(problemFrom(result));
     replace(result.data);
-    setNotice(
-      result.data.status === "invited"
-        ? `${result.data.name} is turned on again. They never set a password, so send the invite again.`
-        : `${result.data.name} can sign in again.`,
-    );
+    setNotice(`${result.data.name} can sign in again.`);
   }
 
   return (
@@ -116,15 +111,7 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
         subtitle="People who restock and test machines. Each one sees only the machines you give them."
         action={
           canEdit && (
-            <Button
-              type="button"
-              onClick={() => {
-                clearMessages();
-                setEditing({ kind: "add" });
-              }}
-              className="rounded-xl cursor-pointer"
-              data-testid="button-add-operator"
-            >
+            <Button type="button" onClick={() => open({ kind: "add" })} className="rounded-xl cursor-pointer" data-testid="button-add-operator">
               <Plus className="h-4 w-4" aria-hidden />
               Add operator
             </Button>
@@ -138,7 +125,7 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
           <SuccessPanel testId="operators-notice">{notice}</SuccessPanel>
         </div>
       )}
-      {invite && <InvitePanel invite={invite} />}
+      {credentials && <CredentialsPanel credentials={credentials} onDone={() => setCredentials(null)} />}
 
       <DataTable testId="operators-table">
         <Head as={as} />
@@ -148,11 +135,13 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
           ) : (
             operators.map((o) => {
               const status = OPERATOR_STATUS_LABEL[o.status];
+              const id = o.operatorId;
               return (
-                <tr key={o.email} className="hover:bg-secondary/40 transition-colors" data-testid={`row-operator-${o.email}`}>
+                <tr key={id} className="hover:bg-secondary/40 transition-colors" data-testid={`row-operator-${id}`}>
                   <Cell>
                     <span className="block font-semibold text-foreground">{o.name}</span>
-                    <span className="block text-xs text-muted-foreground">{o.email}</span>
+                    <span className="block font-mono text-xs text-foreground/80">{id}</span>
+                    {o.email && <span className="block text-xs text-muted-foreground">{o.email}</span>}
                     {o.phone && <span className="block text-xs text-muted-foreground">{o.phone}</span>}
                     <span className="mt-1.5 block lg:hidden">
                       <MachineList sns={o.machines} label={label} />
@@ -163,7 +152,7 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
                     <MachineList sns={o.machines} label={label} />
                   </Cell>
                   <Cell className="whitespace-nowrap">
-                    <Pill className={status.className} testId={`operator-status-${o.email}`}>
+                    <Pill className={status.className} testId={`operator-status-${id}`}>
                       {status.text}
                     </Pill>
                     {o.status === "disabled" && o.disabledReason && (
@@ -176,22 +165,14 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
                   <Cell align="right">
                     {canEdit && (
                       <span className="flex flex-col items-end gap-1.5 whitespace-nowrap lg:flex-row lg:gap-3">
-                        <ActionLink
-                          onClick={() => {
-                            clearMessages();
-                            setEditing({ kind: "edit", operator: o });
-                          }}
-                          testId={`edit-operator-${o.email}`}
-                        >
+                        <ActionLink onClick={() => open({ kind: "edit", operator: o })} testId={`edit-operator-${id}`}>
                           Edit
                         </ActionLink>
-                        {o.status === "invited" && (
-                          <ActionLink onClick={() => void resend(o)} disabled={busy === o.email} testId={`resend-operator-${o.email}`}>
-                            Send invite again
-                          </ActionLink>
-                        )}
+                        <ActionLink onClick={() => open({ kind: "password", operator: o })} testId={`password-operator-${id}`}>
+                          Change password
+                        </ActionLink>
                         {o.status === "disabled" ? (
-                          <ActionLink onClick={() => void enable(o)} disabled={busy === o.email} testId={`enable-operator-${o.email}`}>
+                          <ActionLink onClick={() => void enable(o)} disabled={busy === id} testId={`enable-operator-${id}`}>
                             Turn on
                           </ActionLink>
                         ) : (
@@ -201,7 +182,7 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
                               setDisabling(o);
                             }}
                             danger
-                            testId={`disable-operator-${o.email}`}
+                            testId={`disable-operator-${id}`}
                           >
                             Turn off
                           </ActionLink>
@@ -216,21 +197,34 @@ function OperatorsPage({ session }: { session: MachineViewer }) {
         </tbody>
       </DataTable>
 
-      {editing && (
+      {(editing?.kind === "add" || editing?.kind === "edit") && (
         <OperatorDialog
           as={as}
           operator={editing.kind === "edit" ? editing.operator : null}
           machines={machines}
+          takenIds={takenIds}
           onClose={() => setEditing(null)}
-          onCreated={(created) => {
+          onCreated={(created, password) => {
             setEditing(null);
-            setOperators((list) => [created.operator, ...list]);
-            setInvite(created);
+            setOperators((list) => [created, ...list]);
+            setCredentials({ name: created.name, operatorId: created.operatorId, password, isNew: true });
           }}
           onSaved={(saved) => {
             setEditing(null);
             replace(saved);
             setNotice(`${saved.name} is saved.`);
+          }}
+        />
+      )}
+      {editing?.kind === "password" && (
+        <PasswordDialog
+          as={as}
+          operator={editing.operator}
+          onClose={() => setEditing(null)}
+          onDone={(saved, password) => {
+            setEditing(null);
+            replace(saved);
+            setCredentials({ name: saved.name, operatorId: saved.operatorId, password, isNew: false });
           }}
         />
       )}
@@ -309,58 +303,115 @@ function ActionLink({
   );
 }
 
-function InvitePanel({ invite }: { invite: OperatorInvite }) {
+const SIGN_IN_PATH = "/machines/sign-in";
+
+function CredentialsPanel({ credentials, onDone }: { credentials: Credentials; onDone: () => void }) {
   const [copied, setCopied] = useState(false);
-  const until = invite.inviteExpiresAt ? ` The link works until ${formatIstStamp(invite.inviteExpiresAt)} IST.` : "";
-  if (invite.emailed) {
-    return (
-      <div className="mb-4">
-        <SuccessPanel testId="operator-invite-sent">
-          We emailed {invite.operator.name} a link to set their password.{until}
-        </SuccessPanel>
-      </div>
-    );
-  }
+  const { name, operatorId, password, isNew } = credentials;
+  const signInAt = typeof window === "undefined" ? SIGN_IN_PATH : `${window.location.origin}${SIGN_IN_PATH}`;
+  const text = `Operator ID: ${operatorId}\nPassword: ${password}\nSign in at ${signInAt}`;
   return (
-    <div className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm" data-testid="operator-invite-link">
-      <p className="text-amber-100">
-        The email to {invite.operator.name} didn&apos;t go out. Send them this link yourself.{until}
+    <div className="mb-4 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm" role="status" data-testid="operator-credentials">
+      <p className="text-emerald-100">
+        {isNew
+          ? `${name} is added. Give them these details so they can sign in.`
+          : `${name} has a new password and is signed out everywhere. Give them the new one.`}{" "}
+        This is the only time the password is shown.
       </p>
+      <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 font-mono text-sm">
+        <dt className="text-muted-foreground">Operator ID</dt>
+        <dd className="break-all text-foreground" data-testid="credentials-id">
+          {operatorId}
+        </dd>
+        <dt className="text-muted-foreground">Password</dt>
+        <dd className="break-all text-foreground" data-testid="credentials-password">
+          {password}
+        </dd>
+      </dl>
       <div className="mt-3 flex flex-wrap gap-2">
-        <input
-          readOnly
-          value={invite.inviteUrl}
-          onFocus={(event) => event.target.select()}
-          aria-label="Invite link"
-          className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-secondary/50 px-3 font-mono text-xs text-foreground"
-        />
         <Button
           type="button"
           size="sm"
           variant="outline"
           onClick={() => {
-            void navigator.clipboard?.writeText(invite.inviteUrl).then(() => setCopied(true));
+            void navigator.clipboard?.writeText(text).then(() => setCopied(true));
           }}
           className="rounded-lg cursor-pointer"
-          data-testid="button-copy-invite"
+          data-testid="button-copy-credentials"
         >
-          {copied ? "Copied" : "Copy link"}
+          {copied ? "Copied" : "Copy details"}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onDone} className="rounded-lg cursor-pointer" data-testid="button-credentials-done">
+          Done
         </Button>
       </div>
     </div>
   );
 }
 
-type Values = { name: string; email: string; phone: string; franchiseId: string; machines: string[] };
+const PASSWORD_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+
+export function makePassword(): string {
+  const picked: string[] = [];
+  const unbiasedBelow = 256 - (256 % PASSWORD_ALPHABET.length);
+  while (picked.length < 12) {
+    for (const byte of crypto.getRandomValues(new Uint8Array(16))) {
+      if (byte < unbiasedBelow && picked.length < 12) picked.push(PASSWORD_ALPHABET[byte % PASSWORD_ALPHABET.length]);
+    }
+  }
+  return [0, 4, 8].map((i) => picked.slice(i, i + 4).join("")).join("-");
+}
+
+export function checkPassword(password: string): string | null {
+  if (password.length < OPERATOR_PASSWORD_MIN) return `Use at least ${OPERATOR_PASSWORD_MIN} characters.`;
+  if (password.length > OPERATOR_PASSWORD_MAX) return `Passwords are limited to ${OPERATOR_PASSWORD_MAX} characters.`;
+  return null;
+}
+
+function PasswordField({
+  id,
+  value,
+  onChange,
+  error,
+  hint,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  hint: string;
+}) {
+  return (
+    <FormRow label="Password" htmlFor={id} error={error} hint={hint}>
+      <div className="flex gap-2">
+        <div className="min-w-0 flex-1">
+          <TextInput id={id} value={value} onChange={onChange} mono autoComplete="off" maxLength={OPERATOR_PASSWORD_MAX} />
+        </div>
+        <Button type="button" variant="outline" onClick={() => onChange(makePassword())} className="h-11 rounded-xl cursor-pointer" data-testid="button-make-password">
+          Make one
+        </Button>
+      </div>
+    </FormRow>
+  );
+}
+
+type Values = { operatorId: string; password: string; name: string; email: string; phone: string; franchiseId: string; machines: string[] };
 
 const looksLikeEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
-export function checkOperator(v: Values, adding: boolean): Record<string, string> {
+export function checkOperator(v: Values, adding: boolean, takenIds: ReadonlySet<string> = new Set()): Record<string, string> {
   const errors: Record<string, string> = {};
   const name = v.name.trim();
   if (!name) errors.name = "Enter the operator's name.";
   else if (name.length > OPERATOR_NAME_MAX) errors.name = `Up to ${OPERATOR_NAME_MAX} characters.`;
-  if (adding && !looksLikeEmail(v.email.trim())) errors.email = "Enter a valid email address.";
+  if (adding) {
+    const id = v.operatorId.trim();
+    if (!OPERATOR_ID_PATTERN.test(id)) errors.operatorId = "Use 3 to 32 lowercase letters, numbers or _. Start with a letter.";
+    else if (takenIds.has(id)) errors.operatorId = "That ID is already taken.";
+    const password = checkPassword(v.password);
+    if (password) errors.password = password;
+  }
+  if (v.email.trim() && !looksLikeEmail(v.email.trim())) errors.email = "Enter a valid email address, or leave it empty.";
   if (v.phone.trim() && !/^\+?[0-9 ()-]{8,20}$/.test(v.phone.trim())) errors.phone = "Use 8 to 20 digits. Spaces, brackets and a leading + are fine.";
   if (v.machines.length > OPERATOR_MACHINES_MAX) errors.machines = `Up to ${OPERATOR_MACHINES_MAX} machines.`;
   return errors;
@@ -369,8 +420,10 @@ export function checkOperator(v: Values, adding: boolean): Record<string, string
 export function operatorPatch(before: Operator, v: Values): OperatorPatch {
   const patch: OperatorPatch = {};
   const name = v.name.trim();
+  const email = v.email.trim() || null;
   const phone = v.phone.trim() || null;
   if (name !== before.name) patch.name = name;
+  if (email !== before.email) patch.email = email;
   if (phone !== before.phone) patch.phone = phone;
   const same = v.machines.length === before.machines.length && v.machines.every((sn) => before.machines.includes(sn));
   if (!same) patch.machines = v.machines;
@@ -381,6 +434,7 @@ function OperatorDialog({
   as,
   operator,
   machines,
+  takenIds,
   onClose,
   onCreated,
   onSaved,
@@ -388,18 +442,22 @@ function OperatorDialog({
   as: OperatorManager;
   operator: Operator | null;
   machines: MachineRow[];
+  takenIds: ReadonlySet<string>;
   onClose: () => void;
-  onCreated: (invite: OperatorInvite) => void;
+  onCreated: (operator: Operator, password: string) => void;
   onSaved: (operator: Operator) => void;
 }) {
   const adding = operator === null;
   const [values, setValues] = useState<Values>(() => ({
+    operatorId: "",
+    password: "",
     name: operator?.name ?? "",
     email: operator?.email ?? "",
     phone: operator?.phone ?? "",
     franchiseId: operator?.franchiseId ?? "",
     machines: operator?.machines ?? [],
   }));
+  const [idTyped, setIdTyped] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<Problem | null>(null);
   const [saving, setSaving] = useState(false);
@@ -408,17 +466,32 @@ function OperatorDialog({
   const franchiseOf = adding ? values.franchiseId : (operator?.franchiseId ?? "");
   const pickable = as === "admin" && franchiseOf ? machines.filter((m) => m.owner?.franchiseId === franchiseOf) : machines;
 
+  useEffect(() => {
+    if (!adding || idTyped) return;
+    let live = true;
+    fetchSuggestedOperatorId(as, values.franchiseId || null).then((suggested) => {
+      if (live && suggested) setValues((v) => ({ ...v, operatorId: suggested }));
+    });
+    return () => {
+      live = false;
+    };
+  }, [adding, as, values.franchiseId, idTyped]);
+
   async function save() {
-    const found = checkOperator(values, adding);
+    const found = checkOperator(values, adding, takenIds);
     setErrors(found);
     setProblem(null);
     if (Object.keys(found).length > 0) return;
+    const email = values.email.trim();
+    const phone = values.phone.trim();
     if (!operator) {
       setSaving(true);
       const result = await createOperator(as, {
-        email: values.email.trim(),
+        operatorId: values.operatorId.trim(),
+        password: values.password,
         name: values.name.trim(),
-        phone: values.phone.trim() || null,
+        ...(email ? { email } : {}),
+        ...(phone ? { phone } : {}),
         machines: values.machines,
         ...(as === "admin" ? { franchiseId: values.franchiseId || null } : {}),
       });
@@ -427,12 +500,12 @@ function OperatorDialog({
         setErrors(result.error.fieldErrors ?? {});
         return setProblem(problemFrom(result));
       }
-      return onCreated(result.data);
+      return onCreated(result.data, values.password);
     }
     const patch = operatorPatch(operator, values);
     if (Object.keys(patch).length === 0) return onClose();
     setSaving(true);
-    const result = await updateOperator(as, operator.email, patch);
+    const result = await updateOperator(as, operator.operatorId, patch);
     setSaving(false);
     if (!result.ok) {
       setErrors(result.error.fieldErrors ?? {});
@@ -449,8 +522,8 @@ function OperatorDialog({
       title={adding ? "Add operator" : `Edit ${operator.name}`}
       description={
         adding
-          ? "We email them a link to set a password. They sign in at the operator sign-in page and see only the machines you tick."
-          : operator.email
+          ? "They sign in with the operator ID and password you set here. Nothing is emailed to them. They see only the machines you tick."
+          : `Operator ID ${operator.operatorId}. The ID can't be changed.`
       }
       testId="operator-dialog"
       footer={
@@ -459,7 +532,7 @@ function OperatorDialog({
             Cancel
           </Button>
           <Button type="button" onClick={() => void save()} disabled={saving} className="rounded-xl cursor-pointer" data-testid="button-save-operator">
-            {saving ? "Saving…" : adding ? "Add and send invite" : "Save"}
+            {saving ? "Saving…" : adding ? "Add operator" : "Save"}
           </Button>
         </>
       }
@@ -470,14 +543,6 @@ function OperatorDialog({
           <FormRow label="Name" htmlFor="operator-name" error={errors.name}>
             <TextInput id="operator-name" value={values.name} onChange={(v) => set("name", v)} maxLength={OPERATOR_NAME_MAX} />
           </FormRow>
-          {adding && (
-            <FormRow label="Email" htmlFor="operator-email" error={errors.email} hint="They sign in with this.">
-              <TextInput id="operator-email" value={values.email} onChange={(v) => set("email", v)} />
-            </FormRow>
-          )}
-          <FormRow label="Phone (optional)" htmlFor="operator-phone" error={errors.phone}>
-            <TextInput id="operator-phone" value={values.phone} onChange={(v) => set("phone", v)} inputMode="numeric" />
-          </FormRow>
           {as === "admin" && adding && (
             <FormRow label="Works for" htmlFor="operator-franchise" error={errors.franchiseId}>
               <FranchiseSelect
@@ -486,6 +551,40 @@ function OperatorDialog({
               />
             </FormRow>
           )}
+        </div>
+        {adding && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormRow label="Operator ID" htmlFor="operator-id" error={errors.operatorId} hint="They sign in with this. It can't be changed later.">
+              <TextInput
+                id="operator-id"
+                value={values.operatorId}
+                onChange={(v) => {
+                  const next = v.toLowerCase();
+                  setIdTyped(next !== "");
+                  set("operatorId", next);
+                }}
+                mono
+                autoComplete="off"
+                maxLength={32}
+                placeholder="op_mbp_01"
+              />
+            </FormRow>
+            <PasswordField
+              id="operator-password"
+              value={values.password}
+              onChange={(v) => set("password", v)}
+              error={errors.password}
+              hint={`At least ${OPERATOR_PASSWORD_MIN} characters. You give it to them yourself.`}
+            />
+          </div>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormRow label="Email (optional)" htmlFor="operator-email" error={errors.email} hint="For reaching them. Not used to sign in.">
+            <TextInput id="operator-email" value={values.email} onChange={(v) => set("email", v)} autoComplete="off" />
+          </FormRow>
+          <FormRow label="Mobile (optional)" htmlFor="operator-phone" error={errors.phone}>
+            <TextInput id="operator-phone" value={values.phone} onChange={(v) => set("phone", v)} inputMode="numeric" autoComplete="off" />
+          </FormRow>
         </div>
         <div className="space-y-1.5">
           <p className="text-sm font-semibold text-muted-foreground">
@@ -498,6 +597,70 @@ function OperatorDialog({
           )}
           <FieldError error={errors.machines} testId="error-operator-machines" />
         </div>
+      </div>
+    </MachineDialog>
+  );
+}
+
+function PasswordDialog({
+  as,
+  operator,
+  onClose,
+  onDone,
+}: {
+  as: OperatorManager;
+  operator: Operator;
+  onClose: () => void;
+  onDone: (operator: Operator, password: string) => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | undefined>();
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    const found = checkPassword(password);
+    setError(found ?? undefined);
+    setProblem(null);
+    if (found) return;
+    setBusy(true);
+    const result = await setOperatorPassword(as, operator.operatorId, password);
+    setBusy(false);
+    if (!result.ok) {
+      const field = result.error.fieldErrors?.password;
+      if (field) return setError(field);
+      return setProblem(problemFrom(result));
+    }
+    onDone(result.data, password);
+  }
+
+  return (
+    <MachineDialog
+      open
+      onClose={onClose}
+      title={`New password for ${operator.name}`}
+      description="They are signed out on every device and sign in again with the new password."
+      testId="operator-password-dialog"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} className="rounded-xl cursor-pointer">
+            Cancel
+          </Button>
+          <Button type="button" onClick={() => void save()} disabled={busy} className="rounded-xl cursor-pointer" data-testid="button-save-password">
+            {busy ? "Saving…" : "Change password"}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <ProblemPanel problem={problem} testId="operator-password-error" />
+        <PasswordField
+          id="operator-new-password"
+          value={password}
+          onChange={setPassword}
+          error={error}
+          hint={`At least ${OPERATOR_PASSWORD_MIN} characters. You give it to them yourself.`}
+        />
       </div>
     </MachineDialog>
   );
@@ -535,7 +698,7 @@ function DisableDialog({
   async function confirm() {
     setBusy(true);
     setProblem(null);
-    const result = await setOperatorDisabled(as, operator.email, true, reason.trim() || undefined);
+    const result = await setOperatorDisabled(as, operator.operatorId, true, reason.trim() || undefined);
     setBusy(false);
     if (!result.ok) return setProblem(problemFrom(result));
     onDone(result.data);
