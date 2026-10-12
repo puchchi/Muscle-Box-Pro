@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   BadgeCheck,
   Clock,
+  CupSoda,
   Cpu,
   FileCheck,
   IndianRupee,
@@ -33,9 +34,10 @@ import {
   fetchFranchiseSession,
   signOutOfFranchisePortal,
 } from "@/lib/franchiseSession";
-import { fetchMachineSummary } from "@/lib/adminMachineApi";
+import { fetchMachineSummary, fetchSalesStats } from "@/lib/adminMachineApi";
+import { istToday } from "../admin/machines/statsRules";
 import { formatInr } from "@shared/partnership/summary";
-import type { MachineSummary } from "@shared/admin/machinesSchema";
+import type { MachineSummary, SalesStats } from "@shared/admin/machinesSchema";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
 import { franchiseTier } from "@shared/franchise/program";
 import type { FranchisePortalSnapshot, UnbuiltSection } from "@shared/franchise/portal";
@@ -76,8 +78,8 @@ import { formatIstDate, formatIstDateTime } from "../gym/istDates";
  * took up two thirds of the screen every day to do it. Only the selected panel is mounted, so
  * they are genuinely not rendered rather than merely scrolled past.
  *
- * The third tab exists only while something is unbuilt, and it disappears on the day the last
- * section arrives rather than becoming an empty panel.
+ * The third tab exists while something is unbuilt or sales can be read, and it disappears on the day
+ * neither holds rather than becoming an empty panel.
  *
  * **The protein share is never presented as a margin.** `program.ts` says of the 100% figure
  * that it "is a capital recovery mechanism, not a margin, and the page must not present it as a
@@ -230,6 +232,7 @@ export default function FranchiseDashboard() {
     await signOutOfFranchisePortal();
     queryClient.removeQueries({ queryKey: FRANCHISE_PORTAL_QUERY_KEY });
     queryClient.removeQueries({ queryKey: FRANCHISE_FLEET_QUERY_KEY });
+    queryClient.removeQueries({ queryKey: FRANCHISE_SALES_QUERY_KEY });
     queryClient.removeQueries({ queryKey: FRANCHISE_SESSION_QUERY_KEY });
     router.replace("/franchise/login");
   }
@@ -291,6 +294,60 @@ export default function FranchiseDashboard() {
 }
 
 const FRANCHISE_FLEET_QUERY_KEY = ["franchise", "fleet-summary"] as const;
+const FRANCHISE_SALES_QUERY_KEY = ["franchise", "sales-this-month"] as const;
+
+const SALES_LABEL = "Sales across your territory";
+
+async function fetchSalesThisMonth(): Promise<SalesStats | null> {
+  const today = istToday(Date.now());
+  const result = await fetchSalesStats({ period: "day", from: `${today.slice(0, 8)}01`, to: today });
+  return result.ok ? result.data : null;
+}
+
+export function SalesPanel({ sales }: { sales: SalesStats }) {
+  const todays = sales.rows.filter((row) => row.period === sales.to);
+  const byDrink = new Map<string, number>();
+  for (const row of sales.rows) byDrink.set(row.goodsName, (byDrink.get(row.goodsName) ?? 0) + row.drinks);
+  const [bestName, bestDrinks] = [...byDrink].sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
+  const since = formatIstDate(`${sales.from}T00:00:00+05:30`);
+  return (
+    <section data-testid="sales-panel">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard icon={IndianRupee} label="Sales this month" testId="metric-sales-month" accent>
+          <Figure
+            value={formatInr(sales.totals.amountInr)}
+            caption={`${drinks(sales.totals.drinks)} since ${since}, across your machines`}
+          />
+        </MetricCard>
+        <MetricCard icon={Clock} label="Sales today" testId="metric-sales-today">
+          <Figure
+            value={formatInr(todays.reduce((sum, row) => sum + row.amountInr, 0))}
+            caption={drinks(todays.reduce((sum, row) => sum + row.drinks, 0))}
+          />
+        </MetricCard>
+        <MetricCard icon={CupSoda} label="Best seller this month" testId="metric-best-seller">
+          <Figure
+            value={bestName ?? "No sales yet"}
+            caption={bestName ? drinks(bestDrinks) : "The first drink sold shows here"}
+            muted={!bestName}
+            words
+          />
+        </MetricCard>
+      </div>
+      <Link
+        href="/machines/statistics"
+        className="mt-3 inline-block text-sm font-semibold text-primary hover:underline"
+        data-testid="link-sales-report"
+      >
+        See sales by machine and day
+      </Link>
+    </section>
+  );
+}
+
+function drinks(n: number): string {
+  return `${count(n)} ${n === 1 ? "drink" : "drinks"} sold`;
+}
 
 export function MachinesMetric({ allocation, fleet }: { allocation: number; fleet: MachineSummary | null }) {
   if (!fleet) {
@@ -320,6 +377,7 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
       return result.ok ? result.data : null;
     },
   });
+  const { data: sales } = useQuery({ queryKey: FRANCHISE_SALES_QUERY_KEY, queryFn: fetchSalesThisMonth });
 
   const confirmed = payments.filter((payment) => payment.verifiedAt !== null);
   const confirmedPaise = confirmed.reduce(
@@ -327,7 +385,10 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
     0,
   );
 
-  const unbuilt = unbuiltSections(snapshot).filter((entry) => !entry.section.available);
+  const unbuilt = unbuiltSections(snapshot).filter(
+    (entry) => !entry.section.available && !(sales && entry.label === SALES_LABEL),
+  );
+  const hasLaterTab = unbuilt.length > 0 || sales != null;
 
   return (
     <>
@@ -360,12 +421,14 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
               <PortalTab value="record" testId="tab-record">
                 Your record
               </PortalTab>
-              {unbuilt.length > 0 && (
+              {hasLaterTab && (
                 <PortalTab value="later" testId="tab-later">
                   Sales and payouts
-                  <span className="ml-2 rounded-md bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
-                    Soon
-                  </span>
+                  {!sales && (
+                    <span className="ml-2 rounded-md bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                      Soon
+                    </span>
+                  )}
                 </PortalTab>
               )}
             </TabsList>
@@ -435,9 +498,10 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
           </div>
         </TabsContent>
 
-        {unbuilt.length > 0 && (
-          <TabsContent value="later" className="mt-6">
-            <ComingSoon sections={unbuilt} />
+        {hasLaterTab && (
+          <TabsContent value="later" className="mt-6 flex flex-col gap-6">
+            {sales && <SalesPanel sales={sales} />}
+            {unbuilt.length > 0 && <ComingSoon sections={unbuilt} salesShown={sales != null} />}
           </TabsContent>
         )}
       </Tabs>
@@ -1058,17 +1122,23 @@ function DocumentsCard({ documents }: { documents: FranchisePortalSnapshot["docu
  * `not_implemented` are opposite claims: one says the pipeline works and there is nothing to
  * report, the other says we have not built it.
  */
-function ComingSoon({ sections }: { sections: { label: string; section: UnbuiltSection }[] }) {
+function ComingSoon({
+  sections,
+  salesShown,
+}: {
+  sections: { label: string; section: UnbuiltSection }[];
+  salesShown: boolean;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-secondary/30 p-5" data-testid="coming-soon">
       <p className="flex items-start gap-2.5 text-sm font-semibold text-foreground">
         <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground/80" aria-hidden="true" />
-        Nothing to show here yet
+        {salesShown ? "Still to come" : "Nothing to show here yet"}
       </p>
       <p className="mt-2 max-w-[80ch] text-[13px] leading-relaxed text-muted-foreground">
-        The trading side of your portal is still being built. Rather than show you a zero, we show
-        you nothing: none of these is a figure we can state today, and none of them affects what
-        your agreement entitles you to.
+        {salesShown
+          ? "These need our monthly settlement, which is still being built. Rather than show you a zero, we show you nothing. None of them changes what your agreement entitles you to."
+          : "The trading side of your portal is still being built. Rather than show you a zero, we show you nothing: none of these is a figure we can state today, and none of them affects what your agreement entitles you to."}
       </p>
       <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {sections.map((entry) => (
