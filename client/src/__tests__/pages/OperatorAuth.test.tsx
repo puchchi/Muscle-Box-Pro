@@ -30,14 +30,14 @@ async function signIn(login: string, password: string) {
 }
 
 describe("Machine console sign in", () => {
-  it("signs in with one form and opens the console for whatever the account is", async () => {
+  it("signs in with one form and opens a franchise on its overview", async () => {
     consoleSignIn.signInToMachineConsole.mockResolvedValue({ ok: true, role: "franchise" });
     render(<MachinesSignIn />);
     await waitFor(() => expect(viewer.resolveViewer).toHaveBeenCalledTimes(1));
     viewer.resolveViewer.mockResolvedValue({ ...someViewer, role: "franchise" });
     await signIn("p@x.in", "secret-phrase");
     expect(consoleSignIn.signInToMachineConsole).toHaveBeenCalledWith("p@x.in", "secret-phrase");
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/machines"));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/franchise/dashboard"));
     expect(screen.queryByTestId("sign-in-operator")).not.toBeInTheDocument();
   });
 

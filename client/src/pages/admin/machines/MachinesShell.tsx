@@ -8,6 +8,8 @@ import {
   Boxes,
   ClipboardList,
   CupSoda,
+  FileText,
+  LayoutDashboard,
   LogOut,
   MessageSquare,
   MonitorPlay,
@@ -21,6 +23,7 @@ import {
   UserCog,
   Users,
   Volume2,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { apiBaseUrl } from "@/lib/apiClient";
@@ -28,7 +31,22 @@ import { ROLE_LABEL, type MachineViewer, type Permission, type ViewerRole } from
 import { useNewFeedbackCount } from "./newFeedbackCount";
 import { useMachineSignOut, ViewerProvider } from "./viewer";
 
-type NavItem = { href: string; label: string; id: string; icon: LucideIcon; needs: Permission | Permission[]; shop?: true };
+type NavItem = { href: string; label: string; id: string; icon: LucideIcon; needs?: Permission | Permission[]; shop?: true };
+
+export type PortalSection = "overview" | "record" | "payouts";
+
+const PORTAL_GROUPS: Partial<Record<ViewerRole, { label: string; items: ReadonlyArray<NavItem & { id: PortalSection }> }>> = {
+  franchise: {
+    label: "Your franchise",
+    items: [
+      { href: "/franchise/dashboard", label: "Overview", id: "overview", icon: LayoutDashboard },
+      { href: "/franchise/dashboard/record", label: "Your record", id: "record", icon: FileText },
+      { href: "/franchise/dashboard/sales", label: "Sales and payouts", id: "payouts", icon: Wallet },
+    ],
+  },
+};
+
+export const homeFor = (role: ViewerRole) => PORTAL_GROUPS[role]?.items[0].href ?? "/machines";
 
 const GROUPS = [
   {
@@ -72,19 +90,21 @@ const GROUPS = [
 const shopConfigured = apiBaseUrl("shopAdmin") !== null;
 
 const allows = (viewer: MachineViewer, needs: NavItem["needs"]) =>
-  (Array.isArray(needs) ? needs : [needs]).some((p) => viewer.can.has(p));
+  needs === undefined || (Array.isArray(needs) ? needs : [needs]).some((p) => viewer.can.has(p));
 
-const visibleGroups = (viewer: MachineViewer) =>
-  GROUPS.map((g) => ({
+const visibleGroups = (viewer: MachineViewer) => [
+  ...(PORTAL_GROUPS[viewer.role] ? [PORTAL_GROUPS[viewer.role]!] : []),
+  ...GROUPS.map((g) => ({
     label: g.label,
     items: (g.items as ReadonlyArray<NavItem>).filter((s) => (!s.shop || shopConfigured) && allows(viewer, s.needs)),
-  })).filter((g) => g.items.length > 0);
+  })).filter((g) => g.items.length > 0),
+];
 
 const ALL_ITEMS: ReadonlyArray<NavItem> = GROUPS.flatMap((g) => g.items as ReadonlyArray<NavItem>);
 
 const BACK_LINK: Record<ViewerRole, { href: string; label: string } | null> = {
   admin: { href: "/admin", label: "Back to admin" },
-  franchise: { href: "/franchise/dashboard", label: "Back to your dashboard" },
+  franchise: null,
   gym: { href: "/gym/dashboard", label: "Back to your dashboard" },
   operator: null,
 };
@@ -111,7 +131,7 @@ export function MachinesShell({
   children,
 }: {
   session: MachineViewer;
-  section: MachineSection;
+  section: MachineSection | PortalSection;
   needs?: NavItem["needs"];
   children: React.ReactNode;
 }) {
@@ -131,7 +151,7 @@ function Shell({
   children,
 }: {
   session: MachineViewer;
-  section: MachineSection;
+  section: MachineSection | PortalSection;
   needs?: NavItem["needs"];
   children: React.ReactNode;
 }) {
@@ -155,7 +175,7 @@ function Shell({
     <div className="dark theme-console min-h-screen bg-background text-foreground lg:flex">
       <aside className="border-b border-border bg-card lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-3 px-4 py-3 lg:block lg:px-5 lg:py-5">
-          <Link href="/machines" className="block">
+          <Link href={homeFor(session.role)} className="block">
             <span className="block font-display text-sm font-black uppercase tracking-tight text-foreground">
               MBP machines
             </span>

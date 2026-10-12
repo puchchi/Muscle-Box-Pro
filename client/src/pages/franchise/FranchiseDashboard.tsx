@@ -22,18 +22,11 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { queryClient } from "@/lib/queryClient";
 import {
   FRANCHISE_PORTAL_QUERY_KEY,
   FranchisePortalRequestError,
   fetchFranchisePortalSnapshot,
 } from "@/lib/franchisePortalApi";
-import {
-  FRANCHISE_SESSION_QUERY_KEY,
-  fetchFranchiseSession,
-  signOutOfFranchisePortal,
-} from "@/lib/franchiseSession";
 import { fetchMachineSummary, fetchSalesStats } from "@/lib/adminMachineApi";
 import { istToday } from "../admin/machines/statsRules";
 import { formatInr } from "@shared/partnership/summary";
@@ -47,17 +40,20 @@ import type {
   FranchiseOnboardingStatus,
   FranchisePayment,
 } from "@shared/franchise/onboarding/types";
-import { Card, MachineConsoleLink, Row, RowGroup, type CardProps } from "../gym/portalCards";
+import { Card, Row, RowGroup, type CardProps } from "../gym/portalCards";
+import { AdminChecking } from "../admin/AdminShell";
+import { MachinesShell, homeFor, type PortalSection } from "../admin/machines/MachinesShell";
+import { MachinesHeader } from "../admin/machines/MachinesUi";
+import { SIGN_IN_PAGE, forgetVerifiedViewer, useMachineGuard } from "../admin/machines/viewer";
 import { formatIstDate, formatIstDateTime } from "../gym/istDates";
 
 /**
  * What a franchisee sees after signing in.
  *
- * [GymDashboard](../gym/GymDashboard.tsx) is the model, and the four habits worth naming are
- * carried over from it: the session is read from the cache rather than refetched, the figures
- * request is `enabled` only once there is one, every failure renders **inside** the chrome so
- * Sign out is always reachable, and signing out uses `removeQueries` rather than
- * `invalidateQueries` because the cached snapshot is this franchisee's money.
+ * It renders inside the machine console's `MachinesShell`, so the franchise's own pages and its
+ * machines share one sidebar and one Sign out. The figures request is `enabled` only once the
+ * console guard has a franchise viewer, and every failure renders **inside** the shell so Sign
+ * out is always reachable.
  *
  * ## What is on this page, and what is not
  *
@@ -70,16 +66,12 @@ import { formatIstDate, formatIstDateTime } from "../gym/istDates";
  * in: the terms that bind, the territory that was granted, the instalments as claimed and as
  * confirmed, and the executed agreement.
  *
- * ## Three tabs, not one page
+ * ## Three pages, not one
  *
- * Same split as `GymDashboard`, for the same reason. The money and the terms are what a
+ * Overview, Your record, and Sales and payouts are separate routes in the sidebar. The money and the terms are what a
  * franchisee signs in for; the agreement reference, the warehouse address and the list of
  * documents we hold are looked up perhaps twice a year, and while they sat under the figures they
- * took up two thirds of the screen every day to do it. Only the selected panel is mounted, so
- * they are genuinely not rendered rather than merely scrolled past.
- *
- * The third tab exists while something is unbuilt or sales can be read, and it disappears on the day
- * neither holds rather than becoming an empty panel.
+ * took up two thirds of the screen every day to do it.
  *
  * **The protein share is never presented as a margin.** `program.ts` says of the 100% figure
  * that it "is a capital recovery mechanism, not a margin, and the page must not present it as a
@@ -208,34 +200,15 @@ function unbuiltSections(
   ];
 }
 
-export default function FranchiseDashboard() {
+export default function FranchiseDashboard({ view = "overview" }: { view?: PortalSection }) {
   const router = useRouter();
-
-  // Through the cache: `FranchiseLogin` writes the login response here before it navigates, so
-  // arriving from the form the portal paints on the first frame and the snapshot request starts
-  // immediately. A bookmark or a refresh has nothing cached, and then this is the guard it
-  // always was.
-  const { data: session, isPending: isCheckingSession } = useQuery({
-    queryKey: FRANCHISE_SESSION_QUERY_KEY,
-    queryFn: fetchFranchiseSession,
-  });
-  const email = session?.email ?? null;
-  const signedOut = !isCheckingSession && !session;
+  const guard = useMachineGuard();
+  const viewer = guard.session;
+  const isFranchise = viewer?.role === "franchise";
 
   useEffect(() => {
-    if (signedOut) router.replace("/franchise/login");
-  }, [signedOut, router]);
-
-  async function handleSignOut() {
-    // The result is not checked: only the server can expire an `HttpOnly` cookie, and someone
-    // who has pressed Sign out must leave the screen either way.
-    await signOutOfFranchisePortal();
-    queryClient.removeQueries({ queryKey: FRANCHISE_PORTAL_QUERY_KEY });
-    queryClient.removeQueries({ queryKey: FRANCHISE_FLEET_QUERY_KEY });
-    queryClient.removeQueries({ queryKey: FRANCHISE_SALES_QUERY_KEY });
-    queryClient.removeQueries({ queryKey: FRANCHISE_SESSION_QUERY_KEY });
-    router.replace("/franchise/login");
-  }
+    if (viewer && !isFranchise) router.replace(homeFor(viewer.role));
+  }, [viewer, isFranchise, router]);
 
   const {
     data: snapshot,
@@ -247,49 +220,33 @@ export default function FranchiseDashboard() {
   } = useQuery({
     queryKey: FRANCHISE_PORTAL_QUERY_KEY,
     queryFn: fetchFranchisePortalSnapshot,
-    enabled: session != null,
+    enabled: isFranchise,
     // A rejected session is not transient, so retrying it only delays the redirect below by a
     // few seconds of backoff while a franchisee reads the wrong explanation.
     retry: (attempt, err) => !isSessionGone(err) && attempt < 2,
   });
 
-  // The guard above proved there was a session; this covers it ending afterwards, on a tab left
+  // The guard proved there was a session; this covers it ending afterwards, on a tab left
   // open overnight or an account disabled while it was open.
   const sessionGone = isError && isSessionGone(error);
   useEffect(() => {
-    if (sessionGone) router.replace("/franchise/login");
+    if (!sessionGone) return;
+    forgetVerifiedViewer();
+    router.replace(SIGN_IN_PAGE);
   }, [sessionGone, router]);
 
-  // No chrome: there is no session, so there is no email to show and no meaningful Sign out.
-  // Only a cold entry reaches this branch.
-  if (isCheckingSession || signedOut || sessionGone) {
-    return (
-      <div className="dark theme-console flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-        Loading your portal...
-      </div>
-    );
-  }
-
-  if (isPending) {
-    return (
-      <PortalChrome email={email} onSignOut={handleSignOut}>
-        <PortalLoading />
-      </PortalChrome>
-    );
-  }
-
-  if (isError || !snapshot) {
-    return (
-      <PortalChrome email={email} onSignOut={handleSignOut}>
-        <PortalError error={error} onRetry={() => refetch()} isRetrying={isFetching} />
-      </PortalChrome>
-    );
-  }
+  if (!viewer || !isFranchise || sessionGone) return <AdminChecking />;
 
   return (
-    <PortalChrome email={email} onSignOut={handleSignOut}>
-      <PortalContent snapshot={snapshot} />
-    </PortalChrome>
+    <MachinesShell session={viewer} section={view}>
+      {isPending ? (
+        <PortalLoading />
+      ) : isError || !snapshot ? (
+        <PortalError error={error} onRetry={() => refetch()} isRetrying={isFetching} />
+      ) : (
+        <PortalContent snapshot={snapshot} view={view} />
+      )}
+    </MachinesShell>
   );
 }
 
@@ -368,7 +325,7 @@ export function MachinesMetric({ allocation, fleet }: { allocation: number; flee
 }
 
 /** The loaded dashboard. Its own component so every derivation below runs against a real snapshot. */
-function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
+function PortalContent({ snapshot, view }: { snapshot: FranchisePortalSnapshot; view: PortalSection }) {
   const { terms, payments, territory, agreement, operations, documents } = snapshot;
   const { data: fleet } = useQuery({
     queryKey: FRANCHISE_FLEET_QUERY_KEY,
@@ -388,215 +345,103 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
   const unbuilt = unbuiltSections(snapshot).filter(
     (entry) => !entry.section.available && !(sales && entry.label === SALES_LABEL),
   );
-  const hasLaterTab = unbuilt.length > 0 || sales != null;
+  const subtitle = `${franchiseTier(terms.tier).name}${territory ? ` · ${territory.territory}` : ""}`;
 
-  return (
-    <>
-      <div className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl font-black uppercase tracking-tight text-foreground sm:text-3xl">
-            {snapshot.franchiseDisplayName}
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            {franchiseTier(terms.tier).name}
-            {territory ? ` · ${territory.territory}` : ""}
-          </p>
-        </div>
-        <StatusPill status={snapshot.onboardingStatus} />
-      </div>
-
-      {snapshot.onboardingStatus !== "active" && <NotLiveBanner status={snapshot.onboardingStatus} />}
-
-      <MachineConsoleLink body="Stock, sales and settings for each of your machines. Add the operators who restock them." />
-
-      <Tabs defaultValue="figures" className="mt-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* The strip scrolls rather than wraps. Three labels and the chip do not fit 390px, and
-              a tab strip on two lines pushes the figures off the first screen. */}
-          <div className="min-w-0 max-w-full overflow-x-auto">
-            <TabsList className="h-auto w-max rounded-xl border border-border bg-card p-1 text-muted-foreground">
-              <PortalTab value="figures" testId="tab-figures">
-                Figures
-              </PortalTab>
-              <PortalTab value="record" testId="tab-record">
-                Your record
-              </PortalTab>
-              {hasLaterTab && (
-                <PortalTab value="later" testId="tab-later">
-                  Sales and payouts
-                  {!sales && (
-                    <span className="ml-2 rounded-md bg-muted-foreground/15 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide">
-                      Soon
-                    </span>
-                  )}
-                </PortalTab>
-              )}
-            </TabsList>
-          </div>
-          <LastUpdated asOf={snapshot.asOf} />
-        </div>
-
-        <TabsContent value="figures" className="mt-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard icon={IndianRupee} label="Investment agreed" testId="metric-investment">
-              <Figure
-                value={inr(terms.investmentPaise)}
-                caption={`Your ${franchiseTier(terms.tier).shortName}, as signed`}
-              />
-            </MetricCard>
-
-            {/* Accented, because it is the one figure a franchisee who has just transferred money
-                signs in to check. A total of confirmed receipts is not a settlement figure: these
-                are rows an admin read off a bank statement, so zero here is true rather than
-                missing, and the caption says which of the instalments it covers. */}
-            <MetricCard icon={BadgeCheck} label="Confirmed by us" testId="metric-confirmed" accent>
-              <Figure
-                value={inr(confirmedPaise)}
-                caption={
-                  payments.length === 0
-                    ? "No instalment is due yet"
-                    : `${count(confirmed.length)} of ${count(payments.length)} ${
-                        payments.length === 1 ? "instalment" : "instalments"
-                      } confirmed against our bank`
-                }
-              />
-            </MetricCard>
-
-            <MachinesMetric allocation={terms.machineAllocation} fleet={fleet ?? null} />
-
-            <MetricCard icon={Wallet} label="Capital to recover" testId="metric-recovery">
-              <Figure
-                value={
-                  terms.capitalRecoveryPaise === null
-                    ? "Set in your agreement"
-                    : inr(terms.capitalRecoveryPaise)
-                }
-                caption="What comes back to you first, before the protein share changes"
-                muted={terms.capitalRecoveryPaise === null}
-                words={terms.capitalRecoveryPaise === null}
-              />
-            </MetricCard>
-          </div>
-
-          <div className="mt-4 grid items-start gap-4 lg:grid-cols-3">
-            <PaymentsCard payments={payments} className="lg:col-span-2" />
-            <TermsCard terms={terms} />
-          </div>
-        </TabsContent>
-
+  if (view === "record") {
+    return (
+      <>
+        <MachinesHeader title="Your record" subtitle={subtitle} action={<LastUpdated asOf={snapshot.asOf} />} />
         {/* Packed into three columns by hand rather than laid out as four grid items. These four
             cards are 190px to 390px tall, so a plain grid stretches each row to its tallest card
             and leaves the territory card as one line of text above a hole. */}
-        <TabsContent value="record" className="mt-6">
-          <div className="grid items-start gap-4 lg:grid-cols-3">
-            {agreement && <AgreementCard agreement={agreement} />}
-            <div className="flex flex-col gap-4">
-              {territory && <TerritoryCard territory={territory} />}
-              <DocumentsCard documents={documents} />
-            </div>
-            {operations && <OperationsCard operations={operations} />}
+        <div className="grid items-start gap-4 lg:grid-cols-3">
+          {agreement && <AgreementCard agreement={agreement} />}
+          <div className="flex flex-col gap-4">
+            {territory && <TerritoryCard territory={territory} />}
+            <DocumentsCard documents={documents} />
           </div>
-        </TabsContent>
+          {operations && <OperationsCard operations={operations} />}
+        </div>
+      </>
+    );
+  }
 
-        {hasLaterTab && (
-          <TabsContent value="later" className="mt-6 flex flex-col gap-6">
-            {sales && <SalesPanel sales={sales} />}
-            {unbuilt.length > 0 && <ComingSoon sections={unbuilt} salesShown={sales != null} />}
-          </TabsContent>
-        )}
-      </Tabs>
-    </>
-  );
-}
+  if (view === "payouts") {
+    return (
+      <>
+        <MachinesHeader title="Sales and payouts" subtitle={subtitle} action={<LastUpdated asOf={snapshot.asOf} />} />
+        <div className="flex flex-col gap-6">
+          {sales && <SalesPanel sales={sales} />}
+          {unbuilt.length > 0 && <ComingSoon sections={unbuilt} salesShown={sales != null} />}
+          {!sales && unbuilt.length === 0 && (
+            <p className="text-sm text-muted-foreground">No sales have been recorded on your machines yet.</p>
+          )}
+        </div>
+      </>
+    );
+  }
 
-function PortalTab({
-  value,
-  testId,
-  children,
-}: {
-  value: string;
-  testId: string;
-  children: React.ReactNode;
-}) {
   return (
-    <TabsTrigger
-      value={value}
-      className="cursor-pointer whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background hover:text-foreground data-[state=active]:bg-primary-fill data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
-      data-testid={testId}
-    >
-      {children}
-    </TabsTrigger>
-  );
-}
-
-function PortalChrome({
-  email,
-  onSignOut,
-  children,
-}: {
-  email: string | null;
-  onSignOut: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="dark theme-console relative min-h-screen bg-background text-foreground">
-      {/* No `overflow-hidden` above the header: an overflow ancestor makes `position: sticky`
-          stick to a box that never scrolls. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[360px] bg-[radial-gradient(70%_100%_at_50%_0%,hsl(var(--primary)/0.10),transparent_72%)]"
+    <>
+      <MachinesHeader
+        title={snapshot.franchiseDisplayName}
+        subtitle={subtitle}
+        action={
+          <div className="flex flex-wrap items-center gap-3">
+            <LastUpdated asOf={snapshot.asOf} />
+            <StatusPill status={snapshot.onboardingStatus} />
+          </div>
+        }
       />
 
-      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <Link
-              href="/"
-              className="flex-shrink-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              {/* The wordmark in `logo.png` is black, so it needs inverting on this surface. */}
-              <img
-                src="/assets/logo.png"
-                alt="MuscleBoxPro"
-                className="h-8 w-auto brightness-0 invert"
-              />
-            </Link>
-            <span aria-hidden="true" className="hidden h-5 w-px bg-border sm:block" />
-            <span className="hidden text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground sm:block">
-              Franchise portal
-            </span>
-          </div>
+      {snapshot.onboardingStatus !== "active" && <NotLiveBanner status={snapshot.onboardingStatus} />}
 
-          <div className="flex items-center gap-3">
-            {email && (
-              <span className="hidden items-center gap-2 rounded-full border border-border bg-secondary/50 py-1 pl-1 pr-3 sm:flex">
-                <span
-                  aria-hidden="true"
-                  className="grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-xs font-bold text-white"
-                >
-                  {email.charAt(0).toUpperCase()}
-                </span>
-                <span className="max-w-[180px] truncate text-xs font-medium text-muted-foreground lg:max-w-none">
-                  {email}
-                </span>
-              </span>
-            )}
-            <Button
-              variant="ghost"
-              onClick={onSignOut}
-              className="h-9 cursor-pointer rounded-xl border-border bg-secondary/50 px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-              data-testid="button-signout"
-            >
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard icon={IndianRupee} label="Investment agreed" testId="metric-investment">
+          <Figure
+            value={inr(terms.investmentPaise)}
+            caption={`Your ${franchiseTier(terms.tier).shortName}, as signed`}
+          />
+        </MetricCard>
 
-      <main className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        {children}
-      </main>
-    </div>
+        {/* Accented, because it is the one figure a franchisee who has just transferred money
+            signs in to check. A total of confirmed receipts is not a settlement figure: these
+            are rows an admin read off a bank statement, so zero here is true rather than
+            missing, and the caption says which of the instalments it covers. */}
+        <MetricCard icon={BadgeCheck} label="Confirmed by us" testId="metric-confirmed" accent>
+          <Figure
+            value={inr(confirmedPaise)}
+            caption={
+              payments.length === 0
+                ? "No instalment is due yet"
+                : `${count(confirmed.length)} of ${count(payments.length)} ${
+                    payments.length === 1 ? "instalment" : "instalments"
+                  } confirmed against our bank`
+            }
+          />
+        </MetricCard>
+
+        <MachinesMetric allocation={terms.machineAllocation} fleet={fleet ?? null} />
+
+        <MetricCard icon={Wallet} label="Capital to recover" testId="metric-recovery">
+          <Figure
+            value={
+              terms.capitalRecoveryPaise === null
+                ? "Set in your agreement"
+                : inr(terms.capitalRecoveryPaise)
+            }
+            caption="What comes back to you first, before the protein share changes"
+            muted={terms.capitalRecoveryPaise === null}
+            words={terms.capitalRecoveryPaise === null}
+          />
+        </MetricCard>
+      </div>
+
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-3">
+        <PaymentsCard payments={payments} className="lg:col-span-2" />
+        <TermsCard terms={terms} />
+      </div>
+    </>
   );
 }
 
@@ -604,16 +449,12 @@ function PortalChrome({
 function PortalLoading() {
   return (
     <div data-testid="portal-loading" aria-busy="true">
-      <div className="border-b border-border pb-6">
+      <div className="mb-6">
         <div className="h-8 w-64 animate-pulse rounded-lg bg-secondary" />
         <div className="mt-3 h-4 w-80 max-w-full animate-pulse rounded bg-secondary/60" />
       </div>
       <p className="sr-only">Loading your franchise record</p>
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <div className="h-11 w-56 animate-pulse rounded-xl bg-secondary/70" aria-hidden="true" />
-        <div className="h-9 w-52 animate-pulse rounded-xl bg-secondary/50" aria-hidden="true" />
-      </div>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <div
             key={index}
@@ -673,7 +514,7 @@ function PortalError({
         <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-400" aria-hidden="true" />
         We can&apos;t show your franchise record right now
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-amber-100/70">
+      <p className="mt-2 text-sm leading-relaxed text-amber-100">
         This is a problem at our end, not with your franchise or your account. Your signed
         agreement, your territory and every payment we have confirmed are held in our records and
         are unaffected by this page.
@@ -720,7 +561,7 @@ export function notLiveMessage(status: FranchiseOnboardingStatus): string {
 function NotLiveBanner({ status }: { status: FranchiseOnboardingStatus }) {
   return (
     <div
-      className="mt-6 flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3"
+      className="mb-6 flex items-start gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3"
       role="status"
       data-testid="franchise-not-live"
     >

@@ -99,13 +99,17 @@ describe("Machine menu for other roles", () => {
     expect(mockList).not.toHaveBeenCalled();
   });
 
-  it("sends a franchise back to its own dashboard and blocks a page it can't open", () => {
+  it("puts a franchise's own pages first in the menu and blocks a console page it can't open", () => {
     render(
       <MachinesShell session={viewer("franchise", ["machines.list.view", "orders.view"])} section="customers">
         secret
       </MachinesShell>,
     );
-    expect(screen.getByTestId("link-back-to-admin")).toHaveAttribute("href", "/franchise/dashboard");
+    expect(screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["Your franchise", "Fleet", "Sales"]);
+    expect(screen.getByTestId("machines-tab-overview")).toHaveAttribute("href", "/franchise/dashboard");
+    expect(screen.getByTestId("machines-tab-record")).toHaveAttribute("href", "/franchise/dashboard/record");
+    expect(screen.getByTestId("machines-tab-payouts")).toHaveAttribute("href", "/franchise/dashboard/sales");
+    expect(screen.queryByTestId("link-back-to-admin")).not.toBeInTheDocument();
     expect(screen.getByTestId("machines-no-access")).toBeInTheDocument();
     expect(screen.queryByText("secret")).not.toBeInTheDocument();
   });
