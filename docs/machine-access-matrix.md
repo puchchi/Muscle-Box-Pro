@@ -210,8 +210,12 @@ Decided:
 1. **Who creates operator accounts?** Admins and franchise owners. A franchise creates operators
   for its own machines only.
 2. **Can a gym owner create one?** No.
-3. **How does an operator sign in?** With email and password, the same as the gym and franchise
-  portals. They set the password from an invite email. That reuses what already exists.
+3. **How does an operator sign in?** With an operator ID, like `op_mbp_01`, and a password. Whoever
+  creates the operator picks both. The form suggests the next free ID, and the ID can be edited before
+  saving. An ID that is already taken is refused. Email and mobile are optional contact details and
+  are never used to sign in. No invite or reset emails go to operators; the person who added them sets
+  a new password on the Operators page. Decided 2026-10-12, replacing email invites. Backend spec:
+  `machine-roles-backend-requirements.md` §12.
 4. **One operator on many machines?** Yes. The franchise or an admin picks which machines each
   operator can use, and can remove an operator at any time.
 

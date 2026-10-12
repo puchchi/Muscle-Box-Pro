@@ -234,6 +234,87 @@ Status on 2026-10-09: steps 1 to 4 are done on sandbox (mbp-backend `operator` b
 this repo's `operator` branch). Step 5 is waiting. Production has no `/me` yet, so the console
 falls back to the admin session with every permission until the backend ships there.
 
+## 12. Operator IDs instead of email (decided 2026-10-12)
+
+This replaces the email parts of §7. Operators sign in with an operator ID and a password that the
+admin or franchise owner sets. Email is optional and is contact only. Invites go away.
+
+### Record
+
+`OPERATOR#<operatorId>/PROFILE`, replacing `OPERATOR#<emailLower>/PROFILE`:
+
+```
+{ operatorId, name, email: string | null, phone: string | null, passwordHash,
+  status: "active" | "disabled",          // no "invited": the password is set at creation
+  franchiseId: string | null, machines: string[],
+  createdBy: {kind, email}, createdAt, updatedAt?, passwordSetAt,
+  lastLoginAt?, disabledAt?, disabledReason? }
+```
+
+- `operatorId`: 3 to 32 characters, lowercase letters, digits and `_`, starting with a letter
+  (`/^[a-z][a-z0-9_]{2,31}$/`). Stored lowercase; sign-in lowercases what was typed. It can't be changed
+  after creation.
+- Unique across all operators: create is a conditional put on `attribute_not_exists(pk)`.
+- `email` and `phone` are optional, follow the existing email and phone rules, need not be unique,
+  and may match an admin, franchise or gym login. Drop the "one login per address" checks for
+  operators (`operatorAbsent` in `createGymUser`, `putAdmin`, and ce9a774). No operator ID contains
+  `@`, so an ID can never collide with an email login.
+- Sandbox has only test operators. Delete them; no migration. Prod has none.
+
+### Endpoints
+
+`{id}` is the operator ID. Same two bases as today: `/admin/operators` (all) and
+`/franchise/operators` (own only).
+
+| Endpoint | Body | Answer |
+|---|---|---|
+| GET `operators` | | `{operators}` |
+| GET `operators/suggested-id` (admin: `?franchiseId=` or none for MBP) | | `{operatorId}` |
+| POST `operators` | `{operatorId, password, name, email?, phone?, machines, franchiseId?}` | `201 {operator}` |
+| GET `operators/{id}` | | `{operator}` |
+| PATCH `operators/{id}` | any of `{name, email, phone, machines}`; `null` clears email or phone | `{operator}` |
+| PUT `operators/{id}/password` | `{password}` | `{operator}` |
+| PUT `operators/{id}/disabled` | `{disabled, reason?}` (unchanged) | `{operator}` |
+| POST `/operator/login` | `{operatorId, password}` | as today, plus `operatorId` |
+| POST `/operator/logout`, GET `/operator/session` | | as today, plus `operatorId` |
+
+Remove `operators/{email}/invite`, `/operator/set-password` and `/operator/forgot-password`, and
+the invite and reset emails.
+
+- **Taken ID:** `409 {code: "validation", message, fieldErrors: {operatorId: "That ID is already taken."}}`.
+- **Bad ID:** `400` with `fieldErrors.operatorId`.
+- **Suggested ID:** the prefix is `op_mbp_` for MBP's own operators, and `op_<first word of the
+  franchise slug>_` for a franchise, e.g. `op_pune_` for `pune-fitness`. The first word is cut to 12
+  characters, and anything outside `[a-z0-9]` is dropped. The number is the lowest two-digit free
+  number after the highest one used with that prefix: `op_pune_01`, `op_pune_02`, and so on. It is a
+  suggestion, not a reservation; the create's conditional put is what enforces uniqueness.
+- **Password:** 8 to 200 characters, the same as today. The creator sets it, so return it nowhere
+  and never log it. Changing it ends the operator's existing sessions: reject any session token
+  issued before `passwordSetAt`.
+- **Attempt counter:** per operator ID. Sign-in failures use the same single 401 as today.
+- **Operator view of the record:** the operator's own session and `/me` carry `operatorId`.
+
+### Sessions, `/me` and `by`
+
+- The `mbp_operator` token carries `operatorId`, not an email. `resolveActor` looks up
+  `OPERATOR#<operatorId>`.
+- `/me` for an operator: `{role: "operator", name, email: null, operatorId, franchiseId, gymId: null, can}`.
+  Other roles are unchanged.
+- `by` fields written by an operator: `{kind: "operator", id: operatorId, name}`. The dashboard
+  shows the name.
+- Operator email and phone are personal data. Keep them out of logs like the other contact fields.
+
+### Acceptance
+
+1. Admin creates `op_mbp_01` with no email. `op_mbp_01` signs in with the password and restocks
+   an assigned machine.
+2. Franchise F creates `op_pune_01`. Creating `op_pune_01` again, from any caller, gets the 409.
+3. F changes `op_pune_01`'s password. The old session gets `401` on its next request, and the new
+   password signs in.
+4. F sets `op_pune_01`'s email to the franchise owner's own address: `200`.
+5. F calls PATCH with `operatorId`: `400`, because it can't be changed.
+6. `GET /franchise/operators/suggested-id` after `op_pune_01` exists answers `op_pune_02`.
+
 ## 11. Out of scope
 
 - Franchise-owned goods, recipes, ads, voice defaults or QR settings. They stay fleet-wide and
