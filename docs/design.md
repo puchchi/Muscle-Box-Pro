@@ -8,8 +8,8 @@ page or rework an existing one. The reference implementations are:
 - **Shared page chrome:** [pageChrome.tsx](../client/src/components/marketing/pageChrome.tsx)
 - **Theme values:** [index.css](../client/src/index.css)
 
-Scope: the marketing site. The admin panel, the machine console, onboarding and the
-dashboards have their own conventions and are not covered here.
+Scope: the marketing site, plus the signed-in dashboards in section 11. The admin panel,
+the machine console and onboarding have their own conventions and are not covered here.
 
 ---
 
@@ -263,6 +263,63 @@ The showroom pages were built before some of these rules. Fix them when you touc
 - Raw `bg-white`, `border-gray-100`, `text-gray-900`, `text-gray-400` instead of tokens.
 - Specs and Gym Demo use blue and purple icon chips.
 - Some non-clickable cards lift on hover (`hover:-translate-y-0.5 ... cursor-default`).
+
+---
+
+## 11. Dashboards
+
+The signed-in portals (franchise dashboard, gym dashboard) follow their own rules. The
+reference implementations are [FranchiseDashboard](../client/src/pages/franchise/FranchiseDashboard.tsx),
+[GymDashboard](../client/src/pages/gym/GymDashboard.tsx) and the shared cards in
+[portalCards.tsx](../client/src/pages/gym/portalCards.tsx).
+
+### Theme
+
+The root carries `dark theme-console`. That switches the brand to magenta and inverts the
+fill, so the section 3 roles still hold but resolve to different colours:
+
+| Token | On the dashboard |
+|---|---|
+| `primary`, `primary-ink`, `ring` | Magenta (338 85% 66%): icons, links, accent borders, focus outlines |
+| `primary-fill` + `primary-foreground` | Near-white surface with a dark label: filled buttons, the selected tab |
+
+Do not hardcode orange or magenta. Use the tokens and the theme decides.
+
+### Type scale
+
+| Role | Classes |
+|---|---|
+| Page h1 | `font-display text-2xl sm:text-3xl font-black uppercase tracking-tight` |
+| Card title (h2) | `text-sm font-semibold text-foreground`, or the metric label below |
+| Metric label (h2) | `text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground` |
+| Metric figure | `font-display font-black leading-none tabular-nums text-[26px]` |
+| Body, rows, captions, notes | `text-sm leading-relaxed` |
+| Uppercase labels, chips, a meta line under a 14px value | `text-xs` |
+
+- **14px for anything read as a sentence or a value.** That includes table rows, captions,
+  references people copy (UTR, agreement reference) and the "Updated" chip.
+- **12px only for uppercase labels, chips and a short meta line** (a date under a month name).
+  Nothing smaller.
+- **No opacity on text colour.** `text-muted-foreground/60` is 3.4:1 on a card. Use
+  `text-muted-foreground` (7:1). Opacity is fine on icons.
+- Card titles are `h2`, directly under the page `h1`. Do not skip to `h3`.
+
+### Components
+
+- **Card:** `rounded-2xl border border-border bg-card p-5`. Icon chip `h-9 w-9 rounded-xl
+  bg-primary/10 text-primary ring-1 ring-inset ring-primary/20`.
+- **Metric card:** label top left, `h-8 w-8 rounded-lg` icon chip top right, figure, caption.
+  At most one per row gets `accent` (gradient hairline and glow).
+- **Rows:** `Row` and `RowGroup` from portalCards, a `<dl>` with label left and value right.
+- **Tabs:** `rounded-xl border bg-card p-1` list. Inactive tabs are `text-muted-foreground
+  hover:text-foreground`. The selected tab is `bg-primary-fill text-primary-foreground`. A
+  grey-on-grey selected state is about 1.1:1 and nobody can see it.
+- **Grids of uneven cards** get `items-start`, or pack them into columns by hand. A
+  stretched row leaves a hole under the shorter card.
+- **Status colours:** emerald (confirmed, signed), amber (waiting, warning), rose (error).
+  No other hues.
+- **Loading:** skeleton blocks shaped like the cards. Errors render inside the page chrome,
+  so Sign out is always reachable.
 
 ---
 

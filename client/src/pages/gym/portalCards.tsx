@@ -35,7 +35,7 @@ export function Card({ icon: Icon, label, testId, className, children }: CardPro
         <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
           <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
-        <h3 className="text-sm font-semibold text-foreground">{label}</h3>
+        <h2 className="text-sm font-semibold text-foreground">{label}</h2>
       </div>
       {children}
     </div>
@@ -55,7 +55,7 @@ export function RowGroup({
 
 export function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-2 text-[13px] first:pt-0 last:pb-0">
+    <div className="flex items-baseline justify-between gap-3 py-2 text-sm first:pt-0 last:pb-0">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-semibold tabular-nums text-foreground">{value}</dd>
     </div>

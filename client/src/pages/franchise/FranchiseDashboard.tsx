@@ -425,7 +425,7 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
                 <PortalTab value="later" testId="tab-later">
                   Sales and payouts
                   {!sales && (
-                    <span className="ml-2 rounded-md bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                    <span className="ml-2 rounded-md bg-muted-foreground/15 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide">
                       Soon
                     </span>
                   )}
@@ -478,7 +478,7 @@ function PortalContent({ snapshot }: { snapshot: FranchisePortalSnapshot }) {
             </MetricCard>
           </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="mt-4 grid items-start gap-4 lg:grid-cols-3">
             <PaymentsCard payments={payments} className="lg:col-span-2" />
             <TermsCard terms={terms} />
           </div>
@@ -521,7 +521,7 @@ function PortalTab({
   return (
     <TabsTrigger
       value={value}
-      className="cursor-pointer whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+      className="cursor-pointer whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background hover:text-foreground data-[state=active]:bg-primary-fill data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
       data-testid={testId}
     >
       {children}
@@ -742,7 +742,7 @@ function NotLiveBanner({ status }: { status: FranchiseOnboardingStatus }) {
 function LastUpdated({ asOf }: { asOf: string }) {
   return (
     <p
-      className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-[13px] text-muted-foreground"
+      className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground"
       data-testid="as-of"
     >
       <RefreshCw className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/80" aria-hidden="true" />
@@ -782,9 +782,9 @@ function MetricCard({
         </>
       )}
       <div className="relative flex items-start justify-between gap-3">
-        <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+        <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
           {label}
-        </h3>
+        </h2>
         <span
           className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg ring-1 ring-inset ${
             accent
@@ -822,7 +822,7 @@ function Figure({
       >
         {value}
       </p>
-      <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{caption}</p>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{caption}</p>
     </div>
   );
 }
@@ -843,7 +843,7 @@ function PaymentsCard({
   return (
     <Card icon={Landmark} label="Your instalments" testId="card-payments" className={className}>
       {payments.length === 0 ? (
-        <p className="text-[13px] leading-relaxed text-muted-foreground">
+        <p className="text-sm leading-relaxed text-muted-foreground">
           Nothing is due yet. Your instalments appear here as they fall due.
         </p>
       ) : (
@@ -853,7 +853,7 @@ function PaymentsCard({
           ))}
         </div>
       )}
-      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
         We confirm a transfer against our bank statement, so the amount we record can differ from
         the amount you reported. Both are shown.
       </p>
@@ -884,22 +884,22 @@ function PaymentRow({ payment }: { payment: FranchisePayment }) {
       data-testid={`payment-${payment.instalment}`}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-[13px] font-semibold text-foreground">
+        <p className="text-sm font-semibold text-foreground">
           Instalment {payment.instalment}
         </p>
-        <p className="text-[13px] font-semibold tabular-nums text-muted-foreground">
+        <p className="text-sm font-semibold tabular-nums text-muted-foreground">
           {inr(payment.expectedPaise)} expected
         </p>
       </div>
 
       {verifiedAt ? (
-        <p className="mt-2 flex items-start gap-2 text-[13px] font-semibold leading-relaxed text-emerald-200">
+        <p className="mt-2 flex items-start gap-2 text-sm font-semibold leading-relaxed text-emerald-200">
           <BadgeCheck className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-400" aria-hidden="true" />
           {inr(payment.receivedPaise ?? 0)} received, confirmed on {formatIstDate(verifiedAt)}
         </p>
       ) : payment.refusal ? (
         <>
-          <p className="mt-2 flex items-start gap-2 text-[13px] font-semibold leading-relaxed text-amber-100">
+          <p className="mt-2 flex items-start gap-2 text-sm font-semibold leading-relaxed text-amber-100">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-amber-400" aria-hidden="true" />
             We couldn&apos;t confirm this transfer
           </p>
@@ -907,26 +907,26 @@ function PaymentRow({ payment }: { payment: FranchisePayment }) {
               admin in a hurry, and unlabelled it reads as product copy about somebody's
               ₹12,50,000. `StepInstalment`'s `RefusalPanel` does the same. */}
           <div className="mt-2 rounded-lg border border-amber-400/20 bg-background/40 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-200/80">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-200">
               What we found
             </p>
-            <p className="mt-1 text-[13px] leading-relaxed text-amber-100/90">{payment.refusal}</p>
+            <p className="mt-1 text-sm leading-relaxed text-amber-100/90">{payment.refusal}</p>
           </div>
         </>
       ) : payment.claim ? (
-        <p className="mt-2 flex items-start gap-2 text-[13px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
           <Clock className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/80" aria-hidden="true" />
           You reported {inr(payment.claim.amountPaise)} on{" "}
           {formatAgreementDate(payment.claim.paidOn)}. We are checking it.
         </p>
       ) : (
-        <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Not transferred yet.
         </p>
       )}
 
       {payment.claim && (
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground/80">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Your bank reference {payment.claim.utr}
         </p>
       )}
@@ -970,7 +970,7 @@ function TermsCard({ terms }: { terms: FranchisePortalSnapshot["terms"] }) {
           }
         />
       </RowGroup>
-      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
         The higher protein share is how your investment comes back to you. It moves to{" "}
         {terms.proteinSharePctAfterRecovery}% once it has. Advertising income is separate and
         never counts towards recovery.
@@ -1005,7 +1005,7 @@ function AgreementCard({ agreement }: { agreement: NonNullable<FranchisePortalSn
         <Row label="Valid until" value={formatAgreementDate(agreement.validUntil)} />
         <Row label="Version" value={agreement.version} />
       </RowGroup>
-      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
         Reference{" "}
         <span className="font-semibold tracking-wide text-foreground" title={agreement.contentHash}>
           {agreement.contentHash.slice(0, 12)}
@@ -1024,7 +1024,7 @@ function TerritoryCard({
   return (
     <Card icon={MapPin} label="Your territory" testId="card-territory">
       <p className="text-sm font-semibold text-foreground">{territory.territory}</p>
-      <p className="text-[13px] leading-relaxed text-muted-foreground">
+      <p className="text-sm leading-relaxed text-muted-foreground">
         {territory.territoryBoundary}
       </p>
       <RowGroup className="mt-auto">
@@ -1069,7 +1069,7 @@ function OperationsCard({
         <Row label="Phone" value={operations.operationsContactPhone || "Not recorded"} />
         <Row label="Deliveries" value={LOGISTICS_LABEL[operations.logisticsArrangement]} />
       </RowGroup>
-      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
         Anything here that has changed: write to us and we will update the record.
       </p>
     </Card>
@@ -1087,7 +1087,7 @@ function DocumentsCard({ documents }: { documents: FranchisePortalSnapshot["docu
   return (
     <Card icon={ScrollText} label="Documents you sent us" testId="card-documents">
       {documents.length === 0 ? (
-        <p className="text-[13px] leading-relaxed text-muted-foreground">
+        <p className="text-sm leading-relaxed text-muted-foreground">
           Nothing on file yet.
         </p>
       ) : (
@@ -1101,7 +1101,7 @@ function DocumentsCard({ documents }: { documents: FranchisePortalSnapshot["docu
           ))}
         </RowGroup>
       )}
-      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
         Received and held with your record. Files aren&apos;t downloadable from here.
       </p>
     </Card>
@@ -1135,7 +1135,7 @@ function ComingSoon({
         <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground/80" aria-hidden="true" />
         {salesShown ? "Still to come" : "Nothing to show here yet"}
       </p>
-      <p className="mt-2 max-w-[80ch] text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-2 max-w-[80ch] text-sm leading-relaxed text-muted-foreground">
         {salesShown
           ? "These need our monthly settlement, which is still being built. Rather than show you a zero, we show you nothing. None of them changes what your agreement entitles you to."
           : "The trading side of your portal is still being built. Rather than show you a zero, we show you nothing: none of these is a figure we can state today, and none of them affects what your agreement entitles you to."}
@@ -1144,10 +1144,10 @@ function ComingSoon({
         {sections.map((entry) => (
           <li
             key={entry.label}
-            className="flex items-baseline justify-between gap-3 rounded-xl border border-border/70 bg-card/50 px-3.5 py-2.5 text-[13px]"
+            className="flex items-baseline justify-between gap-3 rounded-xl border border-border/70 bg-card/50 px-3.5 py-2.5 text-sm"
           >
             <span className="text-muted-foreground">{entry.label}</span>
-            <span className="flex-shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+            <span className="flex-shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {!entry.section.available && entry.section.reason === "no_data_yet"
                 ? "None yet"
                 : "Coming"}

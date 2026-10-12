@@ -109,7 +109,7 @@ export default function PayoutAccountCard({
         </div>
       ) : account.isError ? (
         <div data-testid="payout-account-error">
-          <p className="text-[13px] leading-relaxed text-muted-foreground">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             We could not load your bank details just now.
           </p>
           <Button
@@ -130,7 +130,7 @@ export default function PayoutAccountCard({
         />
       ) : (
         <div data-testid="payout-account-empty">
-          <p className="text-[13px] leading-relaxed text-muted-foreground">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             No account on file. We need one to transfer your payout.
           </p>
           <Button
@@ -237,7 +237,7 @@ function AccountOnFile({
         <Row label="IFSC" value={account.ifsc} />
         <Row label="Type" value={PAYOUT_ACCOUNT_TYPE_LABELS[account.accountType]} />
       </RowGroup>
-      <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
         Your payout is transferred here. Updated {formatIstDate(account.updatedAt)}.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -531,7 +531,7 @@ function FormAlert({ message, testId }: { message: string; testId: string }) {
       // `assertive`, not `polite`: the gym has just pressed a button and is waiting on the
       // answer, so this interrupts rather than queueing behind whatever else is speaking.
       role="alert"
-      className="flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-[13px] leading-relaxed text-rose-100"
+      className="flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-100"
       data-testid={testId}
     >
       <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-rose-300" aria-hidden="true" />
