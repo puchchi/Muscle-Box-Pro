@@ -227,8 +227,8 @@ Decided:
   pages sit in a "Your franchise" group at the top of the sidebar, and a franchise signs in to its
   Overview. The dashboard opens on the franchise session, not on `/me`, because production has no
   `/me` yet and `/me` refuses a franchise that isn't active. When `/me` doesn't answer, the
-  sidebar shows only those three pages. Gym owners still open the console from their dashboard, and see the link once their
-  machine is installed.
+  sidebar shows only those three pages. A gym's Figures and Your account pages work the same way under "Your gym". The
+  console's own groups appear once its machine is installed.
 - Everyone signs in to the console at `/machines/sign-in` with one form: an email or an operator ID, and a
   password. Anything with an `@` goes to the admin, franchise and gym sign-ins in that order, and the first
   that accepts the password wins. Anything else goes only to the operator sign-in (§12 of the backend

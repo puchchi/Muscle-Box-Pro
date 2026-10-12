@@ -12,10 +12,17 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
+  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
   ),
 }));
+
+const { mockFetchViewer } = vi.hoisted(() => ({ mockFetchViewer: vi.fn() }));
+vi.mock("@/lib/adminMachineApi", () => ({ fetchViewer: mockFetchViewer, listFeedback: vi.fn() }));
+vi.mock("@/lib/machineConsoleSignIn", () => ({ signOutOfMachineConsole: vi.fn() }));
+vi.mock("@/lib/apiClient", () => ({ apiBaseUrl: () => "https://api.example" }));
 
 /**
  * Mocked at the session seam rather than at Supabase.
@@ -102,8 +109,7 @@ vi.mock("@/lib/gymPayoutAccountApi", async (importOriginal) => {
 });
 
 import GymDashboard from "@/pages/gym/GymDashboard";
-import { GYM_PORTAL_QUERY_KEY, GymPortalRequestError } from "@/lib/gymPortalApi";
-import { GYM_PAYOUT_ACCOUNT_QUERY_KEY } from "@/lib/gymPayoutAccountApi";
+import { GymPortalRequestError } from "@/lib/gymPortalApi";
 import type { GymPortalSnapshot, Statement } from "@shared/gym/portal";
 import type { PayoutAccount } from "@shared/gym/payoutAccount";
 
@@ -167,7 +173,10 @@ const NO_TRADING_DATA = {
  * can decline to retry a rejected session, and a `useQuery` option beats a default. Hence
  * `retryDelay: 0`: without it the failure tests sit through exponential backoff.
  */
-function renderPortal({ cachedSession }: { cachedSession?: unknown } = {}) {
+function renderPortal({
+  cachedSession,
+  view,
+}: { cachedSession?: unknown; view?: "figures" | "account" } = {}) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, retryDelay: 0, gcTime: 0 } },
   });
@@ -176,7 +185,7 @@ function renderPortal({ cachedSession }: { cachedSession?: unknown } = {}) {
   if (cachedSession !== undefined) client.setQueryData(["gym-session"], cachedSession);
   return render(
     <QueryClientProvider client={client}>
-      <GymDashboard />
+      <GymDashboard view={view} />
     </QueryClientProvider>,
   );
 }
@@ -184,24 +193,27 @@ function renderPortal({ cachedSession }: { cachedSession?: unknown } = {}) {
 /** Renders with a session and waits for the cards. */
 async function renderDashboard() {
   mockFetchSession.mockResolvedValue(signedIn);
-  renderPortal();
+  const result = renderPortal();
   await waitFor(() => screen.getByTestId("card-payout"));
+  return result;
 }
 
-/**
- * Renders and switches to the account tab.
- *
- * The machine record, the statements and the deposit are a tab rather than a second band
- * of the same page, so anything asserting on them has to open it — which is also the
- * assertion that the tab works. `getByTestId("card-machine")` failing without this is the
- * intended behaviour: the panel is unmounted, not hidden.
- */
+/** Renders the account page, where the machine record, the statements and the deposit live. */
 async function renderAccountTab() {
-  const user = userEvent.setup();
-  await renderDashboard();
-  await user.click(screen.getByTestId("tab-account"));
+  mockFetchSession.mockResolvedValue(signedIn);
+  renderPortal({ view: "account" });
   await waitFor(() => screen.getByTestId("card-machine"));
 }
+
+const CONSOLE_VIEWER = {
+  role: "gym",
+  name: "Iron Temple",
+  email: "owner@yourgym.com",
+  operatorId: null,
+  franchiseId: null,
+  gymId: "gym_iron_temple",
+  can: new Set(["machines.list.view"]),
+};
 
 const signedIn = {
   email: "owner@yourgym.com",
@@ -213,6 +225,8 @@ const signedIn = {
 describe("GymDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.location.hash = "";
+    mockFetchViewer.mockResolvedValue({ ok: false, error: { code: "invalid_token" } });
     payoutOverride.value = PAYOUT_ACCOUNT;
     mockFetchPayoutAccount.mockImplementation(async () => payoutOverride.value);
   });
@@ -276,6 +290,7 @@ describe("GymDashboard", () => {
 
   it("opens on the six figure cards, with the account record put away", async () => {
     mockFetchSession.mockResolvedValue(signedIn);
+    mockFetchViewer.mockResolvedValue({ ok: true, data: CONSOLE_VIEWER });
     renderPortal();
 
     await waitFor(() => {
@@ -293,10 +308,11 @@ describe("GymDashboard", () => {
     expect(screen.queryByTestId("card-machine")).toBeNull();
     expect(screen.queryByTestId("card-statements")).toBeNull();
     expect(screen.queryByTestId("card-deposit")).toBeNull();
-    expect(screen.getByRole("link", { name: /machine console/i })).toHaveAttribute("href", "/machines");
+    expect(await screen.findByTestId("machines-tab-machines")).toHaveAttribute("href", "/machines");
+    expect(screen.getByTestId("machines-tab-account")).toHaveAttribute("href", "/gym/dashboard/account");
   });
 
-  it("shows the account record when its tab is chosen", async () => {
+  it("shows the account record on its own page", async () => {
     await renderAccountTab();
 
     expect(screen.getByRole("heading", { name: /your machine/i })).toBeInTheDocument();
@@ -316,11 +332,11 @@ describe("GymDashboard", () => {
    */
   describe("the bank account we transfer the payout to", () => {
     it("lives with the account record rather than among the figures", async () => {
-      await renderDashboard();
+      const { unmount } = await renderDashboard();
       expect(screen.queryByTestId("card-payout-account")).toBeNull();
+      unmount();
 
-      await userEvent.setup().click(screen.getByTestId("tab-account"));
-
+      await renderAccountTab();
       await waitFor(() => screen.getByTestId("card-payout-account"));
       expect(
         within(screen.getByTestId("card-payout-account")).getByText("••••4417"),
@@ -351,13 +367,16 @@ describe("GymDashboard", () => {
 
     it("opens the form itself rather than leaving the gym to find the card", async () => {
       payoutOverride.value = null;
-      await renderDashboard();
-      const user = userEvent.setup();
+      const { unmount } = await renderDashboard();
 
       await waitFor(() => screen.getByTestId("payout-account-prompt"));
-      await user.click(screen.getByTestId("button-prompt-add-payout-account"));
+      const link = screen.getByTestId("button-prompt-add-payout-account");
+      expect(link).toHaveAttribute("href", "/gym/dashboard/account#add-bank-account");
+      unmount();
 
-      // One click: the tab changes and the form is up.
+      // Where the link lands: the account page with the form already up.
+      window.location.hash = "#add-bank-account";
+      await renderAccountTab();
       await waitFor(() => screen.getByTestId("input-account-number"));
       expect(screen.getByTestId("card-payout-account")).toBeInTheDocument();
       expect(screen.queryByTestId("card-payout")).toBeNull();
@@ -510,7 +529,7 @@ describe("GymDashboard", () => {
         },
       } satisfies GymPortalSnapshot;
 
-      await renderDashboard();
+      const { unmount } = await renderDashboard();
       const banner = within(screen.getByTestId("deposit-banner"));
 
       // A gym that deferred at step 4 is live and trading with a receivable against it.
@@ -522,9 +541,10 @@ describe("GymDashboard", () => {
         "https://rzp.io/i/deferred-deposit",
       );
 
-      // And no receipt card in the account tab, because there is no receipt.
-      await userEvent.setup().click(screen.getByTestId("tab-account"));
-      await waitFor(() => screen.getByTestId("card-machine"));
+      // And no receipt card on the account page, because there is no receipt.
+      unmount();
+      await renderAccountTab();
+      expect(screen.getByTestId("deposit-banner")).toBeInTheDocument();
       expect(screen.queryByTestId("card-deposit")).toBeNull();
     });
 
@@ -644,6 +664,7 @@ describe("GymDashboard", () => {
         },
       } satisfies GymPortalSnapshot;
 
+      mockFetchViewer.mockResolvedValue({ ok: true, data: CONSOLE_VIEWER });
       await renderDashboard();
 
       for (const testId of ABSENT_FIGURE_CARDS) {
@@ -658,7 +679,7 @@ describe("GymDashboard", () => {
         screen.getByText(/figures start on the day your machine is installed/i),
       ).toBeInTheDocument();
       expect(screen.queryByText(/not reported here yet/i)).toBeNull();
-      expect(screen.queryByRole("link", { name: /machine console/i })).toBeNull();
+      expect(screen.queryByTestId("machines-tab-machines")).toBeNull();
     });
 
     it("still shows the machine, the deposit and the signed agreement", async () => {
@@ -871,14 +892,9 @@ describe("GymDashboard", () => {
       await waitFor(() => screen.getByTestId("button-signout"));
       await user.click(screen.getByTestId("button-signout"));
 
-      await waitFor(() => {
-        expect(mockRemoveQueries).toHaveBeenCalledWith({ queryKey: GYM_PORTAL_QUERY_KEY });
-      });
-      // Same reasoning, and this one names a bank account rather than a figure.
-      expect(mockRemoveQueries).toHaveBeenCalledWith({
-        queryKey: GYM_PAYOUT_ACCOUNT_QUERY_KEY,
-      });
-      expect(mockRemoveQueries).toHaveBeenCalledWith({ queryKey: ["gym-session"] });
+      // Everything, not a list of keys: the bank account, the session and whatever the
+      // console cached go too, and a list would miss the next query someone adds.
+      await waitFor(() => expect(mockRemoveQueries).toHaveBeenCalledWith());
     });
   });
 

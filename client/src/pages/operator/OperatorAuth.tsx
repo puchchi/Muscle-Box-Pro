@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { requestMachineConsolePasswordReset, signInToMachineConsole, signOutOfMachineConsole } from "@/lib/machineConsoleSignIn";
 import { OPERATOR_ID_PATTERN } from "@shared/admin/operatorsSchema";
 import { forgetVerifiedViewer, resolveViewer } from "../admin/machines/viewer";
-import { homeFor } from "../admin/machines/MachinesShell";
+import { hasPortal, homeFor } from "../admin/machines/MachinesShell";
 
 const looksLikeEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 const looksLikeSignIn = (v: string) => (v.includes("@") ? looksLikeEmail(v) : OPERATOR_ID_PATTERN.test(v.toLowerCase()));
@@ -104,7 +104,7 @@ export function MachinesSignIn() {
     }
     forgetVerifiedViewer();
     const viewer = await resolveViewer();
-    if (viewer || result.role === "franchise") {
+    if (viewer || hasPortal(result.role)) {
       router.push(homeFor(viewer?.role ?? result.role));
       return;
     }
