@@ -300,8 +300,9 @@ the invite and reset emails.
   `OPERATOR#<operatorId>`.
 - `/me` for an operator: `{role: "operator", name, email: null, operatorId, franchiseId, gymId: null, can}`.
   Other roles are unchanged.
-- `by` fields written by an operator: `{kind: "operator", id: operatorId, name}`. The dashboard
-  shows the name.
+- Writes by an operator store the operator ID wherever a `by` stores an email today, and the
+  `{kind: "operator", name}` ref as now. `shownBy` then gives an admin the ID (`op_mbp_01`) and
+  everyone else the name. The dashboard reads `by` as a string and needs no change.
 - Operator email and phone are personal data. Keep them out of logs like the other contact fields.
 
 ### Acceptance
