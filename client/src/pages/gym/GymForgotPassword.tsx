@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ArrowLeft, Mail, ShieldCheck, AlertCircle, MailCheck, LogIn, RotateCcw } from "lucide-react";
+import { ArrowLeft, Mail, ShieldCheck, MailCheck, LogIn, RotateCcw } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MBP_NOTICES } from "@shared/onboarding/agreementFields";
 import { requestPortalPasswordReset } from "@/lib/gymSession";
+import { FormNotice } from "@/components/auth/FormNotice";
 
 /**
  * What to do about a forgotten portal password: type your address, get a link.
@@ -246,19 +247,9 @@ function ResetForm({ onSent }: { onSent: () => void }) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         {notice && (
-          <div
-            className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5"
-            data-testid="reset-notice"
-            role="alert"
-          >
-            <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-              <AlertCircle className="w-4 h-4 text-red-500" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-red-700 mb-0.5">Couldn't send the link</p>
-              <p className="text-xs text-red-600 leading-relaxed">{notice}</p>
-            </div>
-          </div>
+          <FormNotice title="Couldn't send the link" testId="reset-notice">
+            {notice}
+          </FormNotice>
         )}
 
         <FormField

@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, MailCheck } from "lucide-react";
+import { MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requestMachineConsolePasswordReset, signInToMachineConsole, signOutOfMachineConsole } from "@/lib/machineConsoleSignIn";
 import { OPERATOR_ID_PATTERN } from "@shared/admin/operatorsSchema";
 import { forgetVerifiedViewer, resolveViewer } from "../admin/machines/viewer";
 import { homeFor } from "../admin/machines/MachinesShell";
+import { FormNotice } from "@/components/auth/FormNotice";
 
 const looksLikeEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 const looksLikeSignIn = (v: string) => (v.includes("@") ? looksLikeEmail(v) : OPERATOR_ID_PATTERN.test(v.toLowerCase()));
@@ -56,15 +57,9 @@ function FieldMessage({ id, message }: { id: string; message: string | null }) {
 
 function Alert({ title, body, testId }: { title: string; body: string; testId: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5" role="alert" data-testid={testId}>
-      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-        <AlertCircle className="w-4 h-4 text-red-500" />
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-red-700 mb-0.5">{title}</p>
-        <p className="text-xs text-red-600 leading-relaxed">{body}</p>
-      </div>
-    </div>
+    <FormNotice title={title} testId={testId}>
+      {body}
+    </FormNotice>
   );
 }
 

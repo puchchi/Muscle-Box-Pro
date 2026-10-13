@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, FileText, IndianRupee, Map } from "lucide-react";
+import { FileText, IndianRupee, Map } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   fetchFranchiseSession,
   signInToFranchisePortal,
 } from "@/lib/franchiseSession";
+import { FormNotice } from "@/components/auth/FormNotice";
 
 /**
  * The franchise portal's front door.
@@ -225,19 +226,9 @@ export default function FranchiseLogin() {
               />
 
               {notice && (
-                <div
-                  className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5"
-                  role="alert"
-                  data-testid="login-notice"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="w-4 h-4 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-red-700 mb-0.5">Sign in failed</p>
-                    <p className="text-xs text-red-600 leading-relaxed">{notice}</p>
-                  </div>
-                </div>
+                <FormNotice title="Sign in failed" testId="login-notice">
+                  {notice}
+                </FormNotice>
               )}
 
               <Button
