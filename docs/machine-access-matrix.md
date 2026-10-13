@@ -191,6 +191,16 @@ A franchise picks from MBP's goods library and sets its own machine prices. It s
 running on its machines, and can't add or change them. Recipes and materials stay with MBP, because a wrong recipe makes a
 bad drink on every machine.
 
+## Inventory (admins only for now)
+
+| Item           | What it does                                                    | F   | G   | O   |
+| -------------- | --------------------------------------------------------------- | --- | --- | --- |
+| Inventory      | Items, warehouses, receiving, write-offs, counts, cost of drinks |     |     |     |
+| Machine assets | Every machine bought: serial, price, where it is                 |     |     |     |
+
+Franchises get their own warehouse and their machines' costs in a later phase
+([inventory-backend-requirements.md](inventory-backend-requirements.md)).
+
 ## On screen (shared across machines today)
 
 

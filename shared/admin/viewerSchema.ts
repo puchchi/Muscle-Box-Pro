@@ -86,6 +86,10 @@ export const PERMISSIONS = [
   "qr.edit",
   "operators.view",
   "operators.edit",
+  "inventory.view",
+  "inventory.edit",
+  "assets.view",
+  "assets.edit",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

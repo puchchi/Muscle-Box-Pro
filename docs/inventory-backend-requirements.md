@@ -152,14 +152,14 @@ here. Retiring a machine needs a note.
 ## 6. Routes
 
 All under the machine-admin API, admin session only for now. JSON bodies, the usual error envelope,
-`409 stale` on a version mismatch. Lists are newest first and paginated with `cursor`.
+`expectedVersion` on every `PATCH` and `409 stale_write` on a mismatch, as materials do. Lists are newest first and paginated with `cursor`.
 
 | Route | Permission | |
 |---|---|---|
 | `GET /admin/inventory/items` | `inventory.view` | items with `avgCostInr`, `onHand` (warehouses), `inMachines`, `low` |
-| `POST /admin/inventory/items`, `PUT /admin/inventory/items/{itemId}` | `inventory.edit` | §3.1 fields; `PUT` takes `version` |
+| `POST /admin/inventory/items`, `PATCH /admin/inventory/items/{itemId}` | `inventory.edit` | §3.1 fields |
 | `GET /admin/inventory/warehouses` | `inventory.view` | with `machines` (count homed there) |
-| `POST /admin/inventory/warehouses`, `PUT …/{warehouseId}` | `inventory.edit` | |
+| `POST /admin/inventory/warehouses`, `PATCH …/{warehouseId}` | `inventory.edit` | |
 | `GET /admin/inventory/stock?warehouseId=` | `inventory.view` | balances per place and item, with value |
 | `GET /admin/inventory/batches?expiringWithinDays=` | `inventory.view` | open batches (`qtyLeft > 0`) |
 | `POST /admin/inventory/receipts` | `inventory.edit` | one invoice: `warehouseId, supplier, invoiceNo, receivedOn, lines[{itemId, qty, lineCostInr, gstInr, batchCode, expiresOn}]`; `qty` in units, `lineCostInr` ex-GST for the whole line |
@@ -167,9 +167,16 @@ All under the machine-admin API, admin session only for now. JSON bodies, the us
 | `POST /admin/inventory/write-offs` | `inventory.edit` | `warehouseId, reason, note, lines[{itemId, qty}]` |
 | `POST /admin/inventory/counts` | `inventory.edit` | `warehouseId, lines[{itemId, counted}]`; writes an `adjust` per line that differs |
 | `GET /admin/inventory/movements?itemId=&place=&type=&from=&to=` | `inventory.view` | the ledger |
+| `GET /admin/inventory/homes` | `inventory.view` | `{items:[{sn, warehouseId}]}` for every machine, `warehouseId` null when it has none |
 | `PUT /admin/machines/{sn}/home-warehouse` | `inventory.edit` | `{warehouseId}` |
 | `GET /admin/inventory/costs?month=YYYY-MM` | `inventory.view` | §7 |
-| `GET /admin/assets`, `POST /admin/assets`, `PUT /admin/assets/{assetId}` | `assets.view`, `assets.edit` | §5 |
+| `GET /admin/assets`, `POST /admin/assets`, `PATCH /admin/assets/{assetId}` | `assets.view`, `assets.edit` | §5 |
+
+Response shapes are exactly those in `shared/admin/inventorySchema.ts` in this repo. Writes answer
+with the record in an envelope: `{item}`, `{warehouse}`, `{asset}`; `PUT …/home-warehouse` answers
+`{sn, warehouseId}`; receipts, write-offs and counts answer `{movements}`, the movements they wrote.
+A `place` is `{kind, id, name}`, where `id` is a `warehouseId` or an `sn`. An asset carries
+`placement: {machineName, gymName, franchiseName}` once its `sn` is set.
 
 New permissions, appended to the end of `permissions.ts` (names are a wire contract):
 `inventory.view`, `inventory.edit`, `assets.view`, `assets.edit`. Admin only; franchise, gym and
