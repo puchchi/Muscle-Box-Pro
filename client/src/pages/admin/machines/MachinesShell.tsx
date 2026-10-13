@@ -240,21 +240,21 @@ function Shell({ session, section, needs, onSignOut, children }: ShellProps) {
               {back.label}
             </Link>
           )}
-          <div className="flex items-center justify-between gap-2 px-3">
-            <span className="min-w-0 truncate text-xs text-muted-foreground" data-testid="shell-admin">
+          <div className="px-3 pb-3" data-testid="shell-admin">
+            <p className="truncate text-sm font-medium text-foreground" title={session.name}>
               {session.name}
-              {session.role !== "admin" && <span className="block text-[11px] text-muted-foreground/70">{ROLE_LABEL[session.role]}</span>}
-            </span>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer"
-              data-testid="button-signout"
-            >
-              <LogOut className="h-3.5 w-3.5" aria-hidden />
-              Sign out
-            </button>
+            </p>
+            {session.role !== "admin" && <p className="text-xs text-muted-foreground">{ROLE_LABEL[session.role]}</p>}
           </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            data-testid="button-signout"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+            Sign out
+          </button>
         </div>
       </aside>
 
