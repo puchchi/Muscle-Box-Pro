@@ -58,11 +58,11 @@ describe("Machine console sign in", () => {
   });
 
   it("signs back out and explains when the account cannot open the console yet", async () => {
-    consoleSignIn.signInToMachineConsole.mockResolvedValue({ ok: true, role: "operator" });
+    consoleSignIn.signInToMachineConsole.mockResolvedValue({ ok: true, role: "gym" });
     render(<MachinesSignIn />);
-    await signIn("ravi_ops", "good-phrase");
+    await signIn("g@x.in", "good-phrase");
     expect(await screen.findByTestId("login-notice")).toHaveTextContent("Machine access isn't on for this account yet");
-    expect(consoleSignIn.signOutOfMachineConsole).toHaveBeenCalledWith("operator");
+    expect(consoleSignIn.signOutOfMachineConsole).toHaveBeenCalledWith("gym");
     expect(mockPush).not.toHaveBeenCalled();
   });
 

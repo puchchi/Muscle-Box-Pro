@@ -21,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryClient } from "@/lib/queryClient";
 import {
   GYM_PORTAL_QUERY_KEY,
@@ -31,10 +32,7 @@ import {
   GYM_SESSION_QUERY_KEY,
   fetchGymSession,
   signOutOfPortal,
-  type GymSession,
 } from "@/lib/gymSession";
-import { fetchViewer } from "@/lib/adminMachineApi";
-import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { formatInr } from "@shared/partnership/summary";
 import { formatAgreementDate } from "@shared/onboarding/agreementFields";
 import type {
@@ -56,10 +54,7 @@ import {
   fetchPayoutAccount,
 } from "@/lib/gymPayoutAccountApi";
 import PayoutAccountCard from "./PayoutAccountCard";
-import { Card, Row, RowGroup, type CardProps } from "./portalCards";
-import { MachinesShell, type PortalSection } from "../admin/machines/MachinesShell";
-import { MachinesHeader } from "../admin/machines/MachinesUi";
-import { forgetVerifiedViewer } from "../admin/machines/viewer";
+import { Card, MachineConsoleLink, Row, RowGroup, type CardProps } from "./portalCards";
 import { formatIstDate, formatIstDateTime } from "./istDates";
 
 /**
@@ -112,18 +107,22 @@ import { formatIstDate, formatIstDateTime } from "./istDates";
  * day the network arrives. Swapping the source is one function body in
  * `@/lib/gymPortalApi`.
  *
- * The page renders inside the machine console's `MachinesShell`, whose dark theme scopes the
- * tokens in `index.css`. Nothing here hardcodes a surface colour.
+ * The whole screen is scoped dark by the `dark` class on `PortalChrome`'s root, so the
+ * tokens in `index.css` resolve to their dark values and every shadcn control inside
+ * follows. Nothing here hardcodes a surface colour, which is what makes that one class
+ * enough.
  *
- * The figures and the account record are two pages rather than two bands of one long page.
+ * The figures and the account record are two tabs rather than two bands of one long page.
  * The machine's serial, the agreement hash and the deposit receipt are things a gym looks
  * up perhaps twice a year, and while they sat below the figures they took up half the
- * screen every day to do it.
+ * screen every day to do it. Only the selected panel is mounted, so the reference cards
+ * are genuinely not rendered rather than merely scrolled past.
  *
- * The one thing on the account page that is not a record is `PayoutAccountCard`, which
- * writes. Being a page away is right for a bank account a gym changes when it changes banks
+ * The one thing on the account tab that is not a record is `PayoutAccountCard`, which
+ * writes. Being a tab away is right for a bank account a gym changes when it changes banks
  * and wrong for a gym that has never given us one — so `PayoutAccountPrompt` says so on the
- * figures page, and its link opens the form rather than merely pointing at the page.
+ * tab that is open by default, and its button opens the form rather than merely pointing at
+ * the tab that holds it.
  */
 
 /**
@@ -193,7 +192,7 @@ function neverInstalled(machine: GymPortalSnapshot["machine"]): boolean {
   return machine.status === "allocated" || machine.installationDate === null;
 }
 
-export default function GymDashboard({ view = "figures" }: { view?: GymView }) {
+export default function GymDashboard() {
   const router = useRouter();
 
   /**
@@ -212,6 +211,7 @@ export default function GymDashboard({ view = "figures" }: { view?: GymView }) {
     queryKey: GYM_SESSION_QUERY_KEY,
     queryFn: fetchGymSession,
   });
+  const email = session?.email ?? null;
   const signedOut = !isCheckingSession && !session;
 
   useEffect(() => {
@@ -225,18 +225,12 @@ export default function GymDashboard({ view = "figures" }: { view?: GymView }) {
     // snapshot in the cache is this gym's revenue, and invalidating would leave it sitting
     // there for whoever signs in next while the refetch is in flight.
     await signOutOfPortal();
-    forgetVerifiedViewer();
-    queryClient.removeQueries();
+    queryClient.removeQueries({ queryKey: GYM_PORTAL_QUERY_KEY });
+    // For the same reason, and this one names a bank account rather than a figure.
+    queryClient.removeQueries({ queryKey: GYM_PAYOUT_ACCOUNT_QUERY_KEY });
+    queryClient.removeQueries({ queryKey: GYM_SESSION_QUERY_KEY });
     router.replace("/gym/login");
   }
-
-  // The console's menu is extra: production has no /me yet, and the portal must open without it.
-  const { data: consoleViewer } = useQuery({
-    queryKey: GYM_CONSOLE_VIEWER_QUERY_KEY,
-    queryFn: fetchConsoleViewer,
-    enabled: session != null,
-    retry: false,
-  });
 
   const {
     data: snapshot,
@@ -273,7 +267,7 @@ export default function GymDashboard({ view = "figures" }: { view?: GymView }) {
   //
   // Only a cold entry reaches this. Arriving from the login form, the session is already
   // in the cache and the first thing on screen is the portal itself.
-  if (isCheckingSession || !session || sessionGone) {
+  if (isCheckingSession || signedOut || sessionGone) {
     return (
       <div className="dark theme-console flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Loading your portal...
@@ -281,46 +275,30 @@ export default function GymDashboard({ view = "figures" }: { view?: GymView }) {
     );
   }
 
-  // Everything from here renders inside the shell, including the failures. A gym whose
-  // figures will not load must still be able to sign out.
-  // A gym whose machine is not in yet has nothing in the console, as before the move.
-  const installed = snapshot !== undefined && !neverInstalled(snapshot.machine);
-  const viewer = consoleViewer && installed ? consoleViewer : portalOnlyViewer(session, snapshot);
+  // Everything from here renders inside the chrome, including the failures. A gym whose
+  // figures will not load must still be able to sign out — a bare error page that
+  // strips the header is a page you can only leave with the back button.
+  if (isPending) {
+    return (
+      <PortalChrome email={email} onSignOut={handleSignOut}>
+        <PortalLoading />
+      </PortalChrome>
+    );
+  }
+
+  if (isError || !snapshot) {
+    return (
+      <PortalChrome email={email} onSignOut={handleSignOut}>
+        <PortalError error={error} onRetry={() => refetch()} isRetrying={isFetching} />
+      </PortalChrome>
+    );
+  }
 
   return (
-    <MachinesShell session={viewer} section={view} onSignOut={handleSignOut}>
-      {isPending ? (
-        <PortalLoading />
-      ) : isError || !snapshot ? (
-        <PortalError error={error} onRetry={() => refetch()} isRetrying={isFetching} />
-      ) : (
-        <PortalContent snapshot={snapshot} view={view} />
-      )}
-    </MachinesShell>
+    <PortalChrome email={email} onSignOut={handleSignOut}>
+      <PortalContent snapshot={snapshot} />
+    </PortalChrome>
   );
-}
-
-type GymView = Extract<PortalSection, "figures" | "account">;
-
-const GYM_CONSOLE_VIEWER_QUERY_KEY = ["gym", "console-viewer"] as const;
-
-const ADD_BANK_ACCOUNT_HASH = "#add-bank-account";
-
-async function fetchConsoleViewer(): Promise<MachineViewer | null> {
-  const me = await fetchViewer();
-  return me.ok && me.data.role === "gym" ? me.data : null;
-}
-
-function portalOnlyViewer(session: GymSession, snapshot: GymPortalSnapshot | undefined): MachineViewer {
-  return {
-    role: "gym",
-    name: snapshot?.gymDisplayName || session.email,
-    email: session.email,
-    operatorId: null,
-    franchiseId: null,
-    gymId: session.gymId,
-    can: new Set(),
-  };
 }
 
 /**
@@ -334,16 +312,18 @@ function portalOnlyViewer(session: GymSession, snapshot: GymPortalSnapshot | und
  * section would be indistinguishable at the point where the copy is chosen, which is
  * exactly the distinction this screen exists to keep.
  */
-function PortalContent({ snapshot, view }: { snapshot: GymPortalSnapshot; view: GymView }) {
+function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
   const { terms, sales, adRevenue, electricity, statements } = snapshot;
 
   // Whether an absent figure may read 0 — see `neverInstalled`.
   const preInstall = neverInstalled(snapshot.machine);
 
+  /**
+   * Controlled, so `PayoutAccountPrompt` can bring the tab that holds the form into view
+   * and open it in the same click. `defaultValue` cannot be told to change.
+   */
+  const [tab, setTab] = useState("figures");
   const [addingPayoutAccount, setAddingPayoutAccount] = useState(false);
-  useEffect(() => {
-    if (view === "account" && window.location.hash === ADD_BANK_ACCOUNT_HASH) setAddingPayoutAccount(true);
-  }, [view]);
 
   /**
    * The same query the card runs, sharing one cache entry, and here only to decide whether
@@ -368,107 +348,131 @@ function PortalContent({ snapshot, view }: { snapshot: GymPortalSnapshot; view: 
     (!electricity.available && electricity.reason === "not_implemented") ||
     (!statements.available && statements.reason === "not_implemented");
 
-  const header = (
-    <MachinesHeader
-      title={snapshot.gymDisplayName}
-      subtitle={
-        sales.available ? (
-          <span data-testid="period-note">
-            {monthName(sales.data.currentPeriod.period)} so far. Provisional, settles by the{" "}
-            {terms.settlementDaysAfterMonthEnd}th of next month.
-          </span>
-        ) : undefined
-      }
-      action={
-        <div className="flex flex-wrap items-center gap-3">
-          <LastUpdated snapshot={snapshot} />
-          <MachineStatusPill status={snapshot.machine.status} />
-        </div>
-      }
-    />
-  );
-
-  if (view === "account") {
-    return (
-      <>
-        {header}
-        {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {/* First, because it is the only card here a gym ever has to act on. The other
-          three are a record it reads. */}
-      <PayoutAccountCard
-        formOpen={addingPayoutAccount}
-        onFormOpenChange={setAddingPayoutAccount}
-      />
-      <MachineCard machine={snapshot.machine} />
-      <StatementsCard statements={statements} agreement={snapshot.agreement} />
-      {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
-    </div>
-      </>
-    );
-  }
-
   return (
     <>
-      {header}
+      <div className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-black uppercase tracking-tight text-foreground sm:text-3xl">
+            {snapshot.gymDisplayName}
+          </h1>
+          {/* Only when there is a trading month to name. With the feeds absent this said
+              "Your account as at ...", which is a sentence about nothing — the freshness
+              stamp beside the tabs already carries the timestamp. */}
+          {sales.available && (
+            <p
+              className="mt-2 text-sm leading-relaxed text-muted-foreground"
+              data-testid="period-note"
+            >
+              {monthName(sales.data.currentPeriod.period)} so far. Provisional, settles by the{" "}
+              {terms.settlementDaysAfterMonthEnd}th of next month.
+            </p>
+          )}
+        </div>
+        <MachineStatusPill status={snapshot.machine.status} />
+      </div>
 
       {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
 
-      {needsPayoutAccount && <PayoutAccountPrompt />}
+      {!preInstall && <MachineConsoleLink body="See how your machine is doing and what it has sold." />}
 
-      <div className="mt-6">
-      {/* One grid, not a four-up band and a two-up band: advertising and electricity are
-          money the gym is owed on the same terms as the rest, and a card twice the width
-          of its neighbours is a card that is mostly empty. */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sales.available ? (
-          <TradingCards
-            trading={sales.data}
-            terms={terms}
-            adRevenue={adRevenue}
-            statements={statements}
-          />
-        ) : (
-          <TradingCardsUnavailable reason={sales.reason} preInstall={preInstall} />
-        )}
-
-        {adRevenue.available ? (
-          <AdvertisingCard terms={terms} revenueExTaxInr={adRevenue.data.revenueExTaxInr} />
-        ) : (
-          <UnavailableCard
-            icon={Megaphone}
-            label="Advertising share"
-            testId="card-advertising"
-            reason={adRevenue.reason}
-            preInstall={preInstall}
-            zero={formatInr(0)}
-          />
-        )}
-
-        {electricity.available ? (
-          <ElectricityCard reviewPeriod={electricity.data} terms={terms} />
-        ) : (
-          <UnavailableCard
-            icon={Zap}
-            label="Electricity reimbursement"
-            testId="card-electricity"
-            reason={electricity.reason}
-            preInstall={preInstall}
-            zero={formatInr(0)}
-          />
-        )}
-      </div>
-
-      {anythingUnbuilt && <ReportingNotice preInstall={preInstall} />}
-
-      {sales.available && (
-        <p className="mt-6 max-w-[70ch] text-sm leading-relaxed text-muted-foreground">
-          Provisional until your monthly statement, which is the settled amount and is issued
-          within {terms.settlementDaysAfterMonthEnd} days of month-end. Costs are one total
-          because your share is calculated on net profit.
-        </p>
+      {needsPayoutAccount && (
+        <PayoutAccountPrompt
+          onAdd={() => {
+            setTab("account");
+            setAddingPayoutAccount(true);
+          }}
+        />
       )}
-      </div>
+
+      <Tabs value={tab} onValueChange={setTab} className="mt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList className="h-auto rounded-xl border border-border bg-card p-1 text-muted-foreground">
+            <TabsTrigger
+              value="figures"
+              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background hover:text-foreground data-[state=active]:bg-primary-fill data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
+              data-testid="tab-figures"
+            >
+              Figures
+            </TabsTrigger>
+            <TabsTrigger
+              value="account"
+              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background hover:text-foreground data-[state=active]:bg-primary-fill data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
+              data-testid="tab-account"
+            >
+              Your account
+            </TabsTrigger>
+          </TabsList>
+          <LastUpdated snapshot={snapshot} />
+        </div>
+
+        <TabsContent value="figures" className="mt-6">
+          {/* One grid, not a four-up band and a two-up band: advertising and electricity are
+              money the gym is owed on the same terms as the rest, and a card twice the width
+              of its neighbours is a card that is mostly empty. */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sales.available ? (
+              <TradingCards
+                trading={sales.data}
+                terms={terms}
+                adRevenue={adRevenue}
+                statements={statements}
+              />
+            ) : (
+              <TradingCardsUnavailable reason={sales.reason} preInstall={preInstall} />
+            )}
+
+            {adRevenue.available ? (
+              <AdvertisingCard terms={terms} revenueExTaxInr={adRevenue.data.revenueExTaxInr} />
+            ) : (
+              <UnavailableCard
+                icon={Megaphone}
+                label="Advertising share"
+                testId="card-advertising"
+                reason={adRevenue.reason}
+                preInstall={preInstall}
+                zero={formatInr(0)}
+              />
+            )}
+
+            {electricity.available ? (
+              <ElectricityCard reviewPeriod={electricity.data} terms={terms} />
+            ) : (
+              <UnavailableCard
+                icon={Zap}
+                label="Electricity reimbursement"
+                testId="card-electricity"
+                reason={electricity.reason}
+                preInstall={preInstall}
+                zero={formatInr(0)}
+              />
+            )}
+          </div>
+
+          {anythingUnbuilt && <ReportingNotice preInstall={preInstall} />}
+
+          {sales.available && (
+            <p className="mt-6 max-w-[70ch] text-sm leading-relaxed text-muted-foreground">
+              Provisional until your monthly statement, which is the settled amount and is issued
+              within {terms.settlementDaysAfterMonthEnd} days of month-end. Costs are one total
+              because your share is calculated on net profit.
+            </p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="account" className="mt-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* First, because it is the only card here a gym ever has to act on. The other
+                three are a record it reads. */}
+            <PayoutAccountCard
+              formOpen={addingPayoutAccount}
+              onFormOpenChange={setAddingPayoutAccount}
+            />
+            <MachineCard machine={snapshot.machine} />
+            <StatementsCard statements={statements} agreement={snapshot.agreement} />
+            {snapshot.deposit.status === "paid" && <DepositCard snapshot={snapshot} />}
+          </div>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
@@ -604,7 +608,88 @@ function TradingCardsUnavailable({
   );
 }
 
-// ── Failure states ──────────────────────────────────────────────────────────
+// ── Frame and its two failure states ────────────────────────────────────────
+
+/**
+ * The header and page frame, shared by the loaded, loading and failed views.
+ *
+ * Extracted when the data became asynchronous. The alternative — three full-page
+ * layouts — is three places for the sign-out button to be forgotten in, and the failed
+ * view is exactly the one where a gym owner most needs it.
+ */
+function PortalChrome({
+  email,
+  onSignOut,
+  children,
+}: {
+  email: string | null;
+  onSignOut: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="dark theme-console relative min-h-screen bg-background text-foreground">
+      {/* Deliberately not `overflow-hidden` anywhere above the header: an overflow
+          ancestor makes `position: sticky` stick to a box that never scrolls. The glow is
+          a background on a full-width box for the same reason, rather than a blurred blob
+          that would need clipping. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[360px] bg-[radial-gradient(70%_100%_at_50%_0%,hsl(var(--primary)/0.10),transparent_72%)]"
+      />
+
+      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              href="/"
+              className="flex-shrink-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              {/* The wordmark in `logo.png` is black, so on this surface it needs the same
+                  treatment the login page's dark panel gives it. */}
+              <img
+                src="/assets/logo.png"
+                alt="MuscleBoxPro"
+                className="h-8 w-auto brightness-0 invert"
+              />
+            </Link>
+            <span aria-hidden="true" className="hidden h-5 w-px bg-border sm:block" />
+            <span className="hidden text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground sm:block">
+              Partner portal
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {email && (
+              <span className="hidden items-center gap-2 rounded-full border border-border bg-secondary/50 py-1 pl-1 pr-3 sm:flex">
+                <span
+                  aria-hidden="true"
+                  className="grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-xs font-bold text-white"
+                >
+                  {email.charAt(0).toUpperCase()}
+                </span>
+                <span className="max-w-[180px] truncate text-xs font-medium text-muted-foreground lg:max-w-none">
+                  {email}
+                </span>
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              onClick={onSignOut}
+              className="h-9 cursor-pointer rounded-xl border-border bg-secondary/50 px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+              data-testid="button-signout"
+            >
+              Sign out
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        {children}
+      </main>
+    </div>
+  );
+}
 
 function MachineStatusPill({ status }: { status: MachineStatus }) {
   return (
@@ -653,7 +738,7 @@ function ReportingNotice({ preInstall }: { preInstall: boolean }) {
 function PortalLoading() {
   return (
     <div data-testid="portal-loading" aria-busy="true">
-      <div>
+      <div className="border-b border-border pb-6">
         <div className="h-8 w-64 animate-pulse rounded-lg bg-secondary" />
         <div className="mt-3 h-4 w-80 max-w-full animate-pulse rounded bg-secondary/60" />
       </div>
@@ -724,7 +809,7 @@ function PortalError({
         <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-400" aria-hidden="true" />
         We can't show your figures right now
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-amber-100">
+      <p className="mt-2 text-sm leading-relaxed text-amber-100/70">
         This is a problem at our end, not with your machine or your account. Every cup is still
         counted, and your settled statements are issued from our records rather than from this page.
       </p>
@@ -1305,7 +1390,7 @@ function DepositBanner({ snapshot }: { snapshot: GymPortalSnapshot }) {
  * Not styled as a warning. Nothing is broken and nothing is late: most gyms reach this
  * screen before their first settlement, so this is a task, not a fault.
  */
-function PayoutAccountPrompt() {
+function PayoutAccountPrompt({ onAdd }: { onAdd: () => void }) {
   return (
     <div
       className="mt-6 flex flex-col justify-between gap-4 rounded-2xl border border-border bg-secondary/40 p-5 sm:flex-row sm:items-center"
@@ -1317,10 +1402,13 @@ function PayoutAccountPrompt() {
           Add a bank account so we can transfer your payout
         </p>
       </div>
-      <Button asChild className="h-10 flex-shrink-0 cursor-pointer rounded-xl px-5 text-sm font-bold">
-        <Link href={`/gym/dashboard/account${ADD_BANK_ACCOUNT_HASH}`} data-testid="button-prompt-add-payout-account">
-          Add bank account
-        </Link>
+      <Button
+        type="button"
+        onClick={onAdd}
+        className="h-10 flex-shrink-0 cursor-pointer rounded-xl px-5 text-sm font-bold"
+        data-testid="button-prompt-add-payout-account"
+      >
+        Add bank account
       </Button>
     </div>
   );

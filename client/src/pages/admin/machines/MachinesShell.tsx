@@ -32,7 +32,7 @@ import { useMachineSignOut, ViewerProvider } from "./viewer";
 
 type NavItem = { href: string; label: string; id: string; icon: LucideIcon; needs?: Permission | Permission[]; shop?: true };
 
-export type PortalSection = "overview" | "record" | "figures" | "account";
+export type PortalSection = "overview" | "record";
 
 const PORTAL_GROUPS: Partial<Record<ViewerRole, { label: string; items: ReadonlyArray<NavItem & { id: PortalSection }> }>> = {
   franchise: {
@@ -42,16 +42,7 @@ const PORTAL_GROUPS: Partial<Record<ViewerRole, { label: string; items: Readonly
       { href: "/franchise/dashboard/record", label: "Your record", id: "record", icon: FileText },
     ],
   },
-  gym: {
-    label: "Your gym",
-    items: [
-      { href: "/gym/dashboard", label: "Figures", id: "figures", icon: LayoutDashboard },
-      { href: "/gym/dashboard/account", label: "Your account", id: "account", icon: FileText },
-    ],
-  },
 };
-
-export const hasPortal = (role: ViewerRole) => PORTAL_GROUPS[role] !== undefined;
 
 export const homeFor = (role: ViewerRole) => PORTAL_GROUPS[role]?.items[0].href ?? "/machines";
 
@@ -112,7 +103,7 @@ const ALL_ITEMS: ReadonlyArray<NavItem> = GROUPS.flatMap((g) => g.items as Reado
 const BACK_LINK: Record<ViewerRole, { href: string; label: string } | null> = {
   admin: { href: "/admin", label: "Back to admin" },
   franchise: null,
-  gym: null,
+  gym: { href: "/gym/dashboard", label: "Back to your dashboard" },
   operator: null,
 };
 
