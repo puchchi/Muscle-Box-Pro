@@ -809,7 +809,7 @@ function PortalError({
         <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-400" aria-hidden="true" />
         We can't show your figures right now
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-amber-100/70">
+      <p className="mt-2 text-sm leading-relaxed text-amber-100">
         This is a problem at our end, not with your machine or your account. Every cup is still
         counted, and your settled statements are issued from our records rather than from this page.
       </p>
