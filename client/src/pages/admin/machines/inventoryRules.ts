@@ -58,8 +58,10 @@ export function formatUnitCost(avgCostInr: number | null, unit: ItemUnit): strin
   return big ? `${formatRupees(avgCostInr * big.factor)} per ${big.unit}` : `${formatRupees(avgCostInr)} each`;
 }
 
-export function placeLabel(place: Place | null): string {
-  if (!place) return "Outside";
+const NO_PLACE: Partial<Record<MovementType, string>> = { receive: "Supplier", consume: "Drinks", write_off: "Gone", adjust: "Count" };
+
+export function placeLabel(place: Place | null, type?: MovementType): string {
+  if (!place) return (type && NO_PLACE[type]) ?? "—";
   return place.kind === "machine" ? `Machine ${place.name || place.id}` : place.name || place.id;
 }
 
@@ -88,10 +90,10 @@ export function itemValues(item: InventoryItem | null): ItemValues {
     name: item?.name ?? "",
     kind: item?.kind ?? "protein",
     unit: item?.unit ?? "g",
-    packSize: item ? String(item.packSize) : "",
+    packSize: item ? String(inEntryUnit(item.packSize, item.unit)) : "",
     packLabel: item?.packLabel ?? "",
     materialIds: item?.materialIds ?? [],
-    reorderLevel: item ? String(item.reorderLevel) : "",
+    reorderLevel: item ? String(inEntryUnit(item.reorderLevel, item.unit)) : "",
     active: item?.active ?? true,
   };
 }
@@ -103,13 +105,13 @@ export function validateItem(v: ItemValues): { errors: Record<string, string>; i
   else if (name.length > 80) errors.name = "Up to 80 characters.";
   if (!(ITEM_KINDS as readonly string[]).includes(v.kind)) errors.kind = "Choose a kind.";
   if (!(ITEM_UNITS as readonly string[]).includes(v.unit)) errors.unit = "Choose a unit.";
-  const packSize = parseNumber(v.packSize);
-  if (packSize === null || Number.isNaN(packSize) || packSize <= 0) errors.packSize = "How many units are in one pack, such as 1000.";
+  const packSize = parseQtyIn(v.packSize, v.unit);
+  if (packSize === null || packSize <= 0) errors.packSize = v.unit === "pcs" ? "A whole number, such as 50." : "Such as 1 for a 1 kg bag.";
   const packLabel = v.packLabel.trim();
   if (!packLabel) errors.packLabel = "How a pack is called, such as 1 kg bag.";
   else if (packLabel.length > 40) errors.packLabel = "Up to 40 characters.";
-  const reorderLevel = v.reorderLevel.trim() === "" ? 0 : parseNumber(v.reorderLevel);
-  if (reorderLevel === null || Number.isNaN(reorderLevel) || reorderLevel < 0) errors.reorderLevel = "0 or more.";
+  const reorderLevel = v.reorderLevel.trim() === "" ? 0 : parseQtyIn(v.reorderLevel, v.unit);
+  if (reorderLevel === null) errors.reorderLevel = v.unit === "pcs" ? "A whole number, 0 or more." : "0 or more.";
   if (Object.keys(errors).length > 0) return { errors, input: null };
   return {
     errors,
@@ -175,6 +177,8 @@ export function parseQtyIn(text: string, unit: ItemUnit): number | null {
 }
 
 export const entryUnit = (unit: ItemUnit): string => BIG[unit]?.unit ?? unit;
+
+export const inEntryUnit = (qty: number, unit: ItemUnit): number => qty / (BIG[unit]?.factor ?? 1);
 
 export function istMonth(now: number): string {
   return new Date(now + 19_800_000).toISOString().slice(0, 7);

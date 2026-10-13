@@ -7,6 +7,7 @@ import {
   itemValues,
   marginShare,
   parseQtyIn,
+  placeLabel,
   recentMonths,
   stockState,
   validateAsset,
@@ -75,6 +76,15 @@ describe("amounts", () => {
   });
 });
 
+describe("history places", () => {
+  it("names the missing side of a movement after what happened", () => {
+    expect(placeLabel(null, "receive")).toBe("Supplier");
+    expect(placeLabel(null, "consume")).toBe("Drinks");
+    expect(placeLabel(null, "adjust")).toBe("Count");
+    expect(placeLabel({ kind: "machine", id: "GS1", name: "" })).toBe("Machine GS1");
+  });
+});
+
 describe("items", () => {
   it("needs a name, a pack size and a pack label", () => {
     const { errors, input } = validateItem({ ...itemValues(null), name: "W" });
@@ -82,8 +92,14 @@ describe("items", () => {
     expect(Object.keys(errors).sort()).toEqual(["name", "packLabel", "packSize"]);
   });
 
+  it("shows and reads pack size and reorder level in kg for powder", () => {
+    expect(itemValues(whey)).toMatchObject({ packSize: "1", reorderLevel: "5" });
+    expect(validateItem({ ...itemValues(whey), reorderLevel: "7.5" }).input).toMatchObject({ packSize: 1000, reorderLevel: 7500 });
+    expect(validateItem({ ...itemValues(cups), packSize: "12.5" }).errors.packSize).toBe("A whole number, such as 50.");
+  });
+
   it("keeps an empty reorder level as zero", () => {
-    const { input } = validateItem({ ...itemValues(null), name: "Creatine", kind: "powder", packSize: "500", packLabel: "500 g tub" });
+    const { input } = validateItem({ ...itemValues(null), name: "Creatine", kind: "powder", packSize: "0.5", packLabel: "500 g tub" });
     expect(input).toMatchObject({ name: "Creatine", packSize: 500, reorderLevel: 0, unit: "g" });
   });
 });

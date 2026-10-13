@@ -7,8 +7,10 @@ import {
   BarChart3,
   Boxes,
   ClipboardList,
+  Container,
   CupSoda,
   FileText,
+  IndianRupee,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -23,6 +25,7 @@ import {
   UserCog,
   Users,
   Volume2,
+  Warehouse,
   type LucideIcon,
 } from "lucide-react";
 import { apiBaseUrl } from "@/lib/apiClient";
@@ -64,6 +67,14 @@ const GROUPS = [
       { href: "/machines/customers", label: "Customers", id: "customers", icon: Users, needs: "customers.view", shop: true },
       { href: "/machines/redeem-codes", label: "Redeem codes", id: "redeemCodes", icon: Ticket, needs: "redeemCodes.view" },
       { href: "/machines/feedback", label: "Feedback", id: "feedback", icon: MessageSquare, needs: "feedback.view" },
+    ],
+  },
+  {
+    label: "Inventory",
+    items: [
+      { href: "/machines/inventory", label: "Stock", id: "inventory", icon: Warehouse, needs: "inventory.view" },
+      { href: "/machines/inventory/costs", label: "Cost of drinks", id: "costs", icon: IndianRupee, needs: "inventory.view" },
+      { href: "/machines/assets", label: "Machine assets", id: "assets", icon: Container, needs: "assets.view" },
     ],
   },
   {
