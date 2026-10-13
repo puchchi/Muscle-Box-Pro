@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +19,6 @@ import {
   RefreshCw,
   ScrollText,
   Truck,
-  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,12 +73,11 @@ import { formatIstDate, formatIstDateTime } from "../gym/istDates";
  * in: the terms that bind, the territory that was granted, the instalments as claimed and as
  * confirmed, and the executed agreement.
  *
- * ## Three pages, not one
+ * ## Two pages, not one
  *
- * Overview, Your record, and Sales and payouts are separate routes in the sidebar. The money and the terms are what a
- * franchisee signs in for; the agreement reference, the warehouse address and the list of
- * documents we hold are looked up perhaps twice a year, and while they sat under the figures they
- * took up two thirds of the screen every day to do it.
+ * Overview and Your record are separate routes in the sidebar. A trading franchise's Overview is
+ * its sales and machines; before that, or when the console can't be read, it is the money it has
+ * sent us. Everything that stops changing once signed lives on Your record.
  *
  * **The protein share is never presented as a margin.** `program.ts` says of the 100% figure
  * that it "is a capital recovery mechanism, not a margin, and the page must not present it as a
@@ -301,15 +299,14 @@ async function fetchSalesThisMonth(): Promise<SalesStats | null> {
   return result.ok ? result.data : null;
 }
 
-export function SalesPanel({ sales }: { sales: SalesStats }) {
+export function SalesPanel({ sales, machines }: { sales: SalesStats; machines?: ReactNode }) {
   const todays = sales.rows.filter((row) => row.period === sales.to);
   const byDrink = new Map<string, number>();
   for (const row of sales.rows) byDrink.set(row.goodsName, (byDrink.get(row.goodsName) ?? 0) + row.drinks);
   const [bestName, bestDrinks] = [...byDrink].sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
   const since = formatIstDate(`${sales.from}T00:00:00+05:30`);
   return (
-    <section data-testid="sales-panel">
-      <div className="grid gap-4 sm:grid-cols-3">
+    <section data-testid="sales-panel" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={IndianRupee}
           label="Sales this month"
@@ -328,6 +325,7 @@ export function SalesPanel({ sales }: { sales: SalesStats }) {
             caption={drinks(todays.reduce((sum, row) => sum + row.drinks, 0))}
           />
         </MetricCard>
+        {machines}
         <MetricCard icon={CupSoda} label="Best seller this month" testId="metric-best-seller">
           <Figure
             value={bestName ?? "No sales yet"}
@@ -336,14 +334,6 @@ export function SalesPanel({ sales }: { sales: SalesStats }) {
             words
           />
         </MetricCard>
-      </div>
-      <Link
-        href="/machines/statistics"
-        className="mt-3 inline-block text-sm font-semibold text-primary hover:underline"
-        data-testid="link-sales-report"
-      >
-        See sales by machine and day
-      </Link>
     </section>
   );
 }
@@ -365,6 +355,7 @@ export function MachinesMetric({ allocation, fleet }: { allocation: number; flee
       <Figure
         value={count(fleet.machines)}
         caption={`${count(fleet.online)} online now. Your agreement has ${count(allocation)}.`}
+        warn={fleet.online < fleet.machines}
       />
     </MetricCard>
   );
@@ -380,7 +371,12 @@ function PortalContent({ snapshot, view }: { snapshot: FranchisePortalSnapshot; 
       return result.ok ? result.data : null;
     },
   });
-  const { data: sales } = useQuery({ queryKey: FRANCHISE_SALES_QUERY_KEY, queryFn: fetchSalesThisMonth });
+  const active = snapshot.onboardingStatus === "active";
+  const { data: sales, isPending: salesPending } = useQuery({
+    queryKey: FRANCHISE_SALES_QUERY_KEY,
+    queryFn: fetchSalesThisMonth,
+    enabled: active,
+  });
 
   const confirmed = payments.filter((payment) => payment.verifiedAt !== null);
   const confirmedPaise = confirmed.reduce(
@@ -397,35 +393,29 @@ function PortalContent({ snapshot, view }: { snapshot: FranchisePortalSnapshot; 
     return (
       <>
         <MachinesHeader title="Your record" subtitle={subtitle} action={<LastUpdated asOf={snapshot.asOf} />} />
-        {/* Packed into three columns by hand rather than laid out as four grid items. These four
-            cards are 190px to 390px tall, so a plain grid stretches each row to its tallest card
-            and leaves the territory card as one line of text above a hole. */}
+        {/* Packed into three columns by hand: the cards are 190px to 470px tall, so a plain grid
+            leaves a hole under the shorter one in each row. */}
         <div className="grid items-start gap-4 lg:grid-cols-3">
-          {agreement && <AgreementCard agreement={agreement} />}
           <div className="flex flex-col gap-4">
-            {territory && <TerritoryCard territory={territory} />}
-            <DocumentsCard documents={documents} />
+            <TermsCard terms={terms} />
+            <PaymentsCard payments={payments} />
           </div>
-          {operations && <OperationsCard operations={operations} />}
+          <div className="flex flex-col gap-4">
+            {agreement && <AgreementCard agreement={agreement} />}
+            {territory && <TerritoryCard territory={territory} />}
+          </div>
+          <div className="flex flex-col gap-4">
+            <DocumentsCard documents={documents} />
+            {operations && <OperationsCard operations={operations} />}
+          </div>
         </div>
       </>
     );
   }
 
-  if (view === "payouts") {
-    return (
-      <>
-        <MachinesHeader title="Sales and payouts" subtitle={subtitle} action={<LastUpdated asOf={snapshot.asOf} />} />
-        <div className="flex flex-col gap-6">
-          {sales && <SalesPanel sales={sales} />}
-          {unbuilt.length > 0 && <ComingSoon sections={unbuilt} salesShown={sales != null} />}
-          {!sales && unbuilt.length === 0 && (
-            <p className="text-sm text-muted-foreground">No sales have been recorded on your machines yet.</p>
-          )}
-        </div>
-      </>
-    );
-  }
+  if (active && salesPending) return <PortalLoading />;
+
+  const machines = <MachinesMetric allocation={terms.machineAllocation} fleet={fleet ?? null} />;
 
   return (
     <>
@@ -440,53 +430,52 @@ function PortalContent({ snapshot, view }: { snapshot: FranchisePortalSnapshot; 
         }
       />
 
-      {snapshot.onboardingStatus !== "active" && <NotLiveBanner status={snapshot.onboardingStatus} />}
+      {!active && <NotLiveBanner status={snapshot.onboardingStatus} />}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={IndianRupee} label="Investment agreed" testId="metric-investment">
-          <Figure
-            value={inr(terms.investmentPaise)}
-            caption={`Your ${franchiseTier(terms.tier).shortName}, as signed`}
-          />
-        </MetricCard>
+      {active && sales ? (
+        <SalesPanel sales={sales} machines={machines} />
+      ) : (
+        <>
+          <div className="grid gap-4 md:grid-cols-3">
+            <MetricCard icon={IndianRupee} label="Investment agreed" testId="metric-investment">
+              <Figure
+                value={inr(terms.investmentPaise)}
+                caption={`Your ${franchiseTier(terms.tier).shortName}, as signed`}
+              />
+            </MetricCard>
 
-        {/* Accented, because it is the one figure a franchisee who has just transferred money
-            signs in to check. A total of confirmed receipts is not a settlement figure: these
-            are rows an admin read off a bank statement, so zero here is true rather than
-            missing, and the caption says which of the instalments it covers. */}
-        <MetricCard icon={BadgeCheck} label="Confirmed by us" testId="metric-confirmed" accent>
-          <Figure
-            value={inr(confirmedPaise)}
-            caption={
-              payments.length === 0
-                ? "No instalment is due yet"
-                : `${count(confirmed.length)} of ${count(payments.length)} ${
-                    payments.length === 1 ? "instalment" : "instalments"
-                  } confirmed against our bank`
-            }
-          />
-        </MetricCard>
+            {/* Accented, because it is the one figure a franchisee who has just transferred money
+                signs in to check. A total of confirmed receipts is not a settlement figure: these
+                are rows an admin read off a bank statement, so zero here is true rather than
+                missing, and the caption says which of the instalments it covers. */}
+            <MetricCard icon={BadgeCheck} label="Confirmed by us" testId="metric-confirmed" accent>
+              <Figure
+                value={inr(confirmedPaise)}
+                caption={
+                  payments.length === 0
+                    ? "No instalment is due yet"
+                    : `${count(confirmed.length)} of ${count(payments.length)} ${
+                        payments.length === 1 ? "instalment" : "instalments"
+                      } confirmed against our bank`
+                }
+              />
+            </MetricCard>
 
-        <MachinesMetric allocation={terms.machineAllocation} fleet={fleet ?? null} />
+            {machines}
+          </div>
 
-        <MetricCard icon={Wallet} label="Capital to recover" testId="metric-recovery">
-          <Figure
-            value={
-              terms.capitalRecoveryPaise === null
-                ? "Set in your agreement"
-                : inr(terms.capitalRecoveryPaise)
-            }
-            caption="What comes back to you first, before the protein share changes"
-            muted={terms.capitalRecoveryPaise === null}
-            words={terms.capitalRecoveryPaise === null}
-          />
-        </MetricCard>
-      </div>
+          <div className="mt-4 grid items-start gap-4 lg:grid-cols-3">
+            <PaymentsCard payments={payments} className="lg:col-span-2" />
+            <TermsCard terms={terms} />
+          </div>
+        </>
+      )}
 
-      <div className="mt-4 grid items-start gap-4 lg:grid-cols-3">
-        <PaymentsCard payments={payments} className="lg:col-span-2" />
-        <TermsCard terms={terms} />
-      </div>
+      {active && unbuilt.length > 0 && (
+        <div className="mt-6">
+          <ComingSoon sections={unbuilt} salesShown={sales != null} />
+        </div>
+      )}
     </>
   );
 }
@@ -704,10 +693,12 @@ function Figure({
   caption,
   muted = false,
   words = false,
+  warn = false,
 }: {
   value: string;
   caption: string;
   muted?: boolean;
+  warn?: boolean;
   /** Set where the slot holds a phrase rather than a numeral: at display size it wraps to three
    *  lines and pushes the card taller than the three beside it. */
   words?: boolean;
@@ -721,7 +712,7 @@ function Figure({
       >
         {value}
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{caption}</p>
+      <p className={`mt-2 text-sm leading-relaxed ${warn ? "text-amber-200" : "text-muted-foreground"}`}>{caption}</p>
     </div>
   );
 }
@@ -746,10 +737,12 @@ function PaymentsCard({
           Nothing is due yet. Your instalments appear here as they fall due.
         </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {payments.map((payment) => (
-            <PaymentRow key={payment.instalment} payment={payment} />
-          ))}
+        <div className="@container">
+          <div className="grid gap-3 @lg:grid-cols-2">
+            {payments.map((payment) => (
+              <PaymentRow key={payment.instalment} payment={payment} />
+            ))}
+          </div>
         </div>
       )}
       <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
@@ -847,6 +840,11 @@ function TermsCard({ terms }: { terms: FranchisePortalSnapshot["terms"] }) {
     <Card icon={Percent} label="Your terms" testId="card-terms">
       <p className="text-sm font-semibold text-foreground">{tier.shortName}</p>
       <RowGroup>
+        <Row label="Investment" value={inr(terms.investmentPaise)} />
+        <Row
+          label="Capital to recover"
+          value={terms.capitalRecoveryPaise === null ? "Set in your agreement" : inr(terms.capitalRecoveryPaise)}
+        />
         <Row label="Market rights" value={tier.marketRights} />
         <Row
           label="Protein share while recovering"
@@ -870,7 +868,8 @@ function TermsCard({ terms }: { terms: FranchisePortalSnapshot["terms"] }) {
         />
       </RowGroup>
       <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
-        The higher protein share is how your investment comes back to you. It moves to{" "}
+        Capital to recover is what comes back to you first. The higher protein share is how it
+        comes back, and it moves to{" "}
         {terms.proteinSharePctAfterRecovery}% once it has. Advertising income is separate and
         never counts towards recovery.
       </p>
@@ -1008,7 +1007,7 @@ function DocumentsCard({ documents }: { documents: FranchisePortalSnapshot["docu
 }
 
 /**
- * The nine sections that have no answer yet, in one panel behind its own tab.
+ * The sections that have no answer yet, in one panel at the foot of a trading Overview.
  *
  * **Not ten cards.** `GymDashboard` renders an `UnavailableCard` per absent section, and that is
  * right there because it is three or four cards among nine that carry figures, so the empty one

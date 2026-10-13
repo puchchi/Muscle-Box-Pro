@@ -223,11 +223,11 @@ Decided:
 
 - The console reads `GET /machine-admin/me` and shows each role only the menu items, tabs, fields
   and buttons this matrix gives it. A page the role can't open shows "You don't have access".
-- A franchise's dashboard is part of the console. Its Overview, Your record and Sales and payouts
-  pages sit in a "Your franchise" group at the top of the sidebar, and a franchise signs in to its
+- A franchise's dashboard is part of the console. Its Overview and Your record pages
+  sit in a "Your franchise" group at the top of the sidebar, and a franchise signs in to its
   Overview. The dashboard opens on the franchise session, not on `/me`, because production has no
   `/me` yet and `/me` refuses a franchise that isn't active. When `/me` doesn't answer, the
-  sidebar shows only those three pages. A gym's Figures and Your account pages work the same way under "Your gym". The
+  sidebar shows only those two pages. A gym's Figures and Your account pages work the same way under "Your gym". The
   console's own groups appear once its machine is installed.
 - Everyone signs in to the console at `/machines/sign-in` with one form: an email or an operator ID, and a
   password. Anything with an `@` goes to the admin, franchise and gym sign-ins in that order, and the first

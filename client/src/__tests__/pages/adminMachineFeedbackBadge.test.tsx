@@ -108,7 +108,7 @@ describe("Machine menu for other roles", () => {
     expect(screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["Your franchise", "Fleet", "Sales"]);
     expect(screen.getByTestId("machines-tab-overview")).toHaveAttribute("href", "/franchise/dashboard");
     expect(screen.getByTestId("machines-tab-record")).toHaveAttribute("href", "/franchise/dashboard/record");
-    expect(screen.getByTestId("machines-tab-payouts")).toHaveAttribute("href", "/franchise/dashboard/sales");
+    expect(screen.queryByTestId("machines-tab-payouts")).not.toBeInTheDocument();
     expect(screen.queryByTestId("link-back-to-admin")).not.toBeInTheDocument();
     expect(screen.getByTestId("machines-no-access")).toBeInTheDocument();
     expect(screen.queryByText("secret")).not.toBeInTheDocument();

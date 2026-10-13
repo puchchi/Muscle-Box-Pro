@@ -23,7 +23,6 @@ import {
   UserCog,
   Users,
   Volume2,
-  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { apiBaseUrl } from "@/lib/apiClient";
@@ -33,7 +32,7 @@ import { useMachineSignOut, ViewerProvider } from "./viewer";
 
 type NavItem = { href: string; label: string; id: string; icon: LucideIcon; needs?: Permission | Permission[]; shop?: true };
 
-export type PortalSection = "overview" | "record" | "payouts" | "figures" | "account";
+export type PortalSection = "overview" | "record" | "figures" | "account";
 
 const PORTAL_GROUPS: Partial<Record<ViewerRole, { label: string; items: ReadonlyArray<NavItem & { id: PortalSection }> }>> = {
   franchise: {
@@ -41,7 +40,6 @@ const PORTAL_GROUPS: Partial<Record<ViewerRole, { label: string; items: Readonly
     items: [
       { href: "/franchise/dashboard", label: "Overview", id: "overview", icon: LayoutDashboard },
       { href: "/franchise/dashboard/record", label: "Your record", id: "record", icon: FileText },
-      { href: "/franchise/dashboard/sales", label: "Sales and payouts", id: "payouts", icon: Wallet },
     ],
   },
   gym: {
