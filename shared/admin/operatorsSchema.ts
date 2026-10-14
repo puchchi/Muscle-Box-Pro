@@ -34,7 +34,12 @@ export const operatorSchema = z.object({
   disabledReason: z.string().nullable().optional().transform((v) => v ?? null),
 });
 
-export const operatorsSchema = z.object({ operators: z.array(operatorSchema) });
+// Rows saved before operators had IDs (keyed by email) come back without operatorId and can't sign in or be edited.
+const hasId = (row: unknown) => typeof row === "object" && row !== null && typeof (row as { operatorId?: unknown }).operatorId === "string";
+
+export const operatorsSchema = z.object({
+  operators: z.preprocess((rows) => (Array.isArray(rows) ? rows.filter(hasId) : rows), z.array(operatorSchema)),
+});
 
 export const operatorEnvelopeSchema = z.object({ operator: operatorSchema });
 
