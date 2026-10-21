@@ -29,6 +29,7 @@ const { mockFetchSession, mockSignOut } = vi.hoisted(() => ({
   mockFetchSession: vi.fn(),
   mockSignOut: vi.fn(),
 }));
+vi.mock("@/lib/machineConsoleSignIn", () => ({ signOutOfMachineConsole: vi.fn() }));
 vi.mock("@/lib/adminSession", () => ({
   ADMIN_SESSION_QUERY_KEY: ["admin-session"],
   fetchAdminSession: mockFetchSession,

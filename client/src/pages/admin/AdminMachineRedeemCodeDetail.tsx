@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { deleteRedeemCode, fetchRedeemCode, fetchRedeemUses, setRedeemCodeDisabled, updateRedeemCode } from "@/lib/adminMachineApi";
 import type { RedeemCode, RedeemUse } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card, Field, Fields, Pill, SuccessPanel } from "./AdminUi";
 import { CodeForm } from "./machines/CodeForm";
 import { setFlash, takeFlash } from "./machines/flash";
@@ -31,12 +31,13 @@ import {
 } from "./machines/MachinesUi";
 
 export default function AdminMachineRedeemCodeDetail({ code }: { code: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <CodeDetail session={guard.session} codeId={code} />;
 }
 
-function CodeDetail({ session, codeId }: { session: AdminSession; codeId: string }) {
+function CodeDetail({ session, codeId }: { session: MachineViewer; codeId: string }) {
+  const canEdit = session.can.has("redeemCodes.edit");
   const router = useRouter();
   const [code, setCode] = useState<RedeemCode | null>(null);
   const [uses, setUses] = useState<RedeemUse[] | null>(null);
@@ -132,7 +133,8 @@ function CodeDetail({ session, codeId }: { session: AdminSession; codeId: string
         }
         action={
           code &&
-          !shop && (
+          !shop &&
+          canEdit && (
             <span className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => void toggleDisabled()} disabled={busy} className="rounded-xl cursor-pointer" data-testid="button-disable-code">
                 {code.disabled ? "Enable" : "Disable"}
@@ -164,6 +166,11 @@ function CodeDetail({ session, codeId }: { session: AdminSession; codeId: string
       {code && shop ? (
         <div className="space-y-5">
           <ShopCodeCard code={code} />
+          <UsageCard uses={uses} />
+        </div>
+      ) : code && !canEdit ? (
+        <div className="space-y-5">
+          <CodeSummaryCard code={code} />
           <UsageCard uses={uses} />
         </div>
       ) : code && goods ? (
@@ -211,6 +218,19 @@ function ShopCodeCard({ code }: { code: RedeemCode }) {
       <Fields>
         <Field label="Source" value={CODE_SOURCE_LABEL[code.source].text} testId="shop-code-source" />
         <Field label="Shop order" value={code.shopOrderId} mono testId="shop-code-order" />
+        <Field label="Goods" value={code.goods.map((g) => g.name).join(", ")} />
+        <Field label="Machines" value={code.allMachines ? "All machines" : code.sns.join(", ")} mono={!code.allMachines} />
+        <Field label="Valid" value={validWindow(code, formatIstStamp)} />
+      </Fields>
+    </Card>
+  );
+}
+
+function CodeSummaryCard({ code }: { code: RedeemCode }) {
+  return (
+    <Card title="Code" testId="card-code-summary">
+      <Fields>
+        <Field label="Theme" value={code.theme || "None"} />
         <Field label="Goods" value={code.goods.map((g) => g.name).join(", ")} />
         <Field label="Machines" value={code.allMachines ? "All machines" : code.sns.join(", ")} mono={!code.allMachines} />
         <Field label="Valid" value={validWindow(code, formatIstStamp)} />

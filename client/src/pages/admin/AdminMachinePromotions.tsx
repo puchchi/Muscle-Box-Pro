@@ -6,10 +6,10 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deletePromotion, fetchPromotions, setPromotionPaused } from "@/lib/adminMachineApi";
 import { PROMOTION_STATUSES, type Promotion, type PromotionKind, type PromotionStatus } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Pill, SuccessPanel } from "./AdminUi";
 import { takeFlash } from "./machines/flash";
 import { KIND_COPY, PROMOTION_STATUS_LABEL, savedNotice, whereLabel } from "./machines/promotionRules";
@@ -36,12 +36,13 @@ import {
 const STATUS_OPTIONS = [{ value: "", label: "Any status" }, ...PROMOTION_STATUSES.map((s) => ({ value: s, label: PROMOTION_STATUS_LABEL[s].text }))];
 
 export default function AdminMachinePromotions({ kind }: { kind: PromotionKind }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <Promotions session={guard.session} kind={kind} />;
 }
 
-function Promotions({ session, kind }: { session: AdminSession; kind: PromotionKind }) {
+function Promotions({ session, kind }: { session: MachineViewer; kind: PromotionKind }) {
+  const canEdit = session.can.has(kind === "discount" ? "discounts.edit" : "newProducts.edit");
   const copy = KIND_COPY[kind];
   const [draft, setDraft] = useState({ name: "", status: "", hideEnded: false });
   const [filters, setFilters] = useState(draft);
@@ -127,12 +128,14 @@ function Promotions({ session, kind }: { session: AdminSession; kind: PromotionK
             : "Put the New badge on goods for a set time."
         }
         action={
-          <Button asChild className="rounded-xl cursor-pointer">
-            <Link href={`${copy.href}/new`} data-testid="button-add-promotion">
-              <Plus className="h-4 w-4" aria-hidden />
-              Add {copy.one}
-            </Link>
-          </Button>
+          canEdit && (
+            <Button asChild className="rounded-xl cursor-pointer">
+              <Link href={`${copy.href}/new`} data-testid="button-add-promotion">
+                <Plus className="h-4 w-4" aria-hidden />
+                Add {copy.one}
+              </Link>
+            </Button>
+          )
         }
       />
 
@@ -215,9 +218,9 @@ function Promotions({ session, kind }: { session: AdminSession; kind: PromotionK
                   <Cell>
                     <span className="flex gap-3 whitespace-nowrap">
                       <Link href={href} className="text-xs font-semibold text-primary hover:underline" data-testid={`edit-promotion-${p.promoId}`}>
-                        Edit
+                        {canEdit ? "Edit" : "View"}
                       </Link>
-                      {p.status !== "ended" && (
+                      {canEdit && p.status !== "ended" && (
                         <button
                           type="button"
                           onClick={() => void togglePaused(p)}
@@ -228,17 +231,19 @@ function Promotions({ session, kind }: { session: AdminSession; kind: PromotionK
                           {p.paused ? "Resume" : "Pause"}
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNotice(null);
-                          setDeleting(p);
-                        }}
-                        className="text-xs font-semibold text-rose-300 hover:underline cursor-pointer"
-                        data-testid={`delete-promotion-${p.promoId}`}
-                      >
-                        Delete
-                      </button>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNotice(null);
+                            setDeleting(p);
+                          }}
+                          className="text-xs font-semibold text-rose-300 hover:underline cursor-pointer"
+                          data-testid={`delete-promotion-${p.promoId}`}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </span>
                   </Cell>
                 </tr>

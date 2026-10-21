@@ -6,7 +6,8 @@ import { fetchBackup, fetchBackups, updateMachine } from "@/lib/adminMachineApi"
 import type { MachineEditInput } from "@shared/admin/machines";
 import type { Machine, MachineModel } from "@shared/admin/machinesSchema";
 import { Card, Field, Fields, SuccessPanel } from "../AdminUi";
-import { MachineForm } from "./MachineForm";
+import { MachineForm, settingAccess } from "./MachineForm";
+import { useCan } from "./viewer";
 import { formatIstStamp, REFRESH_NOTE } from "./MachinesUi";
 import { skipPaymentOn } from "./backupRules";
 
@@ -33,8 +34,11 @@ export function MachineSettingsTab({
   const [stale, setStale] = useState(false);
   const [saved, setSaved] = useState(false);
   const [skipPaymentAt, setSkipPaymentAt] = useState<string | null>(null);
+  const can = useCan();
+  const canReadBackups = can("files.backups.view");
 
   useEffect(() => {
+    if (!canReadBackups) return;
     let live = true;
     void skipPaymentBackupAt(machine.sn).then((at) => {
       if (live) setSkipPaymentAt(at);
@@ -42,7 +46,7 @@ export function MachineSettingsTab({
     return () => {
       live = false;
     };
-  }, [machine.sn]);
+  }, [machine.sn, canReadBackups]);
 
   async function reload() {
     const fresh = await onReload();
@@ -74,10 +78,11 @@ export function MachineSettingsTab({
             machine={machine}
             models={models}
             skipPaymentBackupAt={skipPaymentAt}
+            access={settingAccess(can)}
             submitLabel="Save"
             onSubmit={async (input) => {
               setSaved(false);
-              const result = await updateMachine(machine.sn, input as MachineEditInput, machine.version);
+              const result = await updateMachine(machine.sn, input as Partial<MachineEditInput>, machine.version);
               if (result.ok) {
                 onSaved(result.data.machine);
                 setSaved(true);

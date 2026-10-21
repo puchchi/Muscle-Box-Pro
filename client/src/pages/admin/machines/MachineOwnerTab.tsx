@@ -12,8 +12,37 @@ import { Cell, Col, formatIstStamp, Head, ProblemPanel, type Problem } from "./M
 import { MoveMachineDialog } from "./MoveMachineDialog";
 import { FranchiseLink, GymLink, OwnerCellText, OwnerPill } from "./ownerBits";
 import { ownerLine, OWNER_REASON_LABEL } from "./ownerRules";
+import { useCan } from "./viewer";
 
 export function MachineOwnerTab({ machine, onChanged }: { machine: Machine; onChanged: () => void }) {
+  return useCan()("owner.move.edit") ? <ManageOwner machine={machine} onChanged={onChanged} /> : <OwnerSummary machine={machine} />;
+}
+
+function OwnerSummary({ machine }: { machine: Machine }) {
+  const owner = machine.owner ?? null;
+  return (
+    <Card title="Current owner" note="Orders are credited to the owner at the time of the order." testId="card-owner">
+      <dl className="divide-y divide-border/60 py-1">
+        {machine.ownerState && (
+          <Row label="Status">
+            <OwnerPill state={machine.ownerState} testId="owner-state" />
+          </Row>
+        )}
+        <Row label="Gym" testId="owner-gym">
+          {owner?.gymName ?? (owner?.gymId ? "A gym" : "Not placed")}
+        </Row>
+        <Row label="Franchise" testId="owner-franchise">
+          {owner?.franchiseName ?? (owner?.franchiseId ? "A franchise" : "None")}
+        </Row>
+        <Row label="Since" testId="owner-since">
+          {formatIstStamp(owner?.since ?? null)}
+        </Row>
+      </dl>
+    </Card>
+  );
+}
+
+function ManageOwner({ machine, onChanged }: { machine: Machine; onChanged: () => void }) {
   const [data, setData] = useState<MachineOwner | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [moving, setMoving] = useState(false);

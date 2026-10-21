@@ -54,7 +54,7 @@ import {
   fetchPayoutAccount,
 } from "@/lib/gymPayoutAccountApi";
 import PayoutAccountCard from "./PayoutAccountCard";
-import { Card, Row, RowGroup, type CardProps } from "./portalCards";
+import { Card, MachineConsoleLink, Row, RowGroup, type CardProps } from "./portalCards";
 import { formatIstDate, formatIstDateTime } from "./istDates";
 
 /**
@@ -373,6 +373,8 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
 
       {snapshot.deposit.status !== "paid" && <DepositBanner snapshot={snapshot} />}
 
+      {!preInstall && <MachineConsoleLink body="See how your machine is doing and what it has sold." />}
+
       {needsPayoutAccount && (
         <PayoutAccountPrompt
           onAdd={() => {
@@ -387,14 +389,14 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
           <TabsList className="h-auto rounded-xl border border-border bg-card p-1 text-muted-foreground">
             <TabsTrigger
               value="figures"
-              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background hover:text-foreground data-[state=active]:bg-primary-fill data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
               data-testid="tab-figures"
             >
               Figures
             </TabsTrigger>
             <TabsTrigger
               value="account"
-              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background data-[state=active]:bg-secondary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              className="cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold ring-offset-background hover:text-foreground data-[state=active]:bg-primary-fill data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
               data-testid="tab-account"
             >
               Your account
@@ -449,7 +451,7 @@ function PortalContent({ snapshot }: { snapshot: GymPortalSnapshot }) {
           {anythingUnbuilt && <ReportingNotice preInstall={preInstall} />}
 
           {sales.available && (
-            <p className="mt-6 max-w-[70ch] text-[13px] leading-relaxed text-muted-foreground">
+            <p className="mt-6 max-w-[70ch] text-sm leading-relaxed text-muted-foreground">
               Provisional until your monthly statement, which is the settled amount and is issued
               within {terms.settlementDaysAfterMonthEnd} days of month-end. Costs are one total
               because your share is calculated on net profit.
@@ -495,7 +497,7 @@ function LastUpdated({ snapshot }: { snapshot: GymPortalSnapshot }) {
 
   return (
     <p
-      className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-[13px] text-muted-foreground"
+      className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground"
       data-testid="as-of"
     >
       <RefreshCw className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/80" aria-hidden="true" />
@@ -715,7 +717,7 @@ function MachineStatusPill({ status }: { status: MachineStatus }) {
  */
 function ReportingNotice({ preInstall }: { preInstall: boolean }) {
   return (
-    <p className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
+    <p className="mt-4 flex items-start gap-2.5 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
       <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/70" aria-hidden="true" />
       <span className="max-w-[80ch]">
         {preInstall
@@ -807,7 +809,7 @@ function PortalError({
         <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-400" aria-hidden="true" />
         We can't show your figures right now
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-amber-100/70">
+      <p className="mt-2 text-sm leading-relaxed text-amber-100">
         This is a problem at our end, not with your machine or your account. Every cup is still
         counted, and your settled statements are issued from our records rather than from this page.
       </p>
@@ -864,9 +866,9 @@ function MetricCard({
         </>
       )}
       <div className="relative flex items-start justify-between gap-3">
-        <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+        <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
           {label}
-        </h3>
+        </h2>
         <span
           className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg ring-1 ring-inset ${
             accent
@@ -908,7 +910,7 @@ function Figure({
       >
         {value}
       </p>
-      <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{caption}</p>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{caption}</p>
     </div>
   );
 }
@@ -995,7 +997,7 @@ function CupsCard({
             style={{ width: `${milestone.progressPct}%` }}
           />
         </div>
-        <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground" data-testid="milestone-note">
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground" data-testid="milestone-note">
           {milestone.reachedByPeriodEnd ? (
             <>
               Milestone reached. Your share of net profit is now{" "}
@@ -1019,7 +1021,7 @@ function CupsCard({
           // Which of §6.1's two tests is being tracked, and why. A bar tracking the
           // 15,000-cup figure would read 48% here while the real threshold is 94% of the
           // way in — the gym would think the step-up is a year off when it is a month.
-          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground/80">
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
             {milestone.binding === "netProfit"
               ? `Tracking ${formatInr(terms.milestoneNetProfitInr)} of net profit, which at your margin comes before ${count(terms.milestoneCups)} cups.`
               : `Tracking ${count(terms.milestoneCups)} cups, which at your margin comes before ${formatInr(terms.milestoneNetProfitInr)} of net profit.`}
@@ -1062,7 +1064,7 @@ function ProfitCard({ settlement }: { settlement: PeriodSettlement }) {
         <Row label="Your share" value={`${shake.currentGymSharePct}%`} />
       </RowGroup>
       {shake.split && (
-        <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground" data-testid="split-note">
+        <p className="mt-auto text-sm leading-relaxed text-muted-foreground" data-testid="split-note">
           Your milestone fell inside this month: {shake.tranches[0].gymSharePct}% on the first{" "}
           {count(shake.tranches[0].paidCups)} cups, {shake.tranches[1].gymSharePct}% on the rest, an
           effective {shake.effectiveGymSharePct}%.
@@ -1098,7 +1100,7 @@ function PayoutCard({
           understatement is indistinguishable from a bad month. */}
       {!advertisingReported && (
         <p
-          className="text-[13px] leading-relaxed text-muted-foreground"
+          className="text-sm leading-relaxed text-muted-foreground"
           data-testid="payout-excludes-advertising"
         >
           Shake profit only. Your advertising share is settled with your statement.
@@ -1108,7 +1110,7 @@ function PayoutCard({
         {!statements.available ? (
           // Not "your first statement is issued after your first full month": that would
           // be a claim about this gym's history, and we do not have it.
-          <p className="text-[13px] text-muted-foreground">Settled months are not listed yet.</p>
+          <p className="text-sm text-muted-foreground">Settled months are not listed yet.</p>
         ) : lastSettled ? (
           <RowGroup>
             <Row
@@ -1117,7 +1119,7 @@ function PayoutCard({
             />
           </RowGroup>
         ) : (
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Your first statement is issued after your first full month.
           </p>
         )}
@@ -1151,20 +1153,20 @@ function ElectricityCard({
         />
       </RowGroup>
       {electricity.floorApplied && (
-        <p className="text-[13px] leading-relaxed text-muted-foreground">
+        <p className="text-sm leading-relaxed text-muted-foreground">
           The {formatInr(terms.electricityInrPerBlock)} minimum, paid whatever the cup count.
         </p>
       )}
       {/* Cups to the next *increase*, not to the next block boundary. Under the floor
           the two differ, and "600 more cups earns another ₹1,000" would be false. */}
       {electricity.nextIncreaseAtCups > 0 && (
-        <p className="text-[13px] leading-relaxed text-muted-foreground" data-testid="electricity-next">
+        <p className="text-sm leading-relaxed text-muted-foreground" data-testid="electricity-next">
           {count(electricity.cupsToNextIncrease)} more cups takes it to{" "}
           {formatInr(electricity.earnedInr + terms.electricityInrPerBlock)}.
         </p>
       )}
       {electricity.cupsInIncompleteBlock > 0 && (
-        <p className="text-xs leading-relaxed text-muted-foreground/80">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           Part-blocks do not carry past {formatAgreementDate(reviewPeriod.endsOn)}.
         </p>
       )}
@@ -1203,7 +1205,7 @@ function AdvertisingCard({
       </RowGroup>
       {/* §9.4. Stated on the card rather than in a tooltip, because a gym that has
           just stepped up to 50% on shakes will otherwise read this as an error. */}
-      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
         Shared {100 - advertising.gymSharePct}:{advertising.gymSharePct} for the whole term,
         whatever your shake profit share.
       </p>
@@ -1227,7 +1229,7 @@ function MachineCard({ machine }: { machine: GymPortalSnapshot["machine"] }) {
           value={machine.lastServiceAt ? formatIstDate(machine.lastServiceAt) : "—"}
         />
       </RowGroup>
-      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
         Servicing, restocking and repairs are ours, at no cost to you.
       </p>
     </Card>
@@ -1252,26 +1254,26 @@ function StatementsCard({
   return (
     <Card icon={FileText} label="Statements & agreement" testId="card-statements">
       {!statements.available ? (
-        <p className="text-[13px] leading-relaxed text-muted-foreground" data-testid="statements-unavailable">
+        <p className="text-sm leading-relaxed text-muted-foreground" data-testid="statements-unavailable">
           {statements.reason === "no_data_yet"
             ? "Your first statement appears after your first full month of trading."
             : "Settled statements are not listed here yet."}
         </p>
       ) : statements.data.length === 0 ? (
-        <p className="text-[13px] text-muted-foreground">No settled months yet.</p>
+        <p className="text-sm text-muted-foreground">No settled months yet.</p>
       ) : (
         <div className="divide-y divide-border/70">
           {statements.data.map((statement) => (
             <div
               key={statement.period}
-              className="flex items-baseline justify-between gap-3 py-2.5 text-[13px] first:pt-0"
+              className="flex items-baseline justify-between gap-3 py-2.5 text-sm first:pt-0"
               data-testid={`statement-${statement.period}`}
             >
               <span className="text-muted-foreground">
                 <span className="block font-semibold text-foreground">
                   {monthName(statement.period)}
                 </span>
-                <span className="block text-xs text-muted-foreground/80">
+                <span className="block text-xs text-muted-foreground">
                   settled {formatAgreementDate(statement.settledOn)}
                 </span>
               </span>
@@ -1288,7 +1290,7 @@ function StatementsCard({
                     Download PDF
                   </a>
                 ) : (
-                  <span className="text-xs text-muted-foreground/80">PDF not yet issued</span>
+                  <span className="text-xs text-muted-foreground">PDF not yet issued</span>
                 )}
               </span>
             </div>
@@ -1302,7 +1304,7 @@ function StatementsCard({
             <Row label="Agreement" value={`v${agreement.version}`} />
             <Row label="Signed" value={formatIstDate(agreement.signedAt)} />
           </RowGroup>
-          <p className="mt-2 break-all font-mono text-xs text-muted-foreground/80">
+          <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
             {/* The hash is here so a gym can check its own copy against ours. It is
                 evidence, and evidence you cannot see is not much use. */}
             Document hash {agreement.contentHash.slice(0, 16)}…
@@ -1331,7 +1333,7 @@ function DepositCard({ snapshot }: { snapshot: GymPortalSnapshot }) {
           <Row label="Paid on" value={formatAgreementDate(receipt.paidAt)} />
         </RowGroup>
       )}
-      <p className="mt-auto text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
         Refunded within 30 days of the machine being returned in working order, less any amounts
         due.
       </p>

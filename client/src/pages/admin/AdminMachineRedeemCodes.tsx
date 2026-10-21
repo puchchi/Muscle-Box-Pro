@@ -7,10 +7,10 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deleteRedeemCode, fetchRedeemCodes, setRedeemCodeDisabled } from "@/lib/adminMachineApi";
 import { CODE_SOURCES, CODE_STATUSES, type CodeStatus, type RedeemCode } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Pill, SuccessPanel } from "./AdminUi";
 import { takeFlash } from "./machines/flash";
 import { CODE_SOURCE_LABEL, CODE_STATUS_LABEL, isShopCode, validWindow } from "./machines/codeRules";
@@ -38,12 +38,13 @@ const STATUS_OPTIONS = [{ value: "", label: "Any status" }, ...CODE_STATUSES.map
 const SOURCE_OPTIONS = [{ value: "", label: "Any source" }, ...CODE_SOURCES.map((s) => ({ value: s, label: CODE_SOURCE_LABEL[s].text }))];
 
 export default function AdminMachineRedeemCodes() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <RedeemCodes session={guard.session} />;
 }
 
-function RedeemCodes({ session }: { session: AdminSession }) {
+function RedeemCodes({ session }: { session: MachineViewer }) {
+  const canEdit = session.can.has("redeemCodes.edit");
   const search = useSearchParams();
   const [draft, setDraft] = useState({ q: "", status: "", source: "", shopOrderId: search?.get("shopOrderId") ?? "" });
   const [filters, setFilters] = useState(draft);
@@ -119,12 +120,14 @@ function RedeemCodes({ session }: { session: AdminSession }) {
         title="Redeem codes"
         subtitle="Codes customers type on the machine to get a free drink."
         action={
-          <Button asChild className="rounded-xl cursor-pointer">
-            <Link href="/machines/redeem-codes/new" data-testid="button-add-code">
-              <Plus className="h-4 w-4" aria-hidden />
-              Add code
-            </Link>
-          </Button>
+          canEdit && (
+            <Button asChild className="rounded-xl cursor-pointer">
+              <Link href="/machines/redeem-codes/new" data-testid="button-add-code">
+                <Plus className="h-4 w-4" aria-hidden />
+                Add code
+              </Link>
+            </Button>
+          )
         }
       />
 
@@ -212,12 +215,12 @@ function RedeemCodes({ session }: { session: AdminSession }) {
                   <Cell>
                     <span className="flex gap-3 whitespace-nowrap">
                       <Link href={href} className="text-xs font-semibold text-primary hover:underline" data-testid={`edit-code-${c.code}`}>
-                        {shop ? "View" : "Edit"}
+                        {shop || !canEdit ? "View" : "Edit"}
                       </Link>
                       <Link href={`${href}#usage`} className="text-xs font-semibold text-primary hover:underline" data-testid={`usage-code-${c.code}`}>
                         Usage
                       </Link>
-                      {!shop && (
+                      {!shop && canEdit && (
                         <button
                           type="button"
                           onClick={() => void toggleDisabled(c)}
@@ -228,7 +231,7 @@ function RedeemCodes({ session }: { session: AdminSession }) {
                           {c.disabled ? "Enable" : "Disable"}
                         </button>
                       )}
-                      {c.canDelete && (
+                      {c.canDelete && canEdit && (
                         <button
                           type="button"
                           onClick={() => {

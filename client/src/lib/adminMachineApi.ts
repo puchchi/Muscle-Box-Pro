@@ -24,6 +24,7 @@ import type {
   UploadKind,
   VoicePositionsInput,
 } from "@shared/admin/machines";
+import { viewerSchema } from "@shared/admin/viewerSchema";
 import { feedbackListSchema, feedbackSchema, type FeedbackFilters, type FeedbackPatch } from "@shared/admin/feedbackSchema";
 import {
   adDeleteSchema,
@@ -101,6 +102,8 @@ async function call<S extends z.ZodTypeAny>(
   return { ok: true, data: parsed.data };
 }
 
+export { call as machineCall };
+
 export function queryString(params: Record<string, string | number | undefined | null>): string {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -112,6 +115,8 @@ export function queryString(params: Record<string, string | number | undefined |
 }
 
 const seg = encodeURIComponent;
+
+export const fetchViewer = () => call(viewerSchema, "GET", "/me");
 
 export const fetchMachineSummary = () => call(summarySchema, "GET", "/summary");
 
@@ -133,7 +138,7 @@ export const fetchMachine = (sn: string) => call(machineEnvelopeSchema, "GET", `
 export const createMachine = (input: MachineCreateInput) =>
   call(machineEnvelopeSchema, "POST", "/machines", input);
 
-export const updateMachine = (sn: string, input: MachineEditInput, expectedVersion: number) =>
+export const updateMachine = (sn: string, input: Partial<MachineEditInput>, expectedVersion: number) =>
   call(machineEnvelopeSchema, "PATCH", `/machines/${seg(sn)}`, { ...input, expectedVersion });
 
 export const setMachinePin = (sn: string, pin: string, confirmPin: string) =>

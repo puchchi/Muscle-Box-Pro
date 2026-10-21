@@ -313,7 +313,7 @@ export default function Franchise() {
               scanning for before anything else has settled.
             */}
             <nav aria-label="Breadcrumb" className="mb-7">
-              <ol className="flex items-center gap-2 text-[13px]">
+              <ol className="flex items-center gap-2 text-sm">
                 <li>
                   <Link
                     href="/"
@@ -360,13 +360,13 @@ export default function Franchise() {
                   The `{" "}` is load-bearing all the same: the HTML-to-text pass some
                   crawlers and AI scrapers use would otherwise read "aProtein".
                 */}
-                <h1 className="font-display font-black text-white uppercase text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] leading-[0.95] tracking-tight mb-5 text-balance">
+                <h1 className="font-display font-black text-white uppercase text-[clamp(2rem,4vw,3rem)] leading-[0.95] mb-6 text-balance">
                   Build and operate a{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                     protein vending machine franchise
                   </span>
                 </h1>
-                <p className="text-gray-300 text-base sm:text-lg leading-relaxed max-w-xl text-balance">
+                <p className="text-gray-300 text-lg leading-relaxed max-w-xl text-balance">
                   Develop a territory or a city on our machines, our technology and our protein
                   pipeline. You run the local network and share in the profit it generates.
                 </p>
@@ -446,7 +446,7 @@ export default function Franchise() {
                             <p className="text-white font-bold text-[15px] leading-snug">
                               {tier.shortName}
                             </p>
-                            <p className="text-gray-400 text-[13px] leading-snug">
+                            <p className="text-gray-400 text-sm leading-snug">
                               {tier.marketRights}
                             </p>
                           </div>
@@ -464,7 +464,7 @@ export default function Franchise() {
                   </div>
                   <a
                     href="#tiers"
-                    className="flex items-center justify-center gap-1.5 text-primary text-[13px] font-bold mt-4 py-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:underline"
+                    className="flex items-center justify-center gap-1.5 text-primary text-sm font-bold mt-4 py-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:underline"
                   >
                     Compare both tiers in full
                     <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -490,7 +490,7 @@ export default function Franchise() {
                       precedes its `dd` in the DOM. */}
                   <div className="flex flex-col-reverse gap-1">
                     <dt className="text-gray-400 text-xs leading-snug">{h.label}</dt>
-                    <dd className="text-white font-display font-black text-xl sm:text-2xl leading-none tabular-nums">
+                    <dd className="text-white font-display font-black text-2xl sm:text-[2rem] leading-none tabular-nums">
                       {h.value}
                     </dd>
                   </div>
@@ -515,12 +515,12 @@ export default function Franchise() {
           Re-export the PDF whenever the source markdown changes. A stale copy at a public
           URL publishes superseded terms under our own name.
 
-          Left-aligned rather than centred: centred ragged text at 13px is the hardest
+          Left-aligned rather than centred: centred ragged text at 14px is the hardest
           thing on the page to read.
         */}
         <div className="bg-muted/60 border-b border-border px-4 sm:px-6 lg:px-8 py-4">
           <div className="max-w-5xl mx-auto">
-            <p className="max-w-4xl text-muted-foreground text-[13px] leading-relaxed flex items-start gap-2">
+            <p className="max-w-4xl text-muted-foreground text-sm leading-relaxed flex items-start gap-2">
               <ShieldCheck
                 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"
                 aria-hidden="true"
@@ -579,7 +579,7 @@ export default function Franchise() {
                     <p className="font-display font-black text-3xl sm:text-4xl leading-none tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-accent to-primary">
                       {formatLakh(tier.investmentInr)}
                     </p>
-                    <p className="text-muted-foreground text-[13px] tabular-nums">
+                    <p className="text-muted-foreground text-sm tabular-nums">
                       {formatInr(tier.investmentInr)}
                     </p>
                   </div>
@@ -624,7 +624,7 @@ export default function Franchise() {
                       {tier.paymentSchedule.map((stage) => (
                         <li
                           key={stage.trigger}
-                          className="flex items-baseline justify-between gap-3 px-3.5 py-2.5 text-[13px]"
+                          className="flex items-baseline justify-between gap-3 px-3.5 py-2.5 text-sm"
                         >
                           <span className="text-muted-foreground">{stage.trigger}</span>
                           <span className="font-bold tabular-nums flex-shrink-0">
@@ -634,7 +634,7 @@ export default function Franchise() {
                       ))}
                     </ol>
                   ) : (
-                    <p className="text-muted-foreground text-[13px] leading-relaxed rounded-xl border border-border px-3.5 py-2.5">
+                    <p className="text-muted-foreground text-sm leading-relaxed rounded-xl border border-border px-3.5 py-2.5">
                       Generally linked to franchise registration and machine procurement
                       readiness, with the exact schedule set in the definitive agreement.
                     </p>
@@ -655,7 +655,7 @@ export default function Franchise() {
             ))}
           </div>
 
-          <p className="text-muted-foreground text-[13px] leading-relaxed mt-5 max-w-3xl flex items-start gap-2">
+          <p className="text-muted-foreground text-sm leading-relaxed mt-5 max-w-3xl flex items-start gap-2">
             <MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               Everything we supply is the same on both, and is listed under{" "}
@@ -738,7 +738,7 @@ export default function Franchise() {
                 Illustration
               </span>
             </div>
-            <p className="text-muted-foreground text-[13px] leading-relaxed mb-7 max-w-2xl">
+            <p className="text-muted-foreground text-sm leading-relaxed mb-7 max-w-2xl">
               An illustration of the mechanism on a {territory.shortName}, not a forecast of
               what a machine earns.
             </p>
@@ -752,10 +752,10 @@ export default function Franchise() {
             <div className="space-y-7">
               <div>
                 <div className="flex items-baseline justify-between gap-3 mb-2">
-                  <span className="text-[13px] font-semibold tabular-nums">
+                  <span className="text-sm font-semibold tabular-nums">
                     {formatInr(example.alreadyReceivedInr)} received
                   </span>
-                  <span className="text-[13px] text-muted-foreground tabular-nums">
+                  <span className="text-sm text-muted-foreground tabular-nums">
                     of {formatInr(example.thresholdInr)}
                   </span>
                 </div>
@@ -765,7 +765,7 @@ export default function Franchise() {
                   figures either side say it in text.
                 */}
                 <RecoveryMeter fraction={example.progress} />
-                <p className="text-muted-foreground text-[13px] mt-2.5">
+                <p className="text-muted-foreground text-sm mt-2.5">
                   Remaining recovery amount:{" "}
                   <strong className="font-bold text-foreground tabular-nums">
                     {formatInr(example.remainingInr)}
@@ -774,7 +774,7 @@ export default function Franchise() {
               </div>
 
               <div className="pt-6 border-t border-border">
-                <p className="text-[13px] font-semibold mb-2">
+                <p className="text-sm font-semibold mb-2">
                   Where the next {formatInr(example.nextDistributionInr)} goes
                 </p>
                 {/*
@@ -862,7 +862,7 @@ export default function Franchise() {
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:p-7 mt-5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 mb-4">
               <CardHeading dark>What your share is calculated on</CardHeading>
-              <p className="flex items-center gap-2 text-gray-400 text-[13px]">
+              <p className="flex items-center gap-2 text-gray-400 text-sm">
                 <span
                   className="w-2 h-2 rounded-full bg-primary flex-shrink-0"
                   aria-hidden="true"
@@ -870,7 +870,7 @@ export default function Franchise() {
                 Also comes off a gym&rsquo;s own share
               </p>
             </div>
-            <p className="text-gray-400 text-[13px] leading-relaxed mb-4">
+            <p className="text-gray-400 text-sm leading-relaxed mb-4">
               Franchise profit is worked out after all of these, which is the difference in
               scope: a gym&rsquo;s share is calculated on the cup, yours on the actual
               economics of running a local network.
@@ -881,7 +881,7 @@ export default function Franchise() {
                 return (
                   <li
                     key={cost}
-                    className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] ${
+                    className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${
                       alsoGymLevel
                         ? "border-primary/40 bg-primary/[0.12] text-white"
                         : "border-white/15 bg-white/[0.06] text-gray-200"
@@ -898,7 +898,7 @@ export default function Franchise() {
                 );
               })}
             </ul>
-            <p className="text-gray-400 text-[13px] leading-relaxed mt-4">
+            <p className="text-gray-400 text-sm leading-relaxed mt-4">
               Gym deals use splits such as {FRANCHISE.gymProfitSharingExamples.join(" or ")}.
               MuscleBox Pro sets the split for each location, including which side gets the larger
               share.
@@ -917,7 +917,7 @@ export default function Franchise() {
               {DASHBOARD_VISIBILITY.map((item) => (
                 <li
                   key={item}
-                  className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[13px] text-gray-200"
+                  className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-sm text-gray-200"
                 >
                   {item}
                 </li>
@@ -1111,7 +1111,7 @@ export default function Franchise() {
                   ))}
                 </dl>
 
-                <p className="text-[13px] leading-relaxed mt-7">
+                <p className="text-sm leading-relaxed mt-7">
                   <Link
                     href="/specs"
                     className="text-primary-ink font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -1200,7 +1200,7 @@ export default function Franchise() {
                   </li>
                 ))}
               </ul>
-              <p className="text-muted-foreground text-[13px] leading-relaxed mt-4 pt-4 border-t border-border">
+              <p className="text-muted-foreground text-sm leading-relaxed mt-4 pt-4 border-t border-border">
                 A {territory.shortName} may be required to deploy all {territory.initialMachines}{" "}
                 machines within an agreed period, and a {city.shortName} its {city.initialMachines}{" "}
                 progressively. Missing those can put exclusivity under review.
@@ -1219,7 +1219,7 @@ export default function Franchise() {
                 {RESERVED_ACCOUNTS.map((item) => (
                   <li
                     key={item}
-                    className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-[13px] text-muted-foreground"
+                    className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground"
                   >
                     {item}
                   </li>
@@ -1254,7 +1254,7 @@ export default function Franchise() {
                     {territory.initialMachines * 2} machines
                   </span>
                 </div>
-                <p className="text-muted-foreground text-[13px] mt-2.5">
+                <p className="text-muted-foreground text-sm mt-2.5">
                   in the same territory, not a larger one
                 </p>
               </div>
@@ -1324,7 +1324,7 @@ export default function Franchise() {
                 */}
                 <div className="flex items-center gap-2.5 mb-4 lg:min-h-[2.75rem]">
                   <span
-                    className="w-7 h-7 rounded-full bg-primary/10 text-primary-ink font-display font-black text-[13px] flex items-center justify-center flex-shrink-0 tabular-nums"
+                    className="w-7 h-7 rounded-full bg-primary/10 text-primary-ink font-display font-black text-sm flex items-center justify-center flex-shrink-0 tabular-nums"
                     aria-hidden="true"
                   >
                     {phaseIndex + 1}
@@ -1386,14 +1386,14 @@ export default function Franchise() {
             keep a readable measure without leaving a quarter of the column empty. The
             rail is sticky below both pinned bars.
           */}
-          <div className="grid lg:grid-cols-[17rem_1fr] gap-8 lg:gap-14">
+          <div className="grid lg:grid-cols-[24rem_1fr] gap-8 lg:gap-12">
             <div className="lg:sticky lg:top-32 lg:self-start">
               <SectionHeading eyebrow="Questions" title="Frequently asked" />
               {/*
                 The page now ends on the FAQ, so this is the last route back to the form
                 for anyone who read down to here instead of using the jump nav.
               */}
-              <p className="text-muted-foreground text-[13px] leading-relaxed mt-4">
+              <p className="text-muted-foreground text-sm leading-relaxed mt-4">
                 {FRANCHISE_FAQ.length} answers on the terms people ask about most. Anything
                 else,{" "}
                 <a
@@ -1479,7 +1479,7 @@ function ResponsibilityColumn({
         {items.map((item) => (
           <li
             key={item}
-            className={`rounded-full border px-3 py-1.5 text-[13px] leading-snug ${
+            className={`rounded-full border px-3 py-1.5 text-sm leading-snug ${
               you ? "border-primary/25 bg-primary/[0.06]" : "border-border bg-muted/50"
             }`}
           >
@@ -1680,10 +1680,10 @@ function ApplicationSection({
         <div className="bg-primary/[0.05] border-b lg:border-b-0 lg:border-r border-border p-8 sm:p-10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/20 to-accent/10 blur-[80px] pointer-events-none" />
           <div className="relative z-10">
-            <span className="inline-block text-primary-ink text-xs font-bold tracking-[0.2em] uppercase mb-2.5">
+            <span className="block text-primary-ink text-xs font-bold tracking-[0.25em] uppercase mb-3">
               Apply
             </span>
-            <h2 className="font-display font-black uppercase text-2xl sm:text-3xl tracking-tight leading-[1.05] mb-4">
+            <h2 className="font-display font-black uppercase text-[clamp(2rem,3.5vw,2.5rem)] leading-none mb-4">
               Tell us the market you want
             </h2>
             {/*
@@ -1756,7 +1756,7 @@ function ApplicationSection({
                 the string someone quotes back at us.
               */}
               {receipt.reference && (
-                <p className="flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-2 mt-6 text-[13px]">
+                <p className="flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-2 mt-6 text-sm">
                   <Hash className="w-3.5 h-3.5 text-primary flex-shrink-0" aria-hidden="true" />
                   <span className="text-muted-foreground">Your reference</span>
                   <strong className="font-bold text-foreground tabular-nums">
@@ -1816,7 +1816,7 @@ function ApplicationSection({
                       <p className="text-sm font-semibold text-destructive mb-0.5">
                         We could not submit that
                       </p>
-                      <p className="text-[13px] text-muted-foreground leading-relaxed">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
                         {error}
                       </p>
                       {/*
@@ -1826,7 +1826,7 @@ function ApplicationSection({
                         */}
                       <a
                         href={mailtoFallback(form.getValues())}
-                        className="inline-block text-[13px] font-semibold text-primary-ink underline underline-offset-2 mt-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="inline-block text-sm font-semibold text-primary-ink underline underline-offset-2 mt-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         Email this application to us instead
                       </a>
@@ -1870,7 +1870,7 @@ function ApplicationSection({
                                   <span className="block font-bold text-[14px] leading-snug">
                                     {tier.shortName}
                                   </span>
-                                  <span className="block text-muted-foreground text-[13px] tabular-nums">
+                                  <span className="block text-muted-foreground text-sm tabular-nums">
                                     {formatLakh(tier.investmentInr)} · {tier.initialMachines}{" "}
                                     machines
                                   </span>
@@ -2032,7 +2032,7 @@ function ApplicationSection({
                   {!isSubmitting && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
                 </Button>
 
-                <p className="text-muted-foreground text-[13px] leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   Submitting an application does not create a franchise, reserve a territory
                   or commit either side to anything. Nothing is payable until a definitive
                   franchise agreement is executed.

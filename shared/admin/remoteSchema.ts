@@ -17,8 +17,10 @@ export const mqttSchema = z.object({
       sourceIp: orNull(z.string()),
       codeCreatedBy: orNull(z.string()),
     })
-    .nullable(),
-  pendingCode: z.object({ createdBy: z.string(), expiresAt: z.string() }).nullable(),
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  pendingCode: orNull(z.object({ createdBy: z.string(), expiresAt: z.string() })),
 });
 
 export type MachineMqtt = z.infer<typeof mqttSchema>;

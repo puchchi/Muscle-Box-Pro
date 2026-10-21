@@ -17,11 +17,11 @@ import {
   type FeedbackState,
   type FeedbackType,
 } from "@shared/admin/feedbackSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { Chip, Pill } from "./AdminUi";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useCan, useMachineGuard } from "./machines/viewer";
 import { FormRow, NativeSelect, inputClass } from "./machines/formBits";
 import {
   Cell,
@@ -54,7 +54,7 @@ import {
 import { adjustNewFeedbackCount, setNewFeedbackCount } from "./machines/newFeedbackCount";
 
 export default function AdminMachineFeedback() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <FeedbackPage session={guard.session} />;
 }
@@ -63,7 +63,7 @@ function isType(v: string | null | undefined): v is FeedbackType {
   return (FEEDBACK_TYPES as readonly string[]).includes(v ?? "");
 }
 
-function FeedbackPage({ session }: { session: AdminSession }) {
+function FeedbackPage({ session }: { session: MachineViewer }) {
   const search = useSearchParams();
   const [initial] = useState(() => {
     const type = search?.get("type");
@@ -305,6 +305,7 @@ function FeedbackDialog({
   onClose: () => void;
   onChanged: (next: Feedback, before: Feedback) => void;
 }) {
+  const canEdit = useCan()("feedback.edit");
   const [current, setCurrent] = useState(item);
   const [state, setState] = useState<FeedbackState>(item.state);
   const [note, setNote] = useState(item.note ?? "");
@@ -354,15 +355,17 @@ function FeedbackDialog({
           <Button type="button" variant="outline" onClick={onClose} className="rounded-xl cursor-pointer">
             Close
           </Button>
-          <Button
-            type="button"
-            onClick={() => void save()}
-            disabled={busy || !changed}
-            className="rounded-xl cursor-pointer"
-            data-testid="button-save-feedback"
-          >
-            {busy ? "Saving…" : "Save"}
-          </Button>
+          {canEdit && (
+            <Button
+              type="button"
+              onClick={() => void save()}
+              disabled={busy || !changed}
+              className="rounded-xl cursor-pointer"
+              data-testid="button-save-feedback"
+            >
+              {busy ? "Saving…" : "Save"}
+            </Button>
+          )}
         </>
       }
     >
@@ -433,7 +436,7 @@ function FeedbackDialog({
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-[12rem_1fr]">
+        <fieldset disabled={!canEdit} className="grid gap-4 sm:grid-cols-[12rem_1fr]">
           <FormRow label="State" htmlFor="feedback-state">
             <NativeSelect
               id="feedback-state"
@@ -453,7 +456,7 @@ function FeedbackDialog({
               data-testid="input-feedback-note"
             />
           </FormRow>
-        </div>
+        </fieldset>
 
         {current.updatedAt && (
           <p className="text-xs text-muted-foreground" data-testid="feedback-updated">

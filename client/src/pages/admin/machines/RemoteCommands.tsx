@@ -8,7 +8,8 @@ import { isFinalState, type CommandArgs, type RemoteCommand } from "@shared/admi
 import { Card, Pill } from "../AdminUi";
 import { TextInput } from "./formBits";
 import { ConfirmDialog, formatIstStamp, ProblemPanel, type Problem } from "./MachinesUi";
-import { COMMAND_GROUPS, COMMAND_POLL_MS, COMMAND_STATE_LABEL, commandLabel, commandOutcome, type CommandSpec } from "./remoteRules";
+import { useCan } from "./viewer";
+import { allowedCommandGroups, COMMAND_POLL_MS, COMMAND_STATE_LABEL, commandLabel, commandOutcome, type CommandSpec } from "./remoteRules";
 
 const problemWithFields = <T,>(result: MachineCall<T>): Problem | null =>
   result.ok
@@ -19,6 +20,7 @@ const problemWithFields = <T,>(result: MachineCall<T>): Problem | null =>
       };
 
 export function RemoteCommands({ sn }: { sn: string }) {
+  const groups = allowedCommandGroups(useCan());
   const [current, setCurrent] = useState<RemoteCommand | null>(null);
   const [wasBusy, setWasBusy] = useState(false);
   const [sending, setSending] = useState(false);
@@ -138,7 +140,7 @@ export function RemoteCommands({ sn }: { sn: string }) {
         <ProblemPanel problem={problem} testId="remote-command-error" />
 
         <div className="grid gap-5 sm:grid-cols-2">
-          {COMMAND_GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.title} role="group" aria-label={group.title}>
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group.title}</h3>
               {group.title === "Cleaning" && (
@@ -164,7 +166,7 @@ export function RemoteCommands({ sn }: { sn: string }) {
                   </label>
                 </div>
               )}
-              {group.title === "App" && (
+              {group.commands.some((c) => c.name === "uploadLog") && (
                 <div className="mb-3 max-w-[14rem] text-sm">
                   <label htmlFor="log-date" className="mb-1 block text-muted-foreground">
                     Log date <span className="text-muted-foreground/70">(empty for today)</span>

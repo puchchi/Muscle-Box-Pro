@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchAd, fetchAllMachines, setAdSchedules, updateAd } from "@/lib/adminMachineApi";
 import type { Ad, MachineRow } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card, Pill, SuccessPanel } from "./AdminUi";
 import { AdForm } from "./machines/AdForm";
 import { inputClass } from "./machines/formBits";
@@ -28,12 +28,12 @@ import {
 import { formatIstStamp, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 
 export default function AdminMachineAdDetail({ adId }: { adId: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <AdDetail session={guard.session} adId={adId} />;
 }
 
-function AdDetail({ session, adId }: { session: AdminSession; adId: string }) {
+function AdDetail({ session, adId }: { session: MachineViewer; adId: string }) {
   const [ad, setAd] = useState<Ad | null>(null);
   const [machines, setMachines] = useState<MachineRow[]>([]);
   const [problem, setProblem] = useState<Problem | null>(null);

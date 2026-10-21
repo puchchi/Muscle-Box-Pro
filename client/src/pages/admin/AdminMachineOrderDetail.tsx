@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchMachine, fetchMaterials, fetchOrder } from "@/lib/adminMachineApi";
 import type { OrderDetail } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Card, Empty, Field, Fields, Pill } from "./AdminUi";
 import {
   Cell,
@@ -34,12 +34,12 @@ import { FranchiseLink, GymLink } from "./machines/ownerBits";
 const STEP_LABEL: Record<string, string> = { created: "Created", made: "Made", dispensed: "Dispensed", failed: "Failed" };
 
 export default function AdminMachineOrderDetail({ orderId }: { orderId: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <OrderPage session={guard.session} orderId={orderId} />;
 }
 
-function OrderPage({ session, orderId }: { session: AdminSession; orderId: string }) {
+function OrderPage({ session, orderId }: { session: MachineViewer; orderId: string }) {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [names, setNames] = useState<Map<string, string>>(new Map());
   const [problem, setProblem] = useState<Problem | null>(null);

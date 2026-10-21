@@ -6,26 +6,27 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { deletePromotion, fetchPromotion, setPromotionPaused, updatePromotion } from "@/lib/adminMachineApi";
 import type { Promotion, PromotionKind } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
-import { Pill, SuccessPanel } from "./AdminUi";
+import { useMachineGuard } from "./machines/viewer";
+import { Card, Field, Fields, Pill, SuccessPanel } from "./AdminUi";
 import { PromotionForm } from "./machines/PromotionForm";
 import { WarningPanel } from "./machines/WarningPanel";
 import { setFlash, takeFlash } from "./machines/flash";
 import { useGoodsAndMachines } from "./machines/usePromotionRefs";
 import { KIND_COPY, overlapWarning, PROMOTION_STATUS_LABEL, savedNotice } from "./machines/promotionRules";
-import { ConfirmDialog, formatIstStamp, MachinesHeader, problemOf, ProblemPanel, REFRESH_NOTE, type Problem } from "./machines/MachinesUi";
+import { ConfirmDialog, formatIstStamp, formatRupees, MachinesHeader, problemOf, ProblemPanel, REFRESH_NOTE, type Problem } from "./machines/MachinesUi";
 
 export default function AdminMachinePromotionDetail({ kind, promoId }: { kind: PromotionKind; promoId: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <PromotionDetail session={guard.session} kind={kind} promoId={promoId} />;
 }
 
-function PromotionDetail({ session, kind, promoId }: { session: AdminSession; kind: PromotionKind; promoId: string }) {
+function PromotionDetail({ session, kind, promoId }: { session: MachineViewer; kind: PromotionKind; promoId: string }) {
   const copy = KIND_COPY[kind];
+  const canEdit = session.can.has(kind === "discount" ? "discounts.edit" : "newProducts.edit");
   const router = useRouter();
   const [promotion, setPromotion] = useState<Promotion | null>(null);
   const [loadCount, setLoadCount] = useState(0);
@@ -118,7 +119,8 @@ function PromotionDetail({ session, kind, promoId }: { session: AdminSession; ki
           </span>
         }
         action={
-          promotion && (
+          promotion &&
+          canEdit && (
             <span className="flex gap-2">
               {promotion.status !== "ended" && (
                 <Button type="button" variant="outline" onClick={() => void togglePaused()} disabled={busy} className="rounded-xl cursor-pointer" data-testid="button-pause-promotion">
@@ -148,7 +150,9 @@ function PromotionDetail({ session, kind, promoId }: { session: AdminSession; ki
         </div>
       )}
 
-      {promotion && goods ? (
+      {promotion && !canEdit ? (
+        <PromotionSummary promotion={promotion} />
+      ) : promotion && goods ? (
         <PromotionForm
           key={loadCount}
           kind={kind}
@@ -184,5 +188,19 @@ function PromotionDetail({ session, kind, promoId }: { session: AdminSession; ki
         testId="delete-promotion"
       />
     </MachinesShell>
+  );
+}
+
+function PromotionSummary({ promotion }: { promotion: Promotion }) {
+  const items = promotion.items.map((i) => (i.priceInr === null ? i.name : `${i.name} at ${formatRupees(i.priceInr)}`));
+  return (
+    <Card title="Details" testId="card-promotion-summary">
+      <Fields>
+        <Field label="Starts" value={promotion.startAt ? formatIstStamp(promotion.startAt) : "No start limit"} />
+        <Field label="Ends" value={promotion.endAt ? formatIstStamp(promotion.endAt) : "No end limit"} />
+        <Field label="Goods" value={items.join(", ")} />
+        <Field label="Machines" value={promotion.allMachines ? "All machines" : promotion.sns.join(", ")} mono={!promotion.allMachines} />
+      </Fields>
+    </Card>
   );
 }

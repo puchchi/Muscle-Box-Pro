@@ -14,15 +14,15 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-export function useNewFeedbackCount(): number {
+export function useNewFeedbackCount(enabled = true): number {
   const n = useSyncExternalStore(subscribe, () => current, () => null);
   useEffect(() => {
-    if (current !== null) return;
+    if (!enabled || current !== null) return;
     listFeedback({ state: "new" }, null, 1).then((result) => {
       if (result.ok) setNewFeedbackCount(result.data.newCount);
     });
-  }, []);
-  return n ?? 0;
+  }, [enabled]);
+  return enabled ? (n ?? 0) : 0;
 }
 
 export function adjustNewFeedbackCount(delta: number) {

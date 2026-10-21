@@ -10,10 +10,10 @@ import { fetchMachines, fetchMachineSummary, fetchModels } from "@/lib/adminMach
 import type { MachineListFilters } from "@shared/admin/machines";
 import type { OwnerState } from "@shared/admin/ownership";
 import type { MachineModel, MachineRow, MachineSummary } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer, Permission } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useCan, useMachineGuard } from "./machines/viewer";
 import { FactoryPinBulkDialog } from "./machines/FactoryPinBulkDialog";
 import { Pill } from "./AdminUi";
 import { OwnerCellText } from "./machines/ownerBits";
@@ -33,7 +33,7 @@ import {
 } from "./machines/MachinesUi";
 
 export default function AdminMachines() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <MachinesOverview session={guard.session} />;
 }
@@ -50,9 +50,9 @@ const HEALTH_FILTER: Record<Health, MachineListFilters> = {
   restartPending: { restartPending: "yes" },
 };
 
-const SEARCH_FIELDS: ReadonlyArray<{ value: SearchField; label: string }> = [
+const SEARCH_FIELDS: ReadonlyArray<{ value: SearchField; label: string; needs?: "settings.machineNumber.view" }> = [
   { value: "name", label: "Name" },
-  { value: "deviceExtNo", label: "Machine number" },
+  { value: "deviceExtNo", label: "Machine number", needs: "settings.machineNumber.view" },
   { value: "sn", label: "Machine ID" },
 ];
 
@@ -79,7 +79,9 @@ export function machineFilters(
 
 const selectClass = "h-9 rounded-lg border border-border bg-card px-2 text-sm text-foreground cursor-pointer";
 
-function MachinesOverview({ session }: { session: AdminSession }) {
+function MachinesOverview({ session }: { session: MachineViewer }) {
+  const can = (p: Permission) => session.can.has(p);
+  const searchFields = SEARCH_FIELDS.filter((f) => !f.needs || can(f.needs));
   const [summary, setSummary] = useState<MachineSummary | null>(null);
   const [models, setModels] = useState<MachineModel[]>([]);
   const [rows, setRows] = useState<MachineRow[]>([]);
@@ -152,14 +154,15 @@ function MachinesOverview({ session }: { session: AdminSession }) {
     setPage(1);
   }
 
-  const addButton = (
+  const addButton = can("machines.add.edit") ? (
     <Button asChild className="rounded-xl" data-testid="button-add-machine">
       <Link href="/machines/new">
         <Plus className="h-4 w-4" aria-hidden />
         Add machine
       </Link>
     </Button>
-  );
+  ) : null;
+  const showSales = can("machines.salesToday.view");
 
   return (
     <MachinesShell session={session} section="machines">
@@ -168,7 +171,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
         subtitle="Online means the machine checked in within the last 3 minutes."
         action={
           <span className="flex flex-wrap gap-2">
-            {!fleetEmpty && (
+            {!fleetEmpty && can("machines.factoryPinBulk.edit") && (
               <Button
                 type="button"
                 variant="outline"
@@ -184,15 +187,17 @@ function MachinesOverview({ session }: { session: AdminSession }) {
           </span>
         }
       />
-      <FactoryPinBulkDialog open={bulkOpen} onClose={() => setBulkOpen(false)} onDone={() => void load()} />
+      {can("machines.factoryPinBulk.edit") && (
+        <FactoryPinBulkDialog open={bulkOpen} onClose={() => setBulkOpen(false)} onDone={() => void load()} />
+      )}
 
       <ProblemPanel problem={problem} testId="machines-error" />
 
       {fleetEmpty ? (
-        <EmptyFleet action={addButton} />
+        <EmptyFleet action={addButton} admin={session.role === "admin"} />
       ) : (
         <>
-          <section className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]" aria-label="Fleet health">
+          <section className={`mb-5 grid gap-3 ${showSales ? "lg:grid-cols-[minmax(0,1fr)_auto]" : ""}`} aria-label="Fleet health">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
               <HealthTile id="all" label="All machines" value={summary?.machines} active={health} onPick={pickHealth} />
               <HealthTile id="online" label="Online" value={summary?.online} tone="good" active={health} onPick={pickHealth} />
@@ -208,25 +213,27 @@ function MachinesOverview({ session }: { session: AdminSession }) {
                 onPick={pickHealth}
               />
             </div>
-            <Link
-              href="/machines/orders"
-              className="flex items-center gap-6 rounded-2xl border border-border bg-card px-4 py-3 transition-colors hover:border-muted-foreground/40"
-              data-testid="tile-today"
-            >
-              <span>
-                <span className="block text-xs text-muted-foreground">Orders today</span>
-                <span className="block text-xl font-display font-black tabular-nums" data-testid="tile-orders-today">
-                  {summary?.ordersToday ?? "—"}
+            {showSales && (
+              <Link
+                href="/machines/orders"
+                className="flex items-center gap-6 rounded-2xl border border-border bg-card px-4 py-3 transition-colors hover:border-muted-foreground/40"
+                data-testid="tile-today"
+              >
+                <span>
+                  <span className="block text-xs text-muted-foreground">Orders today</span>
+                  <span className="block text-xl font-display font-black tabular-nums" data-testid="tile-orders-today">
+                    {summary?.ordersToday ?? "—"}
+                  </span>
                 </span>
-              </span>
-              <span>
-                <span className="block text-xs text-muted-foreground">Sales today</span>
-                <span className="block text-xl font-display font-black tabular-nums" data-testid="tile-sales-today">
-                  {summary ? wholeRupees(summary.salesTodayInr) : "—"}
+                <span>
+                  <span className="block text-xs text-muted-foreground">Sales today</span>
+                  <span className="block text-xl font-display font-black tabular-nums" data-testid="tile-sales-today">
+                    {summary?.salesTodayInr !== undefined ? wholeRupees(summary.salesTodayInr) : "—"}
+                  </span>
                 </span>
-              </span>
-              <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" aria-hidden />
-            </Link>
+                <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" aria-hidden />
+              </Link>
+            )}
           </section>
 
           <div className="mb-3 flex flex-wrap items-center gap-2" data-testid="machine-filters">
@@ -236,7 +243,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
                 type="search"
                 value={text}
                 onChange={(event) => setText(event.target.value)}
-                placeholder={`Search by ${SEARCH_FIELDS.find((f) => f.value === field)?.label.toLowerCase()}`}
+                placeholder={`Search by ${searchFields.find((f) => f.value === field)?.label.toLowerCase()}`}
                 aria-label="Search machines"
                 className="h-9 min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
                 data-testid="filter-search"
@@ -248,7 +255,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
                 className="h-9 shrink-0 border-l border-border bg-transparent px-2 text-sm text-muted-foreground cursor-pointer"
                 data-testid="filter-search-field"
               >
-                {SEARCH_FIELDS.map((option) => (
+                {searchFields.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -274,50 +281,56 @@ function MachinesOverview({ session }: { session: AdminSession }) {
                 ))}
               </select>
             )}
-            <select
-              value={ownerState}
-              onChange={(event) => {
-                setOwnerState(event.target.value as OwnerState | "");
-                setPage(1);
-              }}
-              aria-label="Owner"
-              className={selectClass}
-              data-testid="filter-owner"
-            >
-              <option value="">All owners</option>
-              {(Object.keys(OWNER_STATE_LABEL) as OwnerState[]).map((state) => (
-                <option key={state} value={state}>
-                  {OWNER_STATE_LABEL[state]}
-                </option>
-              ))}
-            </select>
-            <select
-              value={freeVend}
-              onChange={(event) => {
-                setFreeVend(event.target.value as PayFilter);
-                setPage(1);
-              }}
-              aria-label="Free vend"
-              className={selectClass}
-              data-testid="filter-free-vend"
-            >
-              <option value="">Free vend: Any</option>
-              <option value="yes">Free vend: Yes</option>
-              <option value="no">Free vend: No</option>
-            </select>
-            <label className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={noFactoryPin}
+            {can("owner.view") && (
+              <select
+                value={ownerState}
                 onChange={(event) => {
-                  setNoFactoryPin(event.target.checked);
+                  setOwnerState(event.target.value as OwnerState | "");
                   setPage(1);
                 }}
-                className="h-4 w-4 accent-primary"
-                data-testid="filter-no-factory-pin"
-              />
-              No factory PIN
-            </label>
+                aria-label="Owner"
+                className={selectClass}
+                data-testid="filter-owner"
+              >
+                <option value="">All owners</option>
+                {(Object.keys(OWNER_STATE_LABEL) as OwnerState[]).map((state) => (
+                  <option key={state} value={state}>
+                    {OWNER_STATE_LABEL[state]}
+                  </option>
+                ))}
+              </select>
+            )}
+            {can("settings.freeVend.view") && (
+              <select
+                value={freeVend}
+                onChange={(event) => {
+                  setFreeVend(event.target.value as PayFilter);
+                  setPage(1);
+                }}
+                aria-label="Free vend"
+                className={selectClass}
+                data-testid="filter-free-vend"
+              >
+                <option value="">Free vend: Any</option>
+                <option value="yes">Free vend: Yes</option>
+                <option value="no">Free vend: No</option>
+              </select>
+            )}
+            {can("pins.factory.view") && (
+              <label className="flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={noFactoryPin}
+                  onChange={(event) => {
+                    setNoFactoryPin(event.target.checked);
+                    setPage(1);
+                  }}
+                  className="h-4 w-4 accent-primary"
+                  data-testid="filter-no-factory-pin"
+                />
+                No factory PIN
+              </label>
+            )}
             {filtered && (
               <Button
                 type="button"
@@ -337,7 +350,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
               <Col>Machine</Col>
               <Col>Status</Col>
               <Col>Stock</Col>
-              <Col className="hidden sm:table-cell">Owner</Col>
+              {can("owner.view") && <Col className="hidden sm:table-cell">Owner</Col>}
               <Col className="hidden md:table-cell">Last seen</Col>
               <Col className="hidden lg:table-cell">Model</Col>
               <Col>
@@ -359,7 +372,7 @@ function MachinesOverview({ session }: { session: AdminSession }) {
                   </tr>
                 )
               ) : (
-                rows.map((row) => <MachineTableRow key={row.sn} row={row} />)
+                rows.map((row) => <MachineTableRow key={row.sn} row={row} showOwner={can("owner.view")} />)
               )}
             </tbody>
           </DataTable>
@@ -386,7 +399,7 @@ function wholeRupees(rupees: number): string {
   return `₹${Math.round(rupees).toLocaleString("en-IN")}`;
 }
 
-function EmptyFleet({ action }: { action: React.ReactNode }) {
+function EmptyFleet({ action, admin }: { action: React.ReactNode; admin: boolean }) {
   return (
     <div
       className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-card px-6 py-14 text-center"
@@ -397,7 +410,9 @@ function EmptyFleet({ action }: { action: React.ReactNode }) {
       </span>
       <h2 className="text-lg font-semibold text-foreground">No machines yet</h2>
       <p className="mt-1 mb-5 max-w-sm text-sm text-muted-foreground">
-        Add the SN shown on the machine&apos;s operator screen. It shows up here once it checks in.
+        {admin
+          ? "Add the SN shown on the machine's operator screen. It shows up here once it checks in."
+          : "Your machines show up here once MBP links them to you."}
       </p>
       {action}
     </div>
@@ -444,7 +459,7 @@ function HealthTile({
   );
 }
 
-function MachineTableRow({ row }: { row: MachineRow }) {
+function MachineTableRow({ row, showOwner }: { row: MachineRow; showOwner: boolean }) {
   const router = useRouter();
   const href = `/machines/${encodeURIComponent(row.sn)}`;
   return (
@@ -485,11 +500,13 @@ function MachineTableRow({ row }: { row: MachineRow }) {
           </span>
         )}
       </Cell>
-      <Cell className="hidden max-w-[14rem] sm:table-cell">
-        <span onClick={(event) => event.stopPropagation()} data-testid={`owner-${row.sn}`}>
-          <OwnerCellText owner={row.owner} />
-        </span>
-      </Cell>
+      {showOwner && (
+        <Cell className="hidden max-w-[14rem] sm:table-cell">
+          <span onClick={(event) => event.stopPropagation()} data-testid={`owner-${row.sn}`}>
+            <OwnerCellText owner={row.owner ?? null} />
+          </span>
+        </Cell>
+      )}
       <Cell className="hidden whitespace-nowrap text-xs text-muted-foreground md:table-cell">
         <span title={formatIstStamp(row.lastSeenAt)}>{timeAgo(row.lastSeenAt)}</span>
       </Cell>
@@ -502,6 +519,7 @@ function MachineTableRow({ row }: { row: MachineRow }) {
 }
 
 function StatusPills({ row }: { row: MachineRow }) {
+  const can = useCan();
   const reason = row.faultStatus === "exception" ? row.faultRemark : "";
   return (
     <div className="max-w-[18rem]">
@@ -538,7 +556,7 @@ function StatusPills({ row }: { row: MachineRow }) {
             Free vend
           </Pill>
         )}
-        {!row.hasFactoryPin && (
+        {can("pins.factory.view") && !row.hasFactoryPin && (
           <Pill className="bg-secondary text-muted-foreground" testId={`no-factory-pin-${row.sn}`}>
             No factory PIN
           </Pill>

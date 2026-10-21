@@ -1,5 +1,11 @@
 # Muscle-Box-Pro — working notes for Claude
 
+## Design
+
+Before building or reworking a public page, read [docs/design.md](docs/design.md). It sets
+the type scale, colour roles, layout, motion and components every marketing page follows.
+Run its checklist before reporting a page as done.
+
 ## Comments
 
 Do not add comments unless they are absolutely necessary.

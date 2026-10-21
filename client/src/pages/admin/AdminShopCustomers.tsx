@@ -4,23 +4,23 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatInr } from "@shared/shop/shopSchema";
 import type { ShopCustomerRow } from "@shared/admin/shopAdminSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { fetchShopCustomers, shopAdminConfigured } from "@/lib/shopAdminApi";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { Input } from "@/components/ui/input";
 import { Pill } from "./AdminUi";
 import { Cell, Col, DataTable, formatIstStamp, Head, LoadMore, MachinesHeader, NoData, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 import { customerHref, ShopNotConfigured } from "./machines/shopBits";
 
 export default function AdminShopCustomers() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <Customers session={guard.session} />;
 }
 
-function Customers({ session }: { session: AdminSession }) {
+function Customers({ session }: { session: MachineViewer }) {
   const configured = shopAdminConfigured();
   const [rows, setRows] = useState<ShopCustomerRow[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);

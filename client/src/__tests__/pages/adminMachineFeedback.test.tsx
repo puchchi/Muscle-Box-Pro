@@ -16,9 +16,13 @@ vi.mock("@/lib/adminMachineApi", () => ({
 vi.mock("next/navigation", () => ({
   useSearchParams: vi.fn(() => new URLSearchParams(mockSearch.current)),
 }));
-vi.mock("@/pages/admin/useAdminGuard", () => ({
-  useAdminGuard: () => ({ state: "ready", session: { email: "a@x.in", role: "admin", displayName: "A", expiresAt: "2030-01-01T00:00:00Z" } }),
-}));
+vi.mock("@/pages/admin/machines/viewer", async (importOriginal) => {
+  const { adminViewer } = await import("@shared/admin/viewerSchema");
+  return {
+    ...(await importOriginal<typeof import("@/pages/admin/machines/viewer")>()),
+    useMachineGuard: () => ({ state: "ready", session: adminViewer("A", "a@x.in") }),
+  };
+});
 vi.mock("@/pages/admin/machines/MachinesShell", () => ({
   MachinesShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));

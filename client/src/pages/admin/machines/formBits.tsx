@@ -45,6 +45,7 @@ export function TextInput({
   inputMode,
   maxLength,
   onPaste,
+  autoComplete,
   "aria-label": ariaLabel,
 }: {
   id: string;
@@ -57,6 +58,7 @@ export function TextInput({
   inputMode?: "numeric" | "decimal" | "text";
   maxLength?: number;
   onPaste?: React.ClipboardEventHandler<HTMLInputElement>;
+  autoComplete?: string;
   "aria-label"?: string;
 }) {
   return (
@@ -70,6 +72,7 @@ export function TextInput({
       inputMode={inputMode}
       maxLength={maxLength}
       onPaste={onPaste}
+      autoComplete={autoComplete}
       aria-label={ariaLabel}
       className={`${inputClass} ${mono ? "font-mono text-sm" : ""}`}
       data-testid={`input-${id}`}

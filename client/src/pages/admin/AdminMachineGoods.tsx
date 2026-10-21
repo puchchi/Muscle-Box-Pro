@@ -13,13 +13,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { deleteGood, fetchGoods, fetchModels, setGoodListing } from "@/lib/adminMachineApi";
 import type { Good, MachineModel } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
 import { ComingSoonPill } from "./machines/ComingSoonField";
 import { RatingLink } from "./machines/RatingLink";
 import { SERVE_TEMP_LABEL } from "./machines/ServeTempField";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { SuccessPanel } from "./AdminUi";
 import {
   Cell,
@@ -43,7 +43,7 @@ import {
 } from "./machines/MachinesUi";
 
 export default function AdminMachineGoods() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <GoodsLibrary session={guard.session} />;
 }
@@ -54,7 +54,8 @@ type Pending =
   | { kind: "listing"; good: Good; listed: boolean; count: number }
   | { kind: "delete"; good: Good };
 
-function GoodsLibrary({ session }: { session: AdminSession }) {
+function GoodsLibrary({ session }: { session: MachineViewer }) {
+  const canEdit = session.can.has("goodsLibrary.edit");
   const [models, setModels] = useState<MachineModel[]>([]);
   const [rows, setRows] = useState<Good[]>([]);
   const [total, setTotal] = useState(0);
@@ -148,12 +149,14 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
         title="Goods library"
         subtitle="Every drink and its recipe, before it is put on machines."
         action={
-          <Button asChild className="rounded-xl" data-testid="button-new-good">
-            <Link href="/machines/goods/new">
-              <Plus className="h-4 w-4" aria-hidden />
-              New goods
-            </Link>
-          </Button>
+          canEdit && (
+            <Button asChild className="rounded-xl" data-testid="button-new-good">
+              <Link href="/machines/goods/new">
+                <Plus className="h-4 w-4" aria-hidden />
+                New goods
+              </Link>
+            </Button>
+          )
         }
       />
 
@@ -258,9 +261,13 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
                       </span>
                       <span className="min-w-0">
                         <span className="flex flex-wrap items-center gap-2">
-                          <Link href={editHref} className="font-semibold text-foreground hover:underline">
-                            {good.name}
-                          </Link>
+                          {canEdit ? (
+                            <Link href={editHref} className="font-semibold text-foreground hover:underline">
+                              {good.name}
+                            </Link>
+                          ) : (
+                            <span className="font-semibold text-foreground">{good.name}</span>
+                          )}
                           {good.comingSoon && <ComingSoonPill testId={`coming-soon-${good.goodsId}`} />}
                         </span>
                         {subtitle && <span className="block text-xs text-muted-foreground">{subtitle}</span>}
@@ -288,26 +295,28 @@ function GoodsLibrary({ session }: { session: AdminSession }) {
                     {good.updatedBy && <span className="block">{good.updatedBy}</span>}
                   </Cell>
                   <Cell align="right" className="whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1">
-                      <Link
-                        href={editHref}
-                        className="rounded-lg px-2.5 py-2 text-xs font-semibold text-primary hover:bg-secondary"
-                        data-testid={`edit-${good.goodsId}`}
-                      >
-                        Edit
-                      </Link>
-                      <RowMenu
-                        good={good}
-                        disabled={busy}
-                        onList={() => askListing(good, true)}
-                        onUnlist={() => askListing(good, false)}
-                        onDelete={() => {
-                          setNotice(null);
-                          if (good.machinesListed > 0) setProblem({ message: listedMessage(good), issues: [] });
-                          else setPending({ kind: "delete", good });
-                        }}
-                      />
-                    </span>
+                    {canEdit && (
+                      <span className="inline-flex items-center gap-1">
+                        <Link
+                          href={editHref}
+                          className="rounded-lg px-2.5 py-2 text-xs font-semibold text-primary hover:bg-secondary"
+                          data-testid={`edit-${good.goodsId}`}
+                        >
+                          Edit
+                        </Link>
+                        <RowMenu
+                          good={good}
+                          disabled={busy}
+                          onList={() => askListing(good, true)}
+                          onUnlist={() => askListing(good, false)}
+                          onDelete={() => {
+                            setNotice(null);
+                            if (good.machinesListed > 0) setProblem({ message: listedMessage(good), issues: [] });
+                            else setPending({ kind: "delete", good });
+                          }}
+                        />
+                      </span>
+                    )}
                   </Cell>
                 </tr>
               );

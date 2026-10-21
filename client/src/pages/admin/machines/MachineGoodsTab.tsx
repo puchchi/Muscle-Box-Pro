@@ -17,6 +17,7 @@ import type { MachineGoodsPatch } from "@shared/admin/machines";
 import type { AvailableGood, MachineGood } from "@shared/admin/machinesSchema";
 import { SuccessPanel } from "../AdminUi";
 import { RatingLink } from "./RatingLink";
+import { useCan } from "./viewer";
 import { hasTwoDecimalsAtMost, parseNumber } from "./formBits";
 import {
   Cell,
@@ -56,6 +57,14 @@ export function checkRowDraft(draft: Draft): { patch: Omit<MachineGoodsPatch, "g
 }
 
 export function MachineGoodsTab({ sn }: { sn: string }) {
+  const can = useCan();
+  const canAdd = can("machineGoods.add.edit");
+  const canList = can("machineGoods.listing.edit");
+  const canPrice = can("machineGoods.price.edit");
+  const canSort = can("machineGoods.sort.edit");
+  const showPrice = can("machineGoods.price.view");
+  const showSort = can("machineGoods.sort.view");
+  const columns = 6 + (canList ? 1 : 0) + (showSort ? 1 : 0) + (showPrice ? 3 : 0);
   const [rows, setRows] = useState<MachineGood[]>([]);
   const [name, setName] = useState("");
   const [listed, setListed] = useState("");
@@ -113,7 +122,12 @@ export function MachineGoodsTab({ sn }: { sn: string }) {
     for (const good of changed) {
       const checked = checkRowDraft(draftOf(good));
       if (Object.keys(checked.errors).length > 0) errors[good.goodsId] = checked.errors;
-      else patches.push({ goodsId: good.goodsId, ...checked.patch });
+      else
+        patches.push({
+          goodsId: good.goodsId,
+          ...(canPrice ? { devicePriceInr: checked.patch.devicePriceInr } : {}),
+          ...(canSort ? { sort: checked.patch.sort } : {}),
+        });
     }
     setRowErrors(errors);
     if (Object.keys(errors).length > 0 || patches.length === 0) return;
@@ -156,118 +170,142 @@ export function MachineGoodsTab({ sn }: { sn: string }) {
         />
       </FilterBar>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" onClick={() => setPicking(true)} className="rounded-lg cursor-pointer" data-testid="button-add-goods">
-          <Plus className="h-4 w-4" aria-hidden />
-          Add goods
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={selected.size === 0 || busy}
-          onClick={() => save([...selected].map((goodsId) => ({ goodsId, listed: true })), "Listed.")}
-          className="rounded-lg cursor-pointer"
-          data-testid="button-batch-list"
-        >
-          List
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={selected.size === 0 || busy}
-          onClick={() => save([...selected].map((goodsId) => ({ goodsId, listed: false })), "Unlisted.")}
-          className="rounded-lg cursor-pointer"
-          data-testid="button-batch-unlist"
-        >
-          Unlist
-        </Button>
-        {selected.size > 0 && <span className="text-xs text-muted-foreground">{selected.size} selected</span>}
-        <span className="ml-auto flex items-center gap-2">
-          {changed.length > 0 && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setDrafts({});
-                setRowErrors({});
-              }}
-              className="rounded-lg cursor-pointer"
-            >
-              Discard
+      {(canAdd || canList || canPrice || canSort) && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {canAdd && (
+            <Button type="button" size="sm" onClick={() => setPicking(true)} className="rounded-lg cursor-pointer" data-testid="button-add-goods">
+              <Plus className="h-4 w-4" aria-hidden />
+              Add goods
             </Button>
           )}
-          <Button
-            type="button"
-            size="sm"
-            disabled={changed.length === 0 || busy}
-            onClick={saveEdits}
-            className="rounded-lg cursor-pointer"
-            data-testid="button-save-goods"
-          >
-            {changed.length > 0 ? `Save ${changed.length} change${changed.length === 1 ? "" : "s"}` : "Save changes"}
-          </Button>
-        </span>
-      </div>
+          {canList && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={selected.size === 0 || busy}
+                onClick={() => save([...selected].map((goodsId) => ({ goodsId, listed: true })), "Listed.")}
+                className="rounded-lg cursor-pointer"
+                data-testid="button-batch-list"
+              >
+                List
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={selected.size === 0 || busy}
+                onClick={() => save([...selected].map((goodsId) => ({ goodsId, listed: false })), "Unlisted.")}
+                className="rounded-lg cursor-pointer"
+                data-testid="button-batch-unlist"
+              >
+                Unlist
+              </Button>
+            </>
+          )}
+          {selected.size > 0 && <span className="text-xs text-muted-foreground">{selected.size} selected</span>}
+          {(canPrice || canSort) && (
+            <span className="ml-auto flex items-center gap-2">
+              {changed.length > 0 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setDrafts({});
+                    setRowErrors({});
+                  }}
+                  className="rounded-lg cursor-pointer"
+                >
+                  Discard
+                </Button>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                disabled={changed.length === 0 || busy}
+                onClick={saveEdits}
+                className="rounded-lg cursor-pointer"
+                data-testid="button-save-goods"
+              >
+                {changed.length > 0 ? `Save ${changed.length} change${changed.length === 1 ? "" : "s"}` : "Save changes"}
+              </Button>
+            </span>
+          )}
+        </div>
+      )}
 
       <DataTable testId="machine-goods-table">
         <Head>
-          <Col>
-            <Checkbox
-              checked={allSelected}
-              onCheckedChange={(checked) => setSelected(checked ? new Set(rows.map((r) => r.goodsId)) : new Set())}
-              aria-label="Select all"
-              data-testid="select-all-goods"
-            />
-          </Col>
-          <Col>Sort</Col>
+          {canList && (
+            <Col>
+              <Checkbox
+                checked={allSelected}
+                onCheckedChange={(checked) => setSelected(checked ? new Set(rows.map((r) => r.goodsId)) : new Set())}
+                aria-label="Select all"
+                data-testid="select-all-goods"
+              />
+            </Col>
+          )}
+          {showSort && <Col>Sort</Col>}
           <Col>Picture</Col>
           <Col>Goods Number</Col>
           <Col>Goods Name</Col>
           <Col>Specification</Col>
-          <Col align="right">Library price</Col>
-          <Col>Machine price</Col>
-          <Col align="right">Shown price</Col>
+          {showPrice && (
+            <>
+              <Col align="right">Library price</Col>
+              <Col>Machine price</Col>
+              <Col align="right">Shown price</Col>
+            </>
+          )}
           <Col>Listed</Col>
           <Col>Sold out</Col>
           <Col>Rating</Col>
         </Head>
         <tbody className="divide-y divide-border/70">
           {rows.length === 0 ? (
-            <NoData colSpan={12} loading={loading} />
+            <NoData colSpan={columns} loading={loading} />
           ) : (
             rows.map((good) => {
               const draft = draftOf(good);
               const errors = rowErrors[good.goodsId] ?? {};
               return (
                 <tr key={good.goodsId} className="hover:bg-secondary/40 transition-colors" data-testid={`row-good-${good.goodsId}`}>
-                  <Cell>
-                    <Checkbox
-                      checked={selected.has(good.goodsId)}
-                      onCheckedChange={(checked) =>
-                        setSelected((s) => {
-                          const next = new Set(s);
-                          if (checked) next.add(good.goodsId);
-                          else next.delete(good.goodsId);
-                          return next;
-                        })
-                      }
-                      aria-label={`Select ${good.name}`}
-                      data-testid={`select-good-${good.goodsId}`}
-                    />
-                  </Cell>
-                  <Cell>
-                    <CellInput
-                      value={draft.sort}
-                      onChange={edit(good, "sort")}
-                      error={errors.sort}
-                      width="w-16"
-                      label={`Sort for ${good.name}`}
-                      testId={`sort-${good.goodsId}`}
-                    />
-                  </Cell>
+                  {canList && (
+                    <Cell>
+                      <Checkbox
+                        checked={selected.has(good.goodsId)}
+                        onCheckedChange={(checked) =>
+                          setSelected((s) => {
+                            const next = new Set(s);
+                            if (checked) next.add(good.goodsId);
+                            else next.delete(good.goodsId);
+                            return next;
+                          })
+                        }
+                        aria-label={`Select ${good.name}`}
+                        data-testid={`select-good-${good.goodsId}`}
+                      />
+                    </Cell>
+                  )}
+                  {showSort && (
+                    <Cell>
+                      {canSort ? (
+                        <CellInput
+                          value={draft.sort}
+                          onChange={edit(good, "sort")}
+                          error={errors.sort}
+                          width="w-16"
+                          label={`Sort for ${good.name}`}
+                          testId={`sort-${good.goodsId}`}
+                        />
+                      ) : (
+                        <span className="tabular-nums text-muted-foreground">{good.sort}</span>
+                      )}
+                    </Cell>
+                  )}
                   <Cell>
                     <GoodsPicture url={good.image?.url} alt={good.name} />
                   </Cell>
@@ -279,29 +317,45 @@ export function MachineGoodsTab({ sn }: { sn: string }) {
                     )}
                   </Cell>
                   <Cell className="text-muted-foreground">{good.spec || "—"}</Cell>
-                  <Cell align="right" className="tabular-nums">{formatRupees(good.libraryPriceInr)}</Cell>
+                  {showPrice && (
+                    <>
+                      <Cell align="right" className="tabular-nums">{formatRupees(good.libraryPriceInr)}</Cell>
+                      <Cell>
+                        {canPrice ? (
+                          <CellInput
+                            value={draft.price}
+                            onChange={edit(good, "price")}
+                            error={errors.price}
+                            width="w-24"
+                            placeholder="Library"
+                            label={`Machine price for ${good.name}`}
+                            testId={`price-${good.goodsId}`}
+                          />
+                        ) : (
+                          <span className="tabular-nums text-muted-foreground">
+                            {good.devicePriceInr === null ? "Library" : formatRupees(good.devicePriceInr)}
+                          </span>
+                        )}
+                      </Cell>
+                      <Cell align="right" className="tabular-nums font-semibold">{formatRupees(good.shownPriceInr)}</Cell>
+                    </>
+                  )}
                   <Cell>
-                    <CellInput
-                      value={draft.price}
-                      onChange={edit(good, "price")}
-                      error={errors.price}
-                      width="w-24"
-                      placeholder="Library"
-                      label={`Machine price for ${good.name}`}
-                      testId={`price-${good.goodsId}`}
-                    />
-                  </Cell>
-                  <Cell align="right" className="tabular-nums font-semibold">{formatRupees(good.shownPriceInr)}</Cell>
-                  <Cell>
-                    <Switch
-                      checked={good.listed}
-                      disabled={busy}
-                      onCheckedChange={(checked) =>
-                        save([{ goodsId: good.goodsId, listed: checked }], checked ? "Listed." : "Unlisted.")
-                      }
-                      aria-label={`Listed: ${good.name}`}
-                      data-testid={`listed-${good.goodsId}`}
-                    />
+                    {canList ? (
+                      <Switch
+                        checked={good.listed}
+                        disabled={busy}
+                        onCheckedChange={(checked) =>
+                          save([{ goodsId: good.goodsId, listed: checked }], checked ? "Listed." : "Unlisted.")
+                        }
+                        aria-label={`Listed: ${good.name}`}
+                        data-testid={`listed-${good.goodsId}`}
+                      />
+                    ) : (
+                      <span className={good.listed ? "text-foreground" : "text-muted-foreground"} data-testid={`listed-${good.goodsId}`}>
+                        {good.listed ? "Yes" : "No"}
+                      </span>
+                    )}
                   </Cell>
                   <Cell>
                     {good.comingSoon ? (
@@ -323,20 +377,24 @@ export function MachineGoodsTab({ sn }: { sn: string }) {
           )}
         </tbody>
       </DataTable>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Leave Machine price empty to use the library price. Lower Sort comes first on the machine.
-      </p>
+      {(canPrice || canSort) && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Leave Machine price empty to use the library price. Lower Sort comes first on the machine.
+        </p>
+      )}
 
-      <GoodsPicker
-        open={picking}
-        sn={sn}
-        onClose={() => setPicking(false)}
-        onAdded={async (count) => {
-          setPicking(false);
-          setNotice(`${count} added and listed. ${REFRESH_NOTE}`);
-          await load();
-        }}
-      />
+      {canAdd && (
+        <GoodsPicker
+          open={picking}
+          sn={sn}
+          onClose={() => setPicking(false)}
+          onAdded={async (count) => {
+            setPicking(false);
+            setNotice(`${count} added and listed. ${REFRESH_NOTE}`);
+            await load();
+          }}
+        />
+      )}
     </div>
   );
 }

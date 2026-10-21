@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { formatInr, type ShopDrink } from "@shared/shop/shopSchema";
 import type { ShopAdminOrder } from "@shared/admin/shopAdminSchema";
 import type { MachineRow } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { fetchAllMachines } from "@/lib/adminMachineApi";
 import { fetchShopMenu } from "@/lib/shopApi";
 import { fetchShopOrder, refundShopOrder, reissueShopOrder, retryShopRefund, shopAdminConfigured, type ReissueRequest } from "@/lib/shopAdminApi";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useCan, useMachineGuard } from "./machines/viewer";
 import { Card, Empty, Field, Fields, SuccessPanel } from "./AdminUi";
 import { ConfirmDialog, formatIstStamp, MachineDialog, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 import { WarningPanel } from "./machines/WarningPanel";
@@ -22,14 +22,14 @@ import { CustomerDetailCell, ShopNotConfigured, ShopStatusPill } from "./machine
 import { useShopCustomers } from "./machines/useShopCustomers";
 
 export default function AdminShopOrderDetail({ orderId }: { orderId: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <ShopOrderPage session={guard.session} orderId={orderId} />;
 }
 
 type Dialog = "refund" | "retry" | "reissue" | "finish" | null;
 
-function ShopOrderPage({ session, orderId }: { session: AdminSession; orderId: string }) {
+function ShopOrderPage({ session, orderId }: { session: MachineViewer; orderId: string }) {
   const configured = shopAdminConfigured();
   const [order, setOrder] = useState<ShopAdminOrder | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -86,7 +86,7 @@ function ShopOrderPage({ session, orderId }: { session: AdminSession; orderId: s
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <OrderCard order={order} />
           <div className="space-y-5">
-            <ActionsCard order={order} onOpen={setDialog} />
+            {session.can.has("shopOrders.refund.edit") && <ActionsCard order={order} onOpen={setDialog} />}
             <RefundCard order={order} />
             <EarlierCodesCard order={order} />
           </div>
@@ -158,6 +158,7 @@ function Row({ label, testId, children }: { label: string; testId?: string; chil
 const usedText = (used: boolean | null) => (used === null ? "Not known" : used ? "Yes" : "No");
 
 function OrderCard({ order }: { order: ShopAdminOrder }) {
+  const seesCustomers = useCan()("customers.view");
   const lookup = useShopCustomers([order.customerId]).get(order.customerId ?? "");
   return (
     <Card title="Order" testId="card-shop-order">
@@ -174,21 +175,25 @@ function OrderCard({ order }: { order: ShopAdminOrder }) {
         </Row>
         <Field label="Drink" value={order.drinkName || order.goodsId} />
         <Field label="Paid" value={formatInr(order.pricePaise)} />
-        <Row label="Code" testId="shop-order-code">
-          {order.code ? (
-            <Link href={`/machines/redeem-codes/${encodeURIComponent(order.code)}`} className="font-mono text-primary hover:underline">
-              {order.code}
-            </Link>
-          ) : (
-            <span className="text-muted-foreground">None yet</span>
-          )}
-        </Row>
+        {seesCustomers && (
+          <Row label="Code" testId="shop-order-code">
+            {order.code ? (
+              <Link href={`/machines/redeem-codes/${encodeURIComponent(order.code)}`} className="font-mono text-primary hover:underline">
+                {order.code}
+              </Link>
+            ) : (
+              <span className="text-muted-foreground">None yet</span>
+            )}
+          </Row>
+        )}
         {order.code && <Field label="Code used" value={usedText(order.codeUsed)} testId="shop-order-used" />}
-        <Row label="Customer">
-          <CustomerDetailCell customerId={order.customerId} lookup={lookup} />
-        </Row>
+        {seesCustomers && (
+          <Row label="Customer">
+            <CustomerDetailCell customerId={order.customerId} lookup={lookup} />
+          </Row>
+        )}
         {order.guestEmail && <Field label="Guest email" value={order.guestEmail} testId="shop-order-guest-email" />}
-        <Field label="Razorpay payment" value={order.razorpayPaymentId} mono />
+        {seesCustomers && <Field label="Razorpay payment" value={order.razorpayPaymentId} mono />}
         <Field label="Ordered" value={formatIstStamp(order.createdAt)} />
         <Field label="Paid at" value={formatIstStamp(order.paidAt)} />
         <Field label="Code made" value={formatIstStamp(order.codedAt)} />
@@ -251,15 +256,16 @@ function noActionReason(order: ShopAdminOrder): string {
 }
 
 function RefundCard({ order }: { order: ShopAdminOrder }) {
+  const full = useCan()("shopOrders.refund.edit");
   if (!order.refundRequestedAt && !order.refundId && order.refundRetries === 0) return null;
   return (
     <Card title="Refund" testId="card-shop-refund">
       <Fields>
-        <Field label="Asked for by" value={order.refundRequestedBy} />
+        {full && <Field label="Asked for by" value={order.refundRequestedBy} />}
         <Field label="Asked for at" value={formatIstStamp(order.refundRequestedAt)} />
-        <Field label="Reason" value={order.refundReason} />
+        {full && <Field label="Reason" value={order.refundReason} />}
         {order.refundRetries > 0 && <Field label="Tried again" value={`${order.refundRetries} time${order.refundRetries === 1 ? "" : "s"}`} />}
-        <Field label="Razorpay refund" value={order.refundId} mono />
+        {full && <Field label="Razorpay refund" value={order.refundId} mono />}
       </Fields>
     </Card>
   );

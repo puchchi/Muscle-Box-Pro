@@ -261,7 +261,7 @@ describe("the referrer policy the onboarding handle depends on", () => {
    * A new route joining this list is the failure mode: this test names the two that exist, so
    * a third has to be added here deliberately rather than shipping with the global policy.
    */
-  const CREDENTIAL_ROUTES = ["/gym/onboarding", "/gym/set-password"];
+  const CREDENTIAL_ROUTES = ["/gym/onboarding", "/gym/set-password", "/franchise/set-password"];
 
   it.each(CREDENTIAL_ROUTES)(
     "withholds even the origin on %s, which carries a credential",

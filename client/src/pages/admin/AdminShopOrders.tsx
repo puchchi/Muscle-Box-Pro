@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatInr, SHOP_ORDER_STATUSES } from "@shared/shop/shopSchema";
 import type { ShopAdminOrder, ShopOrderFilters } from "@shared/admin/shopAdminSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { fetchShopOrders, shopAdminConfigured } from "@/lib/shopAdminApi";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import {
   Cell,
   Col,
@@ -34,7 +34,7 @@ import { Pill } from "./AdminUi";
 import { Button } from "@/components/ui/button";
 
 export default function AdminShopOrders() {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <ShopOrders session={guard.session} />;
 }
@@ -52,14 +52,15 @@ function toFilters(d: Draft): ShopOrderFilters {
 
 const STATUS_OPTIONS = [{ value: "", label: "All" }, ...SHOP_ORDER_STATUSES.map((value) => ({ value, label: SHOP_STATUS_LABEL[value].text }))];
 
-function ShopOrders({ session }: { session: AdminSession }) {
+function ShopOrders({ session }: { session: MachineViewer }) {
+  const seesCustomers = session.can.has("customers.view");
   const search = useSearchParams();
   const thisMonth = istToday(Date.now()).slice(0, 7);
   const empty: Draft = { month: thisMonth, status: "", sn: "", customerId: "" };
   const [draft, setDraft] = useState<Draft>(() => ({
     ...empty,
     sn: search?.get("sn") ?? "",
-    customerId: search?.get("customerId") ?? "",
+    customerId: seesCustomers ? (search?.get("customerId") ?? "") : "",
   }));
   const [filters, setFilters] = useState<ShopOrderFilters>(() => toFilters(draft));
   const [rows, setRows] = useState<ShopAdminOrder[]>([]);
@@ -119,7 +120,7 @@ function ShopOrders({ session }: { session: AdminSession }) {
             <TextFilter label="Month" type="month" value={draft.month} onChange={set("month")} testId="filter-shop-month" />
             <SelectFilter label="Status" value={draft.status} onChange={set("status")} options={STATUS_OPTIONS} testId="filter-shop-status" />
             <TextFilter label="Machine ID" value={draft.sn} onChange={set("sn")} testId="filter-shop-sn" />
-            <TextFilter label="Customer ID" value={draft.customerId} onChange={set("customerId")} testId="filter-shop-customer" />
+            {seesCustomers && <TextFilter label="Customer ID" value={draft.customerId} onChange={set("customerId")} testId="filter-shop-customer" />}
           </FilterBar>
 
           {filters.customerId && (
@@ -140,13 +141,13 @@ function ShopOrders({ session }: { session: AdminSession }) {
               <Col>Machine</Col>
               <Col>Drink</Col>
               <Col align="right">Paid</Col>
-              <Col>Code</Col>
-              <Col>Customer</Col>
+              {seesCustomers && <Col>Code</Col>}
+              {seesCustomers && <Col>Customer</Col>}
               <Col>Status</Col>
             </Head>
             <tbody className="divide-y divide-border/70">
               {list.length === 0 ? (
-                <NoData colSpan={8} loading={loading} />
+                <NoData colSpan={seesCustomers ? 8 : 6} loading={loading} />
               ) : (
                 list.map((row) => {
                   if (row.kind === "free") {
@@ -174,17 +175,21 @@ function ShopOrders({ session }: { session: AdminSession }) {
                     </Cell>
                     <Cell className="min-w-[10rem]">{order.drinkName || <span className="font-mono text-xs text-muted-foreground">{order.goodsId}</span>}</Cell>
                     <Cell align="right" className="whitespace-nowrap tabular-nums">{formatInr(order.pricePaise)}</Cell>
-                    <Cell className="whitespace-nowrap font-mono text-xs">
-                      {order.code ?? <span className="font-sans text-muted-foreground">None yet</span>}
-                      {order.reissues > 0 && <span className="block font-sans text-[11px] text-muted-foreground">Reissued</span>}
-                    </Cell>
-                    <Cell className="whitespace-nowrap">
-                      <CustomerCell
-                        customerId={order.customerId}
-                        lookup={order.customerId ? customers.get(order.customerId) : undefined}
-                        onOnly={order.customerId && !filters.customerId ? () => onlyCustomer(order.customerId) : undefined}
-                      />
-                    </Cell>
+                    {seesCustomers && (
+                      <Cell className="whitespace-nowrap font-mono text-xs">
+                        {order.code ?? <span className="font-sans text-muted-foreground">None yet</span>}
+                        {order.reissues > 0 && <span className="block font-sans text-[11px] text-muted-foreground">Reissued</span>}
+                      </Cell>
+                    )}
+                    {seesCustomers && (
+                      <Cell className="whitespace-nowrap">
+                        <CustomerCell
+                          customerId={order.customerId}
+                          lookup={order.customerId ? customers.get(order.customerId) : undefined}
+                          onOnly={order.customerId && !filters.customerId ? () => onlyCustomer(order.customerId) : undefined}
+                        />
+                      </Cell>
+                    )}
                     <Cell className="whitespace-nowrap">
                       <ShopStatusPill status={order.status} testId={`shop-status-${order.shopOrderId}`} />
                     </Cell>

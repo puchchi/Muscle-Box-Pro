@@ -7,9 +7,10 @@ import type { Machine } from "@shared/admin/machinesSchema";
 import type { MachineMqtt } from "@shared/admin/remoteSchema";
 import { Card, Field, Fields, Notice, Pill, SuccessPanel } from "../AdminUi";
 import { ConfirmDialog, formatIstStamp, ProblemPanel, problemOf, type Problem } from "./MachinesUi";
-import { formatCountdown, formatEnrolCode, MQTT_STATE_LABEL } from "./remoteRules";
+import { allowedCommandGroups, formatCountdown, formatEnrolCode, MQTT_STATE_LABEL } from "./remoteRules";
 import { RemoteCommands } from "./RemoteCommands";
 import { RemoteLive } from "./RemoteLive";
+import { useCan } from "./viewer";
 
 const PENDING_RELOAD_MS = 10_000;
 
@@ -25,22 +26,37 @@ export function useNow(active: boolean, everyMs = 1_000): number {
 }
 
 export function MachineRemoteTab({ machine, onReload }: { machine: Machine; onReload: () => Promise<Machine | null> }) {
+  const can = useCan();
   const mqtt = machine.mqtt;
+  const canCommand = allowedCommandGroups(can).length > 0;
   if (!mqtt) {
     return <Notice testId="remote-no-mqtt">This machine's details don't say whether MQTT is connected. The backend here is older than remote control.</Notice>;
   }
   return (
     <div className="space-y-5">
-      <MqttCard sn={machine.sn} mqtt={mqtt} onReload={onReload} />
+      {can("remote.mqtt.edit") ? <MqttCard sn={machine.sn} mqtt={mqtt} onReload={onReload} /> : <MqttStatus mqtt={mqtt} />}
       {mqtt.state === "connected" ? (
         <>
-          <RemoteCommands sn={machine.sn} />
-          <RemoteLive sn={machine.sn} />
+          {canCommand && <RemoteCommands sn={machine.sn} />}
+          {can("remote.live.view") && <RemoteLive sn={machine.sn} />}
         </>
       ) : (
         <Notice testId="remote-needs-mqtt">Commands and live status appear here once the machine is connected over MQTT.</Notice>
       )}
     </div>
+  );
+}
+
+function MqttStatus({ mqtt }: { mqtt: MachineMqtt }) {
+  const label = MQTT_STATE_LABEL[mqtt.state];
+  return (
+    <Card title="MQTT" testId="card-mqtt" action={<Pill className={label.className} testId="mqtt-state">{label.text}</Pill>}>
+      {mqtt.state !== "connected" && (
+        <p className="px-4 py-4 text-sm text-muted-foreground sm:px-5" data-testid="mqtt-ask-team">
+          Remote control needs the machine connected over MQTT. Ask the MBP team to connect it.
+        </p>
+      )}
+    </Card>
   );
 }
 

@@ -4,20 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchGood, fetchModels, updateGood } from "@/lib/adminMachineApi";
 import type { Good, MachineModel } from "@shared/admin/machinesSchema";
-import type { AdminSession } from "@/lib/adminSession";
+import type { MachineViewer } from "@shared/admin/viewerSchema";
 import { AdminChecking } from "./AdminShell";
 import { MachinesShell } from "./machines/MachinesShell";
-import { useAdminGuard } from "./useAdminGuard";
+import { useMachineGuard } from "./machines/viewer";
 import { GoodEditor } from "./machines/GoodEditor";
 import { formatIstStamp, MachinesHeader, problemOf, ProblemPanel, type Problem } from "./machines/MachinesUi";
 
 export default function AdminMachineGoodEdit({ goodsId }: { goodsId: string }) {
-  const guard = useAdminGuard();
+  const guard = useMachineGuard();
   if (guard.state === "checking") return <AdminChecking />;
   return <EditGood session={guard.session} goodsId={goodsId} />;
 }
 
-function EditGood({ session, goodsId }: { session: AdminSession; goodsId: string }) {
+function EditGood({ session, goodsId }: { session: MachineViewer; goodsId: string }) {
   const [good, setGood] = useState<Good | null>(null);
   const [models, setModels] = useState<MachineModel[] | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -40,7 +40,7 @@ function EditGood({ session, goodsId }: { session: AdminSession; goodsId: string
   }, [load]);
 
   return (
-    <MachinesShell session={session} section="goods">
+    <MachinesShell session={session} section="goods" needs="goodsLibrary.edit">
       <MachinesHeader
         title={good ? good.name : "Goods"}
         subtitle={

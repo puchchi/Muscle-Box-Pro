@@ -293,6 +293,7 @@ describe("GymDashboard", () => {
     expect(screen.queryByTestId("card-machine")).toBeNull();
     expect(screen.queryByTestId("card-statements")).toBeNull();
     expect(screen.queryByTestId("card-deposit")).toBeNull();
+    expect(screen.getByRole("link", { name: /machine console/i })).toHaveAttribute("href", "/machines");
   });
 
   it("shows the account record when its tab is chosen", async () => {
@@ -657,6 +658,7 @@ describe("GymDashboard", () => {
         screen.getByText(/figures start on the day your machine is installed/i),
       ).toBeInTheDocument();
       expect(screen.queryByText(/not reported here yet/i)).toBeNull();
+      expect(screen.queryByRole("link", { name: /machine console/i })).toBeNull();
     });
 
     it("still shows the machine, the deposit and the signed agreement", async () => {

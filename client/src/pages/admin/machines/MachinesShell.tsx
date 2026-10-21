@@ -7,7 +7,11 @@ import {
   BarChart3,
   Boxes,
   ClipboardList,
+  Container,
   CupSoda,
+  FileText,
+  IndianRupee,
+  LayoutDashboard,
   LogOut,
   MessageSquare,
   MonitorPlay,
@@ -18,74 +22,143 @@ import {
   ShoppingBag,
   Sparkles,
   Ticket,
+  UserCog,
   Users,
   Volume2,
+  Warehouse,
   type LucideIcon,
 } from "lucide-react";
-import type { AdminSession } from "@/lib/adminSession";
 import { apiBaseUrl } from "@/lib/apiClient";
-import { useAdminSignOut } from "../AdminShell";
+import { ROLE_LABEL, type MachineViewer, type Permission, type ViewerRole } from "@shared/admin/viewerSchema";
 import { useNewFeedbackCount } from "./newFeedbackCount";
+import { useMachineSignOut, ViewerProvider } from "./viewer";
 
-type NavItem = { href: string; label: string; id: string; icon: LucideIcon; shop?: true };
+type NavItem = { href: string; label: string; id: string; icon: LucideIcon; needs?: Permission | Permission[]; shop?: true };
+
+export type PortalSection = "overview" | "record";
+
+const PORTAL_GROUPS: Partial<Record<ViewerRole, { label: string; items: ReadonlyArray<NavItem & { id: PortalSection }> }>> = {
+  franchise: {
+    label: "Your franchise",
+    items: [
+      { href: "/franchise/dashboard", label: "Overview", id: "overview", icon: LayoutDashboard },
+      { href: "/franchise/dashboard/record", label: "Your record", id: "record", icon: FileText },
+    ],
+  },
+};
+
+export const homeFor = (role: ViewerRole) => PORTAL_GROUPS[role]?.items[0].href ?? "/machines";
 
 const GROUPS = [
   {
     label: "Fleet",
     items: [
-      { href: "/machines", label: "Machines", id: "machines", icon: CupSoda },
-      { href: "/machines/statistics", label: "Statistics", id: "statistics", icon: BarChart3 },
-      { href: "/machines/logs", label: "Logs", id: "logs", icon: ScrollText },
+      { href: "/machines", label: "Machines", id: "machines", icon: CupSoda, needs: "machines.list.view" },
+      { href: "/machines/statistics", label: "Statistics", id: "statistics", icon: BarChart3, needs: "stats.view" },
+      { href: "/machines/logs", label: "Logs", id: "logs", icon: ScrollText, needs: ["logs.equipment.view", "logs.operations.view"] },
+      { href: "/machines/operators", label: "Operators", id: "operators", icon: UserCog, needs: "operators.view" },
     ],
   },
   {
     label: "Sales",
     items: [
-      { href: "/machines/orders", label: "Orders", id: "orders", icon: ClipboardList },
-      { href: "/machines/shop-orders", label: "Shop orders", id: "shopOrders", icon: ShoppingBag, shop: true },
-      { href: "/machines/customers", label: "Customers", id: "customers", icon: Users, shop: true },
-      { href: "/machines/redeem-codes", label: "Redeem codes", id: "redeemCodes", icon: Ticket },
-      { href: "/machines/feedback", label: "Feedback", id: "feedback", icon: MessageSquare },
+      { href: "/machines/orders", label: "Orders", id: "orders", icon: ClipboardList, needs: "orders.view" },
+      { href: "/machines/shop-orders", label: "Shop orders", id: "shopOrders", icon: ShoppingBag, needs: "shopOrders.view", shop: true },
+      { href: "/machines/customers", label: "Customers", id: "customers", icon: Users, needs: "customers.view", shop: true },
+      { href: "/machines/redeem-codes", label: "Redeem codes", id: "redeemCodes", icon: Ticket, needs: "redeemCodes.view" },
+      { href: "/machines/feedback", label: "Feedback", id: "feedback", icon: MessageSquare, needs: "feedback.view" },
+    ],
+  },
+  {
+    label: "Inventory",
+    items: [
+      { href: "/machines/inventory", label: "Stock", id: "inventory", icon: Warehouse, needs: "inventory.view" },
+      { href: "/machines/inventory/costs", label: "Cost of drinks", id: "costs", icon: IndianRupee, needs: "inventory.view" },
+      { href: "/machines/assets", label: "Machine assets", id: "assets", icon: Container, needs: "assets.view" },
     ],
   },
   {
     label: "Menu",
     items: [
-      { href: "/machines/goods", label: "Goods library", id: "goods", icon: Package },
-      { href: "/machines/materials", label: "Materials", id: "materials", icon: Boxes },
-      { href: "/machines/discounts", label: "Discounts", id: "discounts", icon: Percent },
-      { href: "/machines/new-products", label: "New products", id: "newProducts", icon: Sparkles },
+      { href: "/machines/goods", label: "Goods library", id: "goods", icon: Package, needs: "goodsLibrary.view" },
+      { href: "/machines/materials", label: "Materials", id: "materials", icon: Boxes, needs: "materials.view" },
+      { href: "/machines/discounts", label: "Discounts", id: "discounts", icon: Percent, needs: "discounts.view" },
+      { href: "/machines/new-products", label: "New products", id: "newProducts", icon: Sparkles, needs: "newProducts.view" },
     ],
   },
   {
     label: "On screen",
     items: [
-      { href: "/machines/ads", label: "Ads", id: "ads", icon: MonitorPlay },
-      { href: "/machines/voices", label: "Voice prompts", id: "voices", icon: Volume2 },
-      { href: "/machines/qr", label: "QR and logo", id: "qr", icon: QrCode },
+      { href: "/machines/ads", label: "Ads", id: "ads", icon: MonitorPlay, needs: "ads.view" },
+      { href: "/machines/voices", label: "Voice prompts", id: "voices", icon: Volume2, needs: "voiceDefaults.view" },
+      { href: "/machines/qr", label: "QR and logo", id: "qr", icon: QrCode, needs: "qr.view" },
     ],
   },
 ] as const satisfies ReadonlyArray<{ label: string; items: ReadonlyArray<NavItem> }>;
 
 const shopConfigured = apiBaseUrl("shopAdmin") !== null;
-const VISIBLE_GROUPS = GROUPS.map((g) => ({
-  label: g.label,
-  items: (g.items as ReadonlyArray<NavItem>).filter((s) => !s.shop || shopConfigured),
-}));
+
+const allows = (viewer: MachineViewer, needs: NavItem["needs"]) =>
+  needs === undefined || (Array.isArray(needs) ? needs : [needs]).some((p) => viewer.can.has(p));
+
+const visibleGroups = (viewer: MachineViewer) => [
+  ...(PORTAL_GROUPS[viewer.role] ? [PORTAL_GROUPS[viewer.role]!] : []),
+  ...GROUPS.map((g) => ({
+    label: g.label,
+    items: (g.items as ReadonlyArray<NavItem>).filter((s) => (!s.shop || shopConfigured) && allows(viewer, s.needs)),
+  })).filter((g) => g.items.length > 0),
+];
+
+const ALL_ITEMS: ReadonlyArray<NavItem> = GROUPS.flatMap((g) => g.items as ReadonlyArray<NavItem>);
+
+const BACK_LINK: Record<ViewerRole, { href: string; label: string } | null> = {
+  admin: { href: "/admin", label: "Back to admin" },
+  franchise: null,
+  gym: { href: "/gym/dashboard", label: "Back to your dashboard" },
+  operator: null,
+};
 
 export type MachineSection = (typeof GROUPS)[number]["items"][number]["id"];
 
-export function MachinesShell({
-  session,
-  section,
-  children,
-}: {
-  session: AdminSession;
-  section: MachineSection;
+export function NoAccess() {
+  return (
+    <div className="rounded-xl border border-border bg-card px-5 py-8 text-center" data-testid="machines-no-access">
+      <p className="font-semibold text-foreground">You don&apos;t have access to this page.</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        <Link href="/machines" className="text-primary hover:underline">
+          Go to your machines
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+type ShellProps = {
+  session: MachineViewer;
+  section: MachineSection | PortalSection;
+  needs?: NavItem["needs"];
+  onSignOut?: () => void;
   children: React.ReactNode;
-}) {
-  const handleSignOut = useAdminSignOut();
-  const newFeedback = useNewFeedbackCount();
+};
+
+export function MachinesShell({ session, section, needs, onSignOut, children }: ShellProps) {
+  return (
+    <ViewerProvider value={session}>
+      <Shell session={session} section={section} needs={needs} onSignOut={onSignOut}>
+        {children}
+      </Shell>
+    </ViewerProvider>
+  );
+}
+
+function Shell({ session, section, needs, onSignOut, children }: ShellProps) {
+  const consoleSignOut = useMachineSignOut();
+  const handleSignOut = onSignOut ?? consoleSignOut;
+  const newFeedback = useNewFeedbackCount(session.can.has("feedback.view"));
+  const groups = visibleGroups(session);
+  const current = ALL_ITEMS.find((item) => item.id === section);
+  const allowed = (!current || allows(session, current.needs)) && (!needs || allows(session, needs));
+  const back = BACK_LINK[session.role];
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -100,11 +173,13 @@ export function MachinesShell({
     <div className="dark theme-console min-h-screen bg-background text-foreground lg:flex">
       <aside className="border-b border-border bg-card lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-3 px-4 py-3 lg:block lg:px-5 lg:py-5">
-          <Link href="/machines" className="block">
+          <Link href={homeFor(session.role)} className="block">
             <span className="block font-display text-sm font-black uppercase tracking-tight text-foreground">
               MBP machines
             </span>
-            <span className="hidden text-xs text-muted-foreground lg:block">Vending fleet console</span>
+            <span className="hidden text-xs text-muted-foreground lg:block">
+              {session.role === "admin" ? "Vending fleet console" : `${ROLE_LABEL[session.role]} console`}
+            </span>
           </Link>
           <button
             type="button"
@@ -122,7 +197,7 @@ export function MachinesShell({
           aria-label="Machine console"
           className="relative flex gap-1 overflow-x-auto px-3 pb-2 lg:flex-1 lg:flex-col lg:gap-4 lg:overflow-y-auto lg:px-3 lg:pb-3"
         >
-          {VISIBLE_GROUPS.map((group, i) => (
+          {groups.map((group, i) => (
             <div
               key={group.label}
               role="group"
@@ -166,44 +241,51 @@ export function MachinesShell({
         </nav>
 
         <div className="hidden border-t border-border px-3 py-4 lg:block">
-          <Link
-            href="/admin"
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-            data-testid="link-back-to-admin"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            Back to admin
-          </Link>
-          <div className="mt-3 flex items-center justify-between gap-2 px-3">
-            <span className="truncate text-xs text-muted-foreground" data-testid="shell-admin">
-              {session.displayName}
-            </span>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer"
-              data-testid="button-signout"
+          {back && (
+            <Link
+              href={back.href}
+              className="mb-3 flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+              data-testid="link-back-to-admin"
             >
-              <LogOut className="h-3.5 w-3.5" aria-hidden />
-              Sign out
-            </button>
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              {back.label}
+            </Link>
+          )}
+          <div className="px-3 pb-3" data-testid="shell-admin">
+            <p className="truncate text-sm font-medium text-foreground" title={session.name}>
+              {session.name}
+            </p>
+            {session.role !== "admin" && <p className="text-xs text-muted-foreground">{ROLE_LABEL[session.role]}</p>}
           </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            data-testid="button-signout"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+            Sign out
+          </button>
         </div>
       </aside>
 
       <div className="min-w-0 flex-1">
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{allowed ? children : <NoAccess />}</main>
         <footer className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
-          <Link
-            href="/admin"
-            className="mb-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground lg:hidden"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            Back to admin
-          </Link>
-          <p className="text-xs text-muted-foreground" data-testid="admin-api-host">
-            API: {apiBaseUrl("machineAdmin") ?? "not configured"}
-          </p>
+          {back && (
+            <Link
+              href={back.href}
+              className="mb-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground lg:hidden"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+              {back.label}
+            </Link>
+          )}
+          {session.role === "admin" && (
+            <p className="text-xs text-muted-foreground" data-testid="admin-api-host">
+              API: {apiBaseUrl("machineAdmin") ?? "not configured"}
+            </p>
+          )}
         </footer>
       </div>
     </div>

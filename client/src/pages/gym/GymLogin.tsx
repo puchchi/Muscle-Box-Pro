@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, BarChart3, IndianRupee, FileText } from "lucide-react";
+import { BarChart3, IndianRupee, FileText } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import {
   GYM_SESSION_QUERY_KEY,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/gymSession";
 import type { OnboardingError } from "@shared/onboarding/types";
 import { useEffect, useState } from "react";
+import { FormNotice } from "@/components/auth/FormNotice";
 
 /**
  * The partner portal's front door.
@@ -201,26 +202,17 @@ export default function GymLogin() {
                 the message instead of retrying.
               */}
               {notice && (
-                <div
-                  role="alert"
-                  className="flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3.5"
-                  data-testid="login-notice"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                  </div>
-                  <div className="text-sm text-red-700 leading-relaxed">
-                    <p className="font-semibold">{notice.message}</p>
-                    {/* Wrong advice when the request never arrived, so the network case is spared it. */}
-                    {notice.code !== "network" && (
-                      <Link href="/gym/forgot-password">
-                        <span className="font-semibold underline underline-offset-2 hover:text-red-800 transition-colors cursor-pointer">
-                          Reset your password
-                        </span>
-                      </Link>
-                    )}
-                  </div>
-                </div>
+                <FormNotice title={notice.message} testId="login-notice">
+                  {/* Wrong advice when the request never arrived, so the network case is spared it. */}
+                  {notice.code !== "network" && (
+                    <Link
+                      href="/gym/forgot-password"
+                      className="font-semibold text-primary-ink underline underline-offset-2 transition-colors hover:text-primary-ink/80"
+                    >
+                      Reset your password
+                    </Link>
+                  )}
+                </FormNotice>
               )}
 
               <FormField
