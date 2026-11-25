@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CupSoda, Dumbbell, Inbox, LayoutDashboard, LogOut, MessageSquare, Store, type LucideIcon } from "lucide-react";
+import { CupSoda, Dumbbell, FileText, Inbox, LayoutDashboard, LogOut, MessageSquare, Store, type LucideIcon } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import { ADMIN_SESSION_QUERY_KEY, signOutAsAdmin, type AdminSession } from "@/lib/adminSession";
 import { forgetVerifiedSession } from "./useAdminGuard";
@@ -119,6 +119,7 @@ const SECTIONS: ReadonlyArray<{ href: string; label: string; testId: string; ico
   { href: "/admin/franchises", label: "Franchises", testId: "link-franchises", icon: Store },
   { href: "/admin/inbox", label: "Inbox", testId: "link-inbox", icon: Inbox },
   { href: "/admin/leads", label: "Enquiries", testId: "link-leads", icon: MessageSquare },
+  { href: "/admin/documents", label: "Documents", testId: "link-documents", icon: FileText },
 ];
 
 export function useAdminSignOut() {

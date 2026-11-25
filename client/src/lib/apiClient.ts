@@ -136,7 +136,7 @@ export const IS_PRODUCTION_API = hostnameOf(MBP_API_BASE_URL) === PRODUCTION_API
  *
  * In sandbox they are three different `execute-api` hosts, which cannot be derived from each other.
  */
-export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard" | "machineAdmin" | "machineIot" | "shop" | "shopAdmin";
+export type ApiTarget = "onboarding" | "franchiseAdmin" | "franchiseWizard" | "machineAdmin" | "machineIot" | "shop" | "shopAdmin" | "docsAdmin";
 
 /** The base path each stack is mapped onto where there is a custom domain to map onto. */
 const BASE_PATHS: Record<ApiTarget, string> = {
@@ -147,6 +147,7 @@ const BASE_PATHS: Record<ApiTarget, string> = {
   machineIot: "/machine-iot",
   shop: "/shop",
   shopAdmin: "/shop-admin",
+  docsAdmin: "/docs",
 };
 
 /**
@@ -179,6 +180,7 @@ const BASE_URLS: Record<ApiTarget, string | null> = {
   machineIot: resolveBase("machineIot", process.env.NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL),
   shop: resolveBase("shop", process.env.NEXT_PUBLIC_MBP_SHOP_API_URL),
   shopAdmin: resolveBase("shopAdmin", process.env.NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL),
+  docsAdmin: resolveBase("docsAdmin", process.env.NEXT_PUBLIC_MBP_DOCS_API_URL),
 };
 
 /** The env var a caller is told to set when a target has no base URL. */
@@ -190,6 +192,7 @@ const BASE_URL_VARS: Record<ApiTarget, string> = {
   machineIot: "NEXT_PUBLIC_MBP_MACHINE_IOT_API_URL",
   shop: "NEXT_PUBLIC_MBP_SHOP_API_URL",
   shopAdmin: "NEXT_PUBLIC_MBP_SHOP_ADMIN_API_URL",
+  docsAdmin: "NEXT_PUBLIC_MBP_DOCS_API_URL",
 };
 
 export function apiBaseUrl(target: ApiTarget): string | null {
@@ -789,11 +792,36 @@ export async function shopAdminRequest<T>(
   path: string,
   body?: unknown,
 ): Promise<MachineAdminResult<T>> {
-  const outcome = await rawRequest(method, path, { api: "shopAdmin", body });
+  return codedAdminRequest("shopAdmin", SHOP_ADMIN_CODES, method, path, body);
+}
+
+const DOCS_ADMIN_CODES: Record<string, MachineAdminErrorCode> = {
+  invalid_request: "validation",
+  file_invalid: "validation",
+  signed_out: "invalid_token",
+  not_found: "not_found",
+};
+
+export async function docsAdminRequest<T>(
+  method: ApiMethod,
+  path: string,
+  body?: unknown,
+): Promise<MachineAdminResult<T>> {
+  return codedAdminRequest("docsAdmin", DOCS_ADMIN_CODES, method, path, body);
+}
+
+async function codedAdminRequest<T>(
+  api: "shopAdmin" | "docsAdmin",
+  codes: Record<string, MachineAdminErrorCode>,
+  method: ApiMethod,
+  path: string,
+  body?: unknown,
+): Promise<MachineAdminResult<T>> {
+  const outcome = await rawRequest(method, path, { api, body });
   if (outcome.kind === "ok") return { ok: true, data: outcome.data as T };
   if (outcome.kind === "network") return { ok: false, error: MACHINE_NETWORK_ERROR };
   const envelope = isRecord(outcome.body) ? outcome.body : {};
-  const code = typeof envelope.code === "string" ? SHOP_ADMIN_CODES[envelope.code] : undefined;
+  const code = typeof envelope.code === "string" ? codes[envelope.code] : undefined;
   if (code === undefined) {
     return { ok: false, error: { code: machineCodeForStatus(outcome.status), message: machineMessageForStatus(outcome.status) } };
   }
