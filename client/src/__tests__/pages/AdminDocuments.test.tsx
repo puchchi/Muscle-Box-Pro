@@ -39,9 +39,10 @@ import AdminDocuments from "@/pages/admin/AdminDocuments";
 
 const SESSION = { email: "ops@muscleboxpro.com", role: "admin", displayName: "Ops Team", expiresAt: "2099-01-01T00:00:00.000Z" };
 
-const doc = (n: number, title: string) => ({
+const doc = (n: number, title: string, contentType = "application/pdf") => ({
   docId: `d_${String(n).padStart(32, "0")}`,
   title,
+  contentType,
   size: 3_332_103,
   createdAt: "2026-11-25T06:30:00.000Z",
   createdBy: "ops@muscleboxpro.com",
@@ -50,6 +51,7 @@ const doc = (n: number, title: string) => ({
 
 const HANDBOOK = doc(1, "Franchise Dashboard Documentation");
 const GUIDE = doc(2, "Machine App Guide (Client)");
+const DEMO = doc(4, "Machine Order Demo", "video/mp4");
 
 const pdf = (name = "guide.pdf") => new File([new Uint8Array(10)], name, { type: "application/pdf" });
 
@@ -109,13 +111,47 @@ describe("AdminDocuments", () => {
 
     await user.click(screen.getByTestId("documents-upload"));
     expect(screen.getByTestId("documents-title-error")).toBeInTheDocument();
-    expect(screen.getByTestId("documents-file-error")).toHaveTextContent("Choose a PDF.");
+    expect(screen.getByTestId("documents-file-error")).toHaveTextContent("Choose a PDF or an MP4 video.");
 
     await user.type(screen.getByTestId("documents-title"), "Notes");
     await user.upload(screen.getByTestId("documents-file"), new File(["x"], "notes.txt", { type: "text/plain" }));
     await user.click(screen.getByTestId("documents-upload"));
-    expect(screen.getByTestId("documents-file-error")).toHaveTextContent("Only PDF files.");
+    expect(screen.getByTestId("documents-file-error")).toHaveTextContent("Only PDF or MP4 files.");
     expect(api.uploadDocument).not.toHaveBeenCalled();
+  });
+
+  it("marks a video as a video and a PDF as a PDF", async () => {
+    api.fetchDocuments.mockResolvedValue({ ok: true, data: { documents: [DEMO, HANDBOOK] } });
+    render(<AdminDocuments />);
+    expect(await screen.findByTestId(`type-${DEMO.docId}`)).toHaveTextContent("Video");
+    expect(screen.getByTestId(`type-${HANDBOOK.docId}`)).toHaveTextContent("PDF");
+  });
+
+  it("uploads an MP4 video, and refuses a video over its larger cap and a PDF over its smaller one", async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    api.uploadDocument.mockResolvedValue({ ok: true, data: DEMO });
+    render(<AdminDocuments />);
+    await screen.findByTestId("documents-table");
+
+    await user.type(screen.getByTestId("documents-title"), "Machine Order Demo");
+    const video = new File([new Uint8Array(10)], "demo.mp4", { type: "video/mp4" });
+    await user.upload(screen.getByTestId("documents-file"), video);
+    await user.click(screen.getByTestId("documents-upload"));
+    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith(video, "Machine Order Demo"));
+
+    const oversizedVideo = new File(["x"], "big.mp4", { type: "video/mp4" });
+    Object.defineProperty(oversizedVideo, "size", { value: 101 * 1024 * 1024 });
+    await user.type(screen.getByTestId("documents-title"), "Big");
+    await user.upload(screen.getByTestId("documents-file"), oversizedVideo);
+    await user.click(screen.getByTestId("documents-upload"));
+    expect(screen.getByTestId("documents-file-error")).toHaveTextContent("Videos can be up to 100 MB.");
+
+    const midPdf = new File(["x"], "mid.pdf", { type: "application/pdf" });
+    Object.defineProperty(midPdf, "size", { value: 30 * 1024 * 1024 });
+    await user.upload(screen.getByTestId("documents-file"), midPdf);
+    await user.click(screen.getByTestId("documents-upload"));
+    expect(screen.getByTestId("documents-file-error")).toHaveTextContent("PDFs can be up to 25 MB.");
+    expect(api.uploadDocument).toHaveBeenCalledTimes(1);
   });
 
   it("uploads a PDF, reloads the list and clears the form", async () => {

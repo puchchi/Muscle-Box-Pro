@@ -7,6 +7,7 @@ import {
   adminDocSchema,
   adminDocUploadSchema,
   adminDocsSchema,
+  docTypeOf,
   type AdminDoc,
 } from "@shared/admin/docsSchema";
 
@@ -33,7 +34,11 @@ export const fetchDocuments = () => call(adminDocsSchema, "GET", "/admin/documen
 export const deleteDocument = (docId: string) => call(adminDocDeletedSchema, "DELETE", `/admin/documents/${seg(docId)}`);
 
 export async function uploadDocument(file: File, title: string): Promise<MachineCall<AdminDoc>> {
-  const started = await call(adminDocUploadSchema, "POST", "/admin/documents", { title: title.trim(), size: file.size });
+  const contentType = docTypeOf(file);
+  if (!contentType) {
+    return { ok: false, error: { code: "validation", message: "Only PDF or MP4 files." }, issues: [] };
+  }
+  const started = await call(adminDocUploadSchema, "POST", "/admin/documents", { title: title.trim(), size: file.size, contentType });
   if (!started.ok) return started;
 
   let stored = false;

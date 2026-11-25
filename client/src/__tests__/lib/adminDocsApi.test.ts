@@ -10,9 +10,10 @@ async function api(base = BASE) {
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
 
-const wireDoc = { docId: "d_" + "a".repeat(32), title: "Handbook", size: 2048, createdAt: "2026-11-25T06:30:00.000Z", createdBy: "ops@muscleboxpro.com", link: null };
+const wireDoc = { docId: "d_" + "a".repeat(32), title: "Handbook", contentType: "application/pdf" as const, size: 2048, createdAt: "2026-11-25T06:30:00.000Z", createdBy: "ops@muscleboxpro.com", link: null };
 
 const pdf = (name = "handbook.pdf", size = 2048) => new File([new Uint8Array(size)], name, { type: "application/pdf" });
+const mp4 = (name = "demo.mp4", size = 4096) => new File([new Uint8Array(size)], name, { type: "video/mp4" });
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -58,11 +59,43 @@ describe("adminDocsApi", () => {
     expect(result).toMatchObject({ ok: true, data: { docId, title: "Handbook" } });
     const [start, put, complete] = fetch.mock.calls as [string, RequestInit][];
     expect(start[0]).toBe(`${BASE}/admin/documents`);
-    expect(JSON.parse(start[1].body as string)).toEqual({ title: "Handbook", size: 2048 });
+    expect(JSON.parse(start[1].body as string)).toEqual({ title: "Handbook", size: 2048, contentType: "application/pdf" });
     expect(put[0]).toBe("https://s3.example/docs/x.pdf?sig=1");
     expect(put[1]).toMatchObject({ method: "PUT", headers: { "Content-Type": "application/pdf" }, body: file });
     expect(complete[0]).toBe(`${BASE}/admin/documents/${docId}/complete`);
     expect(put[1].credentials).toBeUndefined();
+  });
+
+  it("uploads a video as video/mp4, with the signed headers the server returned", async () => {
+    const docId = wireDoc.docId;
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(json(201, { docId, url: "https://s3.example/docs/x.mp4?sig=1", headers: { "Content-Type": "video/mp4" }, expiresInSeconds: 300 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(json(200, { ...wireDoc, title: "Demo", contentType: "video/mp4", size: 4096 }));
+    vi.stubGlobal("fetch", fetch);
+    const { uploadDocument } = await api();
+    const file = mp4();
+
+    expect(await uploadDocument(file, "Demo")).toMatchObject({ ok: true, data: { contentType: "video/mp4" } });
+    const [start, put] = fetch.mock.calls as [string, RequestInit][];
+    expect(JSON.parse(start[1].body as string)).toEqual({ title: "Demo", size: 4096, contentType: "video/mp4" });
+    expect(put[1]).toMatchObject({ method: "PUT", headers: { "Content-Type": "video/mp4" }, body: file });
+  });
+
+  it("refuses any other kind of file without calling the server", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const { uploadDocument } = await api();
+    expect(await uploadDocument(new File(["x"], "clip.mov", { type: "video/quicktime" }), "Clip")).toMatchObject({ ok: false, error: { code: "validation" } });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("reads a document with no type, from a server that predates videos, as a PDF", async () => {
+    const { contentType: _omitted, ...legacy } = wireDoc;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(200, { documents: [legacy] })));
+    const { fetchDocuments } = await api();
+    expect(await fetchDocuments()).toMatchObject({ ok: true, data: { documents: [{ contentType: "application/pdf" }] } });
   });
 
   it("does not complete an upload whose PUT failed, and says so", async () => {

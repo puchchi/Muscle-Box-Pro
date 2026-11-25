@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, ExternalLink, Trash2, Upload } from "lucide-react";
+import { Check, Copy, ExternalLink, FileText, Film, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { deleteDocument, documentLink, docsAdminConfigured, fetchDocuments, uploadDocument } from "@/lib/adminDocsApi";
-import { validateDocUpload, type AdminDoc } from "@shared/admin/docsSchema";
+import { DOC_TYPES, validateDocUpload, type AdminDoc } from "@shared/admin/docsSchema";
 import { useAdminGuard } from "./useAdminGuard";
 import { AdminChecking, AdminShell } from "./AdminShell";
 import { Card, Notice, SuccessPanel } from "./AdminUi";
@@ -22,7 +22,7 @@ export default function AdminDocuments() {
       <h1 className="mb-1 text-2xl font-display font-black tracking-tight text-foreground" data-testid="documents-heading">
         Documents
       </h1>
-      <p className="mb-6 text-sm text-muted-foreground">PDFs for the website. Anyone with a document's link can read it, and only this page lists the links.</p>
+      <p className="mb-6 text-sm text-muted-foreground">PDFs and demo videos for the website. Anyone with an item's link can open it, and only this page lists the links.</p>
       {docsAdminConfigured() ? (
         <Documents />
       ) : (
@@ -115,7 +115,7 @@ function Documents() {
       )}
 
       <div className="mb-6">
-        <Card title="Add a PDF" note="Up to 25 MB." testId="card-upload">
+        <Card title="Add a PDF or video" note="PDF up to 25 MB, MP4 video up to 100 MB." testId="card-upload">
           <form onSubmit={submit} className="grid gap-4 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start sm:px-5" noValidate>
             <label className="block text-sm">
               <span className="mb-1 block text-muted-foreground">Title</span>
@@ -138,7 +138,7 @@ function Documents() {
               <input
                 ref={fileInput}
                 type="file"
-                accept="application/pdf,.pdf"
+                accept="application/pdf,.pdf,video/mp4,.mp4"
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                 className="block w-full text-sm text-foreground file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-2 file:text-sm file:text-foreground"
                 data-testid="documents-file"
@@ -173,7 +173,15 @@ function Documents() {
           ) : (
             docs.map((doc) => (
               <tr key={doc.docId} data-testid={`row-document-${doc.docId}`}>
-                <Cell className="min-w-[10rem] font-semibold text-foreground">{doc.title}</Cell>
+                <Cell className="min-w-[10rem] font-semibold text-foreground">
+                  <span className="flex items-center gap-2">
+                    {doc.contentType === "video/mp4" ? <Film className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden /> : <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />}
+                    {doc.title}
+                    <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground" data-testid={`type-${doc.docId}`}>
+                      {DOC_TYPES[doc.contentType].label}
+                    </span>
+                  </span>
+                </Cell>
                 <Cell className="max-w-[22rem]">
                   <span className="block truncate font-mono text-xs text-muted-foreground" data-testid={`link-text-${doc.docId}`}>
                     {documentLink(doc)}
