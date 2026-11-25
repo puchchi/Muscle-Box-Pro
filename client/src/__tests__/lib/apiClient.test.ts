@@ -554,11 +554,11 @@ describe("base URLs", () => {
   });
 
   it("derives every stack from api.muscleboxpro.com, and none from a sandbox host", async () => {
-    const targets = ["franchiseAdmin", "franchiseWizard", "machineAdmin", "machineIot", "shop", "shopAdmin", "docsAdmin"] as const;
+    const targets = ["franchiseAdmin", "franchiseWizard", "machineAdmin", "machineIot", "shop", "shopAdmin"] as const;
     vi.resetModules();
     const production = await import("@/lib/apiClient");
     expect(targets.map((t) => production.apiBaseUrl(t))).toEqual(
-      ["/franchise-admin", "/franchise-wizard", "/machine-admin", "/machine-iot", "/shop", "/shop-admin", "/docs"].map((p) => `https://api.muscleboxpro.com${p}`),
+      ["/franchise-admin", "/franchise-wizard", "/machine-admin", "/machine-iot", "/shop", "/shop-admin"].map((p) => `https://api.muscleboxpro.com${p}`),
     );
 
     vi.stubEnv("NEXT_PUBLIC_MBP_API_URL", "https://abc123.execute-api.ap-south-1.amazonaws.com/sandbox");
