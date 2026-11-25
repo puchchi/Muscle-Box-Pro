@@ -308,6 +308,10 @@ const nextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         ],
       },
+      {
+        source: "/assets/docs/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
       // The routes that carry a live credential in the URL, so they get the strictest
       // referrer policy we have. The global `strict-origin-when-cross-origin` above already
       // strips the path — and therefore the handle — before it reaches Razorpay in step 4 of
